@@ -4,7 +4,7 @@ import { auth, db, googleProvider } from "../lib/firebase";
 import { signInWithPopup, onAuthStateChanged, User, signOut } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, runTransaction, orderBy, deleteDoc, updateDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { LogOut, ArrowUpCircle, ArrowDownCircle, History, Trash2, Edit2, Check, X, Calendar, Tag, CreditCard, Smartphone, Banknote, Settings, Home, PieChart, ArrowRightLeft } from "lucide-react";
+import { LogOut, ArrowUpCircle, ArrowDownCircle, History, Trash2, Edit2, Check, X, Calendar, Tag, CreditCard, Smartphone, Banknote, Settings, Home, PieChart, ArrowRightLeft, HelpCircle } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from "recharts";
 
 const ACCOUNT_TYPES = ["Bank", "E-Wallet", "Cash", "Lainnya"];
@@ -97,7 +97,7 @@ export default function FintrackerApp() {
   };
 
   const deleteAccount = async (id: string, name: string) => {
-    if (!user || !confirm(`Hapus dompet "${name}"?`)) return;
+    if (!user || !confirm(`Hapus dompet "${name}"? Semua saldo di dalamnya akan ikut terhapus.`)) return;
     try { await deleteDoc(doc(db, `users/${user.uid}/accounts/${id}`)); } catch (e) { alert("Gagal hapus"); }
   };
 
@@ -127,7 +127,6 @@ export default function FintrackerApp() {
           const toSnap = await ts.get(toAccRef);
           if (!toSnap.exists()) throw "Dompet tujuan tidak ditemukan";
 
-          // Kurangi asal, tambah ke tujuan
           ts.update(accRef, { balance: snap.data().balance - amount });
           ts.update(toAccRef, { balance: toSnap.data().balance + amount });
 
@@ -137,7 +136,6 @@ export default function FintrackerApp() {
             note: tNote || "Transfer Dana", category: "Transfer", tDate, createdAt: serverTimestamp()
           });
         } else {
-          // Logika Income/Expense biasa
           const newBal = tType === "income" ? snap.data().balance + amount : snap.data().balance - amount;
           ts.update(accRef, { balance: newBal });
           ts.set(doc(collection(db, `users/${user.uid}/transactions`)), {
@@ -194,6 +192,40 @@ export default function FintrackerApp() {
     return acc;
   }, {} as any);
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
+
+  // LOGIKA GAYA KARTU PREMIUM UNTUK SETIAP TIPE DOMPET
+  const getCardDesign = (type: string) => {
+    switch (type) {
+      case "Bank":
+        return {
+          bg: "bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-950 text-white shadow-lg shadow-blue-900/10",
+          icon: <CreditCard size={20} className="text-white" />,
+          chip: "bg-amber-400/20 border border-amber-300/30",
+          textMuted: "text-blue-200/70"
+        };
+      case "E-Wallet":
+        return {
+          bg: "bg-gradient-to-br from-purple-900 via-violet-850 to-pink-950 text-white shadow-lg shadow-purple-950/10",
+          icon: <Smartphone size={20} className="text-white" />,
+          chip: "bg-pink-400/20 border border-pink-300/30",
+          textMuted: "text-purple-200/70"
+        };
+      case "Cash":
+        return {
+          bg: "bg-gradient-to-br from-teal-900 via-emerald-900 to-green-950 text-white shadow-lg shadow-emerald-900/10",
+          icon: <Banknote size={20} className="text-white" />,
+          chip: "bg-yellow-400/20 border border-yellow-300/30",
+          textMuted: "text-emerald-200/70"
+        };
+      default:
+        return {
+          bg: "bg-gradient-to-br from-slate-800 via-slate-900 to-neutral-950 text-white shadow-lg shadow-slate-900/10",
+          icon: <HelpCircle size={20} className="text-white" />,
+          chip: "bg-slate-400/20 border border-slate-300/30",
+          textMuted: "text-slate-300/70"
+        };
+    }
+  };
 
   if (!user) return (
     <div className="min-h-screen flex items-center justify-center bg-blue-600">
@@ -285,30 +317,73 @@ export default function FintrackerApp() {
               </details>
             )}
 
+            {/* DAFTAR DOMPET DENGAN DESAIN DEBIT CARD PREMIUM */}
             <div className="space-y-4 pt-4 border-t border-slate-200">
-                <h3 className="font-bold text-slate-800 italic px-1">Dompet Saya</h3>
-                <div className="grid grid-cols-2 gap-3">
-                    {accounts.map(acc => (
-                        <div key={acc.id} className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm relative group">
-                            <div className="mb-2 text-blue-600">
-                                {acc.type === "Bank" ? <CreditCard size={20}/> : acc.type === "E-Wallet" ? <Smartphone size={20}/> : <Banknote size={20}/>}
+                <h3 className="font-bold text-slate-800 italic px-1 text-lg">Dompet Saya</h3>
+                <div className="grid grid-cols-2 gap-4">
+                    {accounts.map(acc => {
+                      const design = getCardDesign(acc.type);
+                      return (
+                        <div key={acc.id} className={`${design.bg} p-5 rounded-[26px] h-36 flex flex-col justify-between relative overflow-hidden transition-all duration-300 active:scale-95 hover:-translate-y-1`}>
+                            {/* Efek Lingkaran Elegan */}
+                            <div className="absolute -top-12 -right-12 w-28 h-28 bg-white/5 rounded-full blur-xl"></div>
+                            
+                            {/* Baris Atas Kartu */}
+                            <div className="flex justify-between items-start">
+                              <div className="w-8 h-8 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10">
+                                {design.icon}
+                              </div>
+                              {/* Chip Kartu */}
+                              <div className={`w-7 h-5 rounded-md ${design.chip}`}></div>
                             </div>
-                            <p className="text-xs font-bold text-slate-800 leading-none">{acc.name}</p>
-                            <p className="text-[10px] text-slate-400 mb-2">{acc.type}</p>
-                            <p className="text-sm font-black text-blue-600 truncate">Rp {acc.balance.toLocaleString()}</p>
-                            <button onClick={() => deleteAccount(acc.id, acc.name)} className="absolute top-3 right-3 text-slate-200 hover:text-red-400"><Trash2 size={14}/></button>
+
+                            {/* Baris Bawah Kartu */}
+                            <div className="space-y-1 mt-auto">
+                              <p className={`text-[9px] font-black uppercase tracking-wider ${design.textMuted}`}>{acc.name}</p>
+                              <p className="text-xs font-bold leading-none truncate">{acc.type}</p>
+                              <p className="text-sm font-black tracking-tight pt-1">Rp {acc.balance.toLocaleString('id-ID')}</p>
+                            </div>
                         </div>
-                    ))}
+                      );
+                    })}
                 </div>
-                <details className="bg-slate-200/50 rounded-2xl p-4">
-                  <summary className="text-[10px] font-black text-slate-500 cursor-pointer uppercase tracking-widest outline-none">➕ Tambah Dompet Baru</summary>
+                
+                <details className="bg-slate-200/50 rounded-[25px] p-5 border border-slate-200/50">
+                  <summary className="text-[10px] font-black text-slate-500 cursor-pointer uppercase tracking-widest outline-none">⚙️ Pengaturan Dompet</summary>
                   <div className="mt-4 space-y-2">
                     <select className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none" value={accType} onChange={(e) => setAccType(e.target.value)}>
                         {ACCOUNT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
-                    <input type="text" placeholder="Nama Dompet (BCA, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none" value={accName} onChange={(e) => setAccName(e.target.value)} />
-                    <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white rounded-xl text-xs border-none" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
+                    <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none" value={accName} onChange={(e) => setAccName(e.target.value)} />
+                    <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
                     <button onClick={handleCreateAccount} className="w-full py-3 bg-blue-600 text-white rounded-xl text-xs font-bold">Simpan Dompet</button>
+                    
+                    {/* LIST EDIT/HAPUS DOMPET */}
+                    <div className="pt-4 border-t border-slate-300/30 space-y-2">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Daftar Dompet & Hapus</p>
+                      {accounts.map((acc) => (
+                        <div key={acc.id} className="bg-white p-3 rounded-xl flex justify-between items-center shadow-sm">
+                          {editingAccId === acc.id ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <input className="bg-slate-50 p-1 text-xs rounded border border-blue-200 outline-none w-full" value={newAccName} onChange={(e) => setNewAccName(e.target.value)} autoFocus />
+                              <button onClick={() => renameAccount(acc.id)} className="text-green-500"><Check size={16}/></button>
+                              <button onClick={() => setEditingAccId(null)} className="text-slate-400"><X size={16}/></button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold text-slate-700">{acc.name}</span>
+                                <span className="text-[10px] font-black text-blue-600">Rp {acc.balance.toLocaleString()}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => { setEditingAccId(acc.id); setNewAccName(acc.name); }} className="text-slate-300 hover:text-blue-500 p-1"><Edit2 size={14}/></button>
+                                <button onClick={() => deleteAccount(acc.id, acc.name)} className="text-slate-300 hover:text-red-500 p-1"><Trash2 size={14}/></button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </details>
             </div>
