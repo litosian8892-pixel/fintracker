@@ -11,17 +11,24 @@ import * as XLSX from "xlsx";
 const ACCOUNT_TYPES = ["Bank", "E-Wallet", "Cash", "Lainnya"];
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b'];
 
+// TYPESCRIPT INTERFACES (Agar Vercel Tidak Protes)
+interface AccountData { id: string; name: string; balance: number; type: string; logo?: string; order?: number; }
+interface TransactionData { id: string; amount: number; type: string; accountId: string; toAccountId?: string; accountName: string; toAccountName?: string; note: string; category: string; tDate: string; }
+interface CategoryData { id: string; name: string; type: string; }
+interface WalletTypeData { id: string; name: string; order: number; }
+
 export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [walletTypes, setWalletTypes] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<AccountData[]>([]);
+  const [transactions, setTransactions] = useState<TransactionData[]>([]);
+  const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [walletTypes, setWalletTypes] = useState<WalletTypeData[]>([]);
+  
   const [activeTab, setActiveTab] = useState<"home" | "reports" | "assets" | "settings">("home");
-  const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); 
 
-  // State Input Dompet & Transaksi
+  // States
   const [accName, setAccName] = useState("");
   const [accBalance, setAccBalance] = useState("");
   const [accType, setAccType] = useState("Cash");
@@ -30,6 +37,7 @@ export default function FintrackerApp() {
   const [editAccName, setEditAccName] = useState("");
   const [editAccBalance, setEditAccBalance] = useState("");
   const [editAccLogo, setEditAccLogo] = useState<string>("");
+
   const [tAmount, setTAmount] = useState("");
   const [tType, setTType] = useState<"income" | "expense" | "transfer">("expense");
   const [tAccountId, setTAccountId] = useState("");
@@ -37,6 +45,7 @@ export default function FintrackerApp() {
   const [tNote, setTNote] = useState("");
   const [tCategory, setTCategory] = useState("");
   const [tDate, setTDate] = useState(new Date().toISOString().split('T')[0]);
+
   const [newCatName, setNewCatName] = useState("");
   const [newWalletTypeName, setNewWalletTypeName] = useState("");
 
@@ -47,15 +56,19 @@ export default function FintrackerApp() {
 
   useEffect(() => {
     if (!user) return;
-    const unsubAcc = onSnapshot(query(collection(db, `users/${user.uid}/accounts`), orderBy("order", "asc")), (sn) => setAccounts(sn.docs.map(d => ({ id: d.id, ...d.data() }))));
-    const unsubTr = onSnapshot(query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc")), (sn) => setTransactions(sn.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubAcc = onSnapshot(query(collection(db, `users/${user.uid}/accounts`), orderBy("order", "asc")), (sn) => {
+      setAccounts(sn.docs.map(d => ({ id: d.id, ...d.data() } as AccountData)));
+    });
+    const unsubTr = onSnapshot(query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc")), (sn) => {
+      setTransactions(sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData)));
+    });
     const unsubCat = onSnapshot(collection(db, `users/${user.uid}/categories`), (sn) => {
       if (sn.empty) setupDefaultCategories(user.uid);
-      else setCategories(sn.docs.map(d => ({ id: d.id, ...d.data() })));
+      else setCategories(sn.docs.map(d => ({ id: d.id, ...d.data() } as CategoryData)));
     });
     const unsubTypes = onSnapshot(query(collection(db, `users/${user.uid}/walletTypes`), orderBy("order", "asc")), (sn) => {
       if (sn.empty) setupDefaultWalletTypes(user.uid);
-      else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() })));
+      else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() } as WalletTypeData)));
     });
     return () => { unsubAcc(); unsubTr(); unsubCat(); unsubTypes(); };
   }, [user]);
@@ -178,18 +191,21 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal simpan"); }
   };
 
-  const handleDeleteTransaction = async (t: any) => {
+  const handleDeleteTransaction = async (t: TransactionData) => {
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
     const transRef = doc(db, `users/${user.uid}/transactions/${t.id}`);
     try {
       await runTransaction(db, async (ts) => {
         if (t.type === "transfer") {
-          const accRef = doc(db, `users/${user.uid}/accounts/${t.accountId}`), toAccRef = doc(db, `users/${user.uid}/accounts/${t.toAccountId}`);
-          const accSnap = await ts.get(accRef), toSnap = await ts.get(toAccRef);
+          const accRef = doc(db, `users/${user.uid}/accounts/${t.accountId}`);
+          const toAccRef = doc(db, `users/${user.uid}/accounts/${t.toAccountId}`);
+          const accSnap = await ts.get(accRef);
+          const toSnap = t.toAccountId ? await ts.get(toAccRef) : null;
           if (accSnap.exists()) ts.update(accRef, { balance: accSnap.data().balance + t.amount });
-          if (toSnap.exists()) ts.update(toAccRef, { balance: toSnap.data().balance - t.amount });
+          if (toSnap && toSnap.exists()) ts.update(toAccRef, { balance: toSnap.data().balance - t.amount });
         } else {
-          const accRef = doc(db, `users/${user.uid}/accounts/${t.accountId}`), accSnap = await ts.get(accRef);
+          const accRef = doc(db, `users/${user.uid}/accounts/${t.accountId}`);
+          const accSnap = await ts.get(accRef);
           if (accSnap.exists()) {
             const restoredBal = t.type === "income" ? accSnap.data().balance - t.amount : accSnap.data().balance + t.amount;
             ts.update(accRef, { balance: restoredBal });
@@ -200,23 +216,24 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal hapus"); }
   };
 
+  // LOGIKA LAPORAN AMAN TYPESCRIPT
   const filteredTransactions = transactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
   const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
   const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
   
-  const expenseByCategory = filteredTransactions.filter(t => t.type === 'expense').reduce((acc: any, curr: any) => {
+  const expenseByCategory = filteredTransactions.filter(t => t.type === 'expense').reduce((acc: Record<string, number>, curr: TransactionData) => {
     acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc;
-  }, {} as any);
+  }, {});
   const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
 
-  const incomeByCategory = filteredTransactions.filter(t => t.type === 'income').reduce((acc: any, curr: any) => {
+  const incomeByCategory = filteredTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => {
     acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc;
-  }, {} as any);
+  }, {});
   const incomeCategoryList = Object.keys(incomeByCategory).map(key => ({ name: key, value: incomeByCategory[key] }));
 
-  const expenseByDate = filteredTransactions.filter(t => t.type === 'expense').reduce((acc: any, curr: any) => {
+  const expenseByDate = filteredTransactions.filter(t => t.type === 'expense').reduce((acc: Record<string, number>, curr: TransactionData) => {
     const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc;
-  }, {} as any);
+  }, {});
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
 
   const handleExportToExcel = () => {
@@ -243,6 +260,19 @@ export default function FintrackerApp() {
     } else {
       return { bg: "bg-gradient-to-br from-slate-800 via-slate-900 to-neutral-950 text-white shadow-lg", icon: <HelpCircle size={14} />, chip: "bg-slate-400/20 border border-slate-300/30", textMuted: "text-slate-300/50" };
     }
+  };
+
+  // CUSTOM TOOLTIP UNTUK RECHARTS AGAR TIDAK ERROR DI VERCEL
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-2 rounded-lg shadow-md border border-slate-100 text-xs font-bold">
+          <span className="text-slate-500">{payload[0].name || payload[0].payload.date}: </span>
+          <span className="text-slate-800">Rp {Number(payload[0].value).toLocaleString('id-ID')}</span>
+        </div>
+      );
+    }
+    return null;
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div></div>;
@@ -275,7 +305,6 @@ export default function FintrackerApp() {
           <button onClick={() => signOut(auth)} className="text-slate-300 hover:text-red-500"><LogOut size={20}/></button>
         </div>
 
-        {/* CONTAINER UTAMA */}
         <div className="max-w-5xl w-full mx-auto p-4 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
@@ -297,22 +326,22 @@ export default function FintrackerApp() {
                       {tType !== "transfer" ? (
                         <div className="relative">
                             <Tag className="absolute left-3 top-3.5 text-slate-400" size={16}/>
-                            <select className="w-full pl-10 pr-4 py-3 bg-slate-50 rounded-2xl text-xs font-bold border-none outline-none appearance-none font-bold" value={tCategory} onChange={(e) => setTCategory(e.target.value)}>
+                            <select className="w-full pl-10 pr-4 py-3 bg-slate-50 rounded-2xl text-xs font-bold border-none outline-none appearance-none" value={tCategory} onChange={(e) => setTCategory(e.target.value)}>
                                 <option value="">Pilih Kategori</option>
                                 {categories.filter(c => c.type === tType).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
                             </select>
                         </div>
                       ) : <div className="py-3 px-4 bg-blue-50 rounded-2xl text-xs font-bold text-blue-600 flex items-center justify-center">Mode Transfer</div>}
                     </div>
-                    <select value={tAccountId} onChange={(e) => setTAccountId(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold border-none">
+                    <select value={tAccountId} onChange={(e) => setTAccountId(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold border-none outline-none">
                       <option value="">Dompet Asal...</option>
-                      {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString()})</option>)}
+                      {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString('id-ID')})</option>)}
                     </select>
                     {tType === "transfer" && (
-                      <select value={tToAccountId} onChange={(e) => setTToAccountId(e.target.value)} className="w-full p-4 bg-blue-50/50 rounded-2xl text-sm font-bold border-none"><option value="">Kirim Ke Dompet Tujuan...</option>{accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString()})</option>)}</select>
+                      <select value={tToAccountId} onChange={(e) => setTToAccountId(e.target.value)} className="w-full p-4 bg-blue-50/50 rounded-2xl text-sm font-bold border-none outline-none"><option value="">Kirim Ke Dompet Tujuan...</option>{accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString('id-ID')})</option>)}</select>
                     )}
-                    <input type="number" placeholder="Nominal Rp" className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold border-none" value={tAmount} onChange={(e) => setTAmount(e.target.value)} />
-                    <input type="text" placeholder={tType === "transfer" ? "Catatan Transfer" : "Catatan (Opsional)"} className="w-full p-4 bg-slate-50 rounded-2xl text-sm border-none" value={tNote} onChange={(e) => setTNote(e.target.value)} />
+                    <input type="number" placeholder="Nominal Rp" className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold border-none outline-none" value={tAmount} onChange={(e) => setTAmount(e.target.value)} />
+                    <input type="text" placeholder={tType === "transfer" ? "Catatan Transfer" : "Catatan (Opsional)"} className="w-full p-4 bg-slate-50 rounded-2xl text-sm border-none outline-none" value={tNote} onChange={(e) => setTNote(e.target.value)} />
                     <button onClick={handleTransaction} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-lg">Simpan Transaksi</button>
                   </div>
                 </div>
@@ -340,13 +369,13 @@ export default function FintrackerApp() {
                             <Pie data={pieData} innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value">
                               {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                             </Pie>
-                            <Tooltip formatter={(value: any) => `Rp ${Number(value).toLocaleString('id-ID')}`} />
+                            <Tooltip content={<CustomTooltip />} />
                           </RePieChart>
                         </ResponsiveContainer>
                       </div>
                       <div className="mt-4 space-y-2">
                         {pieData.map((data, idx) => (
-                          <div key={idx} className="flex justify-between items-center text-xs font-bold"><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div><span className="text-slate-600">{data.name}</span></div><span className="text-slate-800">Rp {data.value.toLocaleString()}</span></div>
+                          <div key={idx} className="flex justify-between items-center text-xs font-bold"><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div><span className="text-slate-600">{data.name}</span></div><span className="text-slate-800">Rp {data.value.toLocaleString('id-ID')}</span></div>
                         ))}
                       </div>
                     </div>
@@ -383,7 +412,7 @@ export default function FintrackerApp() {
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={barData}>
                             <XAxis dataKey="date" fontSize={10} tickMargin={10} />
-                            <Tooltip formatter={(value: any) => `Rp ${Number(value).toLocaleString('id-ID')}`} cursor={{fill: '#f1f5f9'}} />
+                            <Tooltip content={<CustomTooltip />} cursor={{fill: '#f1f5f9'}} />
                             <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
@@ -437,7 +466,7 @@ export default function FintrackerApp() {
                         <div className="flex flex-col gap-1 pt-1">
                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
                           <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-dashed border-slate-300">
-                            <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" id="custom-logo-file" />
+                            <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, false)} className="hidden" id="custom-logo-file" />
                             <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
                             <span className="text-[10px] text-slate-400 truncate">{accLogo ? "Logo Siap Diunggah ✅" : "Format PNG/JPG (Maks 500KB)"}</span>
                           </div>
@@ -455,7 +484,7 @@ export default function FintrackerApp() {
                                 <div className="space-y-1">
                                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Logo Dompet</label>
                                   <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-dashed border-slate-300">
-                                    <input type="file" accept="image/*" onChange={handleEditLogoUpload} className="hidden" id={`edit-logo-file-${acc.id}`} /><label htmlFor={`edit-logo-file-${acc.id}`} className="cursor-pointer bg-white text-slate-600 p-2 rounded-lg text-xs font-bold flex items-center gap-2"><Upload size={14}/> Ganti Logo</label>
+                                    <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, true)} className="hidden" id={`edit-logo-file-${acc.id}`} /><label htmlFor={`edit-logo-file-${acc.id}`} className="cursor-pointer bg-white text-slate-600 p-2 rounded-lg text-xs font-bold flex items-center gap-2"><Upload size={14}/> Ganti Logo</label>
                                     <span className="text-[10px] text-slate-400 truncate">{editAccLogo ? "Logo Baru Terpasang ✅" : "Logo lama tetap aktif"}</span>
                                   </div>
                                 </div>
@@ -470,7 +499,7 @@ export default function FintrackerApp() {
                                   {acc.logo ? <img src={acc.logo} className="w-8 h-8 rounded-lg object-contain bg-slate-100 p-1" /> : <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500">{getCardDesign(acc.type).icon}</div>}
                                   <div>
                                     <p className="text-xs font-bold text-slate-700 leading-none mb-1">{acc.name}</p>
-                                    <p className="text-[10px] font-black text-blue-600 leading-none">Rp {acc.balance.toLocaleString()}</p>
+                                    <p className="text-[10px] font-black text-blue-600 leading-none">Rp {acc.balance.toLocaleString('id-ID')}</p>
                                     <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{acc.type}</p>
                                   </div>
                                 </div>
@@ -504,7 +533,7 @@ export default function FintrackerApp() {
                     <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2"><Tag size={16} className="text-blue-600"/> Kelola Kategori Transaksi ({tType})</h3>
                     <div className="flex gap-2">
                       <button onClick={() => setTType("expense")} className={`flex-1 py-2 rounded-xl text-[10px] font-bold ${tType === "expense" ? "bg-red-500 text-white shadow-md" : "bg-slate-100"}`}>PENGELUARAN</button>
-                      <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold ${tType === "income" ? "bg-green-50 text-white shadow-md" : "bg-slate-100"}`}>PEMASUKAN</button>
+                      <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold ${tType === "income" ? "bg-green-500 text-white shadow-md" : "bg-slate-100"}`}>PEMASUKAN</button>
                     </div>
                     <div className="flex gap-2">
                       <input type="text" placeholder="Kategori Baru..." className="flex-1 p-3 bg-slate-50 rounded-xl text-xs outline-blue-500" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
@@ -513,7 +542,7 @@ export default function FintrackerApp() {
                     <div className="flex flex-wrap gap-2 pt-2">
                       {categories.filter(c => c.type === tType).map(cat => (
                         <span key={cat.id} className="bg-slate-100 px-3 py-1.5 rounded-full text-[10px] font-bold flex items-center gap-2">
-                          {cat.name} <X size={12} className="text-red-500 cursor-pointer" onClick={() => deleteCategory(cat.id)}/>
+                          {cat.name} <X size={12} className="text-red-500 cursor-pointer hover:scale-125" onClick={() => deleteCategory(cat.id)}/>
                         </span>
                       ))}
                     </div>
@@ -521,13 +550,13 @@ export default function FintrackerApp() {
                   <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-4">
                     <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2"><CreditCard size={16} className="text-blue-600"/> Kelola Kategori Dompet</h3>
                     <div className="flex gap-2">
-                      <input type="text" placeholder="Kategori baru" className="flex-1 p-3 bg-slate-50 rounded-xl text-xs outline-blue-500" value={newWalletTypeName} onChange={(e) => setNewWalletTypeName(e.target.value)} />
+                      <input type="text" placeholder="Kategori baru (Misal: Investasi)" className="flex-1 p-3 bg-slate-50 rounded-xl text-xs outline-blue-500" value={newWalletTypeName} onChange={(e) => setNewWalletTypeName(e.target.value)} />
                       <button onClick={addCustomWalletType} className="bg-blue-600 text-white px-4 rounded-lg text-xs font-bold">Tambah</button>
                     </div>
                     <div className="flex flex-wrap gap-2 pt-2">
                       {walletTypes.map(t => (
                         <span key={t.id} className="bg-slate-100 px-3 py-1.5 rounded-full text-[9px] font-bold flex items-center gap-2 border shadow-sm">
-                          {t.name} <X size={12} className="text-red-500 cursor-pointer" onClick={() => deleteWalletType(t.id)}/>
+                          {t.name} <X size={12} className="text-red-500 cursor-pointer hover:scale-125" onClick={() => deleteWalletType(t.id)}/>
                         </span>
                       ))}
                     </div>
@@ -535,9 +564,9 @@ export default function FintrackerApp() {
                 </div>
               )}
 
-            </div> {/* Tutup Kolom Kiri */}
+            </div>
 
-            {/* ==================== KOLOM KANAN (SEMPIT) ==================== */}
+            {/* KOLOM KANAN (RIWAYAT TRANSAKSI SELALU MUNCUL) */}
             <div className="space-y-4 md:col-span-1">
               <h3 className="font-bold text-slate-800 flex items-center gap-2 italic text-lg px-1"><History size={20} className="text-blue-600"/> Riwayat Semua</h3>
               <div className="space-y-3 pb-24 md:pb-4">
@@ -553,7 +582,7 @@ export default function FintrackerApp() {
                         <div>
                           <p className="font-bold text-sm text-slate-800 leading-none mb-1 text-left">{t.note || t.category}</p>
                           <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter text-left">
-                              {new Date(t.tDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'})} 
+                              {t.tDate ? new Date(t.tDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-'} 
                               {t.type === "transfer" ? ` • ${t.accountName} ➔ ${t.toAccountName}` : ` • ${t.category} • ${t.accountName}`}
                           </p>
                         </div>
@@ -568,13 +597,13 @@ export default function FintrackerApp() {
                   ))
                 )}
               </div>
-            </div> {/* Tutup Kolom Kanan */}
+            </div>
 
-          </div> {/* Tutup Grid */}
-        </div> {/* Tutup Container Konten */}
-      </div> {/* Tutup Area Konten Utama Wrapper */}
+          </div>
+        </div>
+      </div>
 
-      {/* BOTTOM NAV (MOBILE ONLY) */}
+      {/* BOTTOM NAV (MOBILE) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-around items-center z-50 pb-safe shadow-lg">
         <button onClick={() => setActiveTab("home")} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === "home" ? "text-blue-600" : "text-slate-400"}`}>
           <Home size={22} className={activeTab === "home" ? "fill-blue-100" : ""} />
