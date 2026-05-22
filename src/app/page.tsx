@@ -26,13 +26,17 @@ export default function FintrackerApp() {
   // Report State
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
-  // State Input Dompet
+  // State Input Dompet Baru
   const [accName, setAccName] = useState("");
   const [accBalance, setAccBalance] = useState("");
   const [accType, setAccType] = useState("Cash");
-  const [accLogo, setAccLogo] = useState<string>(""); // Menyimpan base64 gambar logo
+  const [accLogo, setAccLogo] = useState<string>(""); // Base64 logo baru
+
+  // State Edit Dompet Lama
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
-  const [newAccName, setNewAccName] = useState("");
+  const [editAccName, setEditAccName] = useState("");
+  const [editAccBalance, setEditAccBalance] = useState("");
+  const [editAccLogo, setEditAccLogo] = useState<string>("");
 
   // State Input Transaksi
   const [tAmount, setTAmount] = useState("");
@@ -89,17 +93,33 @@ export default function FintrackerApp() {
     await deleteDoc(doc(db, `users/${user.uid}/categories/${id}`));
   };
 
-  // LOGIKA MEMBACA GAMBAR DAN MENGUBAH KE BASE64
+  // LOGIKA BACA GAMBAR LOGO UNTUK BUAT DOMPET BARU
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 500000) { // Limit 500 KB agar database tetap kencang
+      if (file.size > 500000) {
         alert("File terlalu besar! Harap gunakan logo berukuran kurang dari 500 KB.");
         return;
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setAccLogo(reader.result as string); // Simpan string gambar
+        setAccLogo(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // LOGIKA BACA GAMBAR LOGO UNTUK EDIT DOMPET LAMA
+  const handleEditLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 500000) {
+        alert("File terlalu besar! Harap gunakan logo berukuran kurang dari 500 KB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditAccLogo(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -111,7 +131,7 @@ export default function FintrackerApp() {
       name: accName, 
       balance: Number(accBalance), 
       type: accType, 
-      logo: accLogo, // Simpan logo ke database
+      logo: accLogo,
       createdAt: serverTimestamp()
     });
     setAccName(""); setAccBalance(""); setAccLogo("");
@@ -122,12 +142,21 @@ export default function FintrackerApp() {
     try { await deleteDoc(doc(db, `users/${user.uid}/accounts/${id}`)); } catch (e) { alert("Gagal hapus"); }
   };
 
-  const renameAccount = async (id: string) => {
-    if (!user || !newAccName) return;
+  // FUNGSI EDIT SALDO, NAMA, & LOGO DOMPET SEKALIGUS
+  const handleEditAccount = async (id: string) => {
+    if (!user || !editAccName || !editAccBalance) return;
     try {
-      await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { name: newAccName });
-      setEditingAccId(null); setNewAccName("");
-    } catch (e) { alert("Gagal ubah nama"); }
+      await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), {
+        name: editAccName,
+        balance: Number(editAccBalance),
+        logo: editAccLogo
+      });
+      setEditingAccId(null);
+      setEditAccName("");
+      setEditAccBalance("");
+      setEditAccLogo("");
+      alert("Dompet berhasil diperbarui!");
+    } catch (e) { alert("Gagal memperbarui dompet"); }
   };
 
   // FUNGSI TRANSAKSI & TRANSFER
@@ -196,17 +225,26 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal hapus transaksi"); }
   };
 
-  // LOGIKA LAPORAN
+  // LOGIKA PERHITUNGAN LAPORAN (REPORTS)
   const filteredTransactions = transactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
   const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
   const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
   
+  // Hitung Pengeluaran Per Kategori
   const expenseByCategory = filteredTransactions.filter(t => t.type === 'expense').reduce((acc: any, curr: any) => {
     acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
     return acc;
   }, {} as any);
   const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
 
+  // Hitung Pemasukan Per Kategori
+  const incomeByCategory = filteredTransactions.filter(t => t.type === 'income').reduce((acc: any, curr: any) => {
+    acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
+    return acc;
+  }, {} as any);
+  const incomeCategoryList = Object.keys(incomeByCategory).map(key => ({ name: key, value: incomeByCategory[key] }));
+
+  // Hitung Pengeluaran Per Hari
   const expenseByDate = filteredTransactions.filter(t => t.type === 'expense').reduce((acc: any, curr: any) => {
     const day = curr.tDate.split('-')[2];
     acc[day] = (acc[day] || 0) + curr.amount;
@@ -214,7 +252,7 @@ export default function FintrackerApp() {
   }, {} as any);
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
 
-  // GAYA KARTU PREMIUM UNTUK SETIAP TIPE DOMPET
+  // GAYA KARTU DEBIT PREMIUM UNTUK SETIAP DOMPET
   const getCardDesign = (type: string) => {
     switch (type) {
       case "Bank":
@@ -222,7 +260,7 @@ export default function FintrackerApp() {
           bg: "bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-950 text-white shadow-lg shadow-blue-900/10",
           icon: <CreditCard size={20} className="text-white" />,
           chip: "bg-amber-400/20 border border-amber-300/30",
-          textMuted: "text-blue-200/50" // Lebih tipis/samar untuk tipe dompet
+          textMuted: "text-blue-200/50"
         };
       case "E-Wallet":
         return {
@@ -324,7 +362,7 @@ export default function FintrackerApp() {
                 <summary className="text-[10px] font-bold text-slate-500 cursor-pointer uppercase flex items-center gap-2 outline-none"><Settings size={14}/> Kelola Kategori {tType}</summary>
                 <div className="mt-4 space-y-3">
                   <div className="flex gap-2">
-                      <input type="text" placeholder="Kategori Baru..." className="flex-1 p-2 bg-slate-50 rounded-lg text-xs" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
+                      <input type="text" placeholder="Kategori Baru..." className="flex-1 p-2 bg-slate-50 rounded-lg text-xs outline-blue-500" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
                       <button onClick={addCustomCategory} className="bg-blue-600 text-white px-4 rounded-lg text-xs font-bold">Tambah</button>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -349,7 +387,6 @@ export default function FintrackerApp() {
                             <div className="absolute -top-12 -right-12 w-28 h-28 bg-white/5 rounded-full blur-xl"></div>
                             
                             <div className="flex justify-between items-start">
-                              {/* TAMPILKAN LOGO CUSTOM JIKA ADA, JIKA TIDAK ADA TAMPILKAN IKON BAWAAN */}
                               {acc.logo ? (
                                 <img src={acc.logo} alt="custom-logo" className="w-8 h-8 rounded-xl object-contain bg-white/90 p-1 border border-white/20 shadow-md" />
                               ) : (
@@ -360,7 +397,6 @@ export default function FintrackerApp() {
                               <div className={`w-7 h-5 rounded-md ${design.chip}`}></div>
                             </div>
 
-                            {/* ADJUST SIZES: NAMA DOMPET SEKARANG BESAR, TIPE SEKARANG KECIL & TIPIS */}
                             <div className="space-y-1 mt-auto z-10">
                               <p className="text-base font-black tracking-tight leading-none truncate">{acc.name}</p>
                               <p className={`text-[9px] font-bold uppercase tracking-widest leading-none ${design.textMuted}`}>{acc.type}</p>
@@ -371,6 +407,7 @@ export default function FintrackerApp() {
                     })}
                 </div>
                 
+                {/* MENU PENGATURAN DOMPET (DENGAN INPUT EDIT NAMA, SALDO AWAL, & LOGO) */}
                 <details className="bg-slate-200/50 rounded-[25px] p-5 border border-slate-200/50">
                   <summary className="text-[10px] font-black text-slate-500 cursor-pointer uppercase tracking-widest outline-none">⚙️ Pengaturan Dompet</summary>
                   <div className="mt-5 space-y-4">
@@ -381,7 +418,6 @@ export default function FintrackerApp() {
                       <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold" value={accName} onChange={(e) => setAccName(e.target.value)} />
                       <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
                       
-                      {/* INPUT UPLOAD LOGO CUSTOM */}
                       <div className="flex flex-col gap-1 pt-1">
                         <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
                         <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-dashed border-slate-300">
@@ -398,27 +434,62 @@ export default function FintrackerApp() {
                       <button onClick={handleCreateAccount} className="w-full py-3 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-100 mt-2">Simpan Dompet</button>
                     </div>
                     
+                    {/* EDIT LIST DOMPET DENGAN EDIT SALDO AWAL, NAMA & LOGO */}
                     <div className="pt-4 border-t border-slate-300/30 space-y-2">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Daftar Dompet & Hapus</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Daftar Dompet (Ubah / Hapus)</p>
                       {accounts.map((acc) => (
-                        <div key={acc.id} className="bg-white p-3 rounded-xl flex justify-between items-center shadow-sm">
+                        <div key={acc.id} className="bg-white p-4 rounded-xl flex flex-col gap-3 shadow-sm border border-slate-100">
                           {editingAccId === acc.id ? (
-                            <div className="flex items-center gap-2 flex-1">
-                              <input className="bg-slate-50 p-1 text-xs rounded border border-blue-200 outline-none w-full" value={newAccName} onChange={(e) => setNewAccName(e.target.value)} autoFocus />
-                              <button onClick={() => renameAccount(acc.id)} className="text-green-500"><Check size={16}/></button>
-                              <button onClick={() => setEditingAccId(null)} className="text-slate-400"><X size={16}/></button>
+                            <div className="space-y-3">
+                              {/* Edit Nama */}
+                              <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label>
+                                <input className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} />
+                              </div>
+                              {/* Edit Saldo */}
+                              <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Saldo Dompet</label>
+                                <input type="number" className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
+                              </div>
+                              {/* Edit Logo */}
+                              <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Logo Dompet (Opsional)</label>
+                                <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-dashed border-slate-300">
+                                  <input type="file" accept="image/*" onChange={handleEditLogoUpload} className="hidden" id={`edit-logo-file-${acc.id}`} />
+                                  <label htmlFor={`edit-logo-file-${acc.id}`} className="cursor-pointer bg-white text-slate-600 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all">
+                                    <Upload size={14}/> Ganti Logo
+                                  </label>
+                                  <span className="text-[10px] text-slate-400 truncate">
+                                    {editAccLogo ? "Logo Baru Terpasang ✅" : "Logo lama tetap aktif"}
+                                  </span>
+                                </div>
+                              </div>
+                              {/* Tombol Simpan/Batal */}
+                              <div className="flex gap-2 pt-1">
+                                <button onClick={() => handleEditAccount(acc.id)} className="flex-1 py-2 bg-green-500 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1"><Check size={14}/> Simpan</button>
+                                <button onClick={() => setEditingAccId(null)} className="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><X size={14}/> Batal</button>
+                              </div>
                             </div>
                           ) : (
-                            <>
-                              <div className="flex flex-col">
-                                <span className="text-xs font-bold text-slate-700">{acc.name}</span>
-                                <span className="text-[10px] font-black text-blue-600">Rp {acc.balance.toLocaleString()}</span>
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-3">
+                                {acc.logo ? (
+                                  <img src={acc.logo} className="w-8 h-8 rounded-lg object-contain bg-slate-100 p-1" />
+                                ) : (
+                                  <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500">
+                                    {getCardDesign(acc.type).icon}
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="text-xs font-bold text-slate-700">{acc.name}</p>
+                                  <p className="text-[10px] font-black text-blue-600">Rp {acc.balance.toLocaleString()}</p>
+                                </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <button onClick={() => { setEditingAccId(acc.id); setNewAccName(acc.name); }} className="text-slate-300 hover:text-blue-500 p-1"><Edit2 size={14}/></button>
+                                <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); }} className="text-slate-300 hover:text-blue-500 p-1"><Edit2 size={14}/></button>
                                 <button onClick={() => deleteAccount(acc.id, acc.name)} className="text-slate-300 hover:text-red-500 p-1"><Trash2 size={14}/></button>
                               </div>
-                            </>
+                            </div>
                           )}
                         </div>
                       ))}
@@ -440,11 +511,11 @@ export default function FintrackerApp() {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-green-50 p-5 rounded-3xl border border-green-100">
                 <p className="text-[10px] font-bold text-green-600 uppercase mb-1">Pemasukan</p>
-                <p className="text-lg font-black text-green-700">Rp {totalIncome.toLocaleString()}</p>
+                <p className="text-lg font-black text-green-700">Rp {totalIncome.toLocaleString('id-ID')}</p>
               </div>
               <div className="bg-red-50 p-5 rounded-3xl border border-red-100">
                 <p className="text-[10px] font-bold text-red-600 uppercase mb-1">Pengeluaran</p>
-                <p className="text-lg font-black text-red-700">Rp {totalExpense.toLocaleString()}</p>
+                <p className="text-lg font-black text-red-700">Rp {totalExpense.toLocaleString('id-ID')}</p>
               </div>
             </div>
 
@@ -478,6 +549,53 @@ export default function FintrackerApp() {
                 Belum ada pengeluaran di bulan ini.
               </div>
             )}
+
+            {/* TABEL RINCIAN PENGELUARAN & PEMASUKAN PER KATEGORI */}
+            <div className="space-y-4">
+              <h3 className="font-bold text-slate-800 text-sm px-1">Rincian Per Kategori</h3>
+              
+              {/* TABEL PENGELUARAN */}
+              <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
+                <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">Detail Pengeluaran</p>
+                {pieData.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">Tidak ada pengeluaran</p>
+                ) : (
+                  <div className="space-y-2">
+                    {pieData.map((data, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-xs pb-2 border-b border-slate-50 last:border-0 last:pb-0">
+                        <span className="text-slate-600 font-bold">{data.name}</span>
+                        <span className="text-slate-800 font-black">Rp {data.value.toLocaleString('id-ID')}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between items-center text-xs pt-3 border-t border-dashed border-slate-200 font-black">
+                      <span className="text-slate-800">TOTAL PENGELUARAN</span>
+                      <span className="text-red-600">Rp {totalExpense.toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* TABEL PEMASUKAN */}
+              <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
+                <p className="text-[10px] font-black text-green-500 uppercase tracking-widest">Detail Pemasukan</p>
+                {incomeCategoryList.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">Tidak ada pemasukan</p>
+                ) : (
+                  <div className="space-y-2">
+                    {incomeCategoryList.map((data, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-xs pb-2 border-b border-slate-50 last:border-0 last:pb-0">
+                        <span className="text-slate-600 font-bold">{data.name}</span>
+                        <span className="text-slate-800 font-black">Rp {data.value.toLocaleString('id-ID')}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between items-center text-xs pt-3 border-t border-dashed border-slate-200 font-black">
+                      <span className="text-slate-800">TOTAL PEMASUKAN</span>
+                      <span className="text-green-600">Rp {totalIncome.toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {barData.length > 0 && (
               <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm">
