@@ -222,28 +222,28 @@ export default function FintrackerApp() {
           bg: "bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-950 text-white shadow-lg shadow-blue-900/10",
           icon: <CreditCard size={20} className="text-white" />,
           chip: "bg-amber-400/20 border border-amber-300/30",
-          textMuted: "text-blue-200/70"
+          textMuted: "text-blue-200/50" // Lebih tipis/samar untuk tipe dompet
         };
       case "E-Wallet":
         return {
           bg: "bg-gradient-to-br from-purple-900 via-violet-850 to-pink-950 text-white shadow-lg shadow-purple-950/10",
           icon: <Smartphone size={20} className="text-white" />,
           chip: "bg-pink-400/20 border border-pink-300/30",
-          textMuted: "text-purple-200/70"
+          textMuted: "text-purple-200/50"
         };
       case "Cash":
         return {
           bg: "bg-gradient-to-br from-teal-900 via-emerald-900 to-green-950 text-white shadow-lg shadow-emerald-900/10",
           icon: <Banknote size={20} className="text-white" />,
           chip: "bg-yellow-400/20 border border-yellow-300/30",
-          textMuted: "text-emerald-200/70"
+          textMuted: "text-emerald-200/50"
         };
       default:
         return {
           bg: "bg-gradient-to-br from-slate-800 via-slate-900 to-neutral-950 text-white shadow-lg shadow-slate-900/10",
           icon: <HelpCircle size={20} className="text-white" />,
           chip: "bg-slate-400/20 border border-slate-300/30",
-          textMuted: "text-slate-300/70"
+          textMuted: "text-slate-300/50"
         };
     }
   };
@@ -360,9 +360,10 @@ export default function FintrackerApp() {
                               <div className={`w-7 h-5 rounded-md ${design.chip}`}></div>
                             </div>
 
-                            <div className="space-y-1 mt-auto">
-                              <p className={`text-[9px] font-black uppercase tracking-wider ${design.textMuted}`}>{acc.name}</p>
-                              <p className="text-xs font-bold leading-none truncate">{acc.type}</p>
+                            {/* ADJUST SIZES: NAMA DOMPET SEKARANG BESAR, TIPE SEKARANG KECIL & TIPIS */}
+                            <div className="space-y-1 mt-auto z-10">
+                              <p className="text-base font-black tracking-tight leading-none truncate">{acc.name}</p>
+                              <p className={`text-[9px] font-bold uppercase tracking-widest leading-none ${design.textMuted}`}>{acc.type}</p>
                               <p className="text-sm font-black tracking-tight pt-1">Rp {acc.balance.toLocaleString('id-ID')}</p>
                             </div>
                         </div>
