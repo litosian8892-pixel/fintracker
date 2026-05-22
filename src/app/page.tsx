@@ -4,21 +4,19 @@ import { auth, db, googleProvider } from "../lib/firebase";
 import { signInWithPopup, onAuthStateChanged, User, signOut } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, runTransaction, orderBy, deleteDoc, updateDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { LogOut, ArrowUpCircle, ArrowDownCircle, History, Trash2, Edit2, Check, X, Calendar, Tag, CreditCard, Smartphone, Banknote, Settings, Home, PieChart, ArrowRightLeft, HelpCircle, Upload } from "lucide-react";
+import { LogOut, ArrowUpCircle, ArrowDownCircle, History, Trash2, Edit2, Check, X, Calendar, Tag, CreditCard, Smartphone, Banknote, Settings, Home, PieChart, ArrowRightLeft, HelpCircle, Upload, ArrowUp, ArrowDown } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from "recharts";
 
 const ACCOUNT_TYPES = ["Bank", "E-Wallet", "Cash", "Lainnya"];
-const CATEGORIES = {
-  expense: ["Makanan", "Transportasi", "Belanja", "Tagihan", "Hiburan", "Kesehatan", "Pendidikan", "Lainnya"],
-  income: ["Gaji", "Bonus", "Investasi", "Penjualan", "Pemberian", "Lainnya"]
-};
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b'];
 
 export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true); // Lapis Pengaman 1: State Loading
   const [accounts, setAccounts] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [walletTypes, setWalletTypes] = useState<any[]>([]);
   
   // Navigation State
   const [activeTab, setActiveTab] = useState<"home" | "reports">("home");
@@ -30,7 +28,7 @@ export default function FintrackerApp() {
   const [accName, setAccName] = useState("");
   const [accBalance, setAccBalance] = useState("");
   const [accType, setAccType] = useState("Cash");
-  const [accLogo, setAccLogo] = useState<string>(""); // Base64 logo baru
+  const [accLogo, setAccLogo] = useState<string>(""); // Base64 logo
 
   // State Edit Dompet Lama
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
@@ -47,33 +45,63 @@ export default function FintrackerApp() {
   const [tCategory, setTCategory] = useState("");
   const [tDate, setTDate] = useState(new Date().toISOString().split('T')[0]);
 
+  // State Custom Kategori & Tipe Dompet
   const [newCatName, setNewCatName] = useState("");
+  const [newWalletTypeName, setNewWalletTypeName] = useState("");
 
+  // PANTAU STATUS LOGIN DENGAN LOADING STATE
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, (u) => setUser(u));
+    const unsubAuth = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setLoading(false); // Matikan loading setelah Firebase selesai mengecek
+    });
     return () => unsubAuth();
   }, []);
 
   useEffect(() => {
     if (!user) return;
-    const unsubAcc = onSnapshot(query(collection(db, `users/${user.uid}/accounts`)), (sn) => {
+    
+    // Ambil Dompet (Diurutkan berdasarkan kolom 'order' secara naik)
+    const qAcc = query(collection(db, `users/${user.uid}/accounts`), orderBy("order", "asc"));
+    const unsubAcc = onSnapshot(qAcc, (sn) => {
       setAccounts(sn.docs.map(d => ({ id: d.id, ...d.data() })));
     });
+
+    // Ambil Transaksi
     const unsubTr = onSnapshot(query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc")), (sn) => {
       setTransactions(sn.docs.map(d => ({ id: d.id, ...d.data() })));
     });
+
+    // Ambil Kategori Transaksi
     const unsubCat = onSnapshot(collection(db, `users/${user.uid}/categories`), (sn) => {
       if (sn.empty) setupDefaultCategories(user.uid);
       else setCategories(sn.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-    return () => { unsubAcc(); unsubTr(); unsubCat(); };
+
+    // Ambil Custom Tipe Dompet
+    const unsubWalletTypes = onSnapshot(query(collection(db, `users/${user.uid}/walletTypes`), orderBy("order", "asc")), (sn) => {
+      if (sn.empty) setupDefaultWalletTypes(user.uid);
+      else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => { unsubAcc(); unsubTr(); unsubCat(); unsubWalletTypes(); };
   }, [user]);
 
+  // SET KATEGORI DEFAULT SECARA DINAMIS DARI DATABASE FIRESTORE
   useEffect(() => {
-    if (tType !== "transfer") setTCategory(CATEGORIES[tType as "income"|"expense"][0] || "");
-    else setTCategory("Transfer");
-  }, [tType]);
+    if (tType !== "transfer") {
+      const filtered = categories.filter(c => c.type === tType);
+      if (filtered.length > 0) {
+        setTCategory(filtered[0].name);
+      } else {
+        setTCategory(tType === "income" ? "Gaji" : "Makanan");
+      }
+    } else {
+      setTCategory("Transfer");
+    }
+  }, [tType, categories]);
 
+  // SETUP KATEGORI DEFAULT
   const setupDefaultCategories = async (uid: string) => {
     const defaults = [
       { name: "Makanan", type: "expense" }, { name: "Transportasi", type: "expense" },
@@ -82,6 +110,15 @@ export default function FintrackerApp() {
     for (const cat of defaults) await addDoc(collection(db, `users/${uid}/categories`), cat);
   };
 
+  // SETUP TIPE DOMPET DEFAULT
+  const setupDefaultWalletTypes = async (uid: string) => {
+    const defaults = ["Bank", "E-Wallet", "Cash", "Lainnya"];
+    for (let i = 0; i < defaults.length; i++) {
+      await addDoc(collection(db, `users/${uid}/walletTypes`), { name: defaults[i], order: i });
+    }
+  };
+
+  // FUNGSI CUSTOM KATEGORI TRANSAKSI
   const addCustomCategory = async () => {
     if (!newCatName || !user) return;
     await addDoc(collection(db, `users/${user.uid}/categories`), { name: newCatName, type: tType });
@@ -93,7 +130,22 @@ export default function FintrackerApp() {
     await deleteDoc(doc(db, `users/${user.uid}/categories/${id}`));
   };
 
-  // LOGIKA BACA GAMBAR LOGO UNTUK BUAT DOMPET BARU
+  // FUNGSI CUSTOM TIPE DOMPET (WALLET TYPES)
+  const addCustomWalletType = async () => {
+    if (!newWalletTypeName || !user) return;
+    await addDoc(collection(db, `users/${user.uid}/walletTypes`), { 
+      name: newWalletTypeName, 
+      order: walletTypes.length 
+    });
+    setNewWalletTypeName("");
+  };
+
+  const deleteWalletType = async (id: string) => {
+    if (!user || !confirm("Hapus tipe dompet ini? Dompet lama yang menggunakan tipe ini tidak akan terhapus.")) return;
+    await deleteDoc(doc(db, `users/${user.uid}/walletTypes/${id}`));
+  };
+
+  // LOGIKA BACA FILE LOGO (BASE64)
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -102,14 +154,11 @@ export default function FintrackerApp() {
         return;
       }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setAccLogo(reader.result as string);
-      };
+      reader.onloadend = () => setAccLogo(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
 
-  // LOGIKA BACA GAMBAR LOGO UNTUK EDIT DOMPET LAMA
   const handleEditLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -118,13 +167,12 @@ export default function FintrackerApp() {
         return;
       }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditAccLogo(reader.result as string);
-      };
+      reader.onloadend = () => setEditAccLogo(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
 
+  // FUNGSI UTAMA DOMPET (CRUD & MOVE ORDER)
   const handleCreateAccount = async () => {
     if (!user || !accName || !accBalance) return;
     await addDoc(collection(db, `users/${user.uid}/accounts`), {
@@ -132,6 +180,7 @@ export default function FintrackerApp() {
       balance: Number(accBalance), 
       type: accType, 
       logo: accLogo,
+      order: accounts.length,
       createdAt: serverTimestamp()
     });
     setAccName(""); setAccBalance(""); setAccLogo("");
@@ -142,7 +191,6 @@ export default function FintrackerApp() {
     try { await deleteDoc(doc(db, `users/${user.uid}/accounts/${id}`)); } catch (e) { alert("Gagal hapus"); }
   };
 
-  // FUNGSI EDIT SALDO, NAMA, & LOGO DOMPET SEKALIGUS
   const handleEditAccount = async (id: string) => {
     if (!user || !editAccName || !editAccBalance) return;
     try {
@@ -152,11 +200,33 @@ export default function FintrackerApp() {
         logo: editAccLogo
       });
       setEditingAccId(null);
-      setEditAccName("");
-      setEditAccBalance("");
-      setEditAccLogo("");
+      setEditAccName(""); setEditAccBalance(""); setEditAccLogo("");
       alert("Dompet berhasil diperbarui!");
-    } catch (e) { alert("Gagal memperbarui dompet"); }
+    } catch (e) { alert("Gagal memperbarui"); }
+  };
+
+  const moveAccountOrder = async (index: number, direction: "up" | "down") => {
+    if (!user) return;
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= accounts.length) return;
+
+    const currentAcc = accounts[index];
+    const targetAcc = accounts[targetIndex];
+
+    try {
+      await runTransaction(db, async (ts) => {
+        const currentRef = doc(db, `users/${user.uid}/accounts/${currentAcc.id}`);
+        const targetRef = doc(db, `users/${user.uid}/accounts/${targetAcc.id}`);
+
+        const currentOrder = currentAcc.order !== undefined ? currentAcc.order : index;
+        const targetOrder = targetAcc.order !== undefined ? targetAcc.order : targetIndex;
+
+        ts.update(currentRef, { order: targetOrder });
+        ts.update(targetRef, { order: currentOrder });
+      });
+    } catch (e) {
+      alert("Gagal memindahkan posisi dompet");
+    }
   };
 
   // FUNGSI TRANSAKSI & TRANSFER
@@ -225,26 +295,23 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal hapus transaksi"); }
   };
 
-  // LOGIKA PERHITUNGAN LAPORAN (REPORTS)
+  // LOGIKA LAPORAN
   const filteredTransactions = transactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
   const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
   const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
   
-  // Hitung Pengeluaran Per Kategori
   const expenseByCategory = filteredTransactions.filter(t => t.type === 'expense').reduce((acc: any, curr: any) => {
     acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
     return acc;
   }, {} as any);
   const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
 
-  // Hitung Pemasukan Per Kategori
   const incomeByCategory = filteredTransactions.filter(t => t.type === 'income').reduce((acc: any, curr: any) => {
     acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
     return acc;
   }, {} as any);
   const incomeCategoryList = Object.keys(incomeByCategory).map(key => ({ name: key, value: incomeByCategory[key] }));
 
-  // Hitung Pengeluaran Per Hari
   const expenseByDate = filteredTransactions.filter(t => t.type === 'expense').reduce((acc: any, curr: any) => {
     const day = curr.tDate.split('-')[2];
     acc[day] = (acc[day] || 0) + curr.amount;
@@ -252,40 +319,50 @@ export default function FintrackerApp() {
   }, {} as any);
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
 
-  // GAYA KARTU DEBIT PREMIUM UNTUK SETIAP DOMPET
+  // SISTEM CERDAS PEMILIHAN ICON & DESIGN BERDASARKAN VALUE TIPE DOMPET
   const getCardDesign = (type: string) => {
-    switch (type) {
-      case "Bank":
-        return {
-          bg: "bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-950 text-white shadow-lg shadow-blue-900/10",
-          icon: <CreditCard size={20} className="text-white" />,
-          chip: "bg-amber-400/20 border border-amber-300/30",
-          textMuted: "text-blue-200/50"
-        };
-      case "E-Wallet":
-        return {
-          bg: "bg-gradient-to-br from-purple-900 via-violet-850 to-pink-950 text-white shadow-lg shadow-purple-950/10",
-          icon: <Smartphone size={20} className="text-white" />,
-          chip: "bg-pink-400/20 border border-pink-300/30",
-          textMuted: "text-purple-200/50"
-        };
-      case "Cash":
-        return {
-          bg: "bg-gradient-to-br from-teal-900 via-emerald-900 to-green-950 text-white shadow-lg shadow-emerald-900/10",
-          icon: <Banknote size={20} className="text-white" />,
-          chip: "bg-yellow-400/20 border border-yellow-300/30",
-          textMuted: "text-emerald-200/50"
-        };
-      default:
-        return {
-          bg: "bg-gradient-to-br from-slate-800 via-slate-900 to-neutral-950 text-white shadow-lg shadow-slate-900/10",
-          icon: <HelpCircle size={20} className="text-white" />,
-          chip: "bg-slate-400/20 border border-slate-300/30",
-          textMuted: "text-slate-300/50"
-        };
+    const t = type.toLowerCase();
+    if (t.includes("bank") || t.includes("kartu") || t.includes("credit") || t.includes("tabungan") || t.includes("savings")) {
+      return {
+        bg: "bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-950 text-white shadow-lg shadow-blue-900/10",
+        icon: <CreditCard size={20} className="text-white" />,
+        chip: "bg-amber-400/20 border border-amber-300/30",
+        textMuted: "text-blue-200/50"
+      };
+    } else if (t.includes("wallet") || t.includes("gopay") || t.includes("ovo") || t.includes("dana") || t.includes("pay") || t.includes("digital")) {
+      return {
+        bg: "bg-gradient-to-br from-purple-900 via-violet-850 to-pink-950 text-white shadow-lg shadow-purple-950/10",
+        icon: <Smartphone size={20} className="text-white" />,
+        chip: "bg-pink-400/20 border border-pink-300/30",
+        textMuted: "text-purple-200/50"
+      };
+    } else if (t.includes("cash") || t.includes("dompet") || t.includes("tunai") || t.includes("fisik")) {
+      return {
+        bg: "bg-gradient-to-br from-teal-900 via-emerald-900 to-green-950 text-white shadow-lg shadow-emerald-900/10",
+        icon: <Banknote size={20} className="text-white" />,
+        chip: "bg-yellow-400/20 border border-yellow-300/30",
+        textMuted: "text-emerald-200/50"
+      };
+    } else {
+      return {
+        bg: "bg-gradient-to-br from-slate-800 via-slate-900 to-neutral-950 text-white shadow-lg shadow-slate-900/10",
+        icon: <HelpCircle size={20} className="text-white" />,
+        chip: "bg-slate-400/20 border border-slate-300/30",
+        textMuted: "text-slate-300/50"
+      };
     }
   };
 
+  // LAPIS PENGAMAN 1: TAMPILKAN SPINNER LOADING SELAMA FIREBASE MENGECEK AKUN
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // LAPIS PENGAMAN 2: TAMPILKAN LOGIN JIKA MEMANG BELUM LOGIN
   if (!user) return (
     <div className="min-h-screen flex items-center justify-center bg-blue-600">
       <button onClick={() => signInWithPopup(auth, googleProvider)} className="bg-white py-4 px-8 rounded-2xl font-bold flex gap-3 shadow-2xl items-center active:scale-95 transition-all">
@@ -296,11 +373,11 @@ export default function FintrackerApp() {
 
   return (
     <main className="min-h-screen bg-slate-50 pb-24 text-slate-900 font-sans">
-      {/* HEADER */}
+      {/* HEADER (Optional Chaining ?. dipasang) */}
       <div className="bg-white p-6 flex justify-between items-center shadow-sm border-b sticky top-0 z-20">
         <div className="flex items-center gap-3">
-          <img src={user.photoURL || ""} className="w-10 h-10 rounded-full border-2 border-blue-500" />
-          <p className="font-bold text-sm">{user.displayName}</p>
+          <img src={user?.photoURL || ""} className="w-10 h-10 rounded-full border-2 border-blue-500" />
+          <p className="font-bold text-sm">{user?.displayName}</p>
         </div>
         <button onClick={() => signOut(auth)} className="text-slate-300 hover:text-red-500"><LogOut size={20}/></button>
       </div>
@@ -376,14 +453,14 @@ export default function FintrackerApp() {
               </details>
             )}
 
-            {/* DAFTAR DOMPET DEBIT CARD PREMIUM + CUSTOM LOGO */}
+            {/* DAFTAR DOMPET */}
             <div className="space-y-4 pt-4 border-t border-slate-200">
                 <h3 className="font-bold text-slate-800 italic px-1 text-lg">Dompet Saya</h3>
                 <div className="grid grid-cols-2 gap-4">
-                    {accounts.map(acc => {
+                    {accounts.map((acc) => {
                       const design = getCardDesign(acc.type);
                       return (
-                        <div key={acc.id} className={`${design.bg} p-5 rounded-[26px] h-36 flex flex-col justify-between relative overflow-hidden transition-all duration-300 active:scale-95 hover:-translate-y-1`}>
+                        <div key={acc.id} className={`${design.bg} p-5 rounded-[26px] h-36 flex flex-col justify-between relative overflow-hidden transition-all duration-300 active:scale-95`}>
                             <div className="absolute -top-12 -right-12 w-28 h-28 bg-white/5 rounded-full blur-xl"></div>
                             
                             <div className="flex justify-between items-start">
@@ -407,13 +484,13 @@ export default function FintrackerApp() {
                     })}
                 </div>
                 
-                {/* MENU PENGATURAN DOMPET (DENGAN INPUT EDIT NAMA, SALDO AWAL, & LOGO) */}
+                {/* MENU PENGATURAN DOMPET */}
                 <details className="bg-slate-200/50 rounded-[25px] p-5 border border-slate-200/50">
                   <summary className="text-[10px] font-black text-slate-500 cursor-pointer uppercase tracking-widest outline-none">⚙️ Pengaturan Dompet</summary>
                   <div className="mt-5 space-y-4">
                     <div className="space-y-2">
                       <select className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold" value={accType} onChange={(e) => setAccType(e.target.value)}>
-                          {ACCOUNT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                          {walletTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                       </select>
                       <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold" value={accName} onChange={(e) => setAccName(e.target.value)} />
                       <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
@@ -433,25 +510,38 @@ export default function FintrackerApp() {
 
                       <button onClick={handleCreateAccount} className="w-full py-3 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-100 mt-2">Simpan Dompet</button>
                     </div>
+
+                    {/* KELOLA CUSTOM TIPE DOMPET */}
+                    <div className="pt-4 border-t border-slate-300/30 space-y-3">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Kelola Custom Kategori Dompet</p>
+                      <div className="flex gap-2">
+                        <input type="text" placeholder="Kategori baru (Misal: Investasi)" className="flex-1 p-2 bg-white rounded-lg text-xs outline-blue-500" value={newWalletTypeName} onChange={(e) => setNewWalletTypeName(e.target.value)} />
+                        <button onClick={addCustomWalletType} className="bg-blue-600 text-white px-4 rounded-lg text-xs font-bold">Tambah</button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {walletTypes.map(t => (
+                          <span key={t.id} className="bg-white px-3 py-1 rounded-full text-[9px] font-bold flex items-center gap-2 border shadow-sm">
+                            {t.name} <X size={12} className="text-red-500 cursor-pointer" onClick={() => deleteWalletType(t.id)}/>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                     
-                    {/* EDIT LIST DOMPET DENGAN EDIT SALDO AWAL, NAMA & LOGO */}
+                    {/* EDIT LIST DOMPET DENGAN EDIT SALDO AWAL, NAMA, LOGO & MOVE ORDER (URUTAN) */}
                     <div className="pt-4 border-t border-slate-300/30 space-y-2">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Daftar Dompet (Ubah / Hapus)</p>
-                      {accounts.map((acc) => (
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Daftar Dompet (Ubah / Urutan / Hapus)</p>
+                      {accounts.map((acc, index) => (
                         <div key={acc.id} className="bg-white p-4 rounded-xl flex flex-col gap-3 shadow-sm border border-slate-100">
                           {editingAccId === acc.id ? (
                             <div className="space-y-3">
-                              {/* Edit Nama */}
                               <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label>
                                 <input className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} />
                               </div>
-                              {/* Edit Saldo */}
                               <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Saldo Dompet</label>
                                 <input type="number" className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
                               </div>
-                              {/* Edit Logo */}
                               <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Logo Dompet (Opsional)</label>
                                 <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-dashed border-slate-300">
@@ -464,7 +554,6 @@ export default function FintrackerApp() {
                                   </span>
                                 </div>
                               </div>
-                              {/* Tombol Simpan/Batal */}
                               <div className="flex gap-2 pt-1">
                                 <button onClick={() => handleEditAccount(acc.id)} className="flex-1 py-2 bg-green-500 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1"><Check size={14}/> Simpan</button>
                                 <button onClick={() => setEditingAccId(null)} className="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><X size={14}/> Batal</button>
@@ -481,13 +570,30 @@ export default function FintrackerApp() {
                                   </div>
                                 )}
                                 <div>
-                                  <p className="text-xs font-bold text-slate-700">{acc.name}</p>
-                                  <p className="text-[10px] font-black text-blue-600">Rp {acc.balance.toLocaleString()}</p>
+                                  <p className="text-xs font-bold text-slate-700 leading-none mb-1">{acc.name}</p>
+                                  <p className="text-[10px] font-black text-blue-600 leading-none">Rp {acc.balance.toLocaleString()}</p>
+                                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{acc.type}</p>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); }} className="text-slate-300 hover:text-blue-500 p-1"><Edit2 size={14}/></button>
-                                <button onClick={() => deleteAccount(acc.id, acc.name)} className="text-slate-300 hover:text-red-500 p-1"><Trash2 size={14}/></button>
+                              
+                              <div className="flex items-center gap-1">
+                                <button 
+                                  onClick={() => moveAccountOrder(index, "up")} 
+                                  disabled={index === 0}
+                                  className={`p-1.5 rounded-lg border ${index === 0 ? "text-slate-200 border-slate-100" : "text-slate-400 border-slate-200 hover:bg-slate-100"}`}
+                                >
+                                  <ArrowUp size={12}/>
+                                </button>
+                                <button 
+                                  onClick={() => moveAccountOrder(index, "down")} 
+                                  disabled={index === accounts.length - 1}
+                                  className={`p-1.5 rounded-lg border ${index === accounts.length - 1 ? "text-slate-200 border-slate-100" : "text-slate-400 border-slate-200 hover:bg-slate-100"}`}
+                                >
+                                  <ArrowDown size={12}/>
+                                </button>
+
+                                <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); }} className="text-slate-300 hover:text-blue-500 p-1.5"><Edit2 size={12}/></button>
+                                <button onClick={() => deleteAccount(acc.id, acc.name)} className="text-slate-300 hover:text-red-500 p-1.5"><Trash2 size={12}/></button>
                               </div>
                             </div>
                           )}
