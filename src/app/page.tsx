@@ -4,7 +4,7 @@ import { auth, db, googleProvider } from "../lib/firebase";
 import { signInWithPopup, onAuthStateChanged, User, signOut } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, runTransaction, orderBy, deleteDoc, updateDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { LogOut, ArrowUpCircle, ArrowDownCircle, History, Trash2, Edit2, Check, X, Calendar, Tag, CreditCard, Smartphone, Banknote, Settings, Home, PieChart, ArrowRightLeft, HelpCircle } from "lucide-react";
+import { LogOut, ArrowUpCircle, ArrowDownCircle, History, Trash2, Edit2, Check, X, Calendar, Tag, CreditCard, Smartphone, Banknote, Settings, Home, PieChart, ArrowRightLeft, HelpCircle, Upload } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from "recharts";
 
 const ACCOUNT_TYPES = ["Bank", "E-Wallet", "Cash", "Lainnya"];
@@ -30,6 +30,7 @@ export default function FintrackerApp() {
   const [accName, setAccName] = useState("");
   const [accBalance, setAccBalance] = useState("");
   const [accType, setAccType] = useState("Cash");
+  const [accLogo, setAccLogo] = useState<string>(""); // Menyimpan base64 gambar logo
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [newAccName, setNewAccName] = useState("");
 
@@ -88,16 +89,36 @@ export default function FintrackerApp() {
     await deleteDoc(doc(db, `users/${user.uid}/categories/${id}`));
   };
 
+  // LOGIKA MEMBACA GAMBAR DAN MENGUBAH KE BASE64
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 500000) { // Limit 500 KB agar database tetap kencang
+        alert("File terlalu besar! Harap gunakan logo berukuran kurang dari 500 KB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAccLogo(reader.result as string); // Simpan string gambar
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCreateAccount = async () => {
     if (!user || !accName || !accBalance) return;
     await addDoc(collection(db, `users/${user.uid}/accounts`), {
-      name: accName, balance: Number(accBalance), type: accType, createdAt: serverTimestamp()
+      name: accName, 
+      balance: Number(accBalance), 
+      type: accType, 
+      logo: accLogo, // Simpan logo ke database
+      createdAt: serverTimestamp()
     });
-    setAccName(""); setAccBalance("");
+    setAccName(""); setAccBalance(""); setAccLogo("");
   };
 
   const deleteAccount = async (id: string, name: string) => {
-    if (!user || !confirm(`Hapus dompet "${name}"? Semua saldo di dalamnya akan ikut terhapus.`)) return;
+    if (!user || !confirm(`Hapus dompet "${name}"?`)) return;
     try { await deleteDoc(doc(db, `users/${user.uid}/accounts/${id}`)); } catch (e) { alert("Gagal hapus"); }
   };
 
@@ -193,7 +214,7 @@ export default function FintrackerApp() {
   }, {} as any);
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
 
-  // LOGIKA GAYA KARTU PREMIUM UNTUK SETIAP TIPE DOMPET
+  // GAYA KARTU PREMIUM UNTUK SETIAP TIPE DOMPET
   const getCardDesign = (type: string) => {
     switch (type) {
       case "Bank":
@@ -317,7 +338,7 @@ export default function FintrackerApp() {
               </details>
             )}
 
-            {/* DAFTAR DOMPET DENGAN DESAIN DEBIT CARD PREMIUM */}
+            {/* DAFTAR DOMPET DEBIT CARD PREMIUM + CUSTOM LOGO */}
             <div className="space-y-4 pt-4 border-t border-slate-200">
                 <h3 className="font-bold text-slate-800 italic px-1 text-lg">Dompet Saya</h3>
                 <div className="grid grid-cols-2 gap-4">
@@ -325,19 +346,20 @@ export default function FintrackerApp() {
                       const design = getCardDesign(acc.type);
                       return (
                         <div key={acc.id} className={`${design.bg} p-5 rounded-[26px] h-36 flex flex-col justify-between relative overflow-hidden transition-all duration-300 active:scale-95 hover:-translate-y-1`}>
-                            {/* Efek Lingkaran Elegan */}
                             <div className="absolute -top-12 -right-12 w-28 h-28 bg-white/5 rounded-full blur-xl"></div>
                             
-                            {/* Baris Atas Kartu */}
                             <div className="flex justify-between items-start">
-                              <div className="w-8 h-8 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10">
-                                {design.icon}
-                              </div>
-                              {/* Chip Kartu */}
+                              {/* TAMPILKAN LOGO CUSTOM JIKA ADA, JIKA TIDAK ADA TAMPILKAN IKON BAWAAN */}
+                              {acc.logo ? (
+                                <img src={acc.logo} alt="custom-logo" className="w-8 h-8 rounded-xl object-contain bg-white/90 p-1 border border-white/20 shadow-md" />
+                              ) : (
+                                <div className="w-8 h-8 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10">
+                                  {design.icon}
+                                </div>
+                              )}
                               <div className={`w-7 h-5 rounded-md ${design.chip}`}></div>
                             </div>
 
-                            {/* Baris Bawah Kartu */}
                             <div className="space-y-1 mt-auto">
                               <p className={`text-[9px] font-black uppercase tracking-wider ${design.textMuted}`}>{acc.name}</p>
                               <p className="text-xs font-bold leading-none truncate">{acc.type}</p>
@@ -350,15 +372,31 @@ export default function FintrackerApp() {
                 
                 <details className="bg-slate-200/50 rounded-[25px] p-5 border border-slate-200/50">
                   <summary className="text-[10px] font-black text-slate-500 cursor-pointer uppercase tracking-widest outline-none">⚙️ Pengaturan Dompet</summary>
-                  <div className="mt-4 space-y-2">
-                    <select className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none" value={accType} onChange={(e) => setAccType(e.target.value)}>
-                        {ACCOUNT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none" value={accName} onChange={(e) => setAccName(e.target.value)} />
-                    <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
-                    <button onClick={handleCreateAccount} className="w-full py-3 bg-blue-600 text-white rounded-xl text-xs font-bold">Simpan Dompet</button>
+                  <div className="mt-5 space-y-4">
+                    <div className="space-y-2">
+                      <select className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold" value={accType} onChange={(e) => setAccType(e.target.value)}>
+                          {ACCOUNT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold" value={accName} onChange={(e) => setAccName(e.target.value)} />
+                      <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
+                      
+                      {/* INPUT UPLOAD LOGO CUSTOM */}
+                      <div className="flex flex-col gap-1 pt-1">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
+                        <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-dashed border-slate-300">
+                          <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" id="custom-logo-file" />
+                          <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all">
+                            <Upload size={14}/> Pilih File
+                          </label>
+                          <span className="text-[10px] text-slate-400 truncate">
+                            {accLogo ? "Logo Siap Diunggah ✅" : "Format PNG/JPG (Maks 500KB)"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button onClick={handleCreateAccount} className="w-full py-3 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-100 mt-2">Simpan Dompet</button>
+                    </div>
                     
-                    {/* LIST EDIT/HAPUS DOMPET */}
                     <div className="pt-4 border-t border-slate-300/30 space-y-2">
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Daftar Dompet & Hapus</p>
                       {accounts.map((acc) => (
