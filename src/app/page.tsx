@@ -28,7 +28,6 @@ export default function FintrackerApp() {
   
   const [activeTab, setActiveTab] = useState<"home" | "reports" | "assets" | "settings">("home");
   
-  // OPTIMASI: State terpisah untuk Riwayat (Dibatasi 20) dan Laporan (Sesuai Bulan)
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
   const [reportTransactions, setReportTransactions] = useState<TransactionData[]>([]);
   const [txLimit, setTxLimit] = useState(20);
@@ -56,15 +55,12 @@ export default function FintrackerApp() {
   const [newCatName, setNewCatName] = useState("");
   const [newWalletTypeName, setNewWalletTypeName] = useState("");
 
-  // --- FIREBASE EFFECTS TERPISAH (SANGAT OPTIMAL) ---
-  
-  // 1. Cek Login
+  // --- FIREBASE EFFECTS ---
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => { setUser(u); setLoading(false); });
     return () => unsub();
   }, []);
 
-  // 2. Load Akun, Kategori, Wallet Types (Hanya jalan sekali saat login)
   useEffect(() => {
     if (!user) return;
     const unsubAcc = onSnapshot(query(collection(db, `users/${user.uid}/accounts`), orderBy("order", "asc")), (sn) => {
@@ -81,7 +77,6 @@ export default function FintrackerApp() {
     return () => { unsubAcc(); unsubCat(); unsubTypes(); };
   }, [user]);
 
-  // 3. Load Riwayat Transaksi (Dibatasi limit) -> Jalan jika user klik Load More
   useEffect(() => {
     if (!user) return;
     const qHistory = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(txLimit));
@@ -91,7 +86,6 @@ export default function FintrackerApp() {
     return () => unsubTr();
   }, [user, txLimit]);
 
-  // 4. Load Data Laporan (HANYA bulan yang dipilih) -> Jalan jika user ganti bulan
   useEffect(() => {
     if (!user) return;
     const startOfMonth = `${reportMonth}-01`;
@@ -99,7 +93,6 @@ export default function FintrackerApp() {
     const qReport = query(collection(db, `users/${user.uid}/transactions`), where("tDate", ">=", startOfMonth), where("tDate", "<=", endOfMonth));
     const unsubReport = onSnapshot(qReport, (sn) => {
       const data = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
-      // Sort manual agar tidak butuh Composite Index Firebase
       data.sort((a, b) => b.tDate.localeCompare(a.tDate)); 
       setReportTransactions(data);
     });
@@ -133,6 +126,14 @@ export default function FintrackerApp() {
   const deleteCategory = async (id: string) => {
     if (!user || !confirm("Hapus kategori ini?")) return;
     await deleteDoc(doc(db, `users/${user.uid}/categories/${id}`));
+  };
+
+  // FITUR BARU: UPDATE BUDGET
+  const updateCategoryBudget = async (id: string, budgetLimit: number) => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { budgetLimit });
+    } catch (e) { alert("Gagal menyimpan budget!"); }
   };
 
   const addCustomWalletType = async () => {
@@ -250,7 +251,7 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal hapus"); }
   };
 
-  // --- DERIVED STATES (Menggunakan reportTransactions hasil optimasi) ---
+  // --- DERIVED STATES (Laporan) ---
   const totalIncome = reportTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
   const totalExpense = reportTransactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
   
@@ -306,6 +307,7 @@ export default function FintrackerApp() {
                 <ReportsTab 
                   reportMonth={reportMonth} setReportMonth={setReportMonth} handleExportToExcel={handleExportToExcel}
                   totalIncome={totalIncome} totalExpense={totalExpense} pieData={pieData} incomeCategoryList={incomeCategoryList} barData={barData}
+                  categories={categories} 
                 />
               )}
               {activeTab === "assets" && (
@@ -322,13 +324,14 @@ export default function FintrackerApp() {
                 <SettingsTab 
                   user={user} onLogout={() => signOut(auth)} tType={tType} setTType={setTType}
                   newCatName={newCatName} setNewCatName={setNewCatName} addCustomCategory={addCustomCategory}
-                  categories={categories} deleteCategory={deleteCategory} newWalletTypeName={newWalletTypeName} setNewWalletTypeName={setNewWalletTypeName}
+                  categories={categories} deleteCategory={deleteCategory} 
+                  updateCategoryBudget={updateCategoryBudget}
+                  newWalletTypeName={newWalletTypeName} setNewWalletTypeName={setNewWalletTypeName}
                   addCustomWalletType={addCustomWalletType} walletTypes={walletTypes} deleteWalletType={deleteWalletType}
                 />
               )}
             </div>
 
-            {/* KOMPONEN HISTORY LIST DENGAN PROPS BARU */}
             <HistoryList 
               transactions={transactions} 
               onDelete={handleDeleteTransaction} 
