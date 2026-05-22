@@ -177,7 +177,7 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal hapus transaksi"); }
   };
 
-  // LOGIKA LAPORAN (SUDAH DIPERBAIKI TYPESCRIPT-NYA)
+  // LOGIKA LAPORAN
   const filteredTransactions = transactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
   const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
   const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
@@ -343,7 +343,7 @@ export default function FintrackerApp() {
                       <Pie data={pieData} innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value">
                         {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                       </Pie>
-                      <Tooltip formatter={(value: number) => `Rp ${value.toLocaleString()}`} />
+                      <Tooltip formatter={(value: any) => `Rp ${Number(value).toLocaleString('id-ID')}`} />
                     </RePieChart>
                   </ResponsiveContainer>
                 </div>
@@ -372,7 +372,7 @@ export default function FintrackerApp() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={barData}>
                       <XAxis dataKey="date" fontSize={10} tickMargin={10} />
-                      <Tooltip formatter={(value: number) => `Rp ${value.toLocaleString()}`} cursor={{fill: '#f1f5f9'}} />
+                      <Tooltip formatter={(value: any) => `Rp ${Number(value).toLocaleString('id-ID')}`} cursor={{fill: '#f1f5f9'}} />
                       <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -382,7 +382,7 @@ export default function FintrackerApp() {
           </div>
         )}
 
-        {/* RIWAYAT KESELURUHAN (Tampil Terus) */}
+        {/* RIWAYAT KESELURUHAN */}
         <div className="space-y-4 pt-6">
           <h3 className="font-bold text-slate-800 flex items-center gap-2 italic text-lg px-1"><History size={20} className="text-blue-600"/> Riwayat Semua</h3>
           <div className="space-y-3 pb-24">
