@@ -4,8 +4,9 @@ import { auth, db, googleProvider } from "../lib/firebase";
 import { signInWithPopup, onAuthStateChanged, User, signOut } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, runTransaction, orderBy, deleteDoc, updateDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { LogOut, ArrowUpCircle, ArrowDownCircle, History, Trash2, Edit2, Check, X, Calendar, Tag, CreditCard, Smartphone, Banknote, Settings, Home, PieChart, ArrowRightLeft, HelpCircle, Upload, ArrowUp, ArrowDown, Wallet, User as UserIcon } from "lucide-react";
+import { LogOut, ArrowUpCircle, ArrowDownCircle, History, Trash2, Edit2, Check, X, Calendar, Tag, CreditCard, Smartphone, Banknote, Settings, Home, PieChart, ArrowRightLeft, HelpCircle, Upload, ArrowUp, ArrowDown, Wallet, Download } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from "recharts";
+import * as XLSX from "xlsx"; // Import library Excel
 
 const ACCOUNT_TYPES = ["Bank", "E-Wallet", "Cash", "Lainnya"];
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b'];
@@ -319,6 +320,34 @@ export default function FintrackerApp() {
   }, {} as any);
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
 
+  // FUNGSI EXPORT KE EXCEL
+  const handleExportToExcel = () => {
+    if (filteredTransactions.length === 0) {
+      alert("Tidak ada transaksi untuk diexport pada bulan ini!");
+      return;
+    }
+
+    const excelData = filteredTransactions.map((t, idx) => ({
+      "No": idx + 1,
+      "Tanggal": t.tDate,
+      "Tipe": t.type === "income" ? "Pemasukan" : t.type === "expense" ? "Pengeluaran" : "Transfer",
+      "Kategori": t.category,
+      "Dompet": t.type === "transfer" ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName,
+      "Nominal (Rp)": t.amount,
+      "Catatan": t.note || "-"
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Transaksi Bulanan");
+
+    worksheet["!cols"] = [
+      { wch: 5 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 18 }, { wch: 25 }
+    ];
+
+    XLSX.writeFile(workbook, `Fintracker_Laporan_${reportMonth}.xlsx`);
+  };
+
   // SISTEM CERDAS PEMILIHAN ICON & DESIGN BERDASARKAN VALUE TIPE DOMPET
   const getCardDesign = (type: string) => {
     const t = type.toLowerCase();
@@ -391,7 +420,7 @@ export default function FintrackerApp() {
             <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-4">
               <div className="flex gap-2">
                 <button onClick={() => setTType("expense")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold ${tType === "expense" ? "bg-red-500 text-white shadow-lg" : "bg-slate-100"}`}>PENGELUARAN</button>
-                <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold ${tType === "income" ? "bg-green-500 text-white shadow-lg" : "bg-slate-100"}`}>PEMASUKAN</button>
+                <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold ${tType === "income" ? "bg-green-50 text-white shadow-lg" : "bg-slate-100"}`}>PEMASUKAN</button>
                 <button onClick={() => setTType("transfer")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold ${tType === "transfer" ? "bg-blue-500 text-white shadow-lg" : "bg-slate-100"}`}>TRANSFER</button>
               </div>
               
@@ -435,9 +464,19 @@ export default function FintrackerApp() {
         {/* ==================== MENU 2: LAPORAN (REPORTS) ==================== */}
         {activeTab === "reports" && (
           <div className="space-y-6 animate-in fade-in">
-            <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm flex items-center justify-between">
-              <h2 className="font-black text-xl italic text-slate-800">Laporan</h2>
-              <input type="month" className="p-2 bg-slate-50 rounded-xl text-xs font-bold text-blue-600 border-none outline-none" value={reportMonth} onChange={(e) => setReportMonth(e.target.value)}/>
+            <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm flex flex-col gap-4">
+              <div className="flex items-center justify-between w-full">
+                <h2 className="font-black text-xl italic text-slate-800">Laporan</h2>
+                <input type="month" className="p-2 bg-slate-50 rounded-xl text-xs font-bold text-blue-600 border-none outline-none" value={reportMonth} onChange={(e) => setReportMonth(e.target.value)}/>
+              </div>
+              
+              {/* TOMBOL EXPORT KE EXCEL */}
+              <button 
+                onClick={handleExportToExcel}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/10 active:scale-95 transition-all"
+              >
+                <Download size={14}/> Export Bulan Ini ke Excel
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -570,7 +609,7 @@ export default function FintrackerApp() {
                           
                           <div className="flex justify-between items-start">
                             {acc.logo ? (
-                              <img src={acc.logo} alt="custom-logo" className="w-6 h-6 rounded-lg object-contain bg-white/90 p-0.5 border border-white/20 shadow-sm" />
+                              <img src={acc.logo} alt="custom-logo" className="w-6 h-6 rounded-xl object-contain bg-white/90 p-0.5 border border-white/20 shadow-sm" />
                             ) : (
                               <div className="w-6 h-6 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center border border-white/10">
                                 {design.icon}
@@ -704,7 +743,7 @@ export default function FintrackerApp() {
               <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2"><Tag size={16} className="text-blue-600"/> Kelola Kategori Transaksi ({tType})</h3>
               <div className="flex gap-2">
                 <button onClick={() => setTType("expense")} className={`flex-1 py-2 rounded-xl text-[10px] font-bold ${tType === "expense" ? "bg-red-500 text-white shadow-md" : "bg-slate-100"}`}>PENGELUARAN</button>
-                <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold ${tType === "income" ? "bg-green-500 text-white shadow-md" : "bg-slate-100"}`}>PEMASUKAN</button>
+                <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold ${tType === "income" ? "bg-green-50 text-green-600 shadow-md" : "bg-slate-100"}`}>PEMASUKAN</button>
               </div>
               <div className="flex gap-2">
                 <input type="text" placeholder="Kategori Baru..." className="flex-1 p-3 bg-slate-50 rounded-xl text-xs outline-blue-500" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
@@ -724,7 +763,7 @@ export default function FintrackerApp() {
               <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2"><CreditCard size={16} className="text-blue-600"/> Kelola Kategori Dompet</h3>
               <div className="flex gap-2">
                 <input type="text" placeholder="Kategori baru (Misal: Investasi)" className="flex-1 p-3 bg-slate-50 rounded-xl text-xs outline-blue-500" value={newWalletTypeName} onChange={(e) => setNewWalletTypeName(e.target.value)} />
-                <button onClick={addCustomWalletType} className="bg-blue-600 text-white px-4 rounded-xl text-xs font-bold">Tambah</button>
+                <button onClick={addCustomWalletType} className="bg-blue-600 text-white px-4 rounded-lg text-xs font-bold">Tambah</button>
               </div>
               <div className="flex flex-wrap gap-2 pt-2">
                 {walletTypes.map(t => (
