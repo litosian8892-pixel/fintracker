@@ -12,7 +12,7 @@ const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'
 
 export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true); // Lapis Pengaman 1: State Loading
+  const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -53,7 +53,7 @@ export default function FintrackerApp() {
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       setUser(u);
-      setLoading(false); // Matikan loading setelah Firebase selesai mengecek
+      setLoading(false);
     });
     return () => unsubAuth();
   }, []);
@@ -325,35 +325,34 @@ export default function FintrackerApp() {
     if (t.includes("bank") || t.includes("kartu") || t.includes("credit") || t.includes("tabungan") || t.includes("savings")) {
       return {
         bg: "bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-950 text-white shadow-lg shadow-blue-900/10",
-        icon: <CreditCard size={20} className="text-white" />,
+        icon: <CreditCard size={14} className="text-white" />,
         chip: "bg-amber-400/20 border border-amber-300/30",
         textMuted: "text-blue-200/50"
       };
     } else if (t.includes("wallet") || t.includes("gopay") || t.includes("ovo") || t.includes("dana") || t.includes("pay") || t.includes("digital")) {
       return {
         bg: "bg-gradient-to-br from-purple-900 via-violet-850 to-pink-950 text-white shadow-lg shadow-purple-950/10",
-        icon: <Smartphone size={20} className="text-white" />,
+        icon: <Smartphone size={14} className="text-white" />,
         chip: "bg-pink-400/20 border border-pink-300/30",
         textMuted: "text-purple-200/50"
       };
     } else if (t.includes("cash") || t.includes("dompet") || t.includes("tunai") || t.includes("fisik")) {
       return {
         bg: "bg-gradient-to-br from-teal-900 via-emerald-900 to-green-950 text-white shadow-lg shadow-emerald-900/10",
-        icon: <Banknote size={20} className="text-white" />,
+        icon: <Banknote size={14} className="text-white" />,
         chip: "bg-yellow-400/20 border border-yellow-300/30",
         textMuted: "text-emerald-200/50"
       };
     } else {
       return {
         bg: "bg-gradient-to-br from-slate-800 via-slate-900 to-neutral-950 text-white shadow-lg shadow-slate-900/10",
-        icon: <HelpCircle size={20} className="text-white" />,
+        icon: <HelpCircle size={14} className="text-white" />,
         chip: "bg-slate-400/20 border border-slate-300/30",
         textMuted: "text-slate-300/50"
       };
     }
   };
 
-  // LAPIS PENGAMAN 1: TAMPILKAN SPINNER LOADING SELAMA FIREBASE MENGECEK AKUN
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -362,7 +361,6 @@ export default function FintrackerApp() {
     );
   }
 
-  // LAPIS PENGAMAN 2: TAMPILKAN LOGIN JIKA MEMANG BELUM LOGIN
   if (!user) return (
     <div className="min-h-screen flex items-center justify-center bg-blue-600">
       <button onClick={() => signInWithPopup(auth, googleProvider)} className="bg-white py-4 px-8 rounded-2xl font-bold flex gap-3 shadow-2xl items-center active:scale-95 transition-all">
@@ -373,7 +371,7 @@ export default function FintrackerApp() {
 
   return (
     <main className="min-h-screen bg-slate-50 pb-24 text-slate-900 font-sans">
-      {/* HEADER (Optional Chaining ?. dipasang) */}
+      {/* HEADER */}
       <div className="bg-white p-6 flex justify-between items-center shadow-sm border-b sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <img src={user?.photoURL || ""} className="w-10 h-10 rounded-full border-2 border-blue-500" />
@@ -453,31 +451,34 @@ export default function FintrackerApp() {
               </details>
             )}
 
-            {/* DAFTAR DOMPET */}
-            <div className="space-y-4 pt-4 border-t border-slate-200">
+            {/* DAFTAR DOMPET (UBAH JADI 3 KOLOM SEPERTI PERMINTAAN USER) */}
+            <div className="space-y-3 pt-4 border-t border-slate-200">
                 <h3 className="font-bold text-slate-800 italic px-1 text-lg">Dompet Saya</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-2.5">
                     {accounts.map((acc) => {
                       const design = getCardDesign(acc.type);
                       return (
-                        <div key={acc.id} className={`${design.bg} p-5 rounded-[26px] h-36 flex flex-col justify-between relative overflow-hidden transition-all duration-300 active:scale-95`}>
-                            <div className="absolute -top-12 -right-12 w-28 h-28 bg-white/5 rounded-full blur-xl"></div>
+                        <div key={acc.id} className={`${design.bg} p-3 rounded-[20px] h-28 flex flex-col justify-between relative overflow-hidden transition-all duration-300 active:scale-95 hover:-translate-y-1`}>
+                            {/* Lingkaran Ringan */}
+                            <div className="absolute -top-8 -right-8 w-16 h-16 bg-white/5 rounded-full blur-lg"></div>
                             
                             <div className="flex justify-between items-start">
                               {acc.logo ? (
-                                <img src={acc.logo} alt="custom-logo" className="w-8 h-8 rounded-xl object-contain bg-white/90 p-1 border border-white/20 shadow-md" />
+                                <img src={acc.logo} alt="custom-logo" className="w-6 h-6 rounded-lg object-contain bg-white/95 p-0.5 border border-white/20 shadow-sm" />
                               ) : (
-                                <div className="w-8 h-8 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10">
+                                <div className="w-6 h-6 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center border border-white/10">
                                   {design.icon}
                                 </div>
                               )}
-                              <div className={`w-7 h-5 rounded-md ${design.chip}`}></div>
+                              <div className={`w-5 h-3.5 rounded-sm ${design.chip}`}></div>
                             </div>
 
-                            <div className="space-y-1 mt-auto z-10">
-                              <p className="text-base font-black tracking-tight leading-none truncate">{acc.name}</p>
-                              <p className={`text-[9px] font-bold uppercase tracking-widest leading-none ${design.textMuted}`}>{acc.type}</p>
-                              <p className="text-sm font-black tracking-tight pt-1">Rp {acc.balance.toLocaleString('id-ID')}</p>
+                            <div className="space-y-0.5 mt-auto z-10">
+                              <p className="text-xs font-black tracking-tight leading-none truncate">{acc.name}</p>
+                              <p className={`text-[8px] font-bold uppercase tracking-widest leading-none ${design.textMuted}`}>{acc.type}</p>
+                              <p className="text-[10px] font-black tracking-tight pt-0.5 whitespace-nowrap overflow-hidden">
+                                Rp{acc.balance.toLocaleString('id-ID')}
+                              </p>
                             </div>
                         </div>
                       );
