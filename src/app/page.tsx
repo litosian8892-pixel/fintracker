@@ -5,7 +5,7 @@ import { signInWithPopup, onAuthStateChanged, User, signOut } from "firebase/aut
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, runTransaction, orderBy, deleteDoc, updateDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { LogOut, ArrowUpCircle, ArrowDownCircle, History, Trash2, Edit2, Check, X, Calendar, Tag, CreditCard, Smartphone, Banknote, Settings, Home, PieChart, ArrowRightLeft } from "lucide-react";
-import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from "recharts";
 
 const ACCOUNT_TYPES = ["Bank", "E-Wallet", "Cash", "Lainnya"];
 const CATEGORIES = {
@@ -157,7 +157,6 @@ export default function FintrackerApp() {
     try {
       await runTransaction(db, async (ts) => {
         if (t.type === "transfer") {
-          // Balikkan saldo transfer
           const accRef = doc(db, `users/${user.uid}/accounts/${t.accountId}`);
           const toAccRef = doc(db, `users/${user.uid}/accounts/${t.toAccountId}`);
           const accSnap = await ts.get(accRef);
@@ -166,7 +165,6 @@ export default function FintrackerApp() {
           if (accSnap.exists()) ts.update(accRef, { balance: accSnap.data().balance + t.amount });
           if (toSnap.exists()) ts.update(toAccRef, { balance: toSnap.data().balance - t.amount });
         } else {
-          // Balikkan saldo income/expense
           const accRef = doc(db, `users/${user.uid}/accounts/${t.accountId}`);
           const accSnap = await ts.get(accRef);
           if (accSnap.exists()) {
@@ -179,24 +177,22 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal hapus transaksi"); }
   };
 
-  // LOGIKA LAPORAN (REPORTS)
-  const filteredTransactions = transactions.filter(t => t.tDate.startsWith(reportMonth));
+  // LOGIKA LAPORAN (SUDAH DIPERBAIKI TYPESCRIPT-NYA)
+  const filteredTransactions = transactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
   const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
   const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
   
-  // Data untuk Pie Chart Kategori
-  const expenseByCategory = filteredTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => {
+  const expenseByCategory = filteredTransactions.filter(t => t.type === 'expense').reduce((acc: any, curr: any) => {
     acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
     return acc;
-  }, {});
+  }, {} as any);
   const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
 
-  // Data untuk Bar Chart Mingguan (Estimasi simpel)
-  const expenseByDate = filteredTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => {
-    const day = curr.tDate.split('-')[2]; // Ambil tanggalnya saja
+  const expenseByDate = filteredTransactions.filter(t => t.type === 'expense').reduce((acc: any, curr: any) => {
+    const day = curr.tDate.split('-')[2];
     acc[day] = (acc[day] || 0) + curr.amount;
     return acc;
-  }, {});
+  }, {} as any);
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
 
   if (!user) return (
@@ -299,8 +295,8 @@ export default function FintrackerApp() {
                             </div>
                             <p className="text-xs font-bold text-slate-800 leading-none">{acc.name}</p>
                             <p className="text-[10px] text-slate-400 mb-2">{acc.type}</p>
-                            <p className="text-sm font-black text-blue-600">Rp {acc.balance.toLocaleString()}</p>
-                            <button onClick={() => deleteAccount(acc.id, acc.name)} className="absolute top-3 right-3 text-slate-200 hover:text-red-500"><Trash2 size={14}/></button>
+                            <p className="text-sm font-black text-blue-600 truncate">Rp {acc.balance.toLocaleString()}</p>
+                            <button onClick={() => deleteAccount(acc.id, acc.name)} className="absolute top-3 right-3 text-slate-200 hover:text-red-400"><Trash2 size={14}/></button>
                         </div>
                     ))}
                 </div>
@@ -310,7 +306,7 @@ export default function FintrackerApp() {
                     <select className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none" value={accType} onChange={(e) => setAccType(e.target.value)}>
                         {ACCOUNT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
-                    <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none" value={accName} onChange={(e) => setAccName(e.target.value)} />
+                    <input type="text" placeholder="Nama Dompet (BCA, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none" value={accName} onChange={(e) => setAccName(e.target.value)} />
                     <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white rounded-xl text-xs border-none" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
                     <button onClick={handleCreateAccount} className="w-full py-3 bg-blue-600 text-white rounded-xl text-xs font-bold">Simpan Dompet</button>
                   </div>
@@ -365,7 +361,7 @@ export default function FintrackerApp() {
               </div>
             ) : (
               <div className="bg-white p-10 rounded-[30px] text-center text-slate-400 text-sm italic border border-slate-200">
-                Belum ada data pengeluaran di bulan ini.
+                Belum ada pengeluaran di bulan ini.
               </div>
             )}
 
@@ -386,9 +382,9 @@ export default function FintrackerApp() {
           </div>
         )}
 
-        {/* RIWAYAT UMUM (Tampil di kedua tab) */}
+        {/* RIWAYAT KESELURUHAN (Tampil Terus) */}
         <div className="space-y-4 pt-6">
-          <h3 className="font-bold text-slate-800 flex items-center gap-2 italic text-lg px-1"><History size={20} className="text-blue-600"/> Riwayat Keseluruhan</h3>
+          <h3 className="font-bold text-slate-800 flex items-center gap-2 italic text-lg px-1"><History size={20} className="text-blue-600"/> Riwayat Semua</h3>
           <div className="space-y-3 pb-24">
             {transactions.map((t) => (
               <div key={t.id} className="bg-white p-4 rounded-[25px] flex justify-between items-center border border-slate-100 shadow-sm">
@@ -417,7 +413,7 @@ export default function FintrackerApp() {
 
       </div>
 
-      {/* BOTTOM NAVIGATION (MOBILE STYLE) */}
+      {/* BOTTOM NAV */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-around items-center z-50 pb-safe">
         <button onClick={() => setActiveTab("home")} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === "home" ? "text-blue-600" : "text-slate-400"}`}>
           <Home size={24} className={activeTab === "home" ? "fill-blue-100" : ""} />
