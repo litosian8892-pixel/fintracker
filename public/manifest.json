@@ -1,0 +1,23 @@
+{
+  "name": "Fintracker - Personal Finance",
+  "short_name": "Fintracker",
+  "description": "Aplikasi pencatatan keuangan pribadi terbaik",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
