@@ -5,15 +5,14 @@ const withPWA = withPWAInit({
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  swcMinify: true,
+  // Baris swcMinify sudah kita hapus karena Next.js 16 sudah otomatis melakukannya
   disable: process.env.NODE_ENV === "development", // PWA hanya aktif di Production (Vercel)
 });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // SOLUSI ERROR VERCEL: Memberitahu Next.js 16 agar tidak bentrok dengan Webpack dari PWA
-  turbopack: {},
+  turbopack: {}, // Mencegah error Turbopack Next.js 16
 };
 
 export default withPWA(nextConfig);
