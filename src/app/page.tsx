@@ -26,7 +26,7 @@ export default function FintrackerApp() {
   const [accounts, setAccounts] = useState<AccountData[]>([]);
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [walletTypes, setWalletTypes] = useState<WalletTypeData[]>([]);
-  const [debts, setDebts] = useState<DebtData[]>([]); // STATE BARU
+  const [debts, setDebts] = useState<DebtData[]>([]);
   
   const [activeTab, setActiveTab] = useState<"home" | "reports" | "assets" | "settings" | "debts">("home");
   
@@ -40,10 +40,13 @@ export default function FintrackerApp() {
   const [accBalance, setAccBalance] = useState("");
   const [accType, setAccType] = useState("Cash");
   const [accLogo, setAccLogo] = useState<string>("");
+  const [accIsSavings, setAccIsSavings] = useState(false); // <--- BARU
+
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [editAccName, setEditAccName] = useState("");
   const [editAccBalance, setEditAccBalance] = useState("");
   const [editAccLogo, setEditAccLogo] = useState<string>("");
+  const [editAccIsSavings, setEditAccIsSavings] = useState(false); // <--- BARU
 
   // States: Transaction
   const [tAmount, setTAmount] = useState("");
@@ -76,7 +79,6 @@ export default function FintrackerApp() {
       if (sn.empty) setupDefaultWalletTypes(user.uid);
       else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() } as WalletTypeData)));
     });
-    // FETCH UTANG
     const unsubDebts = onSnapshot(query(collection(db, `users/${user.uid}/debts`), orderBy("createdAt", "desc")), (sn) => {
       setDebts(sn.docs.map(d => ({ id: d.id, ...d.data() } as DebtData)));
     });
@@ -139,7 +141,6 @@ export default function FintrackerApp() {
     try { await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { budgetLimit }); } catch (e) { alert("Gagal menyimpan budget!"); }
   };
 
-  // --- FUNGSI UTANG & PIUTANG ---
   const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string) => {
     if (!user) return;
     try {
@@ -172,12 +173,9 @@ export default function FintrackerApp() {
         const newPaidAmount = debt.paidAmount + payAmount;
         const newStatus = newPaidAmount >= debt.amount ? "paid" : "active";
         
-        // 1. Update status & jumlah bayar di Utang
         ts.update(debtRef, { paidAmount: newPaidAmount, status: newStatus });
         
-        // 2. Koreksi Saldo Dompet & Catat Riwayat Transaksi
         if (debt.type === "debt") {
-          // Bayar Utang: Uang kita berkurang (Expense)
           ts.update(accRef, { balance: acc.balance - payAmount });
           ts.set(doc(collection(db, `users/${user.uid}/transactions`)), {
             amount: payAmount, type: "expense", accountId, accountName: acc.name,
@@ -185,7 +183,6 @@ export default function FintrackerApp() {
             tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp()
           });
         } else {
-          // Terima Piutang: Uang kita bertambah (Income)
           ts.update(accRef, { balance: acc.balance + payAmount });
           ts.set(doc(collection(db, `users/${user.uid}/transactions`)), {
             amount: payAmount, type: "income", accountId, accountName: acc.name,
@@ -197,8 +194,6 @@ export default function FintrackerApp() {
       alert("Pembayaran berhasil dicatat & saldo otomatis diperbarui!");
     } catch (e) { alert("Gagal memproses pembayaran"); }
   };
-
-  // --- END FUNGSI UTANG ---
 
   const addCustomWalletType = async () => {
     if (!newWalletTypeName || !user) return;
@@ -224,9 +219,11 @@ export default function FintrackerApp() {
   const handleCreateAccount = async () => {
     if (!user || !accName || !accBalance) return;
     await addDoc(collection(db, `users/${user.uid}/accounts`), {
-      name: accName, balance: Number(accBalance), type: accType, logo: accLogo, order: accounts.length, createdAt: serverTimestamp()
+      name: accName, balance: Number(accBalance), type: accType, logo: accLogo, order: accounts.length, 
+      isSavings: accIsSavings, // <--- BARU: Disimpan ke Firebase
+      createdAt: serverTimestamp()
     });
-    setAccName(""); setAccBalance(""); setAccLogo("");
+    setAccName(""); setAccBalance(""); setAccLogo(""); setAccIsSavings(false); // Reset state
   };
 
   const deleteAccount = async (id: string, name: string) => {
@@ -237,8 +234,11 @@ export default function FintrackerApp() {
   const handleEditAccount = async (id: string) => {
     if (!user || !editAccName || !editAccBalance) return;
     try {
-      await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { name: editAccName, balance: Number(editAccBalance), logo: editAccLogo });
-      setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo("");
+      await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { 
+        name: editAccName, balance: Number(editAccBalance), logo: editAccLogo, 
+        isSavings: editAccIsSavings // <--- BARU: Diupdate ke Firebase
+      });
+      setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccIsSavings(false);
       alert("Dompet berhasil diperbarui!");
     } catch (e) { alert("Gagal memperbarui"); }
   };
@@ -315,23 +315,13 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal hapus"); }
   };
 
-  // --- DERIVED STATES (Laporan) ---
   const totalIncome = reportTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
   const totalExpense = reportTransactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
-  
-  const expenseByCategory = reportTransactions.filter(t => t.type === 'expense').reduce((acc: Record<string, number>, curr: TransactionData) => {
-    acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc;
-  }, {});
+  const expenseByCategory = reportTransactions.filter(t => t.type === 'expense').reduce((acc: Record<string, number>, curr: TransactionData) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
   const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
-
-  const incomeByCategory = reportTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => {
-    acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc;
-  }, {});
+  const incomeByCategory = reportTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
   const incomeCategoryList = Object.keys(incomeByCategory).map(key => ({ name: key, value: incomeByCategory[key] }));
-
-  const expenseByDate = reportTransactions.filter(t => t.type === 'expense').reduce((acc: Record<string, number>, curr: TransactionData) => {
-    const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc;
-  }, {});
+  const expenseByDate = reportTransactions.filter(t => t.type === 'expense').reduce((acc: Record<string, number>, curr: TransactionData) => { const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc; }, {});
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
 
   const handleExportToExcel = () => {
@@ -347,7 +337,6 @@ export default function FintrackerApp() {
     XLSX.writeFile(workbook, `Fintracker_Laporan_${reportMonth}.xlsx`);
   };
 
-  // --- RENDER COMPONENT ---
   if (loading) return <LoadingScreen />;
   if (!user) return <AuthScreen />;
 
@@ -374,22 +363,19 @@ export default function FintrackerApp() {
                   categories={categories} 
                 />
               )}
-              
-              {/* TAB BARU: DEBTS */}
               {activeTab === "debts" && (
                 <DebtsTab 
-                  debts={debts} accounts={accounts} 
-                  handleAddDebt={handleAddDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
+                  debts={debts} accounts={accounts} handleAddDebt={handleAddDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
                 />
               )}
-
               {activeTab === "assets" && (
                 <AssetsTab 
                   accounts={accounts} walletTypes={walletTypes} accType={accType} setAccType={setAccType}
                   accName={accName} setAccName={setAccName} accBalance={accBalance} setAccBalance={setAccBalance}
-                  accLogo={accLogo} handleLogoUpload={handleLogoUpload} handleCreateAccount={handleCreateAccount}
-                  editingAccId={editingAccId} setEditingAccId={setEditingAccId} editAccName={editAccName} setEditAccName={setEditAccName}
-                  editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo}
+                  accLogo={accLogo} handleLogoUpload={handleLogoUpload} accIsSavings={accIsSavings} setAccIsSavings={setAccIsSavings} 
+                  handleCreateAccount={handleCreateAccount} editingAccId={editingAccId} setEditingAccId={setEditingAccId} 
+                  editAccName={editAccName} setEditAccName={setEditAccName} editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} 
+                  editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} 
                   handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
                 />
               )}
@@ -405,10 +391,8 @@ export default function FintrackerApp() {
             </div>
 
             <HistoryList 
-              transactions={transactions} 
-              onDelete={handleDeleteTransaction} 
-              onLoadMore={() => setTxLimit(prev => prev + 20)}
-              hasMore={transactions.length >= txLimit}
+              transactions={transactions} onDelete={handleDeleteTransaction} 
+              onLoadMore={() => setTxLimit(prev => prev + 20)} hasMore={transactions.length >= txLimit}
             />
 
           </div>
