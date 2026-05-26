@@ -23,15 +23,25 @@ export default function HomeTab({
   
   const [showCatModal, setShowCatModal] = useState(false);
 
+  // FUNGSI BARU: Reset dompet saat ganti tipe agar tidak ada bug tabungan nyangkut
+  const handleTypeChange = (newType: "income" | "expense" | "transfer") => {
+    setTType(newType);
+    setTAccountId("");
+    setTToAccountId("");
+  };
+
+  // LOGIKA BARU: Jika bukan Transfer, sembunyikan dompet Tabungan
+  const availableSourceAccounts = tType === "transfer" ? accounts : accounts.filter(acc => !acc.isSavings);
+
   return (
     <div className="space-y-6 animate-in fade-in relative">
       <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-4 relative z-10">
         
-        {/* TOMBOL TOGGLE TIPE TRANSAKSI (DIUBAH WARNANYA AGAR TIDAK PUDAR) */}
+        {/* TOMBOL TOGGLE TIPE TRANSAKSI (MENGGUNAKAN FUNGSI RESET BARU) */}
         <div className="flex gap-2">
-          <button onClick={() => setTType("expense")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold transition-colors ${tType === "expense" ? "bg-red-500 text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>PENGELUARAN</button>
-          <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold transition-colors ${tType === "income" ? "bg-green-500 text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>PEMASUKAN</button>
-          <button onClick={() => setTType("transfer")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold transition-colors ${tType === "transfer" ? "bg-blue-500 text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>TRANSFER</button>
+          <button onClick={() => handleTypeChange("expense")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold transition-colors ${tType === "expense" ? "bg-red-500 text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>PENGELUARAN</button>
+          <button onClick={() => handleTypeChange("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold transition-colors ${tType === "income" ? "bg-green-500 text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>PEMASUKAN</button>
+          <button onClick={() => handleTypeChange("transfer")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold transition-colors ${tType === "transfer" ? "bg-blue-500 text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>TRANSFER</button>
         </div>
 
         {/* INPUT TANGGAL & CUSTOM KATEGORI */}
@@ -57,12 +67,13 @@ export default function HomeTab({
           )}
         </div>
 
-        {/* INPUT DOMPET & NOMINAL */}
+        {/* INPUT DOMPET (DIFILTER) & NOMINAL */}
         <select value={tAccountId} onChange={(e) => setTAccountId(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold border-none outline-none cursor-pointer text-slate-700">
           <option value="">Dompet Asal...</option>
-          {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString('id-ID')})</option>)}
+          {availableSourceAccounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString('id-ID')})</option>)}
         </select>
         
+        {/* DOMPET TUJUAN (HANYA MUNCUL DI TRANSFER, BISA PILIH SEMUA TERMASUK TABUNGAN) */}
         {tType === "transfer" && (
           <select value={tToAccountId} onChange={(e) => setTToAccountId(e.target.value)} className="w-full p-4 bg-blue-50/50 rounded-2xl text-sm font-bold border-none outline-none cursor-pointer text-blue-800">
             <option value="">Kirim Ke Dompet Tujuan...</option>
@@ -81,7 +92,6 @@ export default function HomeTab({
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             
-            {/* Header Modal */}
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h3 className="font-black text-slate-800 flex items-center gap-2">
                 <Tag size={16} className={tType === 'expense' ? "text-red-500" : "text-green-500"}/> 
@@ -90,11 +100,9 @@ export default function HomeTab({
               <button onClick={() => setShowCatModal(false)} className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full transition-colors"><X size={14}/></button>
             </div>
             
-            {/* Isi Modal */}
             <div className="p-5 max-h-[70vh] overflow-y-auto">
               {tType === "expense" ? (
                 <div className="grid grid-cols-2 gap-4">
-                  {/* KOLOM KIRI: VARIABEL (Sering Dipakai) */}
                   <div className="space-y-2">
                     <div className="sticky top-0 bg-white pb-2 mb-2 border-b border-orange-100 z-10">
                       <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel (Sering)</p>
@@ -109,7 +117,6 @@ export default function HomeTab({
                     </div>
                   </div>
                   
-                  {/* KOLOM KANAN: FIXED (Jarang Dipakai) */}
                   <div className="space-y-2 border-l border-slate-100 pl-4">
                     <div className="sticky top-0 bg-white pb-2 mb-2 border-b border-purple-100 z-10">
                       <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">🟣 Tetap (Bulanan)</p>
@@ -125,7 +132,6 @@ export default function HomeTab({
                   </div>
                 </div>
               ) : (
-                // TAMPILAN PEMASUKAN (1 Kolom Grid)
                 <div className="grid grid-cols-2 gap-3">
                   {categories.filter(c => c.type === "income").map(cat => (
                     <button key={cat.id} onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border ${tCategory === cat.name ? "bg-green-500 text-white border-green-600 shadow-md" : "bg-slate-50 text-slate-700 border-slate-100 hover:bg-green-50 hover:border-green-200"}`}>
