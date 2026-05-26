@@ -319,7 +319,7 @@ export default function ReportsTab({
         </div>
       )}
       
-      {/* --- OPTIMASI: GRAFIK HARIAN DENGAN LEGENDA, GRID, DAN Y-AXIS FORMATTER --- */}
+      {/* --- GRAFIK HARIAN DENGAN OPTIMASI SUMBU DAN DETAIL LEGENDA DI BAWAH --- */}
       {barData.length > 0 && (
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm animate-in">
           <h3 className="font-bold text-slate-800 text-sm mb-4">Grafik Harian</h3>
@@ -327,13 +327,8 @@ export default function ReportsTab({
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
-                {/* 1. Garis Grid Horizontal Tipis */}
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                
-                {/* Sumbu X (Tanggal) */}
                 <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} stroke="#94a3b8" />
-                
-                {/* 2. Sumbu Y dengan Format Rupiah Pintar (Singkat jt / rb) */}
                 <YAxis 
                   fontSize={9} 
                   tickLine={false} 
@@ -345,23 +340,38 @@ export default function ReportsTab({
                     return value;
                   }}
                 />
-                
                 <Tooltip content={<CustomTooltip />} cursor={{fill: '#f1f5f9'}} />
-                
-                {/* 3. Legenda Atas Minimalis */}
                 <Legend 
                   verticalAlign="top" 
                   height={36} 
                   iconType="circle" 
                   iconSize={8} 
                   wrapperStyle={{ fontSize: 10, fontWeight: "bold" }}
-                  formatter={() => <span className="text-slate-500 uppercase tracking-wider text-[9px]">Pengeluaran Harian (Rp)</span>}
+                  formatter={() => <span className="text-slate-500 uppercase tracking-wider text-[9px]">Pengeluaran Harian</span>}
                 />
-                
                 <Bar name="amount" dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {/* --- BARU: CUSTOM LEGENDA DETAIL DI BAWAH GRAFIK HARIAN --- */}
+          <div className="mt-5 pt-4 border-t border-slate-100 space-y-2.5">
+            {barData.map((data, idx) => {
+              const dayNum = data.date.replace("Tgl ", "");
+              const formattedDate = `${dayNum} ${new Date(reportMonth + "-01").toLocaleDateString('id-ID', { month: 'short' })}`;
+              return (
+                <div key={idx} className="flex justify-between items-center text-xs font-bold animate-in fade-in">
+                  <div className="flex items-center gap-2.5">
+                    {/* Kotak Indikator Biru */}
+                    <div className="w-2.5 h-2.5 rounded bg-blue-500 shrink-0"></div>
+                    <span className="text-slate-600">{formattedDate}</span>
+                  </div>
+                  <span className="text-slate-800 font-black">Rp {data.amount.toLocaleString('id-ID')}</span>
+                </div>
+              );
+            })}
+          </div>
+
         </div>
       )}
     </div>
