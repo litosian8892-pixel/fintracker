@@ -57,7 +57,7 @@ export default function FintrackerApp() {
 
   // CATEGORY STATES
   const [newCatName, setNewCatName] = useState("");
-  const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("variable"); // <--- BARU
+  const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("variable"); 
 
   const [newWalletTypeName, setNewWalletTypeName] = useState("");
 
@@ -77,7 +77,7 @@ export default function FintrackerApp() {
       else setCategories(sn.docs.map(d => ({ id: d.id, ...d.data() } as CategoryData)));
     });
     const unsubTypes = onSnapshot(query(collection(db, `users/${user.uid}/walletTypes`), orderBy("order", "asc")), (sn) => {
-      if (sn.empty) setupDefaultWalletTypes(user.uid);
+      if (sn.empty) setupDefaultWalletTypes(user.uid); // <--- INI YANG TADI ERROR KARENA FUNGSINYA HILANG
       else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() } as WalletTypeData)));
     });
     const unsubDebts = onSnapshot(query(collection(db, `users/${user.uid}/debts`), orderBy("createdAt", "desc")), (sn) => {
@@ -116,6 +116,7 @@ export default function FintrackerApp() {
   }, [tType, categories]);
 
   // --- FUNCTIONS ---
+  
   const setupDefaultCategories = async (uid: string) => {
     const defaults = [
       { name: "Makanan", type: "expense", expenseType: "variable" }, 
@@ -124,6 +125,12 @@ export default function FintrackerApp() {
       { name: "Gaji", type: "income" }
     ];
     for (const cat of defaults) await addDoc(collection(db, `users/${uid}/categories`), cat);
+  };
+
+  // FUNGSI INI YANG KEMARIN SAYA TERHAPUS, SEKARANG SUDAH KEMBALI!
+  const setupDefaultWalletTypes = async (uid: string) => {
+    const defaults = ["Bank", "E-Wallet", "Cash", "Lainnya"];
+    for (let i = 0; i < defaults.length; i++) await addDoc(collection(db, `users/${uid}/walletTypes`), { name: defaults[i], order: i });
   };
 
   const addCustomCategory = async () => {
@@ -405,6 +412,7 @@ export default function FintrackerApp() {
               transactions={transactions} onDelete={handleDeleteTransaction} 
               onLoadMore={() => setTxLimit(prev => prev + 20)} hasMore={transactions.length >= txLimit}
             />
+
           </div>
         </div>
       </div>
