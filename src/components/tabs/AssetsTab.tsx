@@ -1,5 +1,5 @@
 "use client";
-import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, HelpCircle, Safe } from "lucide-react";
+import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, HelpCircle } from "lucide-react";
 import { AccountData, WalletTypeData } from "../../types";
 
 const getCardDesign = (type: string) => {
@@ -21,13 +21,13 @@ interface AssetsTabProps {
   accName: string; setAccName: (val: string) => void;
   accBalance: string; setAccBalance: (val: string) => void;
   accLogo: string; handleLogoUpload: (e: React.ChangeEvent<HTMLInputElement>, isEdit?: boolean) => void;
-  accIsSavings: boolean; setAccIsSavings: (val: boolean) => void; // <--- BARU
+  accIsSavings: boolean; setAccIsSavings: (val: boolean) => void; 
   handleCreateAccount: () => void;
   editingAccId: string | null; setEditingAccId: (val: string | null) => void;
   editAccName: string; setEditAccName: (val: string) => void;
   editAccBalance: string; setEditAccBalance: (val: string) => void;
   editAccLogo: string; setEditAccLogo: (val: string) => void;
-  editAccIsSavings: boolean; setEditAccIsSavings: (val: boolean) => void; // <--- BARU
+  editAccIsSavings: boolean; setEditAccIsSavings: (val: boolean) => void; 
   handleEditAccount: (id: string) => void;
   deleteAccount: (id: string, name: string) => void;
   moveAccountOrder: (index: number, direction: "up" | "down") => void;
