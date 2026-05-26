@@ -32,13 +32,16 @@ export default function ReportsTab({
   reportMonth, setReportMonth, handleExportToExcel, totalIncome, totalExpense, pieData, incomeCategoryList, barData, categories, reportTransactions
 }: ReportsTabProps) {
   
+  // State untuk laci kategori & laci tanggal harian
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({}); // <--- STATE BARU UNTUK HARI
 
   const toggleExpand = (catName: string) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [catName]: !prev[catName]
-    }));
+    setExpandedCategories(prev => ({ ...prev, [catName]: !prev[catName] }));
+  };
+
+  const toggleExpandDay = (dayKey: string) => {
+    setExpandedDays(prev => ({ ...prev, [dayKey]: !prev[dayKey] }));
   };
 
   // PEMISAHAN FIXED VS VARIABLE
@@ -52,7 +55,7 @@ export default function ReportsTab({
   const totalFixed = fixedTxs.reduce((a, b) => a + b.amount, 0);
   const totalVar = varTxs.reduce((a, b) => a + b.amount, 0);
 
-  // Grouping untuk Drill-Down
+  // Grouping untuk Drill-Down Kategori
   const groupTransactionsAndItems = (txs: TransactionData[]) => {
     return txs.reduce((acc: Record<string, { total: number; items: TransactionData[] }>, curr) => {
       if (!acc[curr.category]) {
@@ -67,6 +70,16 @@ export default function ReportsTab({
   const fixedGrouped = groupTransactionsAndItems(fixedTxs);
   const varGrouped = groupTransactionsAndItems(varTxs);
   const incomeGrouped = groupTransactionsAndItems(incomeTxs);
+
+  // LOGIKA BARU: Ambil semua transaksi belanja di tanggal spesifik (Untuk laci harian)
+  const getTxsForDay = (tglStr: string) => {
+    const dayNum = tglStr.replace("Tgl ", "");
+    return expenseTxs.filter(t => {
+      if (!t.tDate) return false;
+      const day = t.tDate.split('-')[2];
+      return Number(day) === Number(dayNum);
+    });
+  };
 
   const budgetCategories = categories.filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0);
 
@@ -319,7 +332,7 @@ export default function ReportsTab({
         </div>
       )}
       
-      {/* --- GRAFIK HARIAN DENGAN OPTIMASI SUMBU DAN DETAIL LEGENDA DI BAWAH --- */}
+      {/* --- GRAFIK HARIAN DENGAN DRILL DOWN LIST (BISA KLIK UNTUK LIHAT RINCIAN) --- */}
       {barData.length > 0 && (
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm animate-in">
           <h3 className="font-bold text-slate-800 text-sm mb-4">Grafik Harian</h3>
@@ -354,19 +367,45 @@ export default function ReportsTab({
             </ResponsiveContainer>
           </div>
 
-          {/* --- BARU: CUSTOM LEGENDA DETAIL DI BAWAH GRAFIK HARIAN --- */}
-          <div className="mt-5 pt-4 border-t border-slate-100 space-y-2.5">
+          {/* --- DIUBAH: DAFTAR LEGENDA HARIAN SEKARANG BISA DI-KLIK (DRILL-DOWN) --- */}
+          <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
             {barData.map((data, idx) => {
               const dayNum = data.date.replace("Tgl ", "");
               const formattedDate = `${dayNum} ${new Date(reportMonth + "-01").toLocaleDateString('id-ID', { month: 'short' })}`;
+              const dayTxs = getTxsForDay(data.date);
+              const isExpanded = !!expandedDays[data.date]; // Cek status buka laci
+
               return (
-                <div key={idx} className="flex justify-between items-center text-xs font-bold animate-in fade-in">
-                  <div className="flex items-center gap-2.5">
-                    {/* Kotak Indikator Biru */}
-                    <div className="w-2.5 h-2.5 rounded bg-blue-500 shrink-0"></div>
-                    <span className="text-slate-600">{formattedDate}</span>
+                <div key={idx} className="border-b border-slate-50 last:border-0 pb-2 pt-2 first:pt-0 last:pb-0">
+                  <div 
+                    onClick={() => toggleExpandDay(data.date)}
+                    className="flex justify-between items-center text-xs font-bold cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg transition-all"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-2.5 h-2.5 rounded bg-blue-500 shrink-0"></div>
+                      <span className="text-slate-600">{formattedDate}</span>
+                      <span className="text-[9px] text-slate-400 font-medium">({dayTxs.length}x)</span>
+                    </div>
+                    <span className="text-slate-800 font-black flex items-center gap-1.5">
+                      Rp {data.amount.toLocaleString('id-ID')}
+                      <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                    </span>
                   </div>
-                  <span className="text-slate-800 font-black">Rp {data.amount.toLocaleString('id-ID')}</span>
+
+                  {/* Laci Detail Belanja di Tanggal Tersebut */}
+                  {isExpanded && (
+                    <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 rounded-xl space-y-1.5 border border-slate-100 animate-in slide-in-from-top-2 duration-200">
+                      {dayTxs.map((item) => (
+                        <div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 last:border-none">
+                          <div className="flex flex-col text-left">
+                            <span className="text-slate-400 font-bold uppercase tracking-wider text-[8px]">{item.category}</span>
+                            <span className="text-slate-600 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
+                          </div>
+                          <span className="text-slate-700 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
