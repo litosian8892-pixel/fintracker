@@ -35,7 +35,6 @@ export default function FintrackerApp() {
   const [txLimit, setTxLimit] = useState(20);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); 
 
-  // States: Asset / Wallet
   const [accName, setAccName] = useState("");
   const [accBalance, setAccBalance] = useState("");
   const [accType, setAccType] = useState("Cash");
@@ -48,7 +47,6 @@ export default function FintrackerApp() {
   const [editAccLogo, setEditAccLogo] = useState<string>("");
   const [editAccIsSavings, setEditAccIsSavings] = useState(false); 
 
-  // States: Transaction
   const [tAmount, setTAmount] = useState("");
   const [tType, setTType] = useState<"income" | "expense" | "transfer">("expense");
   const [tAccountId, setTAccountId] = useState("");
@@ -57,7 +55,10 @@ export default function FintrackerApp() {
   const [tCategory, setTCategory] = useState("");
   const [tDate, setTDate] = useState(new Date().toISOString().split('T')[0]);
 
+  // CATEGORY STATES
   const [newCatName, setNewCatName] = useState("");
+  const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("variable"); // <--- BARU
+
   const [newWalletTypeName, setNewWalletTypeName] = useState("");
 
   // --- FIREBASE EFFECTS ---
@@ -116,18 +117,20 @@ export default function FintrackerApp() {
 
   // --- FUNCTIONS ---
   const setupDefaultCategories = async (uid: string) => {
-    const defaults = [{ name: "Makanan", type: "expense" }, { name: "Transportasi", type: "expense" }, { name: "Gaji", type: "income" }];
+    const defaults = [
+      { name: "Makanan", type: "expense", expenseType: "variable" }, 
+      { name: "Transportasi", type: "expense", expenseType: "variable" }, 
+      { name: "Tagihan Bulanan", type: "expense", expenseType: "fixed" }, 
+      { name: "Gaji", type: "income" }
+    ];
     for (const cat of defaults) await addDoc(collection(db, `users/${uid}/categories`), cat);
-  };
-
-  const setupDefaultWalletTypes = async (uid: string) => {
-    const defaults = ["Bank", "E-Wallet", "Cash", "Lainnya"];
-    for (let i = 0; i < defaults.length; i++) await addDoc(collection(db, `users/${uid}/walletTypes`), { name: defaults[i], order: i });
   };
 
   const addCustomCategory = async () => {
     if (!newCatName || !user) return;
-    await addDoc(collection(db, `users/${user.uid}/categories`), { name: newCatName, type: tType });
+    const data: any = { name: newCatName, type: tType };
+    if (tType === "expense") data.expenseType = newExpenseType;
+    await addDoc(collection(db, `users/${user.uid}/categories`), data);
     setNewCatName("");
   };
 
@@ -136,13 +139,13 @@ export default function FintrackerApp() {
     await deleteDoc(doc(db, `users/${user.uid}/categories/${id}`));
   };
 
-  // DIUBAH: UPDATE NAMA DAN BUDGET SEKALIGUS
-  const handleEditCategory = async (id: string, newName: string, newBudget: number) => {
+  const handleEditCategory = async (id: string, newName: string, newBudget: number, expenseType: "fixed" | "variable") => {
     if (!user) return;
     try { 
       await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { 
         name: newName,
-        budgetLimit: newBudget 
+        budgetLimit: newBudget,
+        expenseType: expenseType
       }); 
     } catch (e) { alert("Gagal memperbarui kategori!"); }
   };
@@ -366,7 +369,7 @@ export default function FintrackerApp() {
                 <ReportsTab 
                   reportMonth={reportMonth} setReportMonth={setReportMonth} handleExportToExcel={handleExportToExcel}
                   totalIncome={totalIncome} totalExpense={totalExpense} pieData={pieData} incomeCategoryList={incomeCategoryList} barData={barData}
-                  categories={categories} 
+                  categories={categories} reportTransactions={reportTransactions}
                 />
               )}
               {activeTab === "debts" && (
@@ -385,14 +388,13 @@ export default function FintrackerApp() {
                   handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
                 />
               )}
-              
-              {/* TAB SETTINGS (Props updateCategory baru) */}
               {activeTab === "settings" && (
                 <SettingsTab 
                   user={user} onLogout={() => signOut(auth)} tType={tType} setTType={setTType}
-                  newCatName={newCatName} setNewCatName={setNewCatName} addCustomCategory={addCustomCategory}
-                  categories={categories} deleteCategory={deleteCategory} 
-                  updateCategory={handleEditCategory}
+                  newCatName={newCatName} setNewCatName={setNewCatName} 
+                  newExpenseType={newExpenseType} setNewExpenseType={setNewExpenseType}
+                  addCustomCategory={addCustomCategory}
+                  categories={categories} deleteCategory={deleteCategory} updateCategory={handleEditCategory}
                   newWalletTypeName={newWalletTypeName} setNewWalletTypeName={setNewWalletTypeName}
                   addCustomWalletType={addCustomWalletType} walletTypes={walletTypes} deleteWalletType={deleteWalletType}
                 />
@@ -403,7 +405,6 @@ export default function FintrackerApp() {
               transactions={transactions} onDelete={handleDeleteTransaction} 
               onLoadMore={() => setTxLimit(prev => prev + 20)} hasMore={transactions.length >= txLimit}
             />
-
           </div>
         </div>
       </div>

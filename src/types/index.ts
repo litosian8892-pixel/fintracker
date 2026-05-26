@@ -1,11 +1,5 @@
 export interface AccountData { 
-  id: string; 
-  name: string; 
-  balance: number; 
-  type: string; 
-  logo?: string; 
-  order?: number; 
-  isSavings?: boolean; // <--- INI TAMBAHAN BARU
+  id: string; name: string; balance: number; type: string; logo?: string; order?: number; isSavings?: boolean; 
 }
 
 export interface TransactionData { 
@@ -13,7 +7,11 @@ export interface TransactionData {
 }
 
 export interface CategoryData { 
-  id: string; name: string; type: string; budgetLimit?: number; 
+  id: string; 
+  name: string; 
+  type: string; 
+  budgetLimit?: number; 
+  expenseType?: "fixed" | "variable"; // <--- INI TAMBAHAN BARU
 }
 
 export interface WalletTypeData { 
