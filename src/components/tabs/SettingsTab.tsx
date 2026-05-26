@@ -1,6 +1,7 @@
 "use client";
+import { useState } from "react";
 import { User } from "firebase/auth";
-import { LogOut, Tag, CreditCard, X, Edit2 } from "lucide-react";
+import { LogOut, Tag, CreditCard, X, Edit2, Check } from "lucide-react";
 import { CategoryData, WalletTypeData } from "../../types";
 
 interface SettingsTabProps {
@@ -8,18 +9,23 @@ interface SettingsTabProps {
   tType: "income" | "expense" | "transfer"; setTType: (val: "income" | "expense" | "transfer") => void;
   newCatName: string; setNewCatName: (val: string) => void; addCustomCategory: () => void;
   categories: CategoryData[]; deleteCategory: (id: string) => void;
-  updateCategoryBudget: (id: string, limit: number) => void; // <--- Props Baru
+  updateCategory: (id: string, name: string, limit: number) => void; // <--- PROPS DIUBAH
   newWalletTypeName: string; setNewWalletTypeName: (val: string) => void;
   addCustomWalletType: () => void; walletTypes: WalletTypeData[]; deleteWalletType: (id: string) => void;
 }
 
 export default function SettingsTab({
   user, onLogout, tType, setTType, newCatName, setNewCatName, addCustomCategory,
-  categories, deleteCategory, updateCategoryBudget, newWalletTypeName, setNewWalletTypeName, addCustomWalletType, walletTypes, deleteWalletType
+  categories, deleteCategory, updateCategory, newWalletTypeName, setNewWalletTypeName, addCustomWalletType, walletTypes, deleteWalletType
 }: SettingsTabProps) {
+  
+  // STATE KHUSUS UNTUK EDIT KATEGORI
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState("");
+  const [editCatBudget, setEditCatBudget] = useState("");
+
   return (
     <div className="space-y-6 animate-in fade-in">
-      {/* Kartu Profil */}
       <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm flex flex-col items-center text-center space-y-4">
         <img src={user?.photoURL || ""} className="w-20 h-20 rounded-full border-4 border-blue-500 shadow-lg" alt="Profile" />
         <div>
@@ -29,7 +35,6 @@ export default function SettingsTab({
         <button onClick={onLogout} className="px-6 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold flex items-center gap-2"><LogOut size={14}/> Logout</button>
       </div>
 
-      {/* Kelola Kategori & Budget */}
       <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-4">
         <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2"><Tag size={16} className="text-blue-600"/> Kelola Kategori ({tType})</h3>
         <div className="flex gap-2">
@@ -41,37 +46,67 @@ export default function SettingsTab({
           <button onClick={addCustomCategory} className="bg-blue-600 text-white px-4 rounded-xl text-xs font-bold">Tambah</button>
         </div>
         
-        {/* List Kategori dengan Tombol Edit Budget */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2">
           {categories.filter(c => c.type === tType).map(cat => (
-            <div key={cat.id} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
-              <div className="flex flex-col">
-                 <span className="text-xs font-bold text-slate-700">{cat.name}</span>
-                 {tType === 'expense' && (
-                    <span className="text-[10px] font-bold text-blue-600">
-                       Budget: {cat.budgetLimit && cat.budgetLimit > 0 ? `Rp ${cat.budgetLimit.toLocaleString('id-ID')}` : 'Belum Diatur'}
-                    </span>
-                 )}
-              </div>
-              <div className="flex gap-1.5">
-                 {tType === 'expense' && (
+            <div key={cat.id} className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              
+              {/* JIKA SEDANG DI-EDIT */}
+              {editingCatId === cat.id ? (
+                <div className="space-y-2">
+                  <input 
+                    type="text" 
+                    placeholder="Nama Kategori" 
+                    className="w-full p-2 bg-white border border-blue-200 rounded-lg text-xs outline-blue-500 font-bold" 
+                    value={editCatName} 
+                    onChange={e => setEditCatName(e.target.value)} 
+                  />
+                  {tType === 'expense' && (
+                    <input 
+                      type="number" 
+                      placeholder="Batas Budget (Rp)" 
+                      className="w-full p-2 bg-white border border-blue-200 rounded-lg text-xs outline-blue-500 font-bold" 
+                      value={editCatBudget} 
+                      onChange={e => setEditCatBudget(e.target.value)} 
+                    />
+                  )}
+                  <div className="flex gap-2 pt-1">
                     <button onClick={() => {
-                       const val = prompt(`Atur Batas Budget Bulanan untuk [${cat.name}]\nContoh: 1500000 (Hanya Angka)`, cat.budgetLimit?.toString() || "");
-                       if(val !== null && !isNaN(Number(val))) updateCategoryBudget(cat.id, Number(val));
+                      updateCategory(cat.id, editCatName, Number(editCatBudget));
+                      setEditingCatId(null);
+                    }} className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1"><Check size={12}/> Simpan</button>
+                    <button onClick={() => setEditingCatId(null)} className="flex-1 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1"><X size={12}/> Batal</button>
+                  </div>
+                </div>
+              ) : (
+                /* TAMPILAN NORMAL */
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-700">{cat.name}</span>
+                    {tType === 'expense' && (
+                        <span className="text-[10px] font-bold text-blue-600">
+                          Budget: {cat.budgetLimit && cat.budgetLimit > 0 ? `Rp ${cat.budgetLimit.toLocaleString('id-ID')}` : 'Belum Diatur'}
+                        </span>
+                    )}
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button onClick={() => {
+                        setEditingCatId(cat.id);
+                        setEditCatName(cat.name);
+                        setEditCatBudget(cat.budgetLimit?.toString() || "");
                     }} className="text-blue-500 hover:text-white p-1.5 hover:bg-blue-500 rounded-lg transition-colors border border-blue-100">
-                       <Edit2 size={12}/>
+                        <Edit2 size={12}/>
                     </button>
-                 )}
-                 <button onClick={() => deleteCategory(cat.id)} className="text-red-500 hover:text-white p-1.5 hover:bg-red-500 rounded-lg transition-colors border border-red-100">
-                    <X size={12}/>
-                 </button>
-              </div>
+                    <button onClick={() => deleteCategory(cat.id)} className="text-red-500 hover:text-white p-1.5 hover:bg-red-500 rounded-lg transition-colors border border-red-100">
+                        <X size={12}/>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Kelola Dompet */}
       <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-4">
         <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2"><CreditCard size={16} className="text-blue-600"/> Kelola Tipe Dompet</h3>
         <div className="flex gap-2">

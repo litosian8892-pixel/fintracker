@@ -40,13 +40,13 @@ export default function FintrackerApp() {
   const [accBalance, setAccBalance] = useState("");
   const [accType, setAccType] = useState("Cash");
   const [accLogo, setAccLogo] = useState<string>("");
-  const [accIsSavings, setAccIsSavings] = useState(false); // <--- BARU
+  const [accIsSavings, setAccIsSavings] = useState(false); 
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [editAccName, setEditAccName] = useState("");
   const [editAccBalance, setEditAccBalance] = useState("");
   const [editAccLogo, setEditAccLogo] = useState<string>("");
-  const [editAccIsSavings, setEditAccIsSavings] = useState(false); // <--- BARU
+  const [editAccIsSavings, setEditAccIsSavings] = useState(false); 
 
   // States: Transaction
   const [tAmount, setTAmount] = useState("");
@@ -136,9 +136,15 @@ export default function FintrackerApp() {
     await deleteDoc(doc(db, `users/${user.uid}/categories/${id}`));
   };
 
-  const updateCategoryBudget = async (id: string, budgetLimit: number) => {
+  // DIUBAH: UPDATE NAMA DAN BUDGET SEKALIGUS
+  const handleEditCategory = async (id: string, newName: string, newBudget: number) => {
     if (!user) return;
-    try { await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { budgetLimit }); } catch (e) { alert("Gagal menyimpan budget!"); }
+    try { 
+      await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { 
+        name: newName,
+        budgetLimit: newBudget 
+      }); 
+    } catch (e) { alert("Gagal memperbarui kategori!"); }
   };
 
   const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string) => {
@@ -220,10 +226,10 @@ export default function FintrackerApp() {
     if (!user || !accName || !accBalance) return;
     await addDoc(collection(db, `users/${user.uid}/accounts`), {
       name: accName, balance: Number(accBalance), type: accType, logo: accLogo, order: accounts.length, 
-      isSavings: accIsSavings, // <--- BARU: Disimpan ke Firebase
+      isSavings: accIsSavings,
       createdAt: serverTimestamp()
     });
-    setAccName(""); setAccBalance(""); setAccLogo(""); setAccIsSavings(false); // Reset state
+    setAccName(""); setAccBalance(""); setAccLogo(""); setAccIsSavings(false); 
   };
 
   const deleteAccount = async (id: string, name: string) => {
@@ -236,7 +242,7 @@ export default function FintrackerApp() {
     try {
       await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { 
         name: editAccName, balance: Number(editAccBalance), logo: editAccLogo, 
-        isSavings: editAccIsSavings // <--- BARU: Diupdate ke Firebase
+        isSavings: editAccIsSavings 
       });
       setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccIsSavings(false);
       alert("Dompet berhasil diperbarui!");
@@ -379,11 +385,14 @@ export default function FintrackerApp() {
                   handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
                 />
               )}
+              
+              {/* TAB SETTINGS (Props updateCategory baru) */}
               {activeTab === "settings" && (
                 <SettingsTab 
                   user={user} onLogout={() => signOut(auth)} tType={tType} setTType={setTType}
                   newCatName={newCatName} setNewCatName={setNewCatName} addCustomCategory={addCustomCategory}
-                  categories={categories} deleteCategory={deleteCategory} updateCategoryBudget={updateCategoryBudget}
+                  categories={categories} deleteCategory={deleteCategory} 
+                  updateCategory={handleEditCategory}
                   newWalletTypeName={newWalletTypeName} setNewWalletTypeName={setNewWalletTypeName}
                   addCustomWalletType={addCustomWalletType} walletTypes={walletTypes} deleteWalletType={deleteWalletType}
                 />
