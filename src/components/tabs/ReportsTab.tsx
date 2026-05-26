@@ -1,5 +1,6 @@
 "use client";
-import { Download } from "lucide-react";
+import { useState } from "react";
+import { Download, ChevronDown } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from "recharts";
 import { CategoryData, TransactionData } from "../../types";
 
@@ -24,26 +25,49 @@ interface ReportsTabProps {
   incomeCategoryList: { name: string; value: number }[];
   barData: { date: string; amount: number }[];
   categories: CategoryData[];
-  reportTransactions: TransactionData[]; // <--- BARU (untuk memisahkan rincian)
+  reportTransactions: TransactionData[];
 }
 
 export default function ReportsTab({
   reportMonth, setReportMonth, handleExportToExcel, totalIncome, totalExpense, pieData, incomeCategoryList, barData, categories, reportTransactions
 }: ReportsTabProps) {
   
+  // State untuk menyimpan daftar kategori mana saja yang sedang dibuka lacinya
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (catName: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [catName]: !prev[catName]
+    }));
+  };
+
   // PEMISAHAN FIXED VS VARIABLE
   const getCatType = (catName: string) => categories.find(c => c.name === catName)?.expenseType === "fixed" ? "fixed" : "variable";
   
   const expenseTxs = reportTransactions.filter(t => t.type === 'expense');
   const fixedTxs = expenseTxs.filter(t => getCatType(t.category) === "fixed");
   const varTxs = expenseTxs.filter(t => getCatType(t.category) === "variable");
+  const incomeTxs = reportTransactions.filter(t => t.type === 'income');
 
   const totalFixed = fixedTxs.reduce((a, b) => a + b.amount, 0);
   const totalVar = varTxs.reduce((a, b) => a + b.amount, 0);
 
-  // Grouping untuk UI Rincian
-  const fixedGroup = fixedTxs.reduce((acc: Record<string, number>, curr) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
-  const varGroup = varTxs.reduce((acc: Record<string, number>, curr) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
+  // FUNGSI PENGELOMPOKAN TRANSKASI BESERTA ITEM-ITEM NYA (Untuk Drill-Down)
+  const groupTransactionsAndItems = (txs: TransactionData[]) => {
+    return txs.reduce((acc: Record<string, { total: number; items: TransactionData[] }>, curr) => {
+      if (!acc[curr.category]) {
+        acc[curr.category] = { total: 0, items: [] };
+      }
+      acc[curr.category].total += curr.amount;
+      acc[curr.category].items.push(curr);
+      return acc;
+    }, {});
+  };
+
+  const fixedGrouped = groupTransactionsAndItems(fixedTxs);
+  const varGrouped = groupTransactionsAndItems(varTxs);
+  const incomeGrouped = groupTransactionsAndItems(incomeTxs);
 
   const budgetCategories = categories.filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0);
 
@@ -59,7 +83,6 @@ export default function ReportsTab({
         </button>
       </div>
       
-      {/* RINGKASAN ATAS */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-green-50 p-5 rounded-3xl border border-green-100">
             <p className="text-[10px] font-bold text-green-600 uppercase mb-1">Pemasukan Total</p>
@@ -71,7 +94,6 @@ export default function ReportsTab({
         </div>
       </div>
 
-      {/* FIXED VS VARIABLE BOX */}
       {totalExpense > 0 && (
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
@@ -87,7 +109,7 @@ export default function ReportsTab({
         </div>
       )}
 
-      {/* PROGRESS BAR BUDGET */}
+      {/* STATUS ANGGARAN (BUDGET) */}
       <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-4">
         <h3 className="font-bold text-slate-800 text-sm">Status Anggaran (Budget)</h3>
         {budgetCategories.length === 0 ? (
@@ -121,48 +143,146 @@ export default function ReportsTab({
         )}
       </div>
 
-      {/* RINCIAN PENGELUARAN YANG SUDAH DIPISAH */}
+      {/* RINCIAN PENGELUARAN DENGAN ACCORDION LIST */}
       <div className="space-y-4">
         <h3 className="font-bold text-slate-800 text-sm px-1">Rincian Pengeluaran</h3>
         
-        {/* TABEL FIXED */}
+        {/* TABEL FIXED DENGAN DRILL DOWN */}
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
-          <div className="flex justify-between items-center mb-1">
-             <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Pengeluaran Tetap (Fixed)</p>
-          </div>
-          {Object.keys(fixedGroup).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
+          <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1">Pengeluaran Tetap (Fixed)</p>
+          {Object.keys(fixedGrouped).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
             <div className="space-y-2">
-              {Object.keys(fixedGroup).map((key, idx) => (
-                <div key={idx} className="flex justify-between items-center text-xs pb-2 border-b border-slate-50 last:border-0 last:pb-0"><span className="text-slate-600 font-bold">{key}</span><span className="text-slate-800 font-black">Rp {fixedGroup[key].toLocaleString('id-ID')}</span></div>
-              ))}
+              {Object.keys(fixedGrouped).map((key) => {
+                const data = fixedGrouped[key];
+                const isExpanded = !!expandedCategories[key];
+                return (
+                  <div key={key} className="border-b border-slate-50 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
+                    <div 
+                      onClick={() => toggleExpand(key)} 
+                      className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 p-1 rounded-lg transition-all"
+                    >
+                      <span className="text-slate-600 font-bold flex items-center gap-1">
+                        {key}
+                        <span className="text-[9px] text-slate-400 font-medium">({data.items.length}x)</span>
+                      </span>
+                      <span className="text-slate-800 font-black flex items-center gap-1.5">
+                        Rp {data.total.toLocaleString('id-ID')}
+                        <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                      </span>
+                    </div>
+                    
+                    {/* Drawer Lipat Catatan */}
+                    {isExpanded && (
+                      <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 rounded-xl space-y-1.5 border border-slate-100 animate-in slide-in-from-top-2 duration-200">
+                        {data.items.map((item) => (
+                          <div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 last:border-none">
+                            <div className="flex flex-col text-left">
+                              <span className="text-slate-400 font-semibold">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span>
+                              <span className="text-slate-600 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
+                            </div>
+                            <span className="text-slate-700 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <div className="flex justify-between items-center text-xs pt-3 border-t border-dashed border-slate-200 font-black"><span className="text-slate-800">TOTAL FIXED</span><span className="text-purple-600">Rp {totalFixed.toLocaleString('id-ID')}</span></div>
             </div>
           )}
         </div>
 
-        {/* TABEL VARIABLE */}
+        {/* TABEL VARIABLE DENGAN DRILL DOWN */}
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
-          <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Pengeluaran Variabel (Jajan)</p>
-          {Object.keys(varGroup).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
+          <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Pengeluaran Variabel (Jajan)</p>
+          {Object.keys(varGrouped).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
             <div className="space-y-2">
-              {Object.keys(varGroup).map((key, idx) => (
-                <div key={idx} className="flex justify-between items-center text-xs pb-2 border-b border-slate-50 last:border-0 last:pb-0"><span className="text-slate-600 font-bold">{key}</span><span className="text-slate-800 font-black">Rp {varGroup[key].toLocaleString('id-ID')}</span></div>
-              ))}
+              {Object.keys(varGrouped).map((key) => {
+                const data = varGrouped[key];
+                const isExpanded = !!expandedCategories[key];
+                return (
+                  <div key={key} className="border-b border-slate-50 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
+                    <div 
+                      onClick={() => toggleExpand(key)} 
+                      className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 p-1 rounded-lg transition-all"
+                    >
+                      <span className="text-slate-600 font-bold flex items-center gap-1">
+                        {key}
+                        <span className="text-[9px] text-slate-400 font-medium">({data.items.length}x)</span>
+                      </span>
+                      <span className="text-slate-800 font-black flex items-center gap-1.5">
+                        Rp {data.total.toLocaleString('id-ID')}
+                        <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                      </span>
+                    </div>
+                    
+                    {/* Drawer Lipat Catatan */}
+                    {isExpanded && (
+                      <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 rounded-xl space-y-1.5 border border-slate-100 animate-in slide-in-from-top-2 duration-200">
+                        {data.items.map((item) => (
+                          <div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 last:border-none">
+                            <div className="flex flex-col text-left">
+                              <span className="text-slate-400 font-semibold">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span>
+                              <span className="text-slate-600 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
+                            </div>
+                            <span className="text-slate-700 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <div className="flex justify-between items-center text-xs pt-3 border-t border-dashed border-slate-200 font-black"><span className="text-slate-800">TOTAL VARIABEL</span><span className="text-orange-600">Rp {totalVar.toLocaleString('id-ID')}</span></div>
             </div>
           )}
         </div>
       </div>
 
+      {/* TABEL PEMASUKAN DENGAN DRILL DOWN */}
       <div className="space-y-4">
         <h3 className="font-bold text-slate-800 text-sm px-1">Rincian Pemasukan</h3>
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
-          <p className="text-[10px] font-black text-green-500 uppercase tracking-widest">Detail Pemasukan</p>
-          {incomeCategoryList.length === 0 ? <p className="text-xs text-slate-400 italic">Tidak ada pemasukan</p> : (
+          <p className="text-[10px] font-black text-green-500 uppercase tracking-widest mb-1">Detail Pemasukan</p>
+          {Object.keys(incomeGrouped).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
             <div className="space-y-2">
-              {incomeCategoryList.map((data, idx) => (
-                <div key={idx} className="flex justify-between items-center text-xs pb-2 border-b border-slate-50 last:border-0 last:pb-0"><span className="text-slate-600 font-bold">{data.name}</span><span className="text-slate-800 font-black">Rp {data.value.toLocaleString('id-ID')}</span></div>
-              ))}
+              {Object.keys(incomeGrouped).map((key) => {
+                const data = incomeGrouped[key];
+                const isExpanded = !!expandedCategories[key];
+                return (
+                  <div key={key} className="border-b border-slate-50 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
+                    <div 
+                      onClick={() => toggleExpand(key)} 
+                      className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 p-1 rounded-lg transition-all"
+                    >
+                      <span className="text-slate-600 font-bold flex items-center gap-1">
+                        {key}
+                        <span className="text-[9px] text-slate-400 font-medium">({data.items.length}x)</span>
+                      </span>
+                      <span className="text-slate-800 font-black flex items-center gap-1.5">
+                        Rp {data.total.toLocaleString('id-ID')}
+                        <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                      </span>
+                    </div>
+                    
+                    {/* Drawer Lipat Catatan */}
+                    {isExpanded && (
+                      <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 rounded-xl space-y-1.5 border border-slate-100 animate-in slide-in-from-top-2 duration-200">
+                        {data.items.map((item) => (
+                          <div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 last:border-none">
+                            <div className="flex flex-col text-left">
+                              <span className="text-slate-400 font-semibold">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span>
+                              <span className="text-slate-600 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
+                            </div>
+                            <span className="text-slate-700 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <div className="flex justify-between items-center text-xs pt-3 border-t border-dashed border-slate-200 font-black"><span className="text-slate-800">TOTAL PEMASUKAN</span><span className="text-green-600">Rp {totalIncome.toLocaleString('id-ID')}</span></div>
             </div>
           )}
