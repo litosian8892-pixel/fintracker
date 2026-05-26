@@ -32,7 +32,6 @@ export default function ReportsTab({
   reportMonth, setReportMonth, handleExportToExcel, totalIncome, totalExpense, pieData, incomeCategoryList, barData, categories, reportTransactions
 }: ReportsTabProps) {
   
-  // State untuk menyimpan daftar kategori mana saja yang sedang dibuka lacinya
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
   const toggleExpand = (catName: string) => {
@@ -53,7 +52,7 @@ export default function ReportsTab({
   const totalFixed = fixedTxs.reduce((a, b) => a + b.amount, 0);
   const totalVar = varTxs.reduce((a, b) => a + b.amount, 0);
 
-  // FUNGSI PENGELOMPOKAN TRANSKASI BESERTA ITEM-ITEM NYA (Untuk Drill-Down)
+  // Grouping untuk Drill-Down
   const groupTransactionsAndItems = (txs: TransactionData[]) => {
     return txs.reduce((acc: Record<string, { total: number; items: TransactionData[] }>, curr) => {
       if (!acc[curr.category]) {
@@ -171,7 +170,6 @@ export default function ReportsTab({
                       </span>
                     </div>
                     
-                    {/* Drawer Lipat Catatan */}
                     {isExpanded && (
                       <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 rounded-xl space-y-1.5 border border-slate-100 animate-in slide-in-from-top-2 duration-200">
                         {data.items.map((item) => (
@@ -217,7 +215,6 @@ export default function ReportsTab({
                       </span>
                     </div>
                     
-                    {/* Drawer Lipat Catatan */}
                     {isExpanded && (
                       <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 rounded-xl space-y-1.5 border border-slate-100 animate-in slide-in-from-top-2 duration-200">
                         {data.items.map((item) => (
@@ -266,7 +263,6 @@ export default function ReportsTab({
                       </span>
                     </div>
                     
-                    {/* Drawer Lipat Catatan */}
                     {isExpanded && (
                       <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 rounded-xl space-y-1.5 border border-slate-100 animate-in slide-in-from-top-2 duration-200">
                         {data.items.map((item) => (
@@ -289,6 +285,7 @@ export default function ReportsTab({
         </div>
       </div>
 
+      {/* --- GRAFIK DONAT DENGAN LEGENDA CANTIK --- */}
       {pieData.length > 0 && (
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 text-sm mb-4">Grafik Donat (Semua Pengeluaran)</h3>
@@ -302,6 +299,25 @@ export default function ReportsTab({
               </RePieChart>
             </ResponsiveContainer>
           </div>
+
+          {/* LEGENDA (LEGEND) KATEGORI BARU */}
+          <div className="mt-5 pt-4 border-t border-slate-100 space-y-2.5">
+            {pieData.map((data, idx) => {
+              const percentage = totalExpense > 0 ? ((data.value / totalExpense) * 100).toFixed(1) : "0";
+              return (
+                <div key={idx} className="flex justify-between items-center text-xs font-bold">
+                  <div className="flex items-center gap-2.5">
+                    {/* Lingkaran Indikator Warna */}
+                    <div className="w-3 h-3 rounded-full shrink-0 animate-pulse" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
+                    <span className="text-slate-600">{data.name}</span>
+                    <span className="text-slate-400 text-[10px] font-bold">({percentage}%)</span>
+                  </div>
+                  <span className="text-slate-800 font-black">Rp {data.value.toLocaleString('id-ID')}</span>
+                </div>
+              );
+            })}
+          </div>
+
         </div>
       )}
       
