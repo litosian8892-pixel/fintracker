@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Download, ChevronDown } from "lucide-react";
-import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from "recharts";
+import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { CategoryData, TransactionData } from "../../types";
 
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b'];
@@ -285,7 +285,7 @@ export default function ReportsTab({
         </div>
       </div>
 
-      {/* --- GRAFIK DONAT DENGAN LEGENDA CANTIK --- */}
+      {/* --- GRAFIK DONAT DENGAN LEGENDA --- */}
       {pieData.length > 0 && (
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 text-sm mb-4">Grafik Donat (Semua Pengeluaran)</h3>
@@ -300,14 +300,12 @@ export default function ReportsTab({
             </ResponsiveContainer>
           </div>
 
-          {/* LEGENDA (LEGEND) KATEGORI BARU */}
           <div className="mt-5 pt-4 border-t border-slate-100 space-y-2.5">
             {pieData.map((data, idx) => {
               const percentage = totalExpense > 0 ? ((data.value / totalExpense) * 100).toFixed(1) : "0";
               return (
                 <div key={idx} className="flex justify-between items-center text-xs font-bold">
                   <div className="flex items-center gap-2.5">
-                    {/* Lingkaran Indikator Warna */}
                     <div className="w-3 h-3 rounded-full shrink-0 animate-pulse" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
                     <span className="text-slate-600">{data.name}</span>
                     <span className="text-slate-400 text-[10px] font-bold">({percentage}%)</span>
@@ -321,15 +319,46 @@ export default function ReportsTab({
         </div>
       )}
       
+      {/* --- OPTIMASI: GRAFIK HARIAN DENGAN LEGENDA, GRID, DAN Y-AXIS FORMATTER --- */}
       {barData.length > 0 && (
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm animate-in">
           <h3 className="font-bold text-slate-800 text-sm mb-4">Grafik Harian</h3>
-          <div className="h-48 w-full">
+          
+          <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barData}>
-                <XAxis dataKey="date" fontSize={10} tickMargin={10} />
+              <BarChart data={barData} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
+                {/* 1. Garis Grid Horizontal Tipis */}
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                
+                {/* Sumbu X (Tanggal) */}
+                <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} stroke="#94a3b8" />
+                
+                {/* 2. Sumbu Y dengan Format Rupiah Pintar (Singkat jt / rb) */}
+                <YAxis 
+                  fontSize={9} 
+                  tickLine={false} 
+                  axisLine={false} 
+                  stroke="#94a3b8"
+                  tickFormatter={(value) => {
+                    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}jt`;
+                    if (value >= 1000) return `${(value / 1000).toFixed(0)}rb`;
+                    return value;
+                  }}
+                />
+                
                 <Tooltip content={<CustomTooltip />} cursor={{fill: '#f1f5f9'}} />
-                <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                
+                {/* 3. Legenda Atas Minimalis */}
+                <Legend 
+                  verticalAlign="top" 
+                  height={36} 
+                  iconType="circle" 
+                  iconSize={8} 
+                  wrapperStyle={{ fontSize: 10, fontWeight: "bold" }}
+                  formatter={() => <span className="text-slate-500 uppercase tracking-wider text-[9px]">Pengeluaran Harian (Rp)</span>}
+                />
+                
+                <Bar name="amount" dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
