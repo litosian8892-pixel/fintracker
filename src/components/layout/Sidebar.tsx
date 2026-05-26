@@ -1,11 +1,11 @@
 "use client";
 import { User } from "firebase/auth";
-import { Home, PieChart, Wallet, Settings, LogOut } from "lucide-react";
+import { Home, PieChart, Wallet, Settings, LogOut, BookUser } from "lucide-react";
 
 interface SidebarProps {
   user: User | null;
   activeTab: string;
-  setActiveTab: (tab: "home" | "reports" | "assets" | "settings") => void;
+  setActiveTab: (tab: "home" | "reports" | "assets" | "settings" | "debts") => void;
   onLogout: () => void;
 }
 
@@ -17,6 +17,7 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }: Sid
         <nav className="flex flex-col gap-2">
           <button onClick={() => setActiveTab("home")} className={`flex items-center gap-3 p-3.5 rounded-2xl text-xs font-black tracking-wide transition-all ${activeTab === "home" ? "bg-blue-50 text-blue-600" : "text-slate-400 hover:bg-slate-50"}`}><Home size={18} /><span>Beranda</span></button>
           <button onClick={() => setActiveTab("reports")} className={`flex items-center gap-3 p-3.5 rounded-2xl text-xs font-black tracking-wide transition-all ${activeTab === "reports" ? "bg-blue-50 text-blue-600" : "text-slate-400 hover:bg-slate-50"}`}><PieChart size={18} /><span>Laporan</span></button>
+          <button onClick={() => setActiveTab("debts")} className={`flex items-center gap-3 p-3.5 rounded-2xl text-xs font-black tracking-wide transition-all ${activeTab === "debts" ? "bg-blue-50 text-blue-600" : "text-slate-400 hover:bg-slate-50"}`}><BookUser size={18} /><span>Utang Piutang</span></button>
           <button onClick={() => setActiveTab("assets")} className={`flex items-center gap-3 p-3.5 rounded-2xl text-xs font-black tracking-wide transition-all ${activeTab === "assets" ? "bg-blue-50 text-blue-600" : "text-slate-400 hover:bg-slate-50"}`}><Wallet size={18} /><span>Aset & Akun</span></button>
           <button onClick={() => setActiveTab("settings")} className={`flex items-center gap-3 p-3.5 rounded-2xl text-xs font-black tracking-wide transition-all ${activeTab === "settings" ? "bg-blue-50 text-blue-600 animate-in" : "text-slate-400 hover:bg-slate-50"}`}><Settings size={18} /><span>Setting</span></button>
         </nav>

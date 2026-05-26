@@ -6,7 +6,7 @@ import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, runTransaction, orderBy, deleteDoc, updateDoc, limit, where } from "firebase/firestore";
 import * as XLSX from "xlsx";
 
-import { AccountData, TransactionData, CategoryData, WalletTypeData } from "../types";
+import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData } from "../types";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import AuthScreen from "../components/shared/AuthScreen";
 import HistoryList from "../components/shared/HistoryList";
@@ -17,6 +17,7 @@ import HomeTab from "../components/tabs/HomeTab";
 import ReportsTab from "../components/tabs/ReportsTab";
 import AssetsTab from "../components/tabs/AssetsTab";
 import SettingsTab from "../components/tabs/SettingsTab";
+import DebtsTab from "../components/tabs/DebtsTab";
 
 export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
@@ -25,8 +26,9 @@ export default function FintrackerApp() {
   const [accounts, setAccounts] = useState<AccountData[]>([]);
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [walletTypes, setWalletTypes] = useState<WalletTypeData[]>([]);
+  const [debts, setDebts] = useState<DebtData[]>([]); // STATE BARU
   
-  const [activeTab, setActiveTab] = useState<"home" | "reports" | "assets" | "settings">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "reports" | "assets" | "settings" | "debts">("home");
   
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
   const [reportTransactions, setReportTransactions] = useState<TransactionData[]>([]);
@@ -74,7 +76,11 @@ export default function FintrackerApp() {
       if (sn.empty) setupDefaultWalletTypes(user.uid);
       else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() } as WalletTypeData)));
     });
-    return () => { unsubAcc(); unsubCat(); unsubTypes(); };
+    // FETCH UTANG
+    const unsubDebts = onSnapshot(query(collection(db, `users/${user.uid}/debts`), orderBy("createdAt", "desc")), (sn) => {
+      setDebts(sn.docs.map(d => ({ id: d.id, ...d.data() } as DebtData)));
+    });
+    return () => { unsubAcc(); unsubCat(); unsubTypes(); unsubDebts(); };
   }, [user]);
 
   useEffect(() => {
@@ -128,13 +134,71 @@ export default function FintrackerApp() {
     await deleteDoc(doc(db, `users/${user.uid}/categories/${id}`));
   };
 
-  // FITUR BARU: UPDATE BUDGET
   const updateCategoryBudget = async (id: string, budgetLimit: number) => {
     if (!user) return;
-    try {
-      await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { budgetLimit });
-    } catch (e) { alert("Gagal menyimpan budget!"); }
+    try { await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { budgetLimit }); } catch (e) { alert("Gagal menyimpan budget!"); }
   };
+
+  // --- FUNGSI UTANG & PIUTANG ---
+  const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string) => {
+    if (!user) return;
+    try {
+      await addDoc(collection(db, `users/${user.uid}/debts`), {
+        type, personName: person, amount, paidAmount: 0, status: "active", note, createdAt: new Date().toISOString()
+      });
+      alert("Catatan berhasil ditambahkan!");
+    } catch (e) { alert("Gagal menambah catatan"); }
+  };
+
+  const handleDeleteDebt = async (id: string) => {
+    if (!user || !confirm("Hapus catatan ini secara permanen?")) return;
+    await deleteDoc(doc(db, `users/${user.uid}/debts/${id}`));
+  };
+
+  const handlePayDebt = async (debtId: string, payAmount: number, accountId: string) => {
+    if (!user) return;
+    const debtRef = doc(db, `users/${user.uid}/debts/${debtId}`);
+    const accRef = doc(db, `users/${user.uid}/accounts/${accountId}`);
+    
+    try {
+      await runTransaction(db, async (ts) => {
+        const debtSnap = await ts.get(debtRef);
+        const accSnap = await ts.get(accRef);
+        if (!debtSnap.exists() || !accSnap.exists()) throw "Data tidak ditemukan!";
+        
+        const debt = debtSnap.data() as DebtData;
+        const acc = accSnap.data() as AccountData;
+        
+        const newPaidAmount = debt.paidAmount + payAmount;
+        const newStatus = newPaidAmount >= debt.amount ? "paid" : "active";
+        
+        // 1. Update status & jumlah bayar di Utang
+        ts.update(debtRef, { paidAmount: newPaidAmount, status: newStatus });
+        
+        // 2. Koreksi Saldo Dompet & Catat Riwayat Transaksi
+        if (debt.type === "debt") {
+          // Bayar Utang: Uang kita berkurang (Expense)
+          ts.update(accRef, { balance: acc.balance - payAmount });
+          ts.set(doc(collection(db, `users/${user.uid}/transactions`)), {
+            amount: payAmount, type: "expense", accountId, accountName: acc.name,
+            category: "Bayar Utang", note: `Cicilan utang ke ${debt.personName}`,
+            tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp()
+          });
+        } else {
+          // Terima Piutang: Uang kita bertambah (Income)
+          ts.update(accRef, { balance: acc.balance + payAmount });
+          ts.set(doc(collection(db, `users/${user.uid}/transactions`)), {
+            amount: payAmount, type: "income", accountId, accountName: acc.name,
+            category: "Terima Piutang", note: `Cicilan masuk dari ${debt.personName}`,
+            tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp()
+          });
+        }
+      });
+      alert("Pembayaran berhasil dicatat & saldo otomatis diperbarui!");
+    } catch (e) { alert("Gagal memproses pembayaran"); }
+  };
+
+  // --- END FUNGSI UTANG ---
 
   const addCustomWalletType = async () => {
     if (!newWalletTypeName || !user) return;
@@ -289,7 +353,7 @@ export default function FintrackerApp() {
 
   return (
     <main className="min-h-screen bg-slate-50 md:flex">
-      <Sidebar user={user} activeTab={activeTab} setActiveTab={setActiveTab} onLogout={() => signOut(auth)} />
+      <Sidebar user={user} activeTab={activeTab as any} setActiveTab={setActiveTab as any} onLogout={() => signOut(auth)} />
       <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
         <MobileHeader user={user} onLogout={() => signOut(auth)} />
         <div className="max-w-5xl w-full mx-auto p-4 md:p-8">
@@ -310,6 +374,15 @@ export default function FintrackerApp() {
                   categories={categories} 
                 />
               )}
+              
+              {/* TAB BARU: DEBTS */}
+              {activeTab === "debts" && (
+                <DebtsTab 
+                  debts={debts} accounts={accounts} 
+                  handleAddDebt={handleAddDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
+                />
+              )}
+
               {activeTab === "assets" && (
                 <AssetsTab 
                   accounts={accounts} walletTypes={walletTypes} accType={accType} setAccType={setAccType}
@@ -324,8 +397,7 @@ export default function FintrackerApp() {
                 <SettingsTab 
                   user={user} onLogout={() => signOut(auth)} tType={tType} setTType={setTType}
                   newCatName={newCatName} setNewCatName={setNewCatName} addCustomCategory={addCustomCategory}
-                  categories={categories} deleteCategory={deleteCategory} 
-                  updateCategoryBudget={updateCategoryBudget}
+                  categories={categories} deleteCategory={deleteCategory} updateCategoryBudget={updateCategoryBudget}
                   newWalletTypeName={newWalletTypeName} setNewWalletTypeName={setNewWalletTypeName}
                   addCustomWalletType={addCustomWalletType} walletTypes={walletTypes} deleteWalletType={deleteWalletType}
                 />
@@ -342,7 +414,7 @@ export default function FintrackerApp() {
           </div>
         </div>
       </div>
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+      <BottomNav activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
     </main>
   );
 }

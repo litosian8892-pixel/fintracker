@@ -7,12 +7,21 @@ export interface TransactionData {
 }
 
 export interface CategoryData { 
-  id: string; 
-  name: string; 
-  type: string; 
-  budgetLimit?: number; // <--- INI TAMBAHAN BARU
+  id: string; name: string; type: string; budgetLimit?: number; 
 }
 
 export interface WalletTypeData { 
   id: string; name: string; order: number; 
+}
+
+// INI STRUKTUR DATA BARU UNTUK UTANG/PIUTANG
+export interface DebtData {
+  id: string;
+  type: "debt" | "receivable"; // debt = kita ngutang, receivable = orang ngutang ke kita
+  personName: string;
+  amount: number;
+  paidAmount: number;
+  status: "active" | "paid";
+  note: string;
+  createdAt?: string;
 }
