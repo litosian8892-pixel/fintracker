@@ -21,18 +21,17 @@ export default function HomeTab({
   tAmount, setTAmount, tNote, setTNote, categories, accounts, handleTransaction
 }: HomeTabProps) {
   
-  // STATE BARU: Untuk mengontrol pop-up pilihan kategori
   const [showCatModal, setShowCatModal] = useState(false);
 
   return (
     <div className="space-y-6 animate-in fade-in relative">
       <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-4 relative z-10">
         
-        {/* TOMBOL TOGGLE TIPE TRANSAKSI */}
+        {/* TOMBOL TOGGLE TIPE TRANSAKSI (DIUBAH WARNANYA AGAR TIDAK PUDAR) */}
         <div className="flex gap-2">
-          <button onClick={() => setTType("expense")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold ${tType === "expense" ? "bg-red-500 text-white" : "bg-slate-100"}`}>PENGELUARAN</button>
-          <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold ${tType === "income" ? "bg-green-50 text-white" : "bg-slate-100"}`}>PEMASUKAN</button>
-          <button onClick={() => setTType("transfer")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold ${tType === "transfer" ? "bg-blue-50 text-white" : "bg-slate-100"}`}>TRANSFER</button>
+          <button onClick={() => setTType("expense")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold transition-colors ${tType === "expense" ? "bg-red-500 text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>PENGELUARAN</button>
+          <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold transition-colors ${tType === "income" ? "bg-green-500 text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>PEMASUKAN</button>
+          <button onClick={() => setTType("transfer")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold transition-colors ${tType === "transfer" ? "bg-blue-500 text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>TRANSFER</button>
         </div>
 
         {/* INPUT TANGGAL & CUSTOM KATEGORI */}
@@ -45,7 +44,6 @@ export default function HomeTab({
           {tType !== "transfer" ? (
             <div className="relative">
                 <Tag className="absolute left-3 top-3.5 text-slate-400" size={16}/>
-                {/* TOMBOL PEMICU MODAL (Pengganti Select Bawaan) */}
                 <div 
                   onClick={() => setShowCatModal(true)}
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors rounded-2xl text-xs font-bold text-slate-700 cursor-pointer flex items-center justify-between border border-slate-100"
@@ -60,13 +58,13 @@ export default function HomeTab({
         </div>
 
         {/* INPUT DOMPET & NOMINAL */}
-        <select value={tAccountId} onChange={(e) => setTAccountId(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold border-none outline-none cursor-pointer">
+        <select value={tAccountId} onChange={(e) => setTAccountId(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl text-sm font-bold border-none outline-none cursor-pointer text-slate-700">
           <option value="">Dompet Asal...</option>
           {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString('id-ID')})</option>)}
         </select>
         
         {tType === "transfer" && (
-          <select value={tToAccountId} onChange={(e) => setTToAccountId(e.target.value)} className="w-full p-4 bg-blue-50/50 rounded-2xl text-sm font-bold border-none outline-none cursor-pointer">
+          <select value={tToAccountId} onChange={(e) => setTToAccountId(e.target.value)} className="w-full p-4 bg-blue-50/50 rounded-2xl text-sm font-bold border-none outline-none cursor-pointer text-blue-800">
             <option value="">Kirim Ke Dompet Tujuan...</option>
             {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString('id-ID')})</option>)}
           </select>
