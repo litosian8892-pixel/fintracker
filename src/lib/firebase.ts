@@ -1,8 +1,9 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+// Ganti persistentMultipleTabManager dengan persistentSingleTabManager untuk kestabilan HP
+import { initializeFirestore, persistentLocalCache, persistentSingleTabManager } from "firebase/firestore";
 
-// Konfigurasi asli Fintracker Anda
+// Konfigurasi Fintracker Anda
 const firebaseConfig = {
   apiKey: "AIzaSyBBx2uPsPJXqj4iaknqtPA0QwDNZGrXcyQ",
   authDomain: "fintrackcer.firebaseapp.com",
@@ -17,9 +18,9 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-// INISIALISASI FIRESTORE DENGAN OFFLINE PERSISTENCE (PWA)
+// INISIALISASI FIRESTORE DENGAN SINGLE TAB PERSISTENCE (Solusi Anti-Freeze / Hang di HP)
 const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() })
 });
 
 export { app, auth, googleProvider, db };
