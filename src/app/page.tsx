@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, runTransaction, orderBy, deleteDoc, updateDoc, limit, where } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where } from "firebase/firestore";
 import * as XLSX from "xlsx";
 
 import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData } from "../types";
@@ -35,6 +35,7 @@ export default function FintrackerApp() {
   const [txLimit, setTxLimit] = useState(20);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); 
 
+  // States: Asset / Wallet
   const [accName, setAccName] = useState("");
   const [accBalance, setAccBalance] = useState("");
   const [accType, setAccType] = useState("Cash");
@@ -47,6 +48,7 @@ export default function FintrackerApp() {
   const [editAccLogo, setEditAccLogo] = useState<string>("");
   const [editAccIsSavings, setEditAccIsSavings] = useState(false); 
 
+  // States: Transaction
   const [tAmount, setTAmount] = useState("");
   const [tType, setTType] = useState<"income" | "expense" | "transfer">("expense");
   const [tAccountId, setTAccountId] = useState("");
@@ -77,7 +79,7 @@ export default function FintrackerApp() {
       else setCategories(sn.docs.map(d => ({ id: d.id, ...d.data() } as CategoryData)));
     });
     const unsubTypes = onSnapshot(query(collection(db, `users/${user.uid}/walletTypes`), orderBy("order", "asc")), (sn) => {
-      if (sn.empty) setupDefaultWalletTypes(user.uid); // <--- INI YANG TADI ERROR KARENA FUNGSINYA HILANG
+      if (sn.empty) setupDefaultWalletTypes(user.uid);
       else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() } as WalletTypeData)));
     });
     const unsubDebts = onSnapshot(query(collection(db, `users/${user.uid}/debts`), orderBy("createdAt", "desc")), (sn) => {
@@ -127,7 +129,6 @@ export default function FintrackerApp() {
     for (const cat of defaults) await addDoc(collection(db, `users/${uid}/categories`), cat);
   };
 
-  // FUNGSI INI YANG KEMARIN SAYA TERHAPUS, SEKARANG SUDAH KEMBALI!
   const setupDefaultWalletTypes = async (uid: string) => {
     const defaults = ["Bank", "E-Wallet", "Cash", "Lainnya"];
     for (let i = 0; i < defaults.length; i++) await addDoc(collection(db, `users/${uid}/walletTypes`), { name: defaults[i], order: i });
@@ -172,41 +173,36 @@ export default function FintrackerApp() {
     await deleteDoc(doc(db, `users/${user.uid}/debts/${id}`));
   };
 
+  // OPTIMASI: Transaksi diganti menggunakan Direct Writes agar lancar offline & online di HP
   const handlePayDebt = async (debtId: string, payAmount: number, accountId: string) => {
     if (!user) return;
-    const debtRef = doc(db, `users/${user.uid}/debts/${debtId}`);
-    const accRef = doc(db, `users/${user.uid}/accounts/${accountId}`);
-    
+    const debt = debts.find(d => d.id === debtId);
+    const acc = accounts.find(a => a.id === accountId);
+    if (!debt || !acc) return alert("Data tidak ditemukan!");
+
+    const newPaidAmount = debt.paidAmount + payAmount;
+    const newStatus = newPaidAmount >= debt.amount ? "paid" : "active";
+
     try {
-      await runTransaction(db, async (ts) => {
-        const debtSnap = await ts.get(debtRef);
-        const accSnap = await ts.get(accRef);
-        if (!debtSnap.exists() || !accSnap.exists()) throw "Data tidak ditemukan!";
-        
-        const debt = debtSnap.data() as DebtData;
-        const acc = accSnap.data() as AccountData;
-        
-        const newPaidAmount = debt.paidAmount + payAmount;
-        const newStatus = newPaidAmount >= debt.amount ? "paid" : "active";
-        
-        ts.update(debtRef, { paidAmount: newPaidAmount, status: newStatus });
-        
-        if (debt.type === "debt") {
-          ts.update(accRef, { balance: acc.balance - payAmount });
-          ts.set(doc(collection(db, `users/${user.uid}/transactions`)), {
-            amount: payAmount, type: "expense", accountId, accountName: acc.name,
-            category: "Bayar Utang", note: `Cicilan utang ke ${debt.personName}`,
-            tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp()
-          });
-        } else {
-          ts.update(accRef, { balance: acc.balance + payAmount });
-          ts.set(doc(collection(db, `users/${user.uid}/transactions`)), {
-            amount: payAmount, type: "income", accountId, accountName: acc.name,
-            category: "Terima Piutang", note: `Cicilan masuk dari ${debt.personName}`,
-            tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp()
-          });
-        }
-      });
+      // 1. Update status Utang
+      await updateDoc(doc(db, `users/${user.uid}/debts/${debtId}`), { paidAmount: newPaidAmount, status: newStatus });
+      
+      // 2. Koreksi Saldo Dompet & Simpan transaksi
+      if (debt.type === "debt") {
+        await updateDoc(doc(db, `users/${user.uid}/accounts/${accountId}`), { balance: acc.balance - payAmount });
+        await addDoc(collection(db, `users/${user.uid}/transactions`), {
+          amount: payAmount, type: "expense", accountId, accountName: acc.name,
+          category: "Bayar Utang", note: `Cicilan utang ke ${debt.personName}`,
+          tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp()
+        });
+      } else {
+        await updateDoc(doc(db, `users/${user.uid}/accounts/${accountId}`), { balance: acc.balance + payAmount });
+        await addDoc(collection(db, `users/${user.uid}/transactions`), {
+          amount: payAmount, type: "income", accountId, accountName: acc.name,
+          category: "Terima Piutang", note: `Cicilan masuk dari ${debt.personName}`,
+          tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp()
+        });
+      }
       alert("Pembayaran berhasil dicatat & saldo otomatis diperbarui!");
     } catch (e) { alert("Gagal memproses pembayaran"); }
   };
@@ -265,70 +261,66 @@ export default function FintrackerApp() {
     if (targetIndex < 0 || targetIndex >= accounts.length) return;
     const currentAcc = accounts[index], targetAcc = accounts[targetIndex];
     try {
-      await runTransaction(db, async (ts) => {
-        const currentRef = doc(db, `users/${user.uid}/accounts/${currentAcc.id}`);
-        const targetRef = doc(db, `users/${user.uid}/accounts/${targetAcc.id}`);
-        ts.update(currentRef, { order: targetAcc.order !== undefined ? targetAcc.order : targetIndex });
-        ts.update(targetRef, { order: currentAcc.order !== undefined ? currentAcc.order : index });
-      });
+      const currentRef = doc(db, `users/${user.uid}/accounts/${currentAcc.id}`);
+      const targetRef = doc(db, `users/${user.uid}/accounts/${targetAcc.id}`);
+      await updateDoc(currentRef, { order: targetAcc.order !== undefined ? targetAcc.order : targetIndex });
+      await updateDoc(targetRef, { order: currentAcc.order !== undefined ? currentAcc.order : index });
     } catch (e) { alert("Gagal memindahkan posisi"); }
   };
 
+  // OPTIMASI: Pencatatan Transaksi diganti menggunakan Direct Writes agar instan tanpa lag & bisa offline!
   const handleTransaction = async () => {
     if (!user || !tAmount || !tAccountId) return alert("Isi data dengan lengkap!");
     if (tType === "transfer" && (!tToAccountId || tAccountId === tToAccountId)) return alert("Pilih dompet tujuan yang berbeda!");
+    
     const amount = Number(tAmount);
-    const accRef = doc(db, `users/${user.uid}/accounts/${tAccountId}`);
+    const sourceAcc = accounts.find(a => a.id === tAccountId);
+    if (!sourceAcc) return alert("Dompet asal tidak ditemukan!");
+
     try {
-      await runTransaction(db, async (ts) => {
-        const snap = await ts.get(accRef);
-        if (!snap.exists()) throw "Dompet asal tidak ditemukan";
-        if (tType === "transfer") {
-          const toAccRef = doc(db, `users/${user.uid}/accounts/${tToAccountId}`);
-          const toSnap = await ts.get(toAccRef);
-          if (!toSnap.exists()) throw "Dompet tujuan tidak ditemukan";
-          ts.update(accRef, { balance: snap.data().balance - amount });
-          ts.update(toAccRef, { balance: toSnap.data().balance + amount });
-          ts.set(doc(collection(db, `users/${user.uid}/transactions`)), {
-            amount, type: "transfer", accountId: tAccountId, toAccountId: tToAccountId,
-            accountName: snap.data().name, toAccountName: toSnap.data().name,
-            note: tNote || "Transfer Dana", category: "Transfer", tDate, createdAt: serverTimestamp()
-          });
-        } else {
-          const newBal = tType === "income" ? snap.data().balance + amount : snap.data().balance - amount;
-          ts.update(accRef, { balance: newBal });
-          ts.set(doc(collection(db, `users/${user.uid}/transactions`)), {
-            amount, type: tType, accountId: tAccountId, accountName: snap.data().name, note: tNote, category: tCategory, tDate, createdAt: serverTimestamp()
-          });
-        }
-      });
+      if (tType === "transfer") {
+        const destAcc = accounts.find(a => a.id === tToAccountId);
+        if (!destAcc) return alert("Dompet tujuan tidak ditemukan!");
+
+        await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: sourceAcc.balance - amount });
+        await updateDoc(doc(db, `users/${user.uid}/accounts/${tToAccountId}`), { balance: destAcc.balance + amount });
+        
+        await addDoc(collection(db, `users/${user.uid}/transactions`), {
+          amount, type: "transfer", accountId: tAccountId, toAccountId: tToAccountId,
+          accountName: sourceAcc.name, toAccountName: destAcc.name,
+          note: tNote || "Transfer Dana", category: "Transfer", tDate, createdAt: serverTimestamp()
+        });
+      } else {
+        const newBal = tType === "income" ? sourceAcc.balance + amount : sourceAcc.balance - amount;
+        await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: newBal });
+        
+        await addDoc(collection(db, `users/${user.uid}/transactions`), {
+          amount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: tNote, category: tCategory, tDate, createdAt: serverTimestamp()
+        });
+      }
       setTAmount(""); setTNote(""); alert("Transaksi Sukses!");
-    } catch (e) { alert("Gagal simpan"); }
+    } catch (e) { alert("Gagal simpan transaksi"); }
   };
 
+  // OPTIMASI: Penghapusan Transaksi diganti menggunakan Direct Writes
   const handleDeleteTransaction = async (t: TransactionData) => {
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
-    const transRef = doc(db, `users/${user.uid}/transactions/${t.id}`);
     try {
-      await runTransaction(db, async (ts) => {
-        if (t.type === "transfer") {
-          const accRef = doc(db, `users/${user.uid}/accounts/${t.accountId}`);
-          const toAccRef = doc(db, `users/${user.uid}/accounts/${t.toAccountId}`);
-          const accSnap = await ts.get(accRef);
-          const toSnap = t.toAccountId ? await ts.get(toAccRef) : null;
-          if (accSnap.exists()) ts.update(accRef, { balance: accSnap.data().balance + t.amount });
-          if (toSnap && toSnap.exists()) ts.update(toAccRef, { balance: toSnap.data().balance - t.amount });
-        } else {
-          const accRef = doc(db, `users/${user.uid}/accounts/${t.accountId}`);
-          const accSnap = await ts.get(accRef);
-          if (accSnap.exists()) {
-            const restoredBal = t.type === "income" ? accSnap.data().balance - t.amount : accSnap.data().balance + t.amount;
-            ts.update(accRef, { balance: restoredBal });
-          }
+      if (t.type === "transfer") {
+        const sourceAcc = accounts.find(a => a.id === t.accountId);
+        const destAcc = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
+
+        if (sourceAcc) await updateDoc(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: sourceAcc.balance + t.amount });
+        if (destAcc) await updateDoc(doc(db, `users/${user.uid}/accounts/${t.toAccountId}`), { balance: destAcc.balance - t.amount });
+      } else {
+        const acc = accounts.find(a => a.id === t.accountId);
+        if (acc) {
+          const restoredBal = t.type === "income" ? acc.balance - t.amount : acc.balance + t.amount;
+          await updateDoc(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: restoredBal });
         }
-        ts.delete(transRef);
-      });
-    } catch (e) { alert("Gagal hapus"); }
+      }
+      await deleteDoc(doc(db, `users/${user.uid}/transactions/${t.id}`));
+    } catch (e) { alert("Gagal hapus transaksi"); }
   };
 
   const totalIncome = reportTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
