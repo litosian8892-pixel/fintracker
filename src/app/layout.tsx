@@ -7,11 +7,14 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Fintracker - Personal Finance",
   description: "Aplikasi pencatatan keuangan pribadi yang akurat dan aman.",
-  manifest: "/manifest.json", // <--- INI TAMBAHANNYA
+  manifest: "/manifest.json",
+  icons: {
+    apple: "https://img.icons8.com/color/192/wallet--v1.png", // <--- KHUSUS AGAR LOGO MUNCUL DI IPHONE (iOS)
+  }
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2563eb", // <--- INI WARNA TEMA HEADER HP
+  themeColor: "#2563eb",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
