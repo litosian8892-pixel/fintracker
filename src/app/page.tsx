@@ -41,7 +41,7 @@ export default function FintrackerApp() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [searchResult, setSearchResult] = useState<TransactionData[]>([]);
 
-  // STATES: EDIT TRANSAKSI MODAL (TAMBAH BIAYA ADMIN EDIT)
+  // STATES: EDIT TRANSAKSI MODAL
   const [editingTransaction, setEditingTransaction] = useState<TransactionData | null>(null);
   const [editTAmount, setEditTAmount] = useState("");
   const [editTType, setEditTType] = useState<"income" | "expense" | "transfer">("expense");
@@ -50,7 +50,7 @@ export default function FintrackerApp() {
   const [editTNote, setEditTNote] = useState("");
   const [editTCategory, setEditTCategory] = useState("");
   const [editTDate, setEditTDate] = useState("");
-  const [editTAdminFee, setEditTAdminFee] = useState(""); // <--- BARU: BIAYA ADMIN SAAT EDIT
+  const [editTAdminFee, setEditTAdminFee] = useState(""); 
 
   // States: Asset / Wallet
   const [accName, setAccName] = useState("");
@@ -65,9 +65,9 @@ export default function FintrackerApp() {
   const [editAccLogo, setEditAccLogo] = useState<string>("");
   const [editAccIsSavings, setEditAccIsSavings] = useState(false); 
 
-  // States: Transaction (TAMBAH STATE BIAYA ADMIN)
+  // States: Transaction
   const [tAmount, setTAmount] = useState("");
-  const [tAdminFee, setTAdminFee] = useState(""); // <--- BARU: BIAYA ADMIN SAAT INPUT BARU
+  const [tAdminFee, setTAdminFee] = useState(""); 
   const [tType, setTType] = useState<"income" | "expense" | "transfer">("expense");
   const [tAccountId, setTAccountId] = useState("");
   const [tToAccountId, setTToAccountId] = useState("");
@@ -193,13 +193,37 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal memperbarui kategori!"); }
   };
 
-  const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string) => {
+  // --- KOREKSI LOGIKA: CATAT PIUTANG BARU LANGSUNG POTONG SALDO & TRANSAKSI ---
+  const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string, accountId?: string) => {
     if (!user) return;
     try {
+      // Jika Piutang (Receivable) dan dompet asal dipilih, potong saldo & buat transaksi
+      if (type === "receivable" && accountId) {
+        const accRef = doc(db, `users/${user.uid}/accounts/${accountId}`);
+        const acc = accounts.find(a => a.id === accountId);
+        if (!acc) return alert("Dompet pengirim tidak ditemukan!");
+
+        // 1. Kurangi Saldo Dompet Pengirim
+        await updateDoc(accRef, { balance: acc.balance - amount });
+
+        // 2. Buat Catatan Pengeluaran kategori "Piutang"
+        await addDoc(collection(db, `users/${user.uid}/transactions`), {
+          amount,
+          type: "expense",
+          accountId,
+          accountName: acc.name,
+          category: "Piutang",
+          note: `Memberikan pinjaman (piutang) ke ${person} - ${note || ""}`,
+          tDate: new Date().toISOString().split('T')[0],
+          createdAt: serverTimestamp()
+        });
+      }
+
+      // 3. Simpan Catatan Piutang di Firestore
       await addDoc(collection(db, `users/${user.uid}/debts`), {
         type, personName: person, amount, paidAmount: 0, status: "active", note, createdAt: new Date().toISOString()
       });
-      alert("Catatan berhasil ditambahkan!");
+      alert("Catatan berhasil ditambahkan & saldo dompet Anda otomatis terpotong!");
     } catch (e) { alert("Gagal menambah catatan"); }
   };
 
@@ -300,13 +324,12 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal memindahkan posisi"); }
   };
 
-  // KOREKSI PENYIMPANAN BIAYA ADMIN TRANSFER BARU
   const handleTransaction = async () => {
     if (!user || !tAmount || !tAccountId) return alert("Isi data dengan lengkap!");
     if (tType === "transfer" && (!tToAccountId || tAccountId === tToAccountId)) return alert("Pilih dompet tujuan yang berbeda!");
     
     const amount = Number(tAmount);
-    const adminFee = tType === "transfer" && tAdminFee ? Number(tAdminFee) : 0; // <--- BARU: BIAYA ADMIN
+    const adminFee = tType === "transfer" && tAdminFee ? Number(tAdminFee) : 0; 
     
     const sourceAcc = accounts.find(a => a.id === tAccountId);
     if (!sourceAcc) return alert("Dompet asal tidak ditemukan!");
@@ -316,16 +339,14 @@ export default function FintrackerApp() {
         const destAcc = accounts.find(a => a.id === tToAccountId);
         if (!destAcc) return alert("Dompet tujuan tidak ditemukan!");
 
-        // 1. Dompet asal berkurang nominal + biaya admin
         await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: sourceAcc.balance - (amount + adminFee) });
-        // 2. Dompet tujuan hanya bertambah nominal murni
         await updateDoc(doc(db, `users/${user.uid}/accounts/${tToAccountId}`), { balance: destAcc.balance + amount });
         
         await addDoc(collection(db, `users/${user.uid}/transactions`), {
           amount, type: "transfer", accountId: tAccountId, toAccountId: tToAccountId,
           accountName: sourceAcc.name, toAccountName: destAcc.name,
           note: tNote || "Transfer Dana", category: "Transfer", tDate, 
-          adminFee, // <--- BARU: DISIMPAN KE FIRESTORE
+          adminFee, 
           createdAt: serverTimestamp()
         });
       } else {
@@ -340,14 +361,13 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal simpan transaksi"); }
   };
 
-  // KOREKSI PENGHAPUSAN TRANSFER TERMASUK BIAYA ADMIN
   const handleDeleteTransaction = async (t: TransactionData) => {
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
     try {
       if (t.type === "transfer") {
         const sourceAcc = accounts.find(a => a.id === t.accountId);
         const destAcc = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
-        const adminFee = t.adminFee || 0; // <--- KOREKSI BALIK SALDO BIAYA ADMIN
+        const adminFee = t.adminFee || 0; 
 
         if (sourceAcc) await updateDoc(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: sourceAcc.balance + (t.amount + adminFee) });
         if (destAcc) await updateDoc(doc(db, `users/${user.uid}/accounts/${t.toAccountId}`), { balance: destAcc.balance - t.amount });
@@ -372,18 +392,16 @@ export default function FintrackerApp() {
     setEditTNote(t.note || "");
     setEditTCategory(t.category);
     setEditTDate(t.tDate);
-    setEditTAdminFee(t.adminFee?.toString() || ""); // <--- BARU: LOAD BIAYA ADMIN SAAT EDIT
+    setEditTAdminFee(t.adminFee?.toString() || ""); 
   };
 
-  // KOREKSI EDIT TRANSAKSI TERMASUK BIAYA ADMIN
   const handleUpdateTransaction = async () => {
     if (!user || !editingTransaction) return;
     const oldT = editingTransaction;
     const newAmount = Number(editTAmount);
-    const newAdminFee = editTType === "transfer" && editTAdminFee ? Number(editTAdminFee) : 0; // <--- BIAYA ADMIN BARU
+    const newAdminFee = editTType === "transfer" && editTAdminFee ? Number(editTAdminFee) : 0; 
 
     try {
-      // 1. REVERSE (BALIKKAN) SALDO LAMA + BIAYA ADMIN LAMA
       if (oldT.type === "transfer") {
         const oldAdminFee = oldT.adminFee || 0;
         const oldSrc = accounts.find(a => a.id === oldT.accountId);
@@ -398,7 +416,6 @@ export default function FintrackerApp() {
         }
       }
 
-      // 2. AMBIL SNASPHOT FRESH & TERAPKAN SALDO BARU
       const srcAccRef = doc(db, `users/${user.uid}/accounts/${editTAccountId}`);
       const srcSnap = await getDoc(srcAccRef);
       if (!srcSnap.exists()) throw "Dompet asal tidak ditemukan";
@@ -410,7 +427,6 @@ export default function FintrackerApp() {
         if (!destSnap.exists()) throw "Dompet tujuan tidak ditemukan";
         const freshDestBal = destSnap.data().balance;
 
-        // Terapkan Saldo Baru (Transfer + Biaya Admin)
         await updateDoc(srcAccRef, { balance: freshSrcBal - (newAmount + newAdminFee) });
         await updateDoc(destAccRef, { balance: freshDestBal + newAmount });
       } else {
@@ -418,7 +434,6 @@ export default function FintrackerApp() {
         await updateDoc(srcAccRef, { balance: newBal });
       }
 
-      // 3. UPDATE FIRESTORE DOCUMENT
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
       const updateData: any = {
         amount: newAmount,
@@ -433,7 +448,7 @@ export default function FintrackerApp() {
       if (editTType === "transfer") {
         updateData.toAccountId = editTToAccountId;
         updateData.toAccountName = accounts.find(a => a.id === editTToAccountId)?.name || "";
-        updateData.adminFee = newAdminFee; // <--- UPDATE BIAYA ADMIN BARU
+        updateData.adminFee = newAdminFee; 
       } else {
         updateData.toAccountId = null;
         updateData.toAccountName = null;
@@ -450,8 +465,7 @@ export default function FintrackerApp() {
     }
   };
 
-  // --- KOREKSI AKUNTANSI LAPORAN PADA STATE INDUK (page.tsx) ---
-  // Kita jadikan biaya admin transfer sebagai "transaksi pengeluaran virtual" agar total balance di Laporan presisi!
+  // --- KOREKSI AKUNTANSI LAPORAN ---
   const adminFeeTxs = reportTransactions
     .filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0)
     .map(t => ({
@@ -465,11 +479,10 @@ export default function FintrackerApp() {
       tDate: t.tDate
     } as TransactionData));
 
-  // Gabungkan pengeluaran murni dan biaya admin virtual
   const combinedExpenseTxs = [...reportTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
 
   const totalIncome = reportTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
-  const totalExpense = combinedExpenseTxs.reduce((a, b) => a + b.amount, 0); // <--- KOREKSI TOTAL EXPENSE
+  const totalExpense = combinedExpenseTxs.reduce((a, b) => a + b.amount, 0); 
 
   const expenseByCategory = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
   const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
@@ -509,7 +522,7 @@ export default function FintrackerApp() {
                   tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
                   tCategory={tCategory} setTCategory={setTCategory} tAccountId={tAccountId} setTAccountId={setTAccountId}
                   tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
-                  tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} // <--- PROPS BIAYA ADMIN BARU
+                  tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} 
                   tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
                 />
               )}
@@ -561,7 +574,7 @@ export default function FintrackerApp() {
       </div>
       <BottomNav activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
 
-      {/* POP-UP MODAL EDIT TRANSAKSI (DITAMBAHKAN INPUT BIAYA ADMIN EDIT) */}
+      {/* POP-UP MODAL EDIT TRANSAKSI */}
       {editingTransaction && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
@@ -583,7 +596,6 @@ export default function FintrackerApp() {
                 <input type="number" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
               </div>
 
-              {/* INPUT BIAYA ADMIN EDIT (HANYA MUNCUL JIKA TIPENYA TRANSFER) */}
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Biaya Admin (Opsional)</label>

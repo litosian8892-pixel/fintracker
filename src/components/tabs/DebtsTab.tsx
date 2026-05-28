@@ -6,7 +6,7 @@ import { DebtData, AccountData } from "../../types";
 interface DebtsTabProps {
   debts: DebtData[];
   accounts: AccountData[];
-  handleAddDebt: (type: "debt" | "receivable", person: string, amount: number, note: string) => void;
+  handleAddDebt: (type: "debt" | "receivable", person: string, amount: number, note: string, accountId?: string) => void; // <--- UPDATE ARGUMEN
   handlePayDebt: (debtId: string, payAmount: number, accountId: string) => void;
   handleDeleteDebt: (debtId: string) => void;
 }
@@ -19,6 +19,7 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handlePayDebt
   const [person, setPerson] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [sourceAccountId, setSourceAccountId] = useState(""); // <--- STATE DOMPET ASAL PIUTANG BARU
 
   // State Form Bayar Cicilan
   const [payingDebtId, setPayingDebtId] = useState<string | null>(null);
@@ -27,8 +28,12 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handlePayDebt
 
   const submitAdd = () => {
     if (!person || !amount) return alert("Nama dan Nominal harus diisi!");
-    handleAddDebt(activeType, person, Number(amount), note);
-    setShowAddForm(false); setPerson(""); setAmount(""); setNote("");
+    if (activeType === "receivable" && !sourceAccountId) {
+      return alert("Pilih dompet pengirim uang terlebih dahulu agar saldo otomatis terpotong!");
+    }
+    
+    handleAddDebt(activeType, person, Number(amount), note, sourceAccountId);
+    setShowAddForm(false); setPerson(""); setAmount(""); setNote(""); setSourceAccountId("");
   };
 
   const submitPay = (id: string) => {
@@ -62,11 +67,32 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handlePayDebt
         ) : (
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
             <h4 className="text-xs font-bold text-slate-800">{activeType === "debt" ? "Mencatat Utang Baru" : "Mencatat Piutang Baru"}</h4>
-            <input type="text" placeholder={activeType === "debt" ? "Utang ke siapa?" : "Siapa yang pinjam?"} className="w-full p-3 bg-white rounded-xl text-xs outline-none" value={person} onChange={e => setPerson(e.target.value)} />
-            <input type="number" placeholder="Nominal Total (Rp)" className="w-full p-3 bg-white rounded-xl text-xs outline-none" value={amount} onChange={e => setAmount(e.target.value)} />
-            <input type="text" placeholder="Catatan / Tujuan pinjam" className="w-full p-3 bg-white rounded-xl text-xs outline-none" value={note} onChange={e => setNote(e.target.value)} />
+            
+            <input type="text" placeholder={activeType === "debt" ? "Utang ke siapa?" : "Siapa yang pinjam?"} className="w-full p-3.5 bg-white rounded-xl text-xs outline-none font-bold text-slate-700" value={person} onChange={e => setPerson(e.target.value)} />
+            
+            <input type="number" placeholder="Nominal Total (Rp)" className="w-full p-3.5 bg-white rounded-xl text-xs outline-none font-bold text-slate-700" value={amount} onChange={e => setAmount(e.target.value)} />
+            
+            {/* DROPDOWN PILIHAN DOMPET (HANYA MUNCUL JIKA KATEGORI PIUTANG / RECEIVABLE) */}
+            {activeType === "receivable" && (
+              <div className="relative">
+                <Wallet className="absolute left-3 top-3.5 text-slate-400" size={16}/>
+                <select 
+                  className="w-full pl-10 pr-4 py-3 bg-white rounded-xl text-xs font-bold outline-none text-slate-700 appearance-none cursor-pointer border border-slate-100" 
+                  value={sourceAccountId} 
+                  onChange={e => setSourceAccountId(e.target.value)}
+                >
+                  <option value="">Kirim dari Dompet...</option>
+                  {accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <input type="text" placeholder="Catatan / Tujuan pinjam" className="w-full p-3.5 bg-white rounded-xl text-xs outline-none font-bold text-slate-700" value={note} onChange={e => setNote(e.target.value)} />
+            
             <div className="flex gap-2 pt-2">
-              <button onClick={submitAdd} className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold">Simpan</button>
+              <button onClick={submitAdd} className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md">Simpan</button>
               <button onClick={() => setShowAddForm(false)} className="py-3 px-6 bg-slate-200 text-slate-600 rounded-xl text-xs font-bold">Batal</button>
             </div>
           </div>
@@ -117,9 +143,11 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handlePayDebt
                     <input type="number" placeholder="Nominal Bayar (Rp)" className="w-full p-3 bg-white rounded-xl text-xs outline-blue-500" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
                     <div className="relative">
                       <Wallet className="absolute left-3 top-3.5 text-slate-400" size={16}/>
-                      <select className="w-full pl-10 pr-4 py-3 bg-white rounded-xl text-xs font-bold outline-blue-500 appearance-none" value={payAccountId} onChange={e => setPayAccountId(e.target.value)}>
+                      <select className="w-full pl-10 pr-4 py-3 bg-white rounded-xl text-xs font-bold outline-blue-500 appearance-none text-slate-700" value={payAccountId} onChange={e => setPayAccountId(e.target.value)}>
                         <option value="">Pilih Dompet...</option>
-                        {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>)}
+                        {accounts.map(acc => (
+                          <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>
+                        ))}
                       </select>
                     </div>
                     <div className="flex gap-2">
