@@ -37,6 +37,9 @@ export default function FintrackerApp() {
   const [txLimit, setTxLimit] = useState(20);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); 
 
+  // --- ANTIPASI DOUBLE CLICK: STATE SUBMITTING GLOBAL ---
+  const [isSubmitting, setIsSubmitting] = useState(false); // <--- BARU: KUNCI ANTI DOUBLE-CLICK
+
   // STATES: FITUR PENCARIAN GLOBAL
   const [globalSearch, setGlobalSearch] = useState("");
   const [searchResult, setSearchResult] = useState<TransactionData[]>([]);
@@ -170,20 +173,34 @@ export default function FintrackerApp() {
   };
 
   const addCustomCategory = async () => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!newCatName || !user) return;
-    const data: any = { name: newCatName, type: tType };
-    if (tType === "expense") data.expenseType = newExpenseType;
-    await addDoc(collection(db, `users/${user.uid}/categories`), data);
-    setNewCatName("");
+    setIsSubmitting(true);
+    try {
+      const data: any = { name: newCatName, type: tType };
+      if (tType === "expense") data.expenseType = newExpenseType;
+      await addDoc(collection(db, `users/${user.uid}/categories`), data);
+      setNewCatName("");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const deleteCategory = async (id: string) => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!user || !confirm("Hapus kategori ini?")) return;
-    await deleteDoc(doc(db, `users/${user.uid}/categories/${id}`));
+    setIsSubmitting(true);
+    try {
+      await deleteDoc(doc(db, `users/${user.uid}/categories/${id}`));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEditCategory = async (id: string, newName: string, newBudget: number, expenseType: "fixed" | "variable") => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!user) return;
+    setIsSubmitting(true);
     try { 
       await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { 
         name: newName,
@@ -191,22 +208,21 @@ export default function FintrackerApp() {
         expenseType: expenseType
       }); 
     } catch (e) { alert("Gagal memperbarui kategori!"); }
+    finally { setIsSubmitting(false); }
   };
 
-  // --- KOREKSI LOGIKA: CATAT PIUTANG BARU LANGSUNG POTONG SALDO & TRANSAKSI ---
   const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string, accountId?: string) => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!user) return;
+    setIsSubmitting(true);
     try {
-      // Jika Piutang (Receivable) dan dompet asal dipilih, potong saldo & buat transaksi
       if (type === "receivable" && accountId) {
         const accRef = doc(db, `users/${user.uid}/accounts/${accountId}`);
         const acc = accounts.find(a => a.id === accountId);
         if (!acc) return alert("Dompet pengirim tidak ditemukan!");
 
-        // 1. Kurangi Saldo Dompet Pengirim
         await updateDoc(accRef, { balance: acc.balance - amount });
 
-        // 2. Buat Catatan Pengeluaran kategori "Piutang"
         await addDoc(collection(db, `users/${user.uid}/transactions`), {
           amount,
           type: "expense",
@@ -219,20 +235,27 @@ export default function FintrackerApp() {
         });
       }
 
-      // 3. Simpan Catatan Piutang di Firestore
       await addDoc(collection(db, `users/${user.uid}/debts`), {
         type, personName: person, amount, paidAmount: 0, status: "active", note, createdAt: new Date().toISOString()
       });
       alert("Catatan berhasil ditambahkan & saldo dompet Anda otomatis terpotong!");
     } catch (e) { alert("Gagal menambah catatan"); }
+    finally { setIsSubmitting(false); }
   };
 
   const handleDeleteDebt = async (id: string) => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!user || !confirm("Hapus catatan ini secara permanen?")) return;
-    await deleteDoc(doc(db, `users/${user.uid}/debts/${id}`));
+    setIsSubmitting(true);
+    try {
+      await deleteDoc(doc(db, `users/${user.uid}/debts/${id}`));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handlePayDebt = async (debtId: string, payAmount: number, accountId: string) => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!user) return;
     const debt = debts.find(d => d.id === debtId);
     const acc = accounts.find(a => a.id === accountId);
@@ -241,6 +264,7 @@ export default function FintrackerApp() {
     const newPaidAmount = debt.paidAmount + payAmount;
     const newStatus = newPaidAmount >= debt.amount ? "paid" : "active";
 
+    setIsSubmitting(true);
     try {
       await updateDoc(doc(db, `users/${user.uid}/debts/${debtId}`), { paidAmount: newPaidAmount, status: newStatus });
       
@@ -261,17 +285,30 @@ export default function FintrackerApp() {
       }
       alert("Pembayaran berhasil dicatat & saldo otomatis diperbarui!");
     } catch (e) { alert("Gagal memproses pembayaran"); }
+    finally { setIsSubmitting(false); }
   };
 
   const addCustomWalletType = async () => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!newWalletTypeName || !user) return;
-    await addDoc(collection(db, `users/${user.uid}/walletTypes`), { name: newWalletTypeName, order: walletTypes.length });
-    setNewWalletTypeName("");
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, `users/${user.uid}/walletTypes`), { name: newWalletTypeName, order: walletTypes.length });
+      setNewWalletTypeName("");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const deleteWalletType = async (id: string) => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!user || !confirm("Hapus kategori dompet?")) return;
-    await deleteDoc(doc(db, `users/${user.uid}/walletTypes/${id}`));
+    setIsSubmitting(true);
+    try {
+      await deleteDoc(doc(db, `users/${user.uid}/walletTypes/${id}`));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
@@ -285,22 +322,35 @@ export default function FintrackerApp() {
   };
 
   const handleCreateAccount = async () => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!user || !accName || !accBalance) return;
-    await addDoc(collection(db, `users/${user.uid}/accounts`), {
-      name: accName, balance: Number(accBalance), type: accType, logo: accLogo, order: accounts.length, 
-      isSavings: accIsSavings,
-      createdAt: serverTimestamp()
-    });
-    setAccName(""); setAccBalance(""); setAccLogo(""); setAccIsSavings(false); 
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, `users/${user.uid}/accounts`), {
+        name: accName, balance: Number(accBalance), type: accType, logo: accLogo, order: accounts.length, 
+        isSavings: accIsSavings,
+        createdAt: serverTimestamp()
+      });
+      setAccName(""); setAccBalance(""); setAccLogo(""); setAccIsSavings(false); 
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const deleteAccount = async (id: string, name: string) => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!user || !confirm(`Hapus dompet "${name}"?`)) return;
-    try { await deleteDoc(doc(db, `users/${user.uid}/accounts/${id}`)); } catch (e) { alert("Gagal hapus"); }
+    setIsSubmitting(true);
+    try { 
+      await deleteDoc(doc(db, `users/${user.uid}/accounts/${id}`)); 
+    } catch (e) { alert("Gagal hapus"); }
+    finally { setIsSubmitting(false); }
   };
 
   const handleEditAccount = async (id: string) => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!user || !editAccName || !editAccBalance) return;
+    setIsSubmitting(true);
     try {
       await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { 
         name: editAccName, balance: Number(editAccBalance), logo: editAccLogo, 
@@ -309,31 +359,36 @@ export default function FintrackerApp() {
       setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccIsSavings(false);
       alert("Dompet berhasil diperbarui!");
     } catch (e) { alert("Gagal memperbarui"); }
+    finally { setIsSubmitting(false); }
   };
 
   const moveAccountOrder = async (index: number, direction: "up" | "down") => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!user) return;
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= accounts.length) return;
     const currentAcc = accounts[index], targetAcc = accounts[targetIndex];
+    setIsSubmitting(true);
     try {
       const currentRef = doc(db, `users/${user.uid}/accounts/${currentAcc.id}`);
       const targetRef = doc(db, `users/${user.uid}/accounts/${targetAcc.id}`);
       await updateDoc(currentRef, { order: targetAcc.order !== undefined ? targetAcc.order : targetIndex });
       await updateDoc(targetRef, { order: currentAcc.order !== undefined ? currentAcc.order : index });
     } catch (e) { alert("Gagal memindahkan posisi"); }
+    finally { setIsSubmitting(false); }
   };
 
   const handleTransaction = async () => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE ANTI DOUBLE-CLICK
     if (!user || !tAmount || !tAccountId) return alert("Isi data dengan lengkap!");
     if (tType === "transfer" && (!tToAccountId || tAccountId === tToAccountId)) return alert("Pilih dompet tujuan yang berbeda!");
     
     const amount = Number(tAmount);
     const adminFee = tType === "transfer" && tAdminFee ? Number(tAdminFee) : 0; 
-    
     const sourceAcc = accounts.find(a => a.id === tAccountId);
     if (!sourceAcc) return alert("Dompet asal tidak ditemukan!");
 
+    setIsSubmitting(true);
     try {
       if (tType === "transfer") {
         const destAcc = accounts.find(a => a.id === tToAccountId);
@@ -359,10 +414,13 @@ export default function FintrackerApp() {
       }
       setTAmount(""); setTNote(""); setTAdminFee(""); alert("Transaksi Sukses!");
     } catch (e) { alert("Gagal simpan transaksi"); }
+    finally { setIsSubmitting(false); }
   };
 
   const handleDeleteTransaction = async (t: TransactionData) => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
+    setIsSubmitting(true);
     try {
       if (t.type === "transfer") {
         const sourceAcc = accounts.find(a => a.id === t.accountId);
@@ -380,6 +438,7 @@ export default function FintrackerApp() {
       }
       await deleteDoc(doc(db, `users/${user.uid}/transactions/${t.id}`));
     } catch (e) { alert("Gagal hapus transaksi"); }
+    finally { setIsSubmitting(false); }
   };
 
   // EDIT TRANSAKSI MODAL
@@ -395,13 +454,17 @@ export default function FintrackerApp() {
     setEditTAdminFee(t.adminFee?.toString() || ""); 
   };
 
+  // KOREKSI EDIT TRANSAKSI TERMASUK GUARD CLAUSE ANTI DOUBLE-CLICK
   const handleUpdateTransaction = async () => {
+    if (isSubmitting) return; // <--- GUARD CLAUSE
     if (!user || !editingTransaction) return;
     const oldT = editingTransaction;
     const newAmount = Number(editTAmount);
     const newAdminFee = editTType === "transfer" && editTAdminFee ? Number(editTAdminFee) : 0; 
 
+    setIsSubmitting(true);
     try {
+      // 1. REVERSE SALDO LAMA
       if (oldT.type === "transfer") {
         const oldAdminFee = oldT.adminFee || 0;
         const oldSrc = accounts.find(a => a.id === oldT.accountId);
@@ -416,6 +479,7 @@ export default function FintrackerApp() {
         }
       }
 
+      // 2. AMBIL SNAPSHOT FRESH & TERAPKAN SALDO BARU
       const srcAccRef = doc(db, `users/${user.uid}/accounts/${editTAccountId}`);
       const srcSnap = await getDoc(srcAccRef);
       if (!srcSnap.exists()) throw "Dompet asal tidak ditemukan";
@@ -434,6 +498,7 @@ export default function FintrackerApp() {
         await updateDoc(srcAccRef, { balance: newBal });
       }
 
+      // 3. UPDATE TRANSAKSI
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
       const updateData: any = {
         amount: newAmount,
@@ -462,6 +527,8 @@ export default function FintrackerApp() {
       alert("Transaksi berhasil diperbarui!");
     } catch (e) {
       alert("Gagal memperbarui transaksi: " + e);
+    } finally {
+      setIsSubmitting(false); // <--- PEMBUKAAN KUNCI
     }
   };
 
@@ -574,7 +641,7 @@ export default function FintrackerApp() {
       </div>
       <BottomNav activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
 
-      {/* POP-UP MODAL EDIT TRANSAKSI */}
+      {/* POP-UP MODAL EDIT TRANSAKSI (PROTEKSI DOUBLE-CLICK) */}
       {editingTransaction && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
@@ -644,9 +711,22 @@ export default function FintrackerApp() {
                 <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
               </div>
 
+              {/* AKSI EDIT DENGAN LOGIKA DISABLING SAAT SUBMITTING */}
               <div className="flex gap-2 pt-2 shrink-0">
-                <button onClick={handleUpdateTransaction} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg transition-colors">Simpan Koreksi</button>
-                <button onClick={() => setEditingTransaction(null)} className="py-3 px-6 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-xl text-xs font-bold transition-colors">Batal</button>
+                <button 
+                  disabled={isSubmitting} 
+                  onClick={handleUpdateTransaction} 
+                  className={`flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg transition-all ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  {isSubmitting ? "Menyimpan..." : "Simpan Koreksi"}
+                </button>
+                <button 
+                  disabled={isSubmitting} 
+                  onClick={() => setEditingTransaction(null)} 
+                  className="py-3 px-6 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-xl text-xs font-bold transition-all"
+                >
+                  Batal
+                </button>
               </div>
             </div>
           </div>
