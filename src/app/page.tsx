@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react"; // <--- SEKARANG KITA IMPORT useRef
 import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc } from "firebase/firestore";
@@ -37,8 +37,9 @@ export default function FintrackerApp() {
   const [txLimit, setTxLimit] = useState(20);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); 
 
-  // --- ANTIPASI DOUBLE CLICK: STATE SUBMITTING GLOBAL ---
-  const [isSubmitting, setIsSubmitting] = useState(false); // <--- BARU: KUNCI ANTI DOUBLE-CLICK
+  // --- SOLUSI ANTI DOUBLE CLICK MILIDETIK: useRef SINKRONUS ---
+  const isSubmittingRef = useRef(false); // <--- KUNCI SYNC PADA LEVEL THREAD JAVASCRIPT
+  const [isSubmitting, setIsSubmitting] = useState(false); // Untuk visual tombol saja
 
   // STATES: FITUR PENCARIAN GLOBAL
   const [globalSearch, setGlobalSearch] = useState("");
@@ -173,8 +174,10 @@ export default function FintrackerApp() {
   };
 
   const addCustomCategory = async () => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD (100% BLOK KILAT)
     if (!newCatName || !user) return;
+    
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       const data: any = { name: newCatName, type: tType };
@@ -182,24 +185,30 @@ export default function FintrackerApp() {
       await addDoc(collection(db, `users/${user.uid}/categories`), data);
       setNewCatName("");
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   const deleteCategory = async (id: string) => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
     if (!user || !confirm("Hapus kategori ini?")) return;
+    
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       await deleteDoc(doc(db, `users/${user.uid}/categories/${id}`));
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   const handleEditCategory = async (id: string, newName: string, newBudget: number, expenseType: "fixed" | "variable") => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
     if (!user) return;
+    
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try { 
       await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { 
@@ -208,12 +217,17 @@ export default function FintrackerApp() {
         expenseType: expenseType
       }); 
     } catch (e) { alert("Gagal memperbarui kategori!"); }
-    finally { setIsSubmitting(false); }
+    finally { 
+      isSubmittingRef.current = false;
+      setIsSubmitting(false); 
+    }
   };
 
   const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string, accountId?: string) => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
     if (!user) return;
+    
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       if (type === "receivable" && accountId) {
@@ -240,22 +254,28 @@ export default function FintrackerApp() {
       });
       alert("Catatan berhasil ditambahkan & saldo dompet Anda otomatis terpotong!");
     } catch (e) { alert("Gagal menambah catatan"); }
-    finally { setIsSubmitting(false); }
+    finally { 
+      isSubmittingRef.current = false;
+      setIsSubmitting(false); 
+    }
   };
 
   const handleDeleteDebt = async (id: string) => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
     if (!user || !confirm("Hapus catatan ini secara permanen?")) return;
+    
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       await deleteDoc(doc(db, `users/${user.uid}/debts/${id}`));
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   const handlePayDebt = async (debtId: string, payAmount: number, accountId: string) => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
     if (!user) return;
     const debt = debts.find(d => d.id === debtId);
     const acc = accounts.find(a => a.id === accountId);
@@ -264,6 +284,7 @@ export default function FintrackerApp() {
     const newPaidAmount = debt.paidAmount + payAmount;
     const newStatus = newPaidAmount >= debt.amount ? "paid" : "active";
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       await updateDoc(doc(db, `users/${user.uid}/debts/${debtId}`), { paidAmount: newPaidAmount, status: newStatus });
@@ -285,28 +306,37 @@ export default function FintrackerApp() {
       }
       alert("Pembayaran berhasil dicatat & saldo otomatis diperbarui!");
     } catch (e) { alert("Gagal memproses pembayaran"); }
-    finally { setIsSubmitting(false); }
+    finally { 
+      isSubmittingRef.current = false;
+      setIsSubmitting(false); 
+    }
   };
 
   const addCustomWalletType = async () => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
     if (!newWalletTypeName || !user) return;
+    
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       await addDoc(collection(db, `users/${user.uid}/walletTypes`), { name: newWalletTypeName, order: walletTypes.length });
       setNewWalletTypeName("");
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   const deleteWalletType = async (id: string) => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
     if (!user || !confirm("Hapus kategori dompet?")) return;
+    
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       await deleteDoc(doc(db, `users/${user.uid}/walletTypes/${id}`));
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -322,8 +352,10 @@ export default function FintrackerApp() {
   };
 
   const handleCreateAccount = async () => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
     if (!user || !accName || !accBalance) return;
+    
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       await addDoc(collection(db, `users/${user.uid}/accounts`), {
@@ -333,23 +365,31 @@ export default function FintrackerApp() {
       });
       setAccName(""); setAccBalance(""); setAccLogo(""); setAccIsSavings(false); 
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   const deleteAccount = async (id: string, name: string) => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
     if (!user || !confirm(`Hapus dompet "${name}"?`)) return;
+    
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try { 
       await deleteDoc(doc(db, `users/${user.uid}/accounts/${id}`)); 
     } catch (e) { alert("Gagal hapus"); }
-    finally { setIsSubmitting(false); }
+    finally { 
+      isSubmittingRef.current = false;
+      setIsSubmitting(false); 
+    }
   };
 
   const handleEditAccount = async (id: string) => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
     if (!user || !editAccName || !editAccBalance) return;
+    
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { 
@@ -359,15 +399,20 @@ export default function FintrackerApp() {
       setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccIsSavings(false);
       alert("Dompet berhasil diperbarui!");
     } catch (e) { alert("Gagal memperbarui"); }
-    finally { setIsSubmitting(false); }
+    finally { 
+      isSubmittingRef.current = false;
+      setIsSubmitting(false); 
+    }
   };
 
   const moveAccountOrder = async (index: number, direction: "up" | "down") => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
     if (!user) return;
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= accounts.length) return;
     const currentAcc = accounts[index], targetAcc = accounts[targetIndex];
+    
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       const currentRef = doc(db, `users/${user.uid}/accounts/${currentAcc.id}`);
@@ -375,11 +420,14 @@ export default function FintrackerApp() {
       await updateDoc(currentRef, { order: targetAcc.order !== undefined ? targetAcc.order : targetIndex });
       await updateDoc(targetRef, { order: currentAcc.order !== undefined ? currentAcc.order : index });
     } catch (e) { alert("Gagal memindahkan posisi"); }
-    finally { setIsSubmitting(false); }
+    finally { 
+      isSubmittingRef.current = false;
+      setIsSubmitting(false); 
+    }
   };
 
   const handleTransaction = async () => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE ANTI DOUBLE-CLICK
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD (TOTAL BLOKIR MULTIPLE CLICK)
     if (!user || !tAmount || !tAccountId) return alert("Isi data dengan lengkap!");
     if (tType === "transfer" && (!tToAccountId || tAccountId === tToAccountId)) return alert("Pilih dompet tujuan yang berbeda!");
     
@@ -388,6 +436,7 @@ export default function FintrackerApp() {
     const sourceAcc = accounts.find(a => a.id === tAccountId);
     if (!sourceAcc) return alert("Dompet asal tidak ditemukan!");
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       if (tType === "transfer") {
@@ -414,12 +463,17 @@ export default function FintrackerApp() {
       }
       setTAmount(""); setTNote(""); setTAdminFee(""); alert("Transaksi Sukses!");
     } catch (e) { alert("Gagal simpan transaksi"); }
-    finally { setIsSubmitting(false); }
+    finally { 
+      isSubmittingRef.current = false;
+      setIsSubmitting(false); 
+    }
   };
 
   const handleDeleteTransaction = async (t: TransactionData) => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
+    
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       if (t.type === "transfer") {
@@ -438,7 +492,10 @@ export default function FintrackerApp() {
       }
       await deleteDoc(doc(db, `users/${user.uid}/transactions/${t.id}`));
     } catch (e) { alert("Gagal hapus transaksi"); }
-    finally { setIsSubmitting(false); }
+    finally { 
+      isSubmittingRef.current = false;
+      setIsSubmitting(false); 
+    }
   };
 
   // EDIT TRANSAKSI MODAL
@@ -454,14 +511,16 @@ export default function FintrackerApp() {
     setEditTAdminFee(t.adminFee?.toString() || ""); 
   };
 
-  // KOREKSI EDIT TRANSAKSI TERMASUK GUARD CLAUSE ANTI DOUBLE-CLICK
+  // KOREKSI EDIT TRANSAKSI DENGAN TOTAL BLOCK KILAT (useRef Gating)
   const handleUpdateTransaction = async () => {
-    if (isSubmitting) return; // <--- GUARD CLAUSE
+    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD (TOTAL BLOKIR RAPID CLICK)
     if (!user || !editingTransaction) return;
+    
     const oldT = editingTransaction;
     const newAmount = Number(editTAmount);
     const newAdminFee = editTType === "transfer" && editTAdminFee ? Number(editTAdminFee) : 0; 
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       // 1. REVERSE SALDO LAMA
@@ -528,7 +587,8 @@ export default function FintrackerApp() {
     } catch (e) {
       alert("Gagal memperbarui transaksi: " + e);
     } finally {
-      setIsSubmitting(false); // <--- PEMBUKAAN KUNCI
+      isSubmittingRef.current = false; // <--- PEMBUKAAN KUNCI SINKRONUS
+      setIsSubmitting(false); 
     }
   };
 
@@ -641,13 +701,13 @@ export default function FintrackerApp() {
       </div>
       <BottomNav activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
 
-      {/* POP-UP MODAL EDIT TRANSAKSI (PROTEKSI DOUBLE-CLICK) */}
+      {/* POP-UP MODAL EDIT TRANSAKSI (SINKRONUS REF & DISABLED STATE) */}
       {editingTransaction && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h3 className="font-black text-slate-800 text-sm">Koreksi Transaksi</h3>
-              <button onClick={() => setEditingTransaction(null)} className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full"><X size={14}/></button>
+              <button disabled={isSubmitting} onClick={() => setEditingTransaction(null)} className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full disabled:opacity-50"><X size={14}/></button>
             </div>
             
             <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
@@ -660,25 +720,25 @@ export default function FintrackerApp() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
-                <input type="number" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
+                <input disabled={isSubmitting} type="number" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 disabled:opacity-50" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
               </div>
 
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Biaya Admin (Opsional)</label>
-                  <input type="number" className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold outline-blue-500 text-blue-900" value={editTAdminFee} onChange={(e) => setEditTAdminFee(e.target.value)} />
+                  <input disabled={isSubmitting} type="number" className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold outline-blue-500 text-blue-900 disabled:opacity-50" value={editTAdminFee} onChange={(e) => setEditTAdminFee(e.target.value)} />
                 </div>
               )}
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</label>
-                <input type="date" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer" value={editTDate} onChange={(e) => setEditTDate(e.target.value)} />
+                <input disabled={isSubmitting} type="date" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer disabled:opacity-50" value={editTDate} onChange={(e) => setEditTDate(e.target.value)} />
               </div>
 
               {editTType !== "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
-                  <select className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer" value={editTCategory} onChange={(e) => setEditTCategory(e.target.value)}>
+                  <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer disabled:opacity-50" value={editTCategory} onChange={(e) => setEditTCategory(e.target.value)}>
                     {categories.filter(c => c.type === editTType).map(cat => (
                       <option key={cat.id} value={cat.name}>{cat.name}</option>
                     ))}
@@ -688,7 +748,7 @@ export default function FintrackerApp() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dompet Asal</label>
-                <select className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer" value={editTAccountId} onChange={(e) => setEditTAccountId(e.target.value)}>
+                <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer disabled:opacity-50" value={editTAccountId} onChange={(e) => setEditTAccountId(e.target.value)}>
                   {accounts.map(acc => (
                     <option key={acc.id} value={acc.id}>{acc.name}</option>
                   ))}
@@ -698,7 +758,7 @@ export default function FintrackerApp() {
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kirim Ke Dompet Tujuan</label>
-                  <select className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold outline-blue-500 text-blue-900 cursor-pointer" value={editTToAccountId} onChange={(e) => setEditTToAccountId(e.target.value)}>
+                  <select disabled={isSubmitting} className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold outline-blue-500 text-blue-900 cursor-pointer disabled:opacity-50" value={editTToAccountId} onChange={(e) => setEditTToAccountId(e.target.value)}>
                     {accounts.map(acc => (
                       <option key={acc.id} value={acc.id}>{acc.name}</option>
                     ))}
@@ -708,10 +768,9 @@ export default function FintrackerApp() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan</label>
-                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
+                <input disabled={isSubmitting} type="text" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 disabled:opacity-50" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
               </div>
 
-              {/* AKSI EDIT DENGAN LOGIKA DISABLING SAAT SUBMITTING */}
               <div className="flex gap-2 pt-2 shrink-0">
                 <button 
                   disabled={isSubmitting} 
@@ -723,7 +782,7 @@ export default function FintrackerApp() {
                 <button 
                   disabled={isSubmitting} 
                   onClick={() => setEditingTransaction(null)} 
-                  className="py-3 px-6 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-xl text-xs font-bold transition-all"
+                  className="py-3 px-6 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
                 >
                   Batal
                 </button>
