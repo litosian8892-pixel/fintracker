@@ -19,7 +19,6 @@ import AssetsTab from "../components/tabs/AssetsTab";
 import SettingsTab from "../components/tabs/SettingsTab";
 import DebtsTab from "../components/tabs/DebtsTab";
 
-// Import Ikon Modal Edit
 import { X, Calendar, Tag, Wallet } from "lucide-react";
 
 export default function FintrackerApp() {
@@ -38,11 +37,11 @@ export default function FintrackerApp() {
   const [txLimit, setTxLimit] = useState(20);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); 
 
-  // --- STATES BARU: FITUR PENCARIAN GLOBAL ---
+  // STATES: FITUR PENCARIAN GLOBAL
   const [globalSearch, setGlobalSearch] = useState("");
   const [searchResult, setSearchResult] = useState<TransactionData[]>([]);
 
-  // --- STATES BARU: EDIT TRANSAKSI MODAL ---
+  // STATES: EDIT TRANSAKSI MODAL (TAMBAH BIAYA ADMIN EDIT)
   const [editingTransaction, setEditingTransaction] = useState<TransactionData | null>(null);
   const [editTAmount, setEditTAmount] = useState("");
   const [editTType, setEditTType] = useState<"income" | "expense" | "transfer">("expense");
@@ -51,6 +50,7 @@ export default function FintrackerApp() {
   const [editTNote, setEditTNote] = useState("");
   const [editTCategory, setEditTCategory] = useState("");
   const [editTDate, setEditTDate] = useState("");
+  const [editTAdminFee, setEditTAdminFee] = useState(""); // <--- BARU: BIAYA ADMIN SAAT EDIT
 
   // States: Asset / Wallet
   const [accName, setAccName] = useState("");
@@ -65,8 +65,9 @@ export default function FintrackerApp() {
   const [editAccLogo, setEditAccLogo] = useState<string>("");
   const [editAccIsSavings, setEditAccIsSavings] = useState(false); 
 
-  // States: Transaction
+  // States: Transaction (TAMBAH STATE BIAYA ADMIN)
   const [tAmount, setTAmount] = useState("");
+  const [tAdminFee, setTAdminFee] = useState(""); // <--- BARU: BIAYA ADMIN SAAT INPUT BARU
   const [tType, setTType] = useState<"income" | "expense" | "transfer">("expense");
   const [tAccountId, setTAccountId] = useState("");
   const [tToAccountId, setTToAccountId] = useState("");
@@ -127,7 +128,7 @@ export default function FintrackerApp() {
     return () => unsubReport();
   }, [user, reportMonth]);
 
-  // EFFECT PENCARIAN GLOBAL: Mengambil 500 transaksi terakhir dan difilter client-side secara kilat
+  // EFFECT PENCARIAN GLOBAL
   useEffect(() => {
     if (!user || !globalSearch) {
       setSearchResult([]);
@@ -299,11 +300,14 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal memindahkan posisi"); }
   };
 
+  // KOREKSI PENYIMPANAN BIAYA ADMIN TRANSFER BARU
   const handleTransaction = async () => {
     if (!user || !tAmount || !tAccountId) return alert("Isi data dengan lengkap!");
     if (tType === "transfer" && (!tToAccountId || tAccountId === tToAccountId)) return alert("Pilih dompet tujuan yang berbeda!");
     
     const amount = Number(tAmount);
+    const adminFee = tType === "transfer" && tAdminFee ? Number(tAdminFee) : 0; // <--- BARU: BIAYA ADMIN
+    
     const sourceAcc = accounts.find(a => a.id === tAccountId);
     if (!sourceAcc) return alert("Dompet asal tidak ditemukan!");
 
@@ -312,13 +316,17 @@ export default function FintrackerApp() {
         const destAcc = accounts.find(a => a.id === tToAccountId);
         if (!destAcc) return alert("Dompet tujuan tidak ditemukan!");
 
-        await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: sourceAcc.balance - amount });
+        // 1. Dompet asal berkurang nominal + biaya admin
+        await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: sourceAcc.balance - (amount + adminFee) });
+        // 2. Dompet tujuan hanya bertambah nominal murni
         await updateDoc(doc(db, `users/${user.uid}/accounts/${tToAccountId}`), { balance: destAcc.balance + amount });
         
         await addDoc(collection(db, `users/${user.uid}/transactions`), {
           amount, type: "transfer", accountId: tAccountId, toAccountId: tToAccountId,
           accountName: sourceAcc.name, toAccountName: destAcc.name,
-          note: tNote || "Transfer Dana", category: "Transfer", tDate, createdAt: serverTimestamp()
+          note: tNote || "Transfer Dana", category: "Transfer", tDate, 
+          adminFee, // <--- BARU: DISIMPAN KE FIRESTORE
+          createdAt: serverTimestamp()
         });
       } else {
         const newBal = tType === "income" ? sourceAcc.balance + amount : sourceAcc.balance - amount;
@@ -328,18 +336,20 @@ export default function FintrackerApp() {
           amount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: tNote, category: tCategory, tDate, createdAt: serverTimestamp()
         });
       }
-      setTAmount(""); setTNote(""); alert("Transaksi Sukses!");
+      setTAmount(""); setTNote(""); setTAdminFee(""); alert("Transaksi Sukses!");
     } catch (e) { alert("Gagal simpan transaksi"); }
   };
 
+  // KOREKSI PENGHAPUSAN TRANSFER TERMASUK BIAYA ADMIN
   const handleDeleteTransaction = async (t: TransactionData) => {
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
     try {
       if (t.type === "transfer") {
         const sourceAcc = accounts.find(a => a.id === t.accountId);
         const destAcc = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
+        const adminFee = t.adminFee || 0; // <--- KOREKSI BALIK SALDO BIAYA ADMIN
 
-        if (sourceAcc) await updateDoc(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: sourceAcc.balance + t.amount });
+        if (sourceAcc) await updateDoc(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: sourceAcc.balance + (t.amount + adminFee) });
         if (destAcc) await updateDoc(doc(db, `users/${user.uid}/accounts/${t.toAccountId}`), { balance: destAcc.balance - t.amount });
       } else {
         const acc = accounts.find(a => a.id === t.accountId);
@@ -352,7 +362,7 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal hapus transaksi"); }
   };
 
-  // --- FUNGSIONALITAS BARU: MODAL EDIT TRANSAKSI ---
+  // EDIT TRANSAKSI MODAL
   const openEditModal = (t: TransactionData) => {
     setEditingTransaction(t);
     setEditTAmount(t.amount.toString());
@@ -362,19 +372,23 @@ export default function FintrackerApp() {
     setEditTNote(t.note || "");
     setEditTCategory(t.category);
     setEditTDate(t.tDate);
+    setEditTAdminFee(t.adminFee?.toString() || ""); // <--- BARU: LOAD BIAYA ADMIN SAAT EDIT
   };
 
+  // KOREKSI EDIT TRANSAKSI TERMASUK BIAYA ADMIN
   const handleUpdateTransaction = async () => {
     if (!user || !editingTransaction) return;
     const oldT = editingTransaction;
     const newAmount = Number(editTAmount);
+    const newAdminFee = editTType === "transfer" && editTAdminFee ? Number(editTAdminFee) : 0; // <--- BIAYA ADMIN BARU
 
     try {
-      // 1. REVERSE (BALIKKAN) SALDO LAMA
+      // 1. REVERSE (BALIKKAN) SALDO LAMA + BIAYA ADMIN LAMA
       if (oldT.type === "transfer") {
+        const oldAdminFee = oldT.adminFee || 0;
         const oldSrc = accounts.find(a => a.id === oldT.accountId);
         const oldDest = oldT.toAccountId ? accounts.find(a => a.id === oldT.toAccountId) : null;
-        if (oldSrc) await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.accountId}`), { balance: oldSrc.balance + oldT.amount });
+        if (oldSrc) await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.accountId}`), { balance: oldSrc.balance + (oldT.amount + oldAdminFee) });
         if (oldDest) await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.toAccountId}`), { balance: oldDest.balance - oldT.amount });
       } else {
         const oldAcc = accounts.find(a => a.id === oldT.accountId);
@@ -384,7 +398,7 @@ export default function FintrackerApp() {
         }
       }
 
-      // 2. AMBIL DATA DOMPET SEGAR UNTUK DIAPLIKASIKAN DI SALDO BARU (Mencegah Bug Race-Condition)
+      // 2. AMBIL SNASPHOT FRESH & TERAPKAN SALDO BARU
       const srcAccRef = doc(db, `users/${user.uid}/accounts/${editTAccountId}`);
       const srcSnap = await getDoc(srcAccRef);
       if (!srcSnap.exists()) throw "Dompet asal tidak ditemukan";
@@ -396,16 +410,15 @@ export default function FintrackerApp() {
         if (!destSnap.exists()) throw "Dompet tujuan tidak ditemukan";
         const freshDestBal = destSnap.data().balance;
 
-        // Terapkan Saldo Baru (Transfer)
-        await updateDoc(srcAccRef, { balance: freshSrcBal - newAmount });
+        // Terapkan Saldo Baru (Transfer + Biaya Admin)
+        await updateDoc(srcAccRef, { balance: freshSrcBal - (newAmount + newAdminFee) });
         await updateDoc(destAccRef, { balance: freshDestBal + newAmount });
       } else {
-        // Terapkan Saldo Baru (Income / Expense)
         const newBal = editTType === "income" ? freshSrcBal + newAmount : freshSrcBal - newAmount;
         await updateDoc(srcAccRef, { balance: newBal });
       }
 
-      // 3. UPDATE DATA TRANSAKSI DI FIRESTORE
+      // 3. UPDATE FIRESTORE DOCUMENT
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
       const updateData: any = {
         amount: newAmount,
@@ -420,29 +433,51 @@ export default function FintrackerApp() {
       if (editTType === "transfer") {
         updateData.toAccountId = editTToAccountId;
         updateData.toAccountName = accounts.find(a => a.id === editTToAccountId)?.name || "";
+        updateData.adminFee = newAdminFee; // <--- UPDATE BIAYA ADMIN BARU
       } else {
         updateData.toAccountId = null;
         updateData.toAccountName = null;
+        updateData.adminFee = null;
       }
 
       await updateDoc(tRef, updateData);
 
       setEditingTransaction(null);
+      setEditTAdminFee("");
       alert("Transaksi berhasil diperbarui!");
     } catch (e) {
       alert("Gagal memperbarui transaksi: " + e);
     }
   };
 
-  // --- END EDIT TRANSAKSI ---
+  // --- KOREKSI AKUNTANSI LAPORAN PADA STATE INDUK (page.tsx) ---
+  // Kita jadikan biaya admin transfer sebagai "transaksi pengeluaran virtual" agar total balance di Laporan presisi!
+  const adminFeeTxs = reportTransactions
+    .filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0)
+    .map(t => ({
+      id: `fee-${t.id}`,
+      amount: t.adminFee!,
+      type: "expense",
+      accountId: t.accountId,
+      accountName: t.accountName,
+      category: "Biaya Admin",
+      note: `Biaya admin transfer ke ${t.toAccountName}`,
+      tDate: t.tDate
+    } as TransactionData));
+
+  // Gabungkan pengeluaran murni dan biaya admin virtual
+  const combinedExpenseTxs = [...reportTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
 
   const totalIncome = reportTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
-  const totalExpense = reportTransactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
-  const expenseByCategory = reportTransactions.filter(t => t.type === 'expense').reduce((acc: Record<string, number>, curr: TransactionData) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
+  const totalExpense = combinedExpenseTxs.reduce((a, b) => a + b.amount, 0); // <--- KOREKSI TOTAL EXPENSE
+
+  const expenseByCategory = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
   const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
+  
   const incomeByCategory = reportTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
   const incomeCategoryList = Object.keys(incomeByCategory).map(key => ({ name: key, value: incomeByCategory[key] }));
-  const expenseByDate = reportTransactions.filter(t => t.type === 'expense').reduce((acc: Record<string, number>, curr: TransactionData) => { const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc; }, {});
+  
+  const expenseByDate = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc; }, {});
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
 
   const handleExportToExcel = () => {
@@ -474,6 +509,7 @@ export default function FintrackerApp() {
                   tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
                   tCategory={tCategory} setTCategory={setTCategory} tAccountId={tAccountId} setTAccountId={setTAccountId}
                   tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
+                  tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} // <--- PROPS BIAYA ADMIN BARU
                   tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
                 />
               )}
@@ -482,7 +518,7 @@ export default function FintrackerApp() {
                   reportMonth={reportMonth} setReportMonth={setReportMonth} handleExportToExcel={handleExportToExcel}
                   totalIncome={totalIncome} totalExpense={totalExpense} pieData={pieData} incomeCategoryList={incomeCategoryList} barData={barData}
                   categories={categories} reportTransactions={reportTransactions}
-                  globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult} // <--- PROPS BARU
+                  globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult} 
                 />
               )}
               {activeTab === "debts" && (
@@ -516,7 +552,7 @@ export default function FintrackerApp() {
 
             <HistoryList 
               transactions={transactions} onDelete={handleDeleteTransaction} 
-              onEdit={openEditModal} // <--- PROPS BARU UNTUK EDIT
+              onEdit={openEditModal} 
               onLoadMore={() => setTxLimit(prev => prev + 20)} hasMore={transactions.length >= txLimit}
             />
 
@@ -525,7 +561,7 @@ export default function FintrackerApp() {
       </div>
       <BottomNav activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
 
-      {/* --- POP-UP MODAL EDIT TRANSAKSI BARU --- */}
+      {/* POP-UP MODAL EDIT TRANSAKSI (DITAMBAHKAN INPUT BIAYA ADMIN EDIT) */}
       {editingTransaction && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
@@ -535,7 +571,6 @@ export default function FintrackerApp() {
             </div>
             
             <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-              {/* Tipe Transaksi (Read-Only demi kestabilan kalkulasi akuntansi) */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipe Transaksi</label>
                 <div className="p-3 bg-slate-100 rounded-xl text-xs font-black text-slate-600 uppercase tracking-wider">
@@ -543,19 +578,24 @@ export default function FintrackerApp() {
                 </div>
               </div>
 
-              {/* Nominal */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
                 <input type="number" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
               </div>
 
-              {/* Tanggal */}
+              {/* INPUT BIAYA ADMIN EDIT (HANYA MUNCUL JIKA TIPENYA TRANSFER) */}
+              {editTType === "transfer" && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Biaya Admin (Opsional)</label>
+                  <input type="number" className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold outline-blue-500 text-blue-900" value={editTAdminFee} onChange={(e) => setEditTAdminFee(e.target.value)} />
+                </div>
+              )}
+
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</label>
                 <input type="date" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer" value={editTDate} onChange={(e) => setEditTDate(e.target.value)} />
               </div>
 
-              {/* Kategori (Sembunyikan jika Transfer) */}
               {editTType !== "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
@@ -567,7 +607,6 @@ export default function FintrackerApp() {
                 </div>
               )}
 
-              {/* Dompet Asal */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dompet Asal</label>
                 <select className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer" value={editTAccountId} onChange={(e) => setEditTAccountId(e.target.value)}>
@@ -577,7 +616,6 @@ export default function FintrackerApp() {
                 </select>
               </div>
 
-              {/* Dompet Tujuan (Khusus Transfer) */}
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kirim Ke Dompet Tujuan</label>
@@ -589,13 +627,11 @@ export default function FintrackerApp() {
                 </div>
               )}
 
-              {/* Catatan */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan</label>
                 <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
               </div>
 
-              {/* Aksi */}
               <div className="flex gap-2 pt-2 shrink-0">
                 <button onClick={handleUpdateTransaction} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg transition-colors">Simpan Koreksi</button>
                 <button onClick={() => setEditingTransaction(null)} className="py-3 px-6 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-xl text-xs font-bold transition-colors">Batal</button>

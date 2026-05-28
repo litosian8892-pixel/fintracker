@@ -3,15 +3,21 @@ export interface AccountData {
 }
 
 export interface TransactionData { 
-  id: string; amount: number; type: string; accountId: string; toAccountId?: string; accountName: string; toAccountName?: string; note: string; category: string; tDate: string; 
+  id: string; 
+  amount: number; 
+  type: string; 
+  accountId: string; 
+  toAccountId?: string; 
+  accountName: string; 
+  toAccountName?: string; 
+  note: string; 
+  category: string; 
+  tDate: string; 
+  adminFee?: number; // <--- INI TAMBAHAN BARU
 }
 
 export interface CategoryData { 
-  id: string; 
-  name: string; 
-  type: string; 
-  budgetLimit?: number; 
-  expenseType?: "fixed" | "variable"; // <--- INI TAMBAHAN BARU
+  id: string; name: string; type: string; budgetLimit?: number; expenseType?: "fixed" | "variable";
 }
 
 export interface WalletTypeData { 

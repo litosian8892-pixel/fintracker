@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Download, ChevronDown, Search } from "lucide-react";
+import { Download, ChevronDown } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { CategoryData, TransactionData } from "../../types";
 
@@ -26,8 +26,8 @@ interface ReportsTabProps {
   barData: { date: string; amount: number }[];
   categories: CategoryData[];
   reportTransactions: TransactionData[];
-  globalSearch: string; setGlobalSearch: (val: string) => void; // <--- BARU
-  searchResult: TransactionData[]; // <--- BARU
+  globalSearch: string; setGlobalSearch: (val: string) => void;
+  searchResult: TransactionData[];
 }
 
 export default function ReportsTab({
@@ -48,7 +48,22 @@ export default function ReportsTab({
 
   const getCatType = (catName: string) => categories.find(c => c.name === catName)?.expenseType === "fixed" ? "fixed" : "variable";
   
-  const expenseTxs = reportTransactions.filter(t => t.type === 'expense');
+  // LOGIKA AKUNTANSI: Ekstrak Biaya Admin dari Transfer dan jadikan Pengeluaran Rincian secara otomatis!
+  const adminFeeTxs = reportTransactions
+    .filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0)
+    .map(t => ({
+      id: `fee-${t.id}`,
+      amount: t.adminFee!,
+      type: "expense",
+      accountId: t.accountId,
+      accountName: t.accountName,
+      category: "Biaya Admin",
+      note: `Biaya admin transfer ke ${t.toAccountName}`,
+      tDate: t.tDate
+    } as TransactionData));
+
+  // Gabungkan Pengeluaran murni dan Biaya Admin
+  const expenseTxs = [...reportTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
   const fixedTxs = expenseTxs.filter(t => getCatType(t.category) === "fixed");
   const varTxs = expenseTxs.filter(t => getCatType(t.category) === "variable");
   const incomeTxs = reportTransactions.filter(t => t.type === 'income');
@@ -56,6 +71,7 @@ export default function ReportsTab({
   const totalFixed = fixedTxs.reduce((a, b) => a + b.amount, 0);
   const totalVar = varTxs.reduce((a, b) => a + b.amount, 0);
 
+  // Grouping untuk Drill-Down
   const groupTransactionsAndItems = (txs: TransactionData[]) => {
     return txs.reduce((acc: Record<string, { total: number; items: TransactionData[] }>, curr) => {
       if (!acc[curr.category]) {
@@ -71,6 +87,7 @@ export default function ReportsTab({
   const varGrouped = groupTransactionsAndItems(varTxs);
   const incomeGrouped = groupTransactionsAndItems(incomeTxs);
 
+  // Filter Harian (Termasuk Biaya Admin)
   const getTxsForDay = (tglStr: string) => {
     const dayNum = tglStr.replace("Tgl ", "");
     return expenseTxs.filter(t => {
@@ -94,11 +111,11 @@ export default function ReportsTab({
         </button>
       </div>
 
-      {/* --- FITUR BARU: PENCARIAN GLOBAL (SEMUA WAKTU) --- */}
+      {/* PENCARIAN GLOBAL */}
       <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-4">
         <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">🔍 Pencarian Riwayat (Semua Waktu)</h3>
         <div className="relative">
-          <Search className="absolute left-3 top-3 text-slate-400" size={16} />
+          <Download className="absolute left-3 top-3.5 text-slate-400 rotate-90" size={16} />
           <input 
             type="text" 
             placeholder="Cari pengeluaran/bensin/servis motor..." 
@@ -194,7 +211,7 @@ export default function ReportsTab({
         )}
       </div>
 
-      {/* RINCIAN PENGELUARAN DENGAN ACCORDION LIST */}
+      {/* RINCIAN PENGELUARAN */}
       <div className="space-y-4">
         <h3 className="font-bold text-slate-800 text-sm px-1">Rincian Pengeluaran</h3>
         
