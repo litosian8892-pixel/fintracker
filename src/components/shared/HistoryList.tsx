@@ -1,15 +1,16 @@
 "use client";
-import { History, Trash2, ArrowRightLeft } from "lucide-react";
+import { History, Trash2, ArrowRightLeft, Edit2 } from "lucide-react";
 import { TransactionData } from "../../types";
 
 interface HistoryListProps {
   transactions: TransactionData[];
   onDelete: (t: TransactionData) => void;
+  onEdit: (t: TransactionData) => void; // <--- PROPS BARU
   onLoadMore: () => void;
   hasMore: boolean;
 }
 
-export default function HistoryList({ transactions, onDelete, onLoadMore, hasMore }: HistoryListProps) {
+export default function HistoryList({ transactions, onDelete, onEdit, onLoadMore, hasMore }: HistoryListProps) {
   return (
     <div className="space-y-4 md:col-span-1">
       <h3 className="font-bold text-slate-800 flex items-center gap-2 italic text-lg px-1">
@@ -36,10 +37,14 @@ export default function HistoryList({ transactions, onDelete, onLoadMore, hasMor
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
                   <p className={`font-black text-sm ${t.type === "income" ? "text-green-600" : t.type === "expense" ? "text-red-600" : "text-blue-600"}`}>
                     {t.type === "income" ? "+" : t.type === "expense" ? "-" : ""} {Number(t.amount).toLocaleString('id-ID')}
                   </p>
+                  {/* TOMBOL EDIT BARU */}
+                  <button onClick={() => onEdit(t)} className="p-2 text-slate-200 hover:text-blue-500 transition-all">
+                    <Edit2 size={14} />
+                  </button>
                   <button onClick={() => onDelete(t)} className="p-2 text-slate-200 hover:text-red-500 transition-all">
                     <Trash2 size={14} />
                   </button>
@@ -47,7 +52,6 @@ export default function HistoryList({ transactions, onDelete, onLoadMore, hasMor
               </div>
             ))}
             
-            {/* Tombol Load More */}
             {hasMore && (
               <button 
                 onClick={onLoadMore} 

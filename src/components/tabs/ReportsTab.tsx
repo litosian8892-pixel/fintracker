@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Download, ChevronDown } from "lucide-react";
+import { Download, ChevronDown, Search } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { CategoryData, TransactionData } from "../../types";
 
@@ -26,15 +26,17 @@ interface ReportsTabProps {
   barData: { date: string; amount: number }[];
   categories: CategoryData[];
   reportTransactions: TransactionData[];
+  globalSearch: string; setGlobalSearch: (val: string) => void; // <--- BARU
+  searchResult: TransactionData[]; // <--- BARU
 }
 
 export default function ReportsTab({
-  reportMonth, setReportMonth, handleExportToExcel, totalIncome, totalExpense, pieData, incomeCategoryList, barData, categories, reportTransactions
+  reportMonth, setReportMonth, handleExportToExcel, totalIncome, totalExpense, pieData, incomeCategoryList, barData, categories, reportTransactions,
+  globalSearch, setGlobalSearch, searchResult
 }: ReportsTabProps) {
   
-  // State untuk laci kategori & laci tanggal harian
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
-  const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({}); // <--- STATE BARU UNTUK HARI
+  const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({}); 
 
   const toggleExpand = (catName: string) => {
     setExpandedCategories(prev => ({ ...prev, [catName]: !prev[catName] }));
@@ -44,7 +46,6 @@ export default function ReportsTab({
     setExpandedDays(prev => ({ ...prev, [dayKey]: !prev[dayKey] }));
   };
 
-  // PEMISAHAN FIXED VS VARIABLE
   const getCatType = (catName: string) => categories.find(c => c.name === catName)?.expenseType === "fixed" ? "fixed" : "variable";
   
   const expenseTxs = reportTransactions.filter(t => t.type === 'expense');
@@ -55,7 +56,6 @@ export default function ReportsTab({
   const totalFixed = fixedTxs.reduce((a, b) => a + b.amount, 0);
   const totalVar = varTxs.reduce((a, b) => a + b.amount, 0);
 
-  // Grouping untuk Drill-Down Kategori
   const groupTransactionsAndItems = (txs: TransactionData[]) => {
     return txs.reduce((acc: Record<string, { total: number; items: TransactionData[] }>, curr) => {
       if (!acc[curr.category]) {
@@ -71,7 +71,6 @@ export default function ReportsTab({
   const varGrouped = groupTransactionsAndItems(varTxs);
   const incomeGrouped = groupTransactionsAndItems(incomeTxs);
 
-  // LOGIKA BARU: Ambil semua transaksi belanja di tanggal spesifik (Untuk laci harian)
   const getTxsForDay = (tglStr: string) => {
     const dayNum = tglStr.replace("Tgl ", "");
     return expenseTxs.filter(t => {
@@ -93,6 +92,46 @@ export default function ReportsTab({
         <button onClick={handleExportToExcel} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2">
           <Download size={14}/> Export Bulan Ini ke Excel
         </button>
+      </div>
+
+      {/* --- FITUR BARU: PENCARIAN GLOBAL (SEMUA WAKTU) --- */}
+      <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-4">
+        <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">🔍 Pencarian Riwayat (Semua Waktu)</h3>
+        <div className="relative">
+          <Search className="absolute left-3 top-3 text-slate-400" size={16} />
+          <input 
+            type="text" 
+            placeholder="Cari pengeluaran/bensin/servis motor..." 
+            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white text-slate-800"
+            value={globalSearch}
+            onChange={(e) => setGlobalSearch(e.target.value)}
+          />
+        </div>
+
+        {globalSearch && (
+          <div className="space-y-2 pt-2 animate-in fade-in">
+            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest border-b border-blue-100 pb-2">Hasil Pencarian ({searchResult.length})</p>
+            {searchResult.length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-2">Tidak ada transaksi yang cocok.</p>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {searchResult.map((t) => (
+                  <div key={t.id} className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex justify-between items-center text-xs">
+                    <div className="text-left">
+                      <p className="font-bold text-slate-700 leading-none mb-1.5">{t.note || t.category}</p>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase leading-none">
+                        {new Date(t.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})} • {t.accountName}
+                      </p>
+                    </div>
+                    <span className={`font-black ${t.type === 'income' ? 'text-green-600' : t.type === 'expense' ? 'text-red-600' : 'text-blue-600'}`}>
+                      {t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''} {t.amount.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="grid grid-cols-2 gap-4">
@@ -159,7 +198,6 @@ export default function ReportsTab({
       <div className="space-y-4">
         <h3 className="font-bold text-slate-800 text-sm px-1">Rincian Pengeluaran</h3>
         
-        {/* TABEL FIXED DENGAN DRILL DOWN */}
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
           <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1">Pengeluaran Tetap (Fixed)</p>
           {Object.keys(fixedGrouped).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
@@ -204,7 +242,6 @@ export default function ReportsTab({
           )}
         </div>
 
-        {/* TABEL VARIABLE DENGAN DRILL DOWN */}
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
           <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Pengeluaran Variabel (Jajan)</p>
           {Object.keys(varGrouped).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
@@ -250,7 +287,6 @@ export default function ReportsTab({
         </div>
       </div>
 
-      {/* TABEL PEMASUKAN DENGAN DRILL DOWN */}
       <div className="space-y-4">
         <h3 className="font-bold text-slate-800 text-sm px-1">Rincian Pemasukan</h3>
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
@@ -298,7 +334,6 @@ export default function ReportsTab({
         </div>
       </div>
 
-      {/* --- GRAFIK DONAT DENGAN LEGENDA --- */}
       {pieData.length > 0 && (
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 text-sm mb-4">Grafik Donat (Semua Pengeluaran)</h3>
@@ -332,7 +367,6 @@ export default function ReportsTab({
         </div>
       )}
       
-      {/* --- GRAFIK HARIAN DENGAN DRILL DOWN LIST (BISA KLIK UNTUK LIHAT RINCIAN) --- */}
       {barData.length > 0 && (
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm animate-in">
           <h3 className="font-bold text-slate-800 text-sm mb-4">Grafik Harian</h3>
@@ -367,13 +401,12 @@ export default function ReportsTab({
             </ResponsiveContainer>
           </div>
 
-          {/* --- DIUBAH: DAFTAR LEGENDA HARIAN SEKARANG BISA DI-KLIK (DRILL-DOWN) --- */}
           <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
             {barData.map((data, idx) => {
               const dayNum = data.date.replace("Tgl ", "");
               const formattedDate = `${dayNum} ${new Date(reportMonth + "-01").toLocaleDateString('id-ID', { month: 'short' })}`;
               const dayTxs = getTxsForDay(data.date);
-              const isExpanded = !!expandedDays[data.date]; // Cek status buka laci
+              const isExpanded = !!expandedDays[data.date]; 
 
               return (
                 <div key={idx} className="border-b border-slate-50 last:border-0 pb-2 pt-2 first:pt-0 last:pb-0">
@@ -392,7 +425,6 @@ export default function ReportsTab({
                     </span>
                   </div>
 
-                  {/* Laci Detail Belanja di Tanggal Tersebut */}
                   {isExpanded && (
                     <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 rounded-xl space-y-1.5 border border-slate-100 animate-in slide-in-from-top-2 duration-200">
                       {dayTxs.map((item) => (

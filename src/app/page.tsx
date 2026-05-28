@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc } from "firebase/firestore";
 import * as XLSX from "xlsx";
 
 import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData } from "../types";
@@ -18,6 +18,9 @@ import ReportsTab from "../components/tabs/ReportsTab";
 import AssetsTab from "../components/tabs/AssetsTab";
 import SettingsTab from "../components/tabs/SettingsTab";
 import DebtsTab from "../components/tabs/DebtsTab";
+
+// Import Ikon Modal Edit
+import { X, Calendar, Tag, Wallet } from "lucide-react";
 
 export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
@@ -34,6 +37,20 @@ export default function FintrackerApp() {
   const [reportTransactions, setReportTransactions] = useState<TransactionData[]>([]);
   const [txLimit, setTxLimit] = useState(20);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); 
+
+  // --- STATES BARU: FITUR PENCARIAN GLOBAL ---
+  const [globalSearch, setGlobalSearch] = useState("");
+  const [searchResult, setSearchResult] = useState<TransactionData[]>([]);
+
+  // --- STATES BARU: EDIT TRANSAKSI MODAL ---
+  const [editingTransaction, setEditingTransaction] = useState<TransactionData | null>(null);
+  const [editTAmount, setEditTAmount] = useState("");
+  const [editTType, setEditTType] = useState<"income" | "expense" | "transfer">("expense");
+  const [editTAccountId, setEditTAccountId] = useState("");
+  const [editTToAccountId, setEditTToAccountId] = useState("");
+  const [editTNote, setEditTNote] = useState("");
+  const [editTCategory, setEditTCategory] = useState("");
+  const [editTDate, setEditTDate] = useState("");
 
   // States: Asset / Wallet
   const [accName, setAccName] = useState("");
@@ -110,6 +127,24 @@ export default function FintrackerApp() {
     return () => unsubReport();
   }, [user, reportMonth]);
 
+  // EFFECT PENCARIAN GLOBAL: Mengambil 500 transaksi terakhir dan difilter client-side secara kilat
+  useEffect(() => {
+    if (!user || !globalSearch) {
+      setSearchResult([]);
+      return;
+    }
+    const qGlobal = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(500));
+    const unsubGlobal = onSnapshot(qGlobal, (sn) => {
+      const allTxs = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
+      const filtered = allTxs.filter(t => 
+        (t.note && t.note.toLowerCase().includes(globalSearch.toLowerCase())) ||
+        t.category.toLowerCase().includes(globalSearch.toLowerCase())
+      );
+      setSearchResult(filtered);
+    });
+    return () => unsubGlobal();
+  }, [user, globalSearch]);
+
   useEffect(() => {
     if (tType !== "transfer") {
       const filtered = categories.filter(c => c.type === tType);
@@ -118,7 +153,6 @@ export default function FintrackerApp() {
   }, [tType, categories]);
 
   // --- FUNCTIONS ---
-  
   const setupDefaultCategories = async (uid: string) => {
     const defaults = [
       { name: "Makanan", type: "expense", expenseType: "variable" }, 
@@ -173,7 +207,6 @@ export default function FintrackerApp() {
     await deleteDoc(doc(db, `users/${user.uid}/debts/${id}`));
   };
 
-  // OPTIMASI: Transaksi diganti menggunakan Direct Writes agar lancar offline & online di HP
   const handlePayDebt = async (debtId: string, payAmount: number, accountId: string) => {
     if (!user) return;
     const debt = debts.find(d => d.id === debtId);
@@ -184,10 +217,8 @@ export default function FintrackerApp() {
     const newStatus = newPaidAmount >= debt.amount ? "paid" : "active";
 
     try {
-      // 1. Update status Utang
       await updateDoc(doc(db, `users/${user.uid}/debts/${debtId}`), { paidAmount: newPaidAmount, status: newStatus });
       
-      // 2. Koreksi Saldo Dompet & Simpan transaksi
       if (debt.type === "debt") {
         await updateDoc(doc(db, `users/${user.uid}/accounts/${accountId}`), { balance: acc.balance - payAmount });
         await addDoc(collection(db, `users/${user.uid}/transactions`), {
@@ -268,7 +299,6 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal memindahkan posisi"); }
   };
 
-  // OPTIMASI: Pencatatan Transaksi diganti menggunakan Direct Writes agar instan tanpa lag & bisa offline!
   const handleTransaction = async () => {
     if (!user || !tAmount || !tAccountId) return alert("Isi data dengan lengkap!");
     if (tType === "transfer" && (!tToAccountId || tAccountId === tToAccountId)) return alert("Pilih dompet tujuan yang berbeda!");
@@ -302,7 +332,6 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal simpan transaksi"); }
   };
 
-  // OPTIMASI: Penghapusan Transaksi diganti menggunakan Direct Writes
   const handleDeleteTransaction = async (t: TransactionData) => {
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
     try {
@@ -322,6 +351,90 @@ export default function FintrackerApp() {
       await deleteDoc(doc(db, `users/${user.uid}/transactions/${t.id}`));
     } catch (e) { alert("Gagal hapus transaksi"); }
   };
+
+  // --- FUNGSIONALITAS BARU: MODAL EDIT TRANSAKSI ---
+  const openEditModal = (t: TransactionData) => {
+    setEditingTransaction(t);
+    setEditTAmount(t.amount.toString());
+    setEditTType(t.type as any);
+    setEditTAccountId(t.accountId);
+    setEditTToAccountId(t.toAccountId || "");
+    setEditTNote(t.note || "");
+    setEditTCategory(t.category);
+    setEditTDate(t.tDate);
+  };
+
+  const handleUpdateTransaction = async () => {
+    if (!user || !editingTransaction) return;
+    const oldT = editingTransaction;
+    const newAmount = Number(editTAmount);
+
+    try {
+      // 1. REVERSE (BALIKKAN) SALDO LAMA
+      if (oldT.type === "transfer") {
+        const oldSrc = accounts.find(a => a.id === oldT.accountId);
+        const oldDest = oldT.toAccountId ? accounts.find(a => a.id === oldT.toAccountId) : null;
+        if (oldSrc) await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.accountId}`), { balance: oldSrc.balance + oldT.amount });
+        if (oldDest) await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.toAccountId}`), { balance: oldDest.balance - oldT.amount });
+      } else {
+        const oldAcc = accounts.find(a => a.id === oldT.accountId);
+        if (oldAcc) {
+          const restoredBal = oldT.type === "income" ? oldAcc.balance - oldT.amount : oldAcc.balance + oldT.amount;
+          await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.accountId}`), { balance: restoredBal });
+        }
+      }
+
+      // 2. AMBIL DATA DOMPET SEGAR UNTUK DIAPLIKASIKAN DI SALDO BARU (Mencegah Bug Race-Condition)
+      const srcAccRef = doc(db, `users/${user.uid}/accounts/${editTAccountId}`);
+      const srcSnap = await getDoc(srcAccRef);
+      if (!srcSnap.exists()) throw "Dompet asal tidak ditemukan";
+      const freshSrcBal = srcSnap.data().balance;
+
+      if (editTType === "transfer") {
+        const destAccRef = doc(db, `users/${user.uid}/accounts/${editTToAccountId}`);
+        const destSnap = await getDoc(destAccRef);
+        if (!destSnap.exists()) throw "Dompet tujuan tidak ditemukan";
+        const freshDestBal = destSnap.data().balance;
+
+        // Terapkan Saldo Baru (Transfer)
+        await updateDoc(srcAccRef, { balance: freshSrcBal - newAmount });
+        await updateDoc(destAccRef, { balance: freshDestBal + newAmount });
+      } else {
+        // Terapkan Saldo Baru (Income / Expense)
+        const newBal = editTType === "income" ? freshSrcBal + newAmount : freshSrcBal - newAmount;
+        await updateDoc(srcAccRef, { balance: newBal });
+      }
+
+      // 3. UPDATE DATA TRANSAKSI DI FIRESTORE
+      const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
+      const updateData: any = {
+        amount: newAmount,
+        type: editTType,
+        accountId: editTAccountId,
+        accountName: accounts.find(a => a.id === editTAccountId)?.name || "",
+        note: editTNote,
+        category: editTType === "transfer" ? "Transfer" : editTCategory,
+        tDate: editTDate
+      };
+
+      if (editTType === "transfer") {
+        updateData.toAccountId = editTToAccountId;
+        updateData.toAccountName = accounts.find(a => a.id === editTToAccountId)?.name || "";
+      } else {
+        updateData.toAccountId = null;
+        updateData.toAccountName = null;
+      }
+
+      await updateDoc(tRef, updateData);
+
+      setEditingTransaction(null);
+      alert("Transaksi berhasil diperbarui!");
+    } catch (e) {
+      alert("Gagal memperbarui transaksi: " + e);
+    }
+  };
+
+  // --- END EDIT TRANSAKSI ---
 
   const totalIncome = reportTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
   const totalExpense = reportTransactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
@@ -369,6 +482,7 @@ export default function FintrackerApp() {
                   reportMonth={reportMonth} setReportMonth={setReportMonth} handleExportToExcel={handleExportToExcel}
                   totalIncome={totalIncome} totalExpense={totalExpense} pieData={pieData} incomeCategoryList={incomeCategoryList} barData={barData}
                   categories={categories} reportTransactions={reportTransactions}
+                  globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult} // <--- PROPS BARU
                 />
               )}
               {activeTab === "debts" && (
@@ -402,6 +516,7 @@ export default function FintrackerApp() {
 
             <HistoryList 
               transactions={transactions} onDelete={handleDeleteTransaction} 
+              onEdit={openEditModal} // <--- PROPS BARU UNTUK EDIT
               onLoadMore={() => setTxLimit(prev => prev + 20)} hasMore={transactions.length >= txLimit}
             />
 
@@ -409,6 +524,86 @@ export default function FintrackerApp() {
         </div>
       </div>
       <BottomNav activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
+
+      {/* --- POP-UP MODAL EDIT TRANSAKSI BARU --- */}
+      {editingTransaction && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="font-black text-slate-800 text-sm">Koreksi Transaksi</h3>
+              <button onClick={() => setEditingTransaction(null)} className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full"><X size={14}/></button>
+            </div>
+            
+            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              {/* Tipe Transaksi (Read-Only demi kestabilan kalkulasi akuntansi) */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipe Transaksi</label>
+                <div className="p-3 bg-slate-100 rounded-xl text-xs font-black text-slate-600 uppercase tracking-wider">
+                  {editTType === "expense" ? "🔴 Pengeluaran" : editTType === "income" ? "🟢 Pemasukan" : "🔵 Transfer Dana"}
+                </div>
+              </div>
+
+              {/* Nominal */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
+                <input type="number" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
+              </div>
+
+              {/* Tanggal */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</label>
+                <input type="date" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer" value={editTDate} onChange={(e) => setEditTDate(e.target.value)} />
+              </div>
+
+              {/* Kategori (Sembunyikan jika Transfer) */}
+              {editTType !== "transfer" && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
+                  <select className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer" value={editTCategory} onChange={(e) => setEditTCategory(e.target.value)}>
+                    {categories.filter(c => c.type === editTType).map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Dompet Asal */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dompet Asal</label>
+                <select className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer" value={editTAccountId} onChange={(e) => setEditTAccountId(e.target.value)}>
+                  {accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Dompet Tujuan (Khusus Transfer) */}
+              {editTType === "transfer" && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kirim Ke Dompet Tujuan</label>
+                  <select className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold outline-blue-500 text-blue-900 cursor-pointer" value={editTToAccountId} onChange={(e) => setEditTToAccountId(e.target.value)}>
+                    {accounts.map(acc => (
+                      <option key={acc.id} value={acc.id}>{acc.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Catatan */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan</label>
+                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
+              </div>
+
+              {/* Aksi */}
+              <div className="flex gap-2 pt-2 shrink-0">
+                <button onClick={handleUpdateTransaction} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg transition-colors">Simpan Koreksi</button>
+                <button onClick={() => setEditingTransaction(null)} className="py-3 px-6 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-xl text-xs font-bold transition-colors">Batal</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
