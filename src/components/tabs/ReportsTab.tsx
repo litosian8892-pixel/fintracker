@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Download, ChevronDown, Search } from "lucide-react";
+import { Download, ChevronDown } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { CategoryData, TransactionData } from "../../types";
 
@@ -26,8 +26,8 @@ interface ReportsTabProps {
   barData: { date: string; amount: number }[];
   categories: CategoryData[];
   reportTransactions: TransactionData[];
-  globalSearch: string; setGlobalSearch: (val: string) => void; // <--- SEKARANG SUDAH SINKRON
-  searchResult: TransactionData[]; // <--- SEKARANG SUDAH SINKRON
+  globalSearch: string; setGlobalSearch: (val: string) => void;
+  searchResult: TransactionData[];
 }
 
 export default function ReportsTab({
@@ -87,6 +87,11 @@ export default function ReportsTab({
   const varGrouped = groupTransactionsAndItems(varTxs);
   const incomeGrouped = groupTransactionsAndItems(incomeTxs);
 
+  // --- ALGORITMA BARU: URUTKAN DAFTAR KATEGORI BERDASARKAN TOTAL NOMINAL TERBESAR ---
+  const sortedFixedKeys = Object.keys(fixedGrouped).sort((a, b) => fixedGrouped[b].total - fixedGrouped[a].total);
+  const sortedVarKeys = Object.keys(varGrouped).sort((a, b) => varGrouped[b].total - varGrouped[a].total);
+  const sortedIncomeKeys = Object.keys(incomeGrouped).sort((a, b) => incomeGrouped[b].total - incomeGrouped[a].total);
+
   const getTxsForDay = (tglStr: string) => {
     const dayNum = tglStr.replace("Tgl ", "");
     return expenseTxs.filter(t => {
@@ -98,7 +103,6 @@ export default function ReportsTab({
 
   const budgetCategories = categories.filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0);
 
-  // URUTKAN DATA DARI PERSENTASE TERBESAR KE TERKECIL
   const sortedPieData = [...pieData].sort((a, b) => b.value - a.value);
 
   return (
@@ -117,7 +121,7 @@ export default function ReportsTab({
       <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-4">
         <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">🔍 Pencarian Riwayat (Semua Waktu)</h3>
         <div className="relative">
-          <Search className="absolute left-3 top-3 text-slate-400" size={16} />
+          <Download className="absolute left-3 top-3.5 text-slate-400 rotate-90" size={16} />
           <input 
             type="text" 
             placeholder="Cari pengeluaran/bensin/servis motor..." 
@@ -213,16 +217,16 @@ export default function ReportsTab({
         )}
       </div>
 
-      {/* RINCIAN PENGELUARAN DENGAN ACCORDION LIST */}
+      {/* RINCIAN PENGELUARAN */}
       <div className="space-y-4">
         <h3 className="font-bold text-slate-800 text-sm px-1">Rincian Pengeluaran</h3>
         
-        {/* TABEL FIXED DENGAN DRILL DOWN */}
+        {/* TABEL FIXED DENGAN DRILL DOWN (TERURUT) */}
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
           <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1">Pengeluaran Tetap (Fixed)</p>
-          {Object.keys(fixedGrouped).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
+          {sortedFixedKeys.length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
             <div className="space-y-2">
-              {Object.keys(fixedGrouped).map((key) => {
+              {sortedFixedKeys.map((key) => {
                 const data = fixedGrouped[key];
                 const isExpanded = !!expandedCategories[key];
                 return (
@@ -262,12 +266,12 @@ export default function ReportsTab({
           )}
         </div>
 
-        {/* TABEL VARIABLE DENGAN DRILL DOWN */}
+        {/* TABEL VARIABLE DENGAN DRILL DOWN (TERURUT) */}
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
           <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Pengeluaran Variabel (Jajan)</p>
-          {Object.keys(varGrouped).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
+          {sortedVarKeys.length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
             <div className="space-y-2">
-              {Object.keys(varGrouped).map((key) => {
+              {sortedVarKeys.map((key) => {
                 const data = varGrouped[key];
                 const isExpanded = !!expandedCategories[key];
                 return (
@@ -308,14 +312,14 @@ export default function ReportsTab({
         </div>
       </div>
 
-      {/* TABEL PEMASUKAN DENGAN DRILL DOWN */}
+      {/* TABEL PEMASUKAN DENGAN DRILL DOWN (TERURUT) */}
       <div className="space-y-4">
         <h3 className="font-bold text-slate-800 text-sm px-1">Rincian Pemasukan</h3>
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
           <p className="text-[10px] font-black text-green-500 uppercase tracking-widest mb-1">Detail Pemasukan</p>
-          {Object.keys(incomeGrouped).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
+          {sortedIncomeKeys.length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
             <div className="space-y-2">
-              {Object.keys(incomeGrouped).map((key) => {
+              {sortedIncomeKeys.map((key) => {
                 const data = incomeGrouped[key];
                 const isExpanded = !!expandedCategories[key];
                 return (
@@ -356,7 +360,7 @@ export default function ReportsTab({
         </div>
       </div>
 
-      {/* --- GRAFIK DONAT DENGAN SORTING --- */}
+      {/* --- GRAFIK DONAT --- */}
       {sortedPieData.length > 0 && (
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 text-sm mb-4">Grafik Donat (Semua Pengeluaran)</h3>
@@ -371,7 +375,6 @@ export default function ReportsTab({
             </ResponsiveContainer>
           </div>
 
-          {/* LEGENDA BESAR KE KECIL */}
           <div className="mt-5 pt-4 border-t border-slate-100 space-y-2.5">
             {sortedPieData.map((data, idx) => {
               const percentage = totalExpense > 0 ? ((data.value / totalExpense) * 100).toFixed(1) : "0";
