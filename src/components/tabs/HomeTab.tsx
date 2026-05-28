@@ -23,7 +23,7 @@ export default function HomeTab({
 }: HomeTabProps) {
   
   const [showCatModal, setShowCatModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(""); // <--- MEMASTIKAN STATE SEARCH SUDAH ADA
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleTypeChange = (newType: "income" | "expense" | "transfer") => {
     setTType(newType);
@@ -42,7 +42,7 @@ export default function HomeTab({
     <div className="space-y-6 animate-in fade-in relative">
       <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-4 relative z-10">
         
-        {/* TOMBOL TOGGLE TIPE TRANSAKSI (WARNA TEBAL) */}
+        {/* TOMBOL TOGGLE TIPE TRANSAKSI */}
         <div className="flex gap-2">
           <button onClick={() => handleTypeChange("expense")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold transition-colors ${tType === "expense" ? "bg-red-500 text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>PENGELUARAN</button>
           <button onClick={() => handleTypeChange("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-bold transition-colors ${tType === "income" ? "bg-green-500 text-white shadow-md" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>PEMASUKAN</button>
@@ -60,7 +60,7 @@ export default function HomeTab({
             <div className="relative">
                 <Tag className="absolute left-3 top-3.5 text-slate-400" size={16}/>
                 <div 
-                  onClick={() => { setShowCatModal(true); setSearchQuery(""); }} // Reset pencarian saat dibuka
+                  onClick={() => { setShowCatModal(true); setSearchQuery(""); }} 
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors rounded-2xl text-xs font-bold text-slate-700 cursor-pointer flex items-center justify-between border border-slate-100"
                 >
                   <span className="truncate">{tCategory || "Pilih Kategori"}</span>
@@ -104,7 +104,7 @@ export default function HomeTab({
         <button onClick={handleTransaction} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-lg hover:bg-slate-800 transition-colors">Simpan Transaksi</button>
       </div>
 
-      {/* --- POP-UP MODAL CUSTOM KATEGORI DENGAN SEARCH BAR (DIKEMBALIKAN) --- */}
+      {/* POP-UP MODAL CUSTOM KATEGORI DENGAN SEARCH BAR */}
       {showCatModal && tType !== "transfer" && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
@@ -118,7 +118,7 @@ export default function HomeTab({
               <button onClick={() => setShowCatModal(false)} className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full transition-colors"><X size={14}/></button>
             </div>
 
-            {/* BAR PENCARIAN (SEARCH BAR) - KEMBALI HADIR */}
+            {/* BAR PENCARIAN (Atribut autoFocus sudah dihapus agar keyboard HP tidak otomatis muncul) */}
             <div className="p-4 border-b border-slate-100 shrink-0 bg-white">
               <div className="relative">
                 <Search className="absolute left-3 top-3 text-slate-400" size={16} />
@@ -128,7 +128,7 @@ export default function HomeTab({
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white text-slate-800"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus
+                  // autoFocus sudah dibuang di sini!
                 />
               </div>
             </div>
