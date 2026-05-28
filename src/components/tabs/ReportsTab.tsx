@@ -26,13 +26,10 @@ interface ReportsTabProps {
   barData: { date: string; amount: number }[];
   categories: CategoryData[];
   reportTransactions: TransactionData[];
-  globalSearch: string; setGlobalSearch: (val: string) => void;
-  searchResult: TransactionData[];
 }
 
 export default function ReportsTab({
-  reportMonth, setReportMonth, handleExportToExcel, totalIncome, totalExpense, pieData, incomeCategoryList, barData, categories, reportTransactions,
-  globalSearch, setGlobalSearch, searchResult
+  reportMonth, setReportMonth, handleExportToExcel, totalIncome, totalExpense, pieData, incomeCategoryList, barData, categories, reportTransactions
 }: ReportsTabProps) {
   
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
@@ -46,24 +43,10 @@ export default function ReportsTab({
     setExpandedDays(prev => ({ ...prev, [dayKey]: !prev[dayKey] }));
   };
 
+  // PEMISAHAN FIXED VS VARIABLE
   const getCatType = (catName: string) => categories.find(c => c.name === catName)?.expenseType === "fixed" ? "fixed" : "variable";
   
-  // LOGIKA AKUNTANSI: Ekstrak Biaya Admin dari Transfer dan jadikan Pengeluaran Rincian secara otomatis!
-  const adminFeeTxs = reportTransactions
-    .filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0)
-    .map(t => ({
-      id: `fee-${t.id}`,
-      amount: t.adminFee!,
-      type: "expense",
-      accountId: t.accountId,
-      accountName: t.accountName,
-      category: "Biaya Admin",
-      note: `Biaya admin transfer ke ${t.toAccountName}`,
-      tDate: t.tDate
-    } as TransactionData));
-
-  // Gabungkan Pengeluaran murni dan Biaya Admin
-  const expenseTxs = [...reportTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
+  const expenseTxs = reportTransactions.filter(t => t.type === 'expense');
   const fixedTxs = expenseTxs.filter(t => getCatType(t.category) === "fixed");
   const varTxs = expenseTxs.filter(t => getCatType(t.category) === "variable");
   const incomeTxs = reportTransactions.filter(t => t.type === 'income');
@@ -87,7 +70,6 @@ export default function ReportsTab({
   const varGrouped = groupTransactionsAndItems(varTxs);
   const incomeGrouped = groupTransactionsAndItems(incomeTxs);
 
-  // Filter Harian (Termasuk Biaya Admin)
   const getTxsForDay = (tglStr: string) => {
     const dayNum = tglStr.replace("Tgl ", "");
     return expenseTxs.filter(t => {
@@ -99,6 +81,9 @@ export default function ReportsTab({
 
   const budgetCategories = categories.filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0);
 
+  // --- OPTIMASI ALGORITMA: URUTKAN DATA DARI PERSENTASE TERBESAR KE TERKECIL ---
+  const sortedPieData = [...pieData].sort((a, b) => b.value - a.value);
+
   return (
     <div className="space-y-6 animate-in fade-in">
       <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm flex flex-col gap-4">
@@ -109,46 +94,6 @@ export default function ReportsTab({
         <button onClick={handleExportToExcel} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2">
           <Download size={14}/> Export Bulan Ini ke Excel
         </button>
-      </div>
-
-      {/* PENCARIAN GLOBAL */}
-      <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-4">
-        <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">🔍 Pencarian Riwayat (Semua Waktu)</h3>
-        <div className="relative">
-          <Download className="absolute left-3 top-3.5 text-slate-400 rotate-90" size={16} />
-          <input 
-            type="text" 
-            placeholder="Cari pengeluaran/bensin/servis motor..." 
-            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white text-slate-800"
-            value={globalSearch}
-            onChange={(e) => setGlobalSearch(e.target.value)}
-          />
-        </div>
-
-        {globalSearch && (
-          <div className="space-y-2 pt-2 animate-in fade-in">
-            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest border-b border-blue-100 pb-2">Hasil Pencarian ({searchResult.length})</p>
-            {searchResult.length === 0 ? (
-              <p className="text-xs text-slate-400 italic py-2">Tidak ada transaksi yang cocok.</p>
-            ) : (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {searchResult.map((t) => (
-                  <div key={t.id} className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex justify-between items-center text-xs">
-                    <div className="text-left">
-                      <p className="font-bold text-slate-700 leading-none mb-1.5">{t.note || t.category}</p>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase leading-none">
-                        {new Date(t.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})} • {t.accountName}
-                      </p>
-                    </div>
-                    <span className={`font-black ${t.type === 'income' ? 'text-green-600' : t.type === 'expense' ? 'text-red-600' : 'text-blue-600'}`}>
-                      {t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''} {t.amount.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
       
       <div className="grid grid-cols-2 gap-4">
@@ -211,10 +156,11 @@ export default function ReportsTab({
         )}
       </div>
 
-      {/* RINCIAN PENGELUARAN */}
+      {/* RINCIAN PENGELUARAN DENGAN ACCORDION LIST */}
       <div className="space-y-4">
         <h3 className="font-bold text-slate-800 text-sm px-1">Rincian Pengeluaran</h3>
         
+        {/* TABEL FIXED DENGAN DRILL DOWN */}
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
           <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1">Pengeluaran Tetap (Fixed)</p>
           {Object.keys(fixedGrouped).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
@@ -259,6 +205,7 @@ export default function ReportsTab({
           )}
         </div>
 
+        {/* TABEL VARIABLE DENGAN DRILL DOWN */}
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
           <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Pengeluaran Variabel (Jajan)</p>
           {Object.keys(varGrouped).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
@@ -304,6 +251,7 @@ export default function ReportsTab({
         </div>
       </div>
 
+      {/* TABEL PEMASUKAN DENGAN DRILL DOWN */}
       <div className="space-y-4">
         <h3 className="font-bold text-slate-800 text-sm px-1">Rincian Pemasukan</h3>
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
@@ -351,27 +299,30 @@ export default function ReportsTab({
         </div>
       </div>
 
-      {pieData.length > 0 && (
+      {/* --- GRAFIK DONAT DENGAN SORTING DAN LEGENDA SINKRON --- */}
+      {sortedPieData.length > 0 && (
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 text-sm mb-4">Grafik Donat (Semua Pengeluaran)</h3>
           <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <RePieChart>
-                <Pie data={pieData} innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                {/* Menggunakan sortedPieData agar grafik dimulai dari potongan terbesar */}
+                <Pie data={sortedPieData} innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value">
+                  {sortedPieData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
               </RePieChart>
             </ResponsiveContainer>
           </div>
 
+          {/* LEGENDA YANG SEKARANG SUDAH BERURUTAN DARI BESAR KE KECIL */}
           <div className="mt-5 pt-4 border-t border-slate-100 space-y-2.5">
-            {pieData.map((data, idx) => {
+            {sortedPieData.map((data, idx) => {
               const percentage = totalExpense > 0 ? ((data.value / totalExpense) * 100).toFixed(1) : "0";
               return (
-                <div key={idx} className="flex justify-between items-center text-xs font-bold">
+                <div key={idx} className="flex justify-between items-center text-xs font-bold animate-in fade-in">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-3 h-3 rounded-full shrink-0 animate-pulse" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
                     <span className="text-slate-600">{data.name}</span>
                     <span className="text-slate-400 text-[10px] font-bold">({percentage}%)</span>
                   </div>
@@ -384,6 +335,7 @@ export default function ReportsTab({
         </div>
       )}
       
+      {/* --- GRAFIK HARIAN --- */}
       {barData.length > 0 && (
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm animate-in">
           <h3 className="font-bold text-slate-800 text-sm mb-4">Grafik Harian</h3>
@@ -418,6 +370,7 @@ export default function ReportsTab({
             </ResponsiveContainer>
           </div>
 
+          {/* LEGENDA DETAIL GRAFIK HARIAN */}
           <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
             {barData.map((data, idx) => {
               const dayNum = data.date.replace("Tgl ", "");
