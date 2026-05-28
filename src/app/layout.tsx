@@ -9,7 +9,9 @@ export const metadata: Metadata = {
   description: "Aplikasi pencatatan keuangan pribadi yang akurat dan aman.",
   manifest: "/manifest.json",
   icons: {
-    apple: "https://img.icons8.com/color/192/wallet--v1.png", // <--- KHUSUS AGAR LOGO MUNCUL DI IPHONE (iOS)
+    icon: "https://img.icons8.com/color/48/wallet--v1.png",       // <--- BARU: PENGGANTI BUMI BULAT DI TAB BROWSER
+    shortcut: "https://img.icons8.com/color/48/wallet--v1.png",   // <--- BARU: SHORTCUT ICON
+    apple: "https://img.icons8.com/color/192/wallet--v1.png",     // <--- KHUSUS UNTUK IPHONE (iOS)
   }
 };
 
