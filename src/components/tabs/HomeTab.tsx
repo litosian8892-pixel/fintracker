@@ -78,6 +78,18 @@ export default function HomeTab({
   // STATE KEYPAD KUSTOM (PENCATAT AKTIF)
   const [activeKeypad, setActiveKeypad] = useState<"amount" | "adminFee" | null>(null);
 
+  // DETEKSI PERANGKAT RESPONSIF (MOBILE vs DESKTOP)
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768); 
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const filteredAccounts = tType === "expense"
     ? accounts.filter((acc) => !acc.isSavings)
     : accounts;
@@ -198,13 +210,13 @@ export default function HomeTab({
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
             NOMINAL (RP)
           </label>
-          {/* inputMode="none" Mencegah keyboard standard QWERTY HP untuk keluar */}
+          {/* inputMode="none" Mencegah keyboard bawaan HP keluar HANYA saat dibuka di perangkat mobile */}
           <input
             type="text"
-            inputMode="none" 
-            onFocus={() => setActiveKeypad("amount")}
-            className={`w-full max-w-full p-3.5 bg-white border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 transition-all ${activeKeypad === 'amount' ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-slate-800'}`}
-            placeholder="Ketuk untuk input nominal..."
+            inputMode={isMobile ? "none" : undefined} 
+            onFocus={() => { if(isMobile) setActiveKeypad("amount"); }}
+            className={`w-full max-w-full p-3.5 bg-white border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 transition-all ${activeKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-slate-800'}`}
+            placeholder={isMobile ? "Ketuk untuk input nominal..." : "Rp 0 atau ketik ekspresi matematika..."}
             value={tAmount}
             onChange={(e) => setTAmount(e.target.value)}
           />
@@ -221,13 +233,13 @@ export default function HomeTab({
             <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
               Biaya Admin (Opsional)
             </label>
-            {/* inputMode="none" Mencegah keyboard standard HP untuk keluar */}
+            {/* inputMode="none" Mencegah keyboard bawaan HP keluar HANYA saat dibuka di perangkat mobile */}
             <input
               type="text"
-              inputMode="none"
-              onFocus={() => setActiveKeypad("adminFee")}
-              className={`w-full max-w-full p-3.5 bg-white border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 transition-all ${activeKeypad === 'adminFee' ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-slate-800'}`}
-              placeholder="Ketuk untuk input biaya admin..."
+              inputMode={isMobile ? "none" : undefined}
+              onFocus={() => { if(isMobile) setActiveKeypad("adminFee"); }}
+              className={`w-full max-w-full p-3.5 bg-white border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 transition-all ${activeKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-slate-800'}`}
+              placeholder={isMobile ? "Ketuk untuk input biaya admin..." : "Rp 0 atau ketik ekspresi matematika..."}
               value={tAdminFee}
               onChange={(e) => setTAdminFee(e.target.value)}
             />
@@ -425,8 +437,8 @@ export default function HomeTab({
         </div>
       )}
 
-      {/* --- DRAW KEYPAD KALKULATOR KUSTOM --- */}
-      {activeKeypad && (
+      {/* --- DRAW KEYPAD KALKULATOR KUSTOM (HANYA AKTIF DI SELULER) --- */}
+      {isMobile && activeKeypad && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
           <div className="fixed bottom-0 left-0 right-0 z-[150] bg-slate-950 border-t border-slate-800 p-4 pb-6 transition-transform duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">

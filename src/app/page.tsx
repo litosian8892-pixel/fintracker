@@ -84,6 +84,18 @@ export default function FintrackerApp() {
   const [editTAdminFee, setEditTAdminFee] = useState(""); 
   const [activeEditKeypad, setActiveEditKeypad] = useState<"amount" | "adminFee" | null>(null);
 
+  // DETEKSI PERANGKAT RESPONSIF (MOBILE vs DESKTOP)
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768); 
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // States: Asset / Wallet
   const [accName, setAccName] = useState("");
   const [accBalance, setAccBalance] = useState("");
@@ -671,7 +683,7 @@ export default function FintrackerApp() {
     }
   };
 
-  // --- LOGIKA FEEDBACK GETARAN RINGAN PADA TOMBOL KALKULATOR ---
+  // --- LOGIKA FEEDBACK GETARAN RINGAN PADA HP ---
   const triggerHapticFeedback = () => {
     if (typeof window !== "undefined" && navigator.vibrate) {
       navigator.vibrate(10);
@@ -842,13 +854,13 @@ export default function FintrackerApp() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
-                {/* Atribut inputMode='none' untuk mematikan keyboard fisik/bawaan HP */}
+                {/* Atribut inputMode dikondisikan secara responsif */}
                 <input 
                   disabled={isSubmitting} 
                   type="text" 
-                  inputMode="none" 
-                  onFocus={() => setActiveEditKeypad("amount")}
-                  className={`w-full p-3.5 bg-slate-50 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 disabled:opacity-50 transition-all ${activeEditKeypad === 'amount' ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white' : 'border-slate-100'}`}
+                  inputMode={isMobile ? "none" : undefined} 
+                  onFocus={() => { if(isMobile) setActiveEditKeypad("amount"); }}
+                  className={`w-full p-3.5 bg-slate-50 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 disabled:opacity-50 transition-all ${activeEditKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white' : 'border-slate-100'}`}
                   value={editTAmount} 
                   onChange={(e) => setEditTAmount(e.target.value)} 
                 />
@@ -862,13 +874,13 @@ export default function FintrackerApp() {
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Biaya Admin (Opsional)</label>
-                  {/* Atribut inputMode='none' untuk mematikan keyboard fisik/bawaan HP */}
+                  {/* Atribut inputMode dikondisikan secara responsif */}
                   <input 
                     disabled={isSubmitting} 
                     type="text" 
-                    inputMode="none" 
-                    onFocus={() => setActiveEditKeypad("adminFee")}
-                    className={`w-full p-3.5 bg-blue-50/20 border rounded-xl text-xs font-bold outline-blue-500 text-blue-900 disabled:opacity-50 transition-all ${activeEditKeypad === 'adminFee' ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white' : 'border-blue-100'}`}
+                    inputMode={isMobile ? "none" : undefined} 
+                    onFocus={() => { if(isMobile) setActiveEditKeypad("adminFee"); }}
+                    className={`w-full p-3.5 bg-blue-50/20 border rounded-xl text-xs font-bold outline-blue-500 text-blue-900 disabled:opacity-50 transition-all ${activeEditKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white' : 'border-blue-100'}`}
                     value={editTAdminFee} 
                     onChange={(e) => setEditTAdminFee(e.target.value)} 
                   />
@@ -942,8 +954,8 @@ export default function FintrackerApp() {
         </div>
       )}
 
-      {/* --- DRAW KEYPAD KALKULATOR KUSTOM UNTUK EDIT MODAL --- */}
-      {editingTransaction && activeEditKeypad && (
+      {/* --- DRAW KEYPAD KALKULATOR KUSTOM UNTUK EDIT MODAL (HANYA AKTIF DI SELULER) --- */}
+      {isMobile && editingTransaction && activeEditKeypad && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveEditKeypad(null)}></div>
           <div className="fixed bottom-0 left-0 right-0 z-[150] bg-slate-950 border-t border-slate-800 p-4 pb-6 transition-transform duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
