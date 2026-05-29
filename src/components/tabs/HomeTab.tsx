@@ -171,7 +171,7 @@ export default function HomeTab({
           </label>
           <input
             type="text"
-            className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
+            className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
             placeholder="Rp 0 atau ekspresi matematika (contoh: 20000+15000)"
             value={tAmount}
             onChange={(e) => setTAmount(e.target.value)}
@@ -191,7 +191,7 @@ export default function HomeTab({
             </label>
             <input
               type="text"
-              className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
+              className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
               placeholder="Rp 0 atau ekspresi matematika"
               value={tAdminFee}
               onChange={(e) => setTAdminFee(e.target.value)}
@@ -204,22 +204,22 @@ export default function HomeTab({
           </div>
         )}
 
-        {/* Tanggal & Pilihan Kategori Kustom Pop-up */}
+        {/* Tanggal & Pilihan Kategori Kustom Pop-up (OPTIMASI STRUKTUR GRID & TIPE DATE) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0"> 
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
               📅 TANGGAL
             </label>
             <input
               type="date"
-              className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
+              className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer appearance-none"
               value={tDate}
               onChange={(e) => setTDate(e.target.value)}
             />
           </div>
 
           {tType !== "transfer" ? (
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0"> 
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
                 🏷️ KATEGORI
               </label>
@@ -228,11 +228,11 @@ export default function HomeTab({
                 className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50"
               >
                 <span className="truncate">{tCategory || "Pilih Kategori"}</span>
-                <ChevronDown size={14} className="text-slate-400" />
+                <ChevronDown size={14} className="text-slate-400 shrink-0" />
               </div>
             </div>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0"> 
               <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1">
                 🏷️ KATEGORI
               </label>
@@ -243,14 +243,14 @@ export default function HomeTab({
           )}
         </div>
 
-        {/* Akun Sumber / Tujuan */}
+        {/* Akun Sumber / Tujuan (OPTIMASI STRUKTUR GRID DAN MIN-WIDTH) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className={`space-y-1 ${tType === "transfer" ? "" : "md:col-span-2"}`}> 
+          <div className={`space-y-1 min-w-0 ${tType === "transfer" ? "" : "md:col-span-2"}`}> 
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
               💳 DOMPET
             </label>
             <select
-              className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
+              className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
               value={tAccountId}
               onChange={(e) => setTAccountId(e.target.value)}
             >
@@ -263,12 +263,12 @@ export default function HomeTab({
           </div>
 
           {tType === "transfer" && (
-            <div className="space-y-1 animate-in fade-in slide-in-from-left-2 duration-200">
+            <div className="space-y-1 min-w-0 animate-in fade-in slide-in-from-left-2 duration-200">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
                 💳 DOMPET TUJUAN
               </label>
               <select
-                className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
+                className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
                 value={tToAccountId}
                 onChange={(e) => setTToAccountId(e.target.value)}
               >
@@ -290,7 +290,7 @@ export default function HomeTab({
           </label>
           <input
             type="text"
-            className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
+            className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
             placeholder="Tulis keterangan transaksi..."
             value={tNote}
             onChange={(e) => setTNote(e.target.value)}
@@ -340,7 +340,7 @@ export default function HomeTab({
               {tType === "expense" ? (
                 <div className="grid grid-cols-2 gap-4">
                   {/* KOLOM KIRI: VARIABEL (Sering) */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0">
                     <div className="sticky top-0 bg-white pb-2 mb-2 border-b border-orange-100 z-10">
                       <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel (Sering)</p>
                     </div>
@@ -355,7 +355,7 @@ export default function HomeTab({
                   </div>
                   
                   {/* KOLOM KANAN: FIXED (Bulanan) */}
-                  <div className="space-y-2 border-l border-slate-100 pl-4">
+                  <div className="space-y-2 border-l border-slate-100 pl-4 min-w-0">
                     <div className="sticky top-0 bg-white pb-2 mb-2 border-b border-purple-100 z-10">
                       <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">🟣 Tetap (Bulanan)</p>
                     </div>
