@@ -72,7 +72,7 @@ export default function FintrackerApp() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [searchResult, setSearchResult] = useState<TransactionData[]>([]);
 
-  // STATES: EDIT TRANSAKSI MODAL
+  // STATES: EDIT TRANSAKSI MODAL & KEYPAD EDIT KUSTOM
   const [editingTransaction, setEditingTransaction] = useState<TransactionData | null>(null);
   const [editTAmount, setEditTAmount] = useState("");
   const [editTType, setEditTType] = useState<"income" | "expense" | "transfer">("expense");
@@ -82,6 +82,7 @@ export default function FintrackerApp() {
   const [editTCategory, setEditTCategory] = useState("");
   const [editTDate, setEditTDate] = useState("");
   const [editTAdminFee, setEditTAdminFee] = useState(""); 
+  const [activeEditKeypad, setActiveEditKeypad] = useState<"amount" | "adminFee" | null>(null);
 
   // States: Asset / Wallet
   const [accName, setAccName] = useState("");
@@ -670,6 +671,32 @@ export default function FintrackerApp() {
     }
   };
 
+  // --- LOGIKA FEEDBACK GETARAN RINGAN PADA TOMBOL KALKULATOR ---
+  const triggerHapticFeedback = () => {
+    if (typeof window !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+  };
+
+  const handleEditKeypadPress = (key: string) => {
+    triggerHapticFeedback();
+    const currentVal = activeEditKeypad === "amount" ? editTAmount : editTAdminFee;
+    const setVal = activeEditKeypad === "amount" ? setEditTAmount : setEditTAdminFee;
+
+    if (key === "⌫") {
+      setVal(currentVal.slice(0, -1));
+    } else if (key === "C") {
+      setVal("");
+    } else if (key === "=") {
+      const evaluated = safeEvaluate(currentVal);
+      setVal(evaluated > 0 ? evaluated.toString() : "");
+    } else if (key === "Ya") {
+      setActiveEditKeypad(null);
+    } else {
+      setVal(currentVal + key);
+    }
+  };
+
   // --- KOREKSI AKUNTANSI LAPORAN ---
   const adminFeeTxs = reportTransactions
     .filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0)
@@ -767,7 +794,7 @@ export default function FintrackerApp() {
                   accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} 
                   handleCreateAccount={handleCreateAccount} editingAccId={editingAccId} setEditingAccId={setEditingAccId} 
                   editAccName={editAccName} setEditAccName={setEditAccName} editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} 
-                  editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} 
+                  editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setAccIsSavings} 
                   editAccTargetBalance={editAccTargetBalance} setEditAccTargetBalance={setEditAccTargetBalance} 
                   handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
                 />
@@ -802,10 +829,10 @@ export default function FintrackerApp() {
           <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h3 className="font-black text-slate-800 text-sm">Koreksi Transaksi</h3>
-              <button disabled={isSubmitting} onClick={() => setEditingTransaction(null)} className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full disabled:opacity-50"><X size={14}/></button>
+              <button disabled={isSubmitting} onClick={() => { setEditingTransaction(null); setActiveEditKeypad(null); }} className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full disabled:opacity-50"><X size={14}/></button>
             </div>
             
-            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto pb-12">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipe Transaksi</label>
                 <div className="p-3 bg-slate-100 rounded-xl text-xs font-black text-slate-600 uppercase tracking-wider">
@@ -815,7 +842,16 @@ export default function FintrackerApp() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
-                <input disabled={isSubmitting} type="text" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 disabled:opacity-50" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
+                {/* Atribut inputMode='none' untuk mematikan keyboard fisik/bawaan HP */}
+                <input 
+                  disabled={isSubmitting} 
+                  type="text" 
+                  inputMode="none" 
+                  onFocus={() => setActiveEditKeypad("amount")}
+                  className={`w-full p-3.5 bg-slate-50 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 disabled:opacity-50 transition-all ${activeEditKeypad === 'amount' ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white' : 'border-slate-100'}`}
+                  value={editTAmount} 
+                  onChange={(e) => setEditTAmount(e.target.value)} 
+                />
                 {editTAmount && (
                   <p className="text-[10px] font-bold text-slate-400 pl-1 animate-in fade-in duration-150">
                     Terbaca: <span className="text-slate-600 font-black">{formatRupiahTerbaca(editTAmount)}</span>
@@ -826,7 +862,16 @@ export default function FintrackerApp() {
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Biaya Admin (Opsional)</label>
-                  <input disabled={isSubmitting} type="text" className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold outline-blue-500 text-blue-900 disabled:opacity-50" value={editTAdminFee} onChange={(e) => setEditTAdminFee(e.target.value)} />
+                  {/* Atribut inputMode='none' untuk mematikan keyboard fisik/bawaan HP */}
+                  <input 
+                    disabled={isSubmitting} 
+                    type="text" 
+                    inputMode="none" 
+                    onFocus={() => setActiveEditKeypad("adminFee")}
+                    className={`w-full p-3.5 bg-blue-50/20 border rounded-xl text-xs font-bold outline-blue-500 text-blue-900 disabled:opacity-50 transition-all ${activeEditKeypad === 'adminFee' ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white' : 'border-blue-100'}`}
+                    value={editTAdminFee} 
+                    onChange={(e) => setEditTAdminFee(e.target.value)} 
+                  />
                   {editTAdminFee && (
                     <p className="text-[10px] font-bold text-blue-400 pl-1 animate-in fade-in duration-150">
                       Terbaca: <span className="text-blue-600 font-black">{formatRupiahTerbaca(editTAdminFee)}</span>
@@ -873,7 +918,7 @@ export default function FintrackerApp() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan</label>
-                <input disabled={isSubmitting} type="text" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 disabled:opacity-50" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
+                <input disabled={isSubmitting} onFocus={() => setActiveEditKeypad(null)} type="text" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 disabled:opacity-50" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
               </div>
 
               <div className="flex gap-2 pt-2 shrink-0">
@@ -886,7 +931,7 @@ export default function FintrackerApp() {
                 </button>
                 <button 
                   disabled={isSubmitting} 
-                  onClick={() => setEditingTransaction(null)} 
+                  onClick={() => { setEditingTransaction(null); setActiveEditKeypad(null); }} 
                   className="py-3 px-6 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
                 >
                   Batal
@@ -895,6 +940,62 @@ export default function FintrackerApp() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* --- DRAW KEYPAD KALKULATOR KUSTOM UNTUK EDIT MODAL --- */}
+      {editingTransaction && activeEditKeypad && (
+        <>
+          <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveEditKeypad(null)}></div>
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-slate-950 border-t border-slate-800 p-4 pb-6 transition-transform duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
+            <div className="flex justify-between items-center mb-3 px-1">
+              <span className="text-[10px] font-black text-blue-500 tracking-widest uppercase">
+                {activeEditKeypad === "amount" ? "Kalkulator Nominal" : "Kalkulator Biaya Admin"}
+              </span>
+              <button onClick={() => setActiveEditKeypad(null)} className="text-slate-400 hover:text-white p-1 text-xs font-bold flex items-center gap-1">
+                Tutup <X size={14} />
+              </button>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-white font-black text-base">
+              {["+", "-", "*", "/"].map((op) => (
+                <button key={op} type="button" onClick={() => handleEditKeypadPress(op)} className="py-3.5 bg-slate-900 active:bg-slate-800 rounded-xl hover:bg-slate-800/80 transition-all select-none">
+                  {op === "*" ? "×" : op === "/" ? "÷" : op}
+                </button>
+              ))}
+              {["7", "8", "9"].map((num) => (
+                <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-800 active:bg-slate-700 rounded-xl hover:bg-slate-700/80 transition-all select-none">
+                  {num}
+                </button>
+              ))}
+              <button type="button" onClick={() => handleEditKeypadPress("C")} className="py-3.5 bg-red-950/40 text-red-400 border border-red-900/30 active:bg-red-900/30 rounded-xl transition-all select-none">
+                C
+              </button>
+              {["4", "5", "6"].map((num) => (
+                <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-800 active:bg-slate-700 rounded-xl hover:bg-slate-700/80 transition-all select-none">
+                  {num}
+                </button>
+              ))}
+              <button type="button" onClick={() => handleEditKeypadPress("⌫")} className="py-3.5 bg-slate-900 active:bg-slate-800 rounded-xl text-slate-300 flex items-center justify-center transition-all select-none">
+                ⌫
+              </button>
+              {["1", "2", "3"].map((num) => (
+                <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-800 active:bg-slate-700 rounded-xl hover:bg-slate-700/80 transition-all select-none">
+                  {num}
+                </button>
+              ))}
+              <button type="button" onClick={() => handleEditKeypadPress(".")} className="py-3.5 bg-slate-900 active:bg-slate-800 rounded-xl transition-all select-none">
+                .
+              </button>
+              {["(", "0", ")"].map((char) => (
+                <button key={char} type="button" onClick={() => handleEditKeypadPress(char)} className={`${char === "0" ? "bg-slate-800 active:bg-slate-700" : "bg-slate-900 active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none`}>
+                  {char}
+                </button>
+              ))}
+              <button type="button" onClick={() => handleEditKeypadPress("Ya")} className="py-3.5 bg-blue-600 active:bg-blue-700 rounded-xl text-white font-black hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition-all select-none">
+                Ya
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </main>
   );

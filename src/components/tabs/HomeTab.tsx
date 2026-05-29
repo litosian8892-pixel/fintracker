@@ -74,6 +74,9 @@ export default function HomeTab({
   
   const [showCatModal, setShowCatModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // STATE KEYPAD KUSTOM (PENCATAT AKTIF)
+  const [activeKeypad, setActiveKeypad] = useState<"amount" | "adminFee" | null>(null);
 
   const filteredAccounts = tType === "expense"
     ? accounts.filter((acc) => !acc.isSavings)
@@ -118,6 +121,32 @@ export default function HomeTab({
   const filteredCategories = categories.filter(c => 
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // --- LOGIKA FEEDBACK GETARAN RINGAN PADA HP ---
+  const triggerHaptic = () => {
+    if (typeof window !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+  };
+
+  const handleKeypadPress = (key: string) => {
+    triggerHaptic();
+    const currentVal = activeKeypad === "amount" ? tAmount : tAdminFee;
+    const setVal = activeKeypad === "amount" ? setTAmount : setTAdminFee;
+
+    if (key === "⌫") {
+      setVal(currentVal.slice(0, -1));
+    } else if (key === "C") {
+      setVal("");
+    } else if (key === "=") {
+      const evaluated = safeEvaluate(currentVal);
+      setVal(evaluated > 0 ? evaluated.toString() : "");
+    } else if (key === "Ya") {
+      setActiveKeypad(null);
+    } else {
+      setVal(currentVal + key);
+    }
+  };
 
   return (
     <div className="bg-white rounded-[30px] p-6 shadow-xl border border-slate-100 relative">
@@ -169,10 +198,13 @@ export default function HomeTab({
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
             NOMINAL (RP)
           </label>
+          {/* inputMode="none" Mencegah keyboard standard QWERTY HP untuk keluar */}
           <input
             type="text"
-            className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
-            placeholder="Rp 0 atau ekspresi matematika (contoh: 20000+15000)"
+            inputMode="none" 
+            onFocus={() => setActiveKeypad("amount")}
+            className={`w-full max-w-full p-3.5 bg-white border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 transition-all ${activeKeypad === 'amount' ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-slate-800'}`}
+            placeholder="Ketuk untuk input nominal..."
             value={tAmount}
             onChange={(e) => setTAmount(e.target.value)}
           />
@@ -189,10 +221,13 @@ export default function HomeTab({
             <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
               Biaya Admin (Opsional)
             </label>
+            {/* inputMode="none" Mencegah keyboard standard HP untuk keluar */}
             <input
               type="text"
-              className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
-              placeholder="Rp 0 atau ekspresi matematika"
+              inputMode="none"
+              onFocus={() => setActiveKeypad("adminFee")}
+              className={`w-full max-w-full p-3.5 bg-white border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 transition-all ${activeKeypad === 'adminFee' ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-slate-800'}`}
+              placeholder="Ketuk untuk input biaya admin..."
               value={tAdminFee}
               onChange={(e) => setTAdminFee(e.target.value)}
             />
@@ -204,7 +239,7 @@ export default function HomeTab({
           </div>
         )}
 
-        {/* Tanggal & Pilihan Kategori Kustom Pop-up (OPTIMASI STRUKTUR GRID & TIPE DATE) */}
+        {/* Tanggal & Pilihan Kategori Kustom Pop-up */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1 min-w-0"> 
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
@@ -212,6 +247,7 @@ export default function HomeTab({
             </label>
             <input
               type="date"
+              onFocus={() => setActiveKeypad(null)}
               className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer appearance-none"
               value={tDate}
               onChange={(e) => setTDate(e.target.value)}
@@ -224,7 +260,7 @@ export default function HomeTab({
                 🏷️ KATEGORI
               </label>
               <div 
-                onClick={() => { setShowCatModal(true); setSearchQuery(""); }}
+                onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }}
                 className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50"
               >
                 <span className="truncate">{tCategory || "Pilih Kategori"}</span>
@@ -243,7 +279,7 @@ export default function HomeTab({
           )}
         </div>
 
-        {/* Akun Sumber / Tujuan (OPTIMASI STRUKTUR GRID DAN MIN-WIDTH) */}
+        {/* Akun Sumber / Tujuan */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className={`space-y-1 min-w-0 ${tType === "transfer" ? "" : "md:col-span-2"}`}> 
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
@@ -252,6 +288,7 @@ export default function HomeTab({
             <select
               className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
               value={tAccountId}
+              onFocus={() => setActiveKeypad(null)}
               onChange={(e) => setTAccountId(e.target.value)}
             >
               {availableSourceAccounts.map((acc) => (
@@ -270,6 +307,7 @@ export default function HomeTab({
               <select
                 className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
                 value={tToAccountId}
+                onFocus={() => setActiveKeypad(null)}
                 onChange={(e) => setTToAccountId(e.target.value)}
               >
                 <option value="">Pilih Tujuan...</option>
@@ -290,6 +328,7 @@ export default function HomeTab({
           </label>
           <input
             type="text"
+            onFocus={() => setActiveKeypad(null)}
             className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
             placeholder="Tulis keterangan transaksi..."
             value={tNote}
@@ -384,6 +423,62 @@ export default function HomeTab({
             
           </div>
         </div>
+      )}
+
+      {/* --- DRAW KEYPAD KALKULATOR KUSTOM --- */}
+      {activeKeypad && (
+        <>
+          <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-slate-950 border-t border-slate-800 p-4 pb-6 transition-transform duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
+            <div className="flex justify-between items-center mb-3 px-1">
+              <span className="text-[10px] font-black text-blue-500 tracking-widest uppercase">
+                {activeKeypad === "amount" ? "Kalkulator Nominal" : "Kalkulator Biaya Admin"}
+              </span>
+              <button onClick={() => setActiveKeypad(null)} className="text-slate-400 hover:text-white p-1 text-xs font-bold flex items-center gap-1">
+                Tutup <X size={14} />
+              </button>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-white font-black text-base">
+              {["+", "-", "*", "/"].map((op) => (
+                <button key={op} type="button" onClick={() => handleKeypadPress(op)} className="py-3.5 bg-slate-900 active:bg-slate-800 rounded-xl hover:bg-slate-800/80 transition-all select-none">
+                  {op === "*" ? "×" : op === "/" ? "÷" : op}
+                </button>
+              ))}
+              {["7", "8", "9"].map((num) => (
+                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-800 active:bg-slate-700 rounded-xl hover:bg-slate-700/80 transition-all select-none">
+                  {num}
+                </button>
+              ))}
+              <button type="button" onClick={() => handleKeypadPress("C")} className="py-3.5 bg-red-950/40 text-red-400 border border-red-900/30 active:bg-red-900/30 rounded-xl transition-all select-none">
+                C
+              </button>
+              {["4", "5", "6"].map((num) => (
+                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-800 active:bg-slate-700 rounded-xl hover:bg-slate-700/80 transition-all select-none">
+                  {num}
+                </button>
+              ))}
+              <button type="button" onClick={() => handleKeypadPress("⌫")} className="py-3.5 bg-slate-900 active:bg-slate-800 rounded-xl text-slate-300 flex items-center justify-center transition-all select-none">
+                ⌫
+              </button>
+              {["1", "2", "3"].map((num) => (
+                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-800 active:bg-slate-700 rounded-xl hover:bg-slate-700/80 transition-all select-none">
+                  {num}
+                </button>
+              ))}
+              <button type="button" onClick={() => handleKeypadPress(".")} className="py-3.5 bg-slate-900 active:bg-slate-800 rounded-xl transition-all select-none">
+                .
+              </button>
+              {["(", "0", ")"].map((char) => (
+                <button key={char} type="button" onClick={() => handleKeypadPress(char)} className={`${char === "0" ? "bg-slate-800 active:bg-slate-700" : "bg-slate-900 active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none`}>
+                  {char}
+                </button>
+              ))}
+              <button type="button" onClick={() => handleKeypadPress("Ya")} className="py-3.5 bg-blue-600 active:bg-blue-700 rounded-xl text-white font-black hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition-all select-none">
+                Ya
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
     </div>
