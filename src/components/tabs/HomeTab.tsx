@@ -161,7 +161,7 @@ export default function HomeTab({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-[30px] p-6 shadow-xl border border-slate-100 dark:border-slate-800 relative transition-colors duration-200">
+    <div className="bg-white rounded-[30px] p-6 shadow-xl border border-slate-100 dark:bg-slate-900 dark:border-slate-800 relative transition-colors duration-200">
       <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-6">Catat Transaksi</h2>
 
       {/* Navigasi Tipe Transaksi */}
@@ -222,7 +222,7 @@ export default function HomeTab({
           />
           {tAmount && (
             <p className="text-[10px] font-bold text-slate-400 pl-1 animate-in fade-in duration-150">
-              Terbaca: <span className="text-slate-600 dark:text-slate-300 font-black">{formatRupiahTerbaca(tAmount)}</span>
+              Terbaca: <span className="text-slate-600 dark:text-slate-350 font-black">{formatRupiahTerbaca(tAmount)}</span>
             </p>
           )}
         </div>
@@ -260,7 +260,7 @@ export default function HomeTab({
             <input
               type="date"
               onFocus={() => setActiveKeypad(null)}
-              className="w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer appearance-none"
+              className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
               value={tDate}
               onChange={(e) => setTDate(e.target.value)}
             />
@@ -273,7 +273,7 @@ export default function HomeTab({
               </label>
               <div 
                 onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }}
-                className="w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-750"
+                className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-750"
               >
                 <span className="truncate">{tCategory || "Pilih Kategori"}</span>
                 <ChevronDown size={14} className="text-slate-400 shrink-0" />
@@ -284,7 +284,7 @@ export default function HomeTab({
               <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1">
                 🏷️ KATEGORI
               </label>
-              <div className="w-full p-3.5 bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-xl text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <div className="w-full p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl text-xs font-bold text-blue-600 flex items-center justify-center dark:bg-blue-950/30 dark:border-blue-900/50 dark:text-blue-400">
                 Mode Transfer Antar Dompet
               </div>
             </div>
@@ -298,7 +298,7 @@ export default function HomeTab({
               💳 DOMPET
             </label>
             <select
-              className="w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer"
+              className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer"
               value={tAccountId}
               onFocus={() => setActiveKeypad(null)}
               onChange={(e) => setTAccountId(e.target.value)}
@@ -317,7 +317,7 @@ export default function HomeTab({
                 💳 DOMPET TUJUAN
               </label>
               <select
-                className="w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer"
+                className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer"
                 value={tToAccountId}
                 onFocus={() => setActiveKeypad(null)}
                 onChange={(e) => setTToAccountId(e.target.value)}
@@ -341,7 +341,7 @@ export default function HomeTab({
           <input
             type="text"
             onFocus={() => setActiveKeypad(null)}
-            className="w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100"
+            className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
             placeholder="Tulis keterangan transaksi..."
             value={tNote}
             onChange={(e) => setTNote(e.target.value)}
@@ -358,7 +358,7 @@ export default function HomeTab({
         </button>
       </div>
 
-      {/* --- POP-UP MODAL CUSTOM KATEGORI 2-KOLOM --- */}
+      {/* --- POP-UP MODAL CUSTOM KATEGORI 2-KOLOM (KOREKSI VISUAL MODE GELAP KONTRAS TINGGI) --- */}
       {showCatModal && tType !== "transfer" && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800">
@@ -379,7 +379,7 @@ export default function HomeTab({
                 <input 
                   type="text" 
                   placeholder="Ketik untuk mencari kategori..." 
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-slate-100"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white dark:focus:bg-slate-750 text-slate-800 dark:text-slate-100"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -392,13 +392,13 @@ export default function HomeTab({
                 <div className="grid grid-cols-2 gap-4">
                   {/* KOLOM KIRI: VARIABEL (Sering) */}
                   <div className="space-y-2 min-w-0">
-                    <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 mb-2 border-b border-orange-100 dark:border-orange-900/30 z-10">
+                    <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 mb-2 border-b border-orange-100 dark:border-orange-950/30 z-10">
                       <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel (Sering)</p>
                     </div>
                     <div className="flex flex-col gap-2">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").length === 0 && <p className="text-[10px] text-slate-400 italic">Tidak ditemukan</p>}
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").map(cat => (
-                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border ${tCategory === cat.name ? "bg-orange-500 text-white border-orange-600 shadow-md" : "bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:border-orange-200"}`}>
+                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-orange-500 text-white border-orange-600 shadow-md animate-none" : "bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:border-orange-200 dark:hover:border-orange-900/50"}`}>
                           {cat.name}
                         </button>
                       ))}
@@ -407,13 +407,13 @@ export default function HomeTab({
                   
                   {/* KOLOM KANAN: FIXED (Bulanan) */}
                   <div className="space-y-2 border-l border-slate-100 dark:border-slate-800 pl-4 min-w-0">
-                    <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 mb-2 border-b border-purple-100 dark:border-purple-900/30 z-10">
+                    <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 mb-2 border-b border-purple-100 dark:border-purple-950/30 z-10">
                       <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">🟣 Tetap (Bulanan)</p>
                     </div>
                     <div className="flex flex-col gap-2">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType === "fixed").length === 0 && <p className="text-[10px] text-slate-400 italic">Tidak ditemukan</p>}
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType === "fixed").map(cat => (
-                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border ${tCategory === cat.name ? "bg-purple-500 text-white border-purple-600 shadow-md" : "bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-purple-50 dark:hover:bg-purple-950/20 hover:border-purple-200"}`}>
+                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-purple-500 text-white border-purple-600 shadow-md animate-none" : "bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-200 dark:hover:border-purple-900/50"}`}>
                           {cat.name}
                         </button>
                       ))}
@@ -425,7 +425,7 @@ export default function HomeTab({
                 <div className="grid grid-cols-2 gap-3">
                   {filteredCategories.filter(c => c.type === "income").length === 0 && <p className="text-[10px] text-slate-400 italic col-span-2 text-center py-4">Tidak ditemukan</p>}
                   {filteredCategories.filter(c => c.type === "income").map(cat => (
-                    <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border ${tCategory === cat.name ? "bg-green-500 text-white border-green-600 shadow-md" : "bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-green-50 dark:hover:bg-green-950/20 hover:border-green-200"}`}>
+                    <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-green-500 text-white border-green-600 shadow-md" : "bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-green-50 dark:hover:bg-green-950/30 hover:border-green-200 dark:hover:bg-green-900/50"}`}>
                       {cat.name}
                     </button>
                   ))}
@@ -446,7 +446,7 @@ export default function HomeTab({
               <span className="text-[10px] font-black text-slate-500 dark:text-blue-500 tracking-widest uppercase">
                 {activeKeypad === "amount" ? "Kalkulator Nominal" : "Kalkulator Biaya Admin"}
               </span>
-              <button onClick={() => setActiveKeypad(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 text-xs font-bold flex items-center gap-1">
+              <button onClick={() => setActiveKeypad(null)} className="text-slate-400 hover:text-white p-1 text-xs font-bold flex items-center gap-1">
                 Tutup <X size={14} />
               </button>
             </div>

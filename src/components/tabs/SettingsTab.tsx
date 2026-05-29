@@ -14,13 +14,13 @@ interface SettingsTabProps {
   updateCategory: (id: string, name: string, limit: number, expenseType: "fixed" | "variable") => void;
   newWalletTypeName: string; setNewWalletTypeName: (val: string) => void;
   addCustomWalletType: () => void; walletTypes: WalletTypeData[]; deleteWalletType: (id: string) => void;
-  theme: "light" | "dark" | "system"; setTheme: (theme: "light" | "dark" | "system") => void; // <--- PROPS BARU TEMA
+  theme: "light" | "dark" | "system"; setTheme: (theme: "light" | "dark" | "system") => void;
 }
 
 export default function SettingsTab({
   user, onLogout, tType, setTType, newCatName, setNewCatName, newExpenseType, setNewExpenseType, addCustomCategory,
   categories, deleteCategory, updateCategory, newWalletTypeName, setNewWalletTypeName, addCustomWalletType, walletTypes, deleteWalletType,
-  theme, setTheme // <--- DESTRUKTUR PROPS BARU TEMA
+  theme, setTheme
 }: SettingsTabProps) {
   
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export default function SettingsTab({
           <h3 className="font-black text-lg text-slate-800 dark:text-slate-100">{user?.displayName}</h3>
           <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold">{user?.email}</p>
         </div>
-        <button onClick={onLogout} className="px-6 py-2.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"><LogOut size={14}/> Logout</button>
+        <button onClick={onLogout} className="px-6 py-2.5 bg-red-50 dark:bg-red-950/25 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"><LogOut size={14}/> Logout</button>
       </div>
 
       {/* SEGMENTED CONTROL: KUSTOMISASI TEMA VISUAL (TAILWIND V4 DARK MODE) */}
@@ -53,7 +53,7 @@ export default function SettingsTab({
             }}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
               theme === "light"
-                ? "bg-blue-600 text-white shadow-md"
+                ? "bg-blue-600 text-white shadow-md animate-none"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
             }`}
           >
@@ -67,7 +67,7 @@ export default function SettingsTab({
             }}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
               theme === "dark"
-                ? "bg-blue-600 text-white shadow-md"
+                ? "bg-blue-600 text-white shadow-md animate-none"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
             }`}
           >
@@ -81,7 +81,7 @@ export default function SettingsTab({
             }}
             className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
               theme === "system"
-                ? "bg-blue-600 text-white shadow-md"
+                ? "bg-blue-600 text-white shadow-md animate-none"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
             }`}
           >
@@ -91,12 +91,12 @@ export default function SettingsTab({
         </div>
       </div>
 
-      {/* KELOLA KATEGORI */}
+      {/* KELOLA KATEGORI (OPTIMASI KONTRAS TEKS TINGGI DAN SOLID BACKGROUND) */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2"><Tag size={16} className="text-blue-600 dark:text-blue-500"/> Kelola Kategori ({tType === 'expense' ? 'Pengeluaran' : 'Pemasukan'})</h3>
         <div className="flex gap-2">
-          <button onClick={() => setTType("expense")} className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-colors cursor-pointer ${tType === "expense" ? "bg-red-500 text-white shadow-md" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>PENGELUARAN</button>
-          <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-colors cursor-pointer ${tType === "income" ? "bg-green-500 text-white shadow-md" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>PEMASUKAN</button>
+          <button onClick={() => setTType("expense")} className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-colors cursor-pointer ${tType === "expense" ? "bg-red-500 text-white shadow-md animate-none" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>PENGELUARAN</button>
+          <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-colors cursor-pointer ${tType === "income" ? "bg-green-500 text-white shadow-md animate-none" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>PEMASUKAN</button>
         </div>
         <div className="flex gap-2">
           <input type="text" placeholder="Kategori Baru..." className="flex-1 p-3 bg-slate-50 dark:bg-slate-850 border border-transparent dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 placeholder-slate-400" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
@@ -109,17 +109,18 @@ export default function SettingsTab({
           <button onClick={addCustomCategory} className="bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-xl text-xs font-bold cursor-pointer transition-colors">Tambah</button>
         </div>
         
+        {/* SINKRONISASI KONTRAS WARNA KARTU KATEGORI */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2">
           {categories.filter(c => c.type === tType).map(cat => (
-            <div key={cat.id} className="bg-slate-50 dark:bg-slate-850/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80">
+            <div key={cat.id} className="bg-slate-100 dark:bg-slate-800 p-3.5 rounded-[20px] border border-slate-200 dark:border-slate-700/80 transition-colors duration-200 shadow-sm">
               
               {editingCatId === cat.id ? (
                 <div className="space-y-2">
-                  <input type="text" placeholder="Nama Kategori" className="w-full p-2 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-900 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editCatName} onChange={e => setEditCatName(e.target.value)} />
+                  <input type="text" placeholder="Nama Kategori" className="w-full p-2 bg-white dark:bg-slate-750 border border-blue-200 dark:border-blue-900 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editCatName} onChange={e => setEditCatName(e.target.value)} />
                   {tType === 'expense' && (
                     <div className="flex gap-2">
-                      <input type="number" placeholder="Batas Budget (Rp)" className="flex-1 p-2 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-900 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editCatBudget} onChange={e => setEditCatBudget(e.target.value)} />
-                      <select className="w-24 p-2 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-900 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer" value={editCatExpType} onChange={(e) => setEditCatExpType(e.target.value as "fixed" | "variable")}>
+                      <input type="number" placeholder="Batas Budget (Rp)" className="flex-1 p-2 bg-white dark:bg-slate-750 border border-blue-200 dark:border-blue-900 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editCatBudget} onChange={e => setEditCatBudget(e.target.value)} />
+                      <select className="w-24 p-2 bg-white dark:bg-slate-750 border border-blue-200 dark:border-blue-900 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer" value={editCatExpType} onChange={(e) => setEditCatExpType(e.target.value as "fixed" | "variable")}>
                         <option value="variable">Variabel</option>
                         <option value="fixed">Tetap</option>
                       </select>
@@ -132,11 +133,12 @@ export default function SettingsTab({
                 </div>
               ) : (
                 <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-0.5">
+                  <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{cat.name}</span>
+                      {/* Warna text-slate-800 & dark:text-slate-100 memiliki rasio kontras 100% terbaca tajam */}
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-100 leading-none">{cat.name}</span>
                       {tType === 'expense' && (
-                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${cat.expenseType === 'fixed' ? 'bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400' : 'bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400'}`}>
+                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${cat.expenseType === 'fixed' ? 'bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400' : 'bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400'}`}>
                           {cat.expenseType === 'fixed' ? 'FIXED' : 'VAR'}
                         </span>
                       )}
