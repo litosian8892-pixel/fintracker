@@ -13,7 +13,8 @@ export interface TransactionData {
   note: string; 
   category: string; 
   tDate: string; 
-  adminFee?: number; // <--- INI TAMBAHAN BARU
+  adminFee?: number;
+  createdAt?: any; // <--- BARU: DIDAFTARKAN AGAR TYPESCRIPT DI page.tsx TIDAK PROTES LAGI
 }
 
 export interface CategoryData { 

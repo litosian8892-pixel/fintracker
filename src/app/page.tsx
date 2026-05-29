@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react"; // <--- SEKARANG KITA IMPORT useRef
+import { useEffect, useState, useRef } from "react"; 
 import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc } from "firebase/firestore";
@@ -37,9 +37,9 @@ export default function FintrackerApp() {
   const [txLimit, setTxLimit] = useState(20);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); 
 
-  // --- SOLUSI ANTI DOUBLE CLICK MILIDETIK: useRef SINKRONUS ---
-  const isSubmittingRef = useRef(false); // <--- KUNCI SYNC PADA LEVEL THREAD JAVASCRIPT
-  const [isSubmitting, setIsSubmitting] = useState(false); // Untuk visual tombol saja
+  // --- ANTIPASI DOUBLE CLICK ---
+  const isSubmittingRef = useRef(false); 
+  const [isSubmitting, setIsSubmitting] = useState(false); 
 
   // STATES: FITUR PENCARIAN GLOBAL
   const [globalSearch, setGlobalSearch] = useState("");
@@ -110,11 +110,31 @@ export default function FintrackerApp() {
     return () => { unsubAcc(); unsubCat(); unsubTypes(); unsubDebts(); };
   }, [user]);
 
+  // SINKRONISASI BARU: URUTKAN DETAIL RIWAYAT TRANSAKSI SESUAI DETIK MASUKNYA DATA
   useEffect(() => {
     if (!user) return;
     const qHistory = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(txLimit));
     const unsubTr = onSnapshot(qHistory, (sn) => {
-      setTransactions(sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData)));
+      const data = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
+      
+      // --- ALGORITMA BARU: HYBRID SORTING (TANGGAL + MILIDETIK) ---
+      data.sort((a, b) => {
+        // 1. Bandingkan Tanggal Belanja Terlebih Dahulu (Y-M-D Descending)
+        const dateCompare = b.tDate.localeCompare(a.tDate);
+        if (dateCompare !== 0) return dateCompare;
+        
+        // 2. Jika tanggalnya sama persis, bandingkan milidetik waktu pembuatannya (createdAt)
+        const getMillis = (t: any) => {
+          if (!t) return Date.now(); // Jika data lokal baru belum tersinkron, anggap waktu sekarang agar paling atas
+          if (typeof t.toMillis === 'function') return t.toMillis();
+          if (t.seconds) return t.seconds * 1000;
+          return new Date(t).getTime();
+        };
+
+        return getMillis(b.createdAt) - getMillis(a.createdAt);
+      });
+
+      setTransactions(data);
     });
     return () => unsubTr();
   }, [user, txLimit]);
@@ -174,7 +194,7 @@ export default function FintrackerApp() {
   };
 
   const addCustomCategory = async () => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD (100% BLOK KILAT)
+    if (isSubmittingRef.current) return; 
     if (!newCatName || !user) return;
     
     isSubmittingRef.current = true;
@@ -191,7 +211,7 @@ export default function FintrackerApp() {
   };
 
   const deleteCategory = async (id: string) => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
+    if (isSubmittingRef.current) return; 
     if (!user || !confirm("Hapus kategori ini?")) return;
     
     isSubmittingRef.current = true;
@@ -205,7 +225,7 @@ export default function FintrackerApp() {
   };
 
   const handleEditCategory = async (id: string, newName: string, newBudget: number, expenseType: "fixed" | "variable") => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
+    if (isSubmittingRef.current) return; 
     if (!user) return;
     
     isSubmittingRef.current = true;
@@ -224,7 +244,7 @@ export default function FintrackerApp() {
   };
 
   const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string, accountId?: string) => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
+    if (isSubmittingRef.current) return; 
     if (!user) return;
     
     isSubmittingRef.current = true;
@@ -261,7 +281,7 @@ export default function FintrackerApp() {
   };
 
   const handleDeleteDebt = async (id: string) => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
+    if (isSubmittingRef.current) return; 
     if (!user || !confirm("Hapus catatan ini secara permanen?")) return;
     
     isSubmittingRef.current = true;
@@ -275,7 +295,7 @@ export default function FintrackerApp() {
   };
 
   const handlePayDebt = async (debtId: string, payAmount: number, accountId: string) => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
+    if (isSubmittingRef.current) return; 
     if (!user) return;
     const debt = debts.find(d => d.id === debtId);
     const acc = accounts.find(a => a.id === accountId);
@@ -313,7 +333,7 @@ export default function FintrackerApp() {
   };
 
   const addCustomWalletType = async () => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
+    if (isSubmittingRef.current) return; 
     if (!newWalletTypeName || !user) return;
     
     isSubmittingRef.current = true;
@@ -328,7 +348,7 @@ export default function FintrackerApp() {
   };
 
   const deleteWalletType = async (id: string) => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
+    if (isSubmittingRef.current) return; 
     if (!user || !confirm("Hapus kategori dompet?")) return;
     
     isSubmittingRef.current = true;
@@ -352,7 +372,7 @@ export default function FintrackerApp() {
   };
 
   const handleCreateAccount = async () => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
+    if (isSubmittingRef.current) return; 
     if (!user || !accName || !accBalance) return;
     
     isSubmittingRef.current = true;
@@ -371,7 +391,7 @@ export default function FintrackerApp() {
   };
 
   const deleteAccount = async (id: string, name: string) => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
+    if (isSubmittingRef.current) return; 
     if (!user || !confirm(`Hapus dompet "${name}"?`)) return;
     
     isSubmittingRef.current = true;
@@ -386,7 +406,7 @@ export default function FintrackerApp() {
   };
 
   const handleEditAccount = async (id: string) => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
+    if (isSubmittingRef.current) return; 
     if (!user || !editAccName || !editAccBalance) return;
     
     isSubmittingRef.current = true;
@@ -406,7 +426,7 @@ export default function FintrackerApp() {
   };
 
   const moveAccountOrder = async (index: number, direction: "up" | "down") => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
+    if (isSubmittingRef.current) return; 
     if (!user) return;
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= accounts.length) return;
@@ -427,7 +447,7 @@ export default function FintrackerApp() {
   };
 
   const handleTransaction = async () => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD (TOTAL BLOKIR MULTIPLE CLICK)
+    if (isSubmittingRef.current) return; 
     if (!user || !tAmount || !tAccountId) return alert("Isi data dengan lengkap!");
     if (tType === "transfer" && (!tToAccountId || tAccountId === tToAccountId)) return alert("Pilih dompet tujuan yang berbeda!");
     
@@ -470,10 +490,8 @@ export default function FintrackerApp() {
   };
 
   const handleDeleteTransaction = async (t: TransactionData) => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD
+    if (isSubmittingRef.current) return; 
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
-    
-    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       if (t.type === "transfer") {
@@ -511,9 +529,8 @@ export default function FintrackerApp() {
     setEditTAdminFee(t.adminFee?.toString() || ""); 
   };
 
-  // KOREKSI EDIT TRANSAKSI DENGAN TOTAL BLOCK KILAT (useRef Gating)
   const handleUpdateTransaction = async () => {
-    if (isSubmittingRef.current) return; // <--- SINKRONUS REF GUARD (TOTAL BLOKIR RAPID CLICK)
+    if (isSubmittingRef.current) return; 
     if (!user || !editingTransaction) return;
     
     const oldT = editingTransaction;
@@ -523,7 +540,6 @@ export default function FintrackerApp() {
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
-      // 1. REVERSE SALDO LAMA
       if (oldT.type === "transfer") {
         const oldAdminFee = oldT.adminFee || 0;
         const oldSrc = accounts.find(a => a.id === oldT.accountId);
@@ -538,7 +554,6 @@ export default function FintrackerApp() {
         }
       }
 
-      // 2. AMBIL SNAPSHOT FRESH & TERAPKAN SALDO BARU
       const srcAccRef = doc(db, `users/${user.uid}/accounts/${editTAccountId}`);
       const srcSnap = await getDoc(srcAccRef);
       if (!srcSnap.exists()) throw "Dompet asal tidak ditemukan";
@@ -557,7 +572,6 @@ export default function FintrackerApp() {
         await updateDoc(srcAccRef, { balance: newBal });
       }
 
-      // 3. UPDATE TRANSAKSI
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
       const updateData: any = {
         amount: newAmount,
@@ -587,7 +601,7 @@ export default function FintrackerApp() {
     } catch (e) {
       alert("Gagal memperbarui transaksi: " + e);
     } finally {
-      isSubmittingRef.current = false; // <--- PEMBUKAAN KUNCI SINKRONUS
+      isSubmittingRef.current = false; 
       setIsSubmitting(false); 
     }
   };
@@ -701,7 +715,7 @@ export default function FintrackerApp() {
       </div>
       <BottomNav activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
 
-      {/* POP-UP MODAL EDIT TRANSAKSI (SINKRONUS REF & DISABLED STATE) */}
+      {/* POP-UP MODAL EDIT TRANSAKSI */}
       {editingTransaction && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
