@@ -48,19 +48,15 @@ export default function HomeTab({
   handleTransaction,
 }: HomeTabProps) {
   
-  // States khusus PWA Custom Modal Kategori & Search
   const [showCatModal, setShowCatModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Aturan Koreksi Akuntansi: Sembunyikan akun tabungan (isSavings) dari pilihan pengeluaran
   const filteredAccounts = tType === "expense"
     ? accounts.filter((acc) => !acc.isSavings)
     : accounts;
 
-  // Filter Dompet Asal: Jika pengeluaran/pemasukan biasa, sembunyikan dompet tabungan
   const availableSourceAccounts = tType === "transfer" ? accounts : accounts.filter(acc => !acc.isSavings);
 
-  // Helper untuk memformat angka input ke Rupiah terbaca di bawah input utama
   const formatRupiahTerbaca = (val: string) => {
     if (!val) return "Rp 0";
     const parsed = parseFloat(val);
@@ -73,21 +69,18 @@ export default function HomeTab({
     }).format(parsed);
   };
 
-  // Auto-select akun pertama jika pilihan kosong
   useEffect(() => {
     if (availableSourceAccounts.length > 0 && !tAccountId) {
       setTAccountId(availableSourceAccounts[0].id);
     }
   }, [availableSourceAccounts, tAccountId, setTAccountId]);
 
-  // Fungsi saat ganti tab transaksi agar dompet ter-reset secara aman
   const handleTypeChange = (newType: "income" | "expense" | "transfer") => {
     setTType(newType);
     setTAccountId("");
     setTToAccountId("");
   };
 
-  // Sinkronisasi kategori default saat tipe transaksi berganti
   useEffect(() => {
     if (tType === "transfer") {
       setTCategory("Transfer");
@@ -99,7 +92,6 @@ export default function HomeTab({
     }
   }, [tType, categories, tCategory, setTCategory]);
 
-  // Logika Filter Kategori pencarian real-time
   const filteredCategories = categories.filter(c => 
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -208,7 +200,6 @@ export default function HomeTab({
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
                 🏷️ KATEGORI
               </label>
-              {/* TOMBOL PEMICU POP-UP MODAL KATEGORI */}
               <div 
                 onClick={() => { setShowCatModal(true); setSearchQuery(""); }}
                 className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50"
@@ -229,9 +220,9 @@ export default function HomeTab({
           )}
         </div>
 
-        {/* Akun Sumber / Tujuan */}
+        {/* Akun Sumber / Tujuan (MENGGUNAKAN LOGIKA md:col-span-2 DINAMIS UNTUK MEMBASMI SPACE KOSONG) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1">
+          <div className={`space-y-1 ${tType === "transfer" ? "" : "md:col-span-2"}`}> 
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
               💳 DOMPET
             </label>
@@ -293,7 +284,7 @@ export default function HomeTab({
         </button>
       </div>
 
-      {/* --- POP-UP MODAL CUSTOM KATEGORI 2-KOLOM (KEMBALI DI-RESTORE) --- */}
+      {/* --- POP-UP MODAL CUSTOM KATEGORI 2-KOLOM --- */}
       {showCatModal && tType !== "transfer" && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh] border border-slate-100">
