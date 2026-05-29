@@ -22,23 +22,24 @@ interface AssetsTabProps {
   accBalance: string; setAccBalance: (val: string) => void;
   accLogo: string; handleLogoUpload: (e: React.ChangeEvent<HTMLInputElement>, isEdit?: boolean) => void;
   accIsSavings: boolean; setAccIsSavings: (val: boolean) => void; 
+  accTargetBalance: string; setAccTargetBalance: (val: string) => void; // <--- BARU
   handleCreateAccount: () => void;
   editingAccId: string | null; setEditingAccId: (val: string | null) => void;
   editAccName: string; setEditAccName: (val: string) => void;
   editAccBalance: string; setEditAccBalance: (val: string) => void;
   editAccLogo: string; setEditAccLogo: (val: string) => void;
   editAccIsSavings: boolean; setEditAccIsSavings: (val: boolean) => void; 
+  editAccTargetBalance: string; setEditAccTargetBalance: (val: string) => void; // <--- BARU
   handleEditAccount: (id: string) => void;
   deleteAccount: (id: string, name: string) => void;
   moveAccountOrder: (index: number, direction: "up" | "down") => void;
 }
 
 export default function AssetsTab({
-  accounts, walletTypes, accType, setAccType, accName, setAccName, accBalance, setAccBalance, accLogo, handleLogoUpload, accIsSavings, setAccIsSavings, handleCreateAccount,
-  editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, handleEditAccount, deleteAccount, moveAccountOrder
+  accounts, walletTypes, accType, setAccType, accName, setAccName, accBalance, setAccBalance, accLogo, handleLogoUpload, accIsSavings, setAccIsSavings, accTargetBalance, setAccTargetBalance, handleCreateAccount,
+  editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder
 }: AssetsTabProps) {
   
-  // LOGIKA PEMISAHAN SALDO
   const activeAccounts = accounts.filter(a => !a.isSavings);
   const savingsAccounts = accounts.filter(a => a.isSavings);
   const totalActiveBalance = activeAccounts.reduce((a, b) => a + b.balance, 0);
@@ -46,7 +47,7 @@ export default function AssetsTab({
 
   return (
     <div className="space-y-6 animate-in fade-in">
-      {/* KARTU TOTAL BALANCE UTAMA (TANPA TABUNGAN) */}
+      {/* TOTAL BALANCE CARD */}
       <div className="bg-blue-600 p-8 rounded-[35px] text-white shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-10"><CreditCard size={100} /></div>
         <p className="text-blue-100 text-[10px] font-bold uppercase tracking-widest mb-1 relative z-10">Total Uang Bisa Dipakai</p>
@@ -81,28 +82,54 @@ export default function AssetsTab({
         )}
       </div>
 
-      {/* TABUNGAN KHUSUS */}
+      {/* TABUNGAN KHUSUS (DENGAN VISUAL PROGRESS BAR TARGET) */}
       {savingsAccounts.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="flex justify-between items-end px-1">
              <h3 className="font-bold text-slate-800 italic text-lg">Tabungan Saya</h3>
-             <span className="text-[10px] font-black text-emerald-600">Rp {totalSavingsBalance.toLocaleString('id-ID')}</span>
+             <span className="text-[10px] font-black text-emerald-600">Total: Rp {totalSavingsBalance.toLocaleString('id-ID')}</span>
           </div>
-          <div className="grid grid-cols-3 gap-2.5 opacity-90">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-95">
             {savingsAccounts.map((acc) => {
               const design = getCardDesign(acc.type);
+              
+              // Hitung Persentase Target Tabungan
+              const hasTarget = acc.targetBalance && acc.targetBalance > 0;
+              const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
+
               return (
-                <div key={acc.id} className={`${design.bg} border-2 border-emerald-500/30 p-3 rounded-[20px] h-28 flex flex-col justify-between relative overflow-hidden active:scale-95`}>
+                <div key={acc.id} className={`${design.bg} border border-emerald-500/20 p-4 rounded-[25px] h-[115px] flex flex-col justify-between relative overflow-hidden`}>
                     <div className="absolute -top-8 -right-8 w-16 h-16 bg-white/5 rounded-full blur-lg"></div>
                     <div className="flex justify-between items-start">
-                      {acc.logo ? <img src={acc.logo} alt="custom-logo" className="w-6 h-6 rounded-lg object-contain bg-white/90 p-0.5 border border-white/20 shadow-sm" /> : (
-                        <div className="w-6 h-6 bg-emerald-500/20 backdrop-blur-md rounded-lg flex items-center justify-center border border-emerald-500/30 text-emerald-300"><Banknote size={14}/></div>
+                      {acc.logo ? <img src={acc.logo} alt="custom-logo" className="w-7 h-7 rounded-lg object-contain bg-white/90 p-0.5 border border-white/20 shadow-sm" /> : (
+                        <div className="w-7 h-7 bg-emerald-500/20 backdrop-blur-md rounded-lg flex items-center justify-center border border-emerald-500/30 text-emerald-300"><Banknote size={16}/></div>
                       )}
-                      <div className={`text-[8px] px-1.5 py-0.5 rounded-full bg-emerald-500 text-white font-bold`}>SAVINGS</div>
+                      {hasTarget ? (
+                        <div className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/30 border border-emerald-400/30 text-emerald-200 font-bold">
+                          {percentage.toFixed(0)}% Terisi
+                        </div>
+                      ) : (
+                        <div className="text-[9px] px-2 py-0.5 rounded-full bg-slate-500/30 border border-slate-400/30 text-slate-300 font-bold">No Target</div>
+                      )}
                     </div>
-                    <div className="space-y-0.5 mt-auto z-10">
-                      <p className="text-xs font-black tracking-tight leading-none truncate text-emerald-50">{acc.name}</p>
-                      <p className="text-[10px] font-black tracking-tight pt-0.5 whitespace-nowrap overflow-hidden text-emerald-100">Rp{acc.balance.toLocaleString('id-ID')}</p>
+                    
+                    <div className="space-y-1 mt-auto z-10 w-full">
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-xs font-black tracking-tight leading-none text-emerald-50 mb-1">{acc.name}</p>
+                          <p className="text-[11px] font-black tracking-tight leading-none text-white">Rp{acc.balance.toLocaleString('id-ID')}</p>
+                        </div>
+                        {hasTarget && (
+                          <span className="text-[8px] text-emerald-200 font-bold">Target: Rp{acc.targetBalance!.toLocaleString('id-ID')}</span>
+                        )}
+                      </div>
+
+                      {/* PROGRESS BAR TARGET TABUNGAN */}
+                      {hasTarget && (
+                        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden border border-white/5 mt-1">
+                          <div className="h-full bg-emerald-400 rounded-full transition-all duration-1000 ease-out" style={{ width: `${percentage}%` }}></div>
+                        </div>
+                      )}
                     </div>
                 </div>
               );
@@ -118,17 +145,28 @@ export default function AssetsTab({
           
           {/* FORM TAMBAH DOMPET BARU */}
           <div className="space-y-2">
-            <select className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold" value={accType} onChange={(e) => setAccType(e.target.value)}>
+            <select className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold text-slate-700" value={accType} onChange={(e) => setAccType(e.target.value)}>
                 {walletTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
             </select>
-            <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold" value={accName} onChange={(e) => setAccName(e.target.value)} />
-            <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
+            <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold text-slate-700" value={accName} onChange={(e) => setAccName(e.target.value)} />
+            <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold text-slate-700" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
             
             {/* CHECKBOX JADIKAN TABUNGAN */}
             <div className="flex items-center gap-2 pt-1 pb-1">
               <input type="checkbox" id="add-savings" checked={accIsSavings} onChange={(e) => setAccIsSavings(e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-slate-300" />
               <label htmlFor="add-savings" className="text-[11px] font-bold text-slate-600">Simpan sebagai Tabungan (Sembunyikan saldo)</label>
             </div>
+
+            {/* INPUT TARGET TABUNGAN BARU */}
+            {accIsSavings && (
+              <input 
+                type="number" 
+                placeholder="Target Nominal Tabungan (Opsional)" 
+                className="w-full p-3 bg-white border border-emerald-100 rounded-xl text-xs border-none outline-none font-bold text-emerald-800 placeholder-emerald-300 animate-in slide-in-from-top-2" 
+                value={accTargetBalance} 
+                onChange={(e) => setAccTargetBalance(e.target.value)} 
+              />
+            )}
 
             <div className="flex flex-col gap-1 pt-1">
               <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
@@ -147,14 +185,22 @@ export default function AssetsTab({
               <div key={acc.id} className="bg-white p-4 rounded-xl flex flex-col gap-3 shadow-sm border border-slate-100">
                 {editingAccId === acc.id ? (
                   <div className="space-y-3">
-                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
-                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Saldo Dompet</label><input type="number" className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} /></div>
+                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold text-slate-700" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
+                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Saldo Dompet</label><input type="number" className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold text-slate-700" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} /></div>
                     
                     {/* CHECKBOX EDIT TABUNGAN */}
                     <div className="flex items-center gap-2 pt-1 pb-1">
                       <input type="checkbox" id={`edit-savings-${acc.id}`} checked={editAccIsSavings} onChange={(e) => setEditAccIsSavings(e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-slate-300" />
                       <label htmlFor={`edit-savings-${acc.id}`} className="text-[10px] font-bold text-slate-500">Jadikan Tabungan (Sembunyikan dari total saldo)</label>
                     </div>
+
+                    {/* INPUT EDIT TARGET TABUNGAN BARU */}
+                    {editAccIsSavings && (
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Target Tabungan</label>
+                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full bg-slate-50 p-2.5 text-xs border border-blue-200 rounded-xl outline-none font-bold text-emerald-800 placeholder-emerald-300 animate-in slide-in-from-top-2" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+                      </div>
+                    )}
 
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Logo Dompet</label>
@@ -184,7 +230,7 @@ export default function AssetsTab({
                     <div className="flex items-center gap-1">
                       <button onClick={() => moveAccountOrder(index, "up")} disabled={index === 0} className={`p-1.5 rounded-lg border ${index === 0 ? "text-slate-200 border-slate-100" : "text-slate-400 border-slate-200 hover:bg-slate-100"}`}><ArrowUp size={12}/></button>
                       <button onClick={() => moveAccountOrder(index, "down")} disabled={index === accounts.length - 1} className={`p-1.5 rounded-lg border ${index === accounts.length - 1 ? "text-slate-200 border-slate-100" : "text-slate-400 border-slate-200 hover:bg-slate-100"}`}><ArrowDown size={12}/></button>
-                      <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); setEditAccIsSavings(acc.isSavings || false); }} className="text-slate-300 hover:text-blue-500 p-1.5"><Edit2 size={12}/></button>
+                      <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); setEditAccIsSavings(acc.isSavings || false); setEditAccTargetBalance(acc.targetBalance?.toString() || ""); }} className="text-slate-300 hover:text-blue-500 p-1.5"><Edit2 size={12}/></button>
                       <button onClick={() => deleteAccount(acc.id, acc.name)} className="text-slate-300 hover:text-red-500 p-1.5"><Trash2 size={12}/></button>
                     </div>
                   </div>

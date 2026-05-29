@@ -1,5 +1,12 @@
 export interface AccountData { 
-  id: string; name: string; balance: number; type: string; logo?: string; order?: number; isSavings?: boolean; 
+  id: string; 
+  name: string; 
+  balance: number; 
+  type: string; 
+  logo?: string; 
+  order?: number; 
+  isSavings?: boolean; 
+  targetBalance?: number; // <--- BARU: TARGET TABUNGAN
 }
 
 export interface TransactionData { 
@@ -14,7 +21,7 @@ export interface TransactionData {
   category: string; 
   tDate: string; 
   adminFee?: number;
-  createdAt?: any; // <--- BARU: DIDAFTARKAN AGAR TYPESCRIPT DI page.tsx TIDAK PROTES LAGI
+  createdAt?: any; 
 }
 
 export interface CategoryData { 

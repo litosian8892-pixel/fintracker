@@ -37,6 +37,9 @@ export default function FintrackerApp() {
   const [txLimit, setTxLimit] = useState(20);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); 
 
+  // --- STATES BARU: PENYIMPANAN DATA BULAN LALU (MoM TRENDS) ---
+  const [prevMonthTransactions, setPrevMonthTransactions] = useState<TransactionData[]>([]);
+
   // --- ANTIPASI DOUBLE CLICK ---
   const isSubmittingRef = useRef(false); 
   const [isSubmitting, setIsSubmitting] = useState(false); 
@@ -62,12 +65,14 @@ export default function FintrackerApp() {
   const [accType, setAccType] = useState("Cash");
   const [accLogo, setAccLogo] = useState<string>("");
   const [accIsSavings, setAccIsSavings] = useState(false); 
+  const [accTargetBalance, setAccTargetBalance] = useState(""); // <--- BIAYA TARGET ADD
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [editAccName, setEditAccName] = useState("");
   const [editAccBalance, setEditAccBalance] = useState("");
   const [editAccLogo, setEditAccLogo] = useState<string>("");
   const [editAccIsSavings, setEditAccIsSavings] = useState(false); 
+  const [editAccTargetBalance, setEditAccTargetBalance] = useState(""); // <--- BIAYA TARGET EDIT
 
   // States: Transaction
   const [tAmount, setTAmount] = useState("");
@@ -84,6 +89,13 @@ export default function FintrackerApp() {
   const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("variable"); 
 
   const [newWalletTypeName, setNewWalletTypeName] = useState("");
+
+  // --- ALGORITMA UTILITY: MENCARI BULAN LALU (MoM) ---
+  const getPrevMonth = (ym: string) => {
+    const [y, m] = ym.split("-").map(Number);
+    const d = new Date(y, m - 2, 1); 
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
 
   // --- FIREBASE EFFECTS ---
   useEffect(() => {
@@ -110,22 +122,19 @@ export default function FintrackerApp() {
     return () => { unsubAcc(); unsubCat(); unsubTypes(); unsubDebts(); };
   }, [user]);
 
-  // SINKRONISASI BARU: URUTKAN DETAIL RIWAYAT TRANSAKSI SESUAI DETIK MASUKNYA DATA
+  // SINKRONISASI BARU: HYBRID SORTING (TANGGAL + MILIDETIK) PADA RIWAYAT JALAN KILAT
   useEffect(() => {
     if (!user) return;
     const qHistory = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(txLimit));
     const unsubTr = onSnapshot(qHistory, (sn) => {
       const data = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
       
-      // --- ALGORITMA BARU: HYBRID SORTING (TANGGAL + MILIDETIK) ---
       data.sort((a, b) => {
-        // 1. Bandingkan Tanggal Belanja Terlebih Dahulu (Y-M-D Descending)
         const dateCompare = b.tDate.localeCompare(a.tDate);
         if (dateCompare !== 0) return dateCompare;
         
-        // 2. Jika tanggalnya sama persis, bandingkan milidetik waktu pembuatannya (createdAt)
         const getMillis = (t: any) => {
-          if (!t) return Date.now(); // Jika data lokal baru belum tersinkron, anggap waktu sekarang agar paling atas
+          if (!t) return Date.now(); 
           if (typeof t.toMillis === 'function') return t.toMillis();
           if (t.seconds) return t.seconds * 1000;
           return new Date(t).getTime();
@@ -150,6 +159,19 @@ export default function FintrackerApp() {
       setReportTransactions(data);
     });
     return () => unsubReport();
+  }, [user, reportMonth]);
+
+  // EFFECT BARU: Ambil Transaksi Bulan Lalu secara spesifik untuk perbandingan Laporan
+  useEffect(() => {
+    if (!user) return;
+    const prevMonth = getPrevMonth(reportMonth);
+    const startOfPrev = `${prevMonth}-01`;
+    const endOfPrev = `${prevMonth}-31`;
+    const qPrev = query(collection(db, `users/${user.uid}/transactions`), where("tDate", ">=", startOfPrev), where("tDate", "<=", endOfPrev));
+    const unsubPrev = onSnapshot(qPrev, (sn) => {
+      setPrevMonthTransactions(sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData)));
+    });
+    return () => unsubPrev();
   }, [user, reportMonth]);
 
   // EFFECT PENCARIAN GLOBAL
@@ -381,9 +403,10 @@ export default function FintrackerApp() {
       await addDoc(collection(db, `users/${user.uid}/accounts`), {
         name: accName, balance: Number(accBalance), type: accType, logo: accLogo, order: accounts.length, 
         isSavings: accIsSavings,
+        targetBalance: accIsSavings && accTargetBalance ? Number(accTargetBalance) : null, // <--- BARU: SIMPAN TARGET
         createdAt: serverTimestamp()
       });
-      setAccName(""); setAccBalance(""); setAccLogo(""); setAccIsSavings(false); 
+      setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); 
     } finally {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
@@ -414,9 +437,10 @@ export default function FintrackerApp() {
     try {
       await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { 
         name: editAccName, balance: Number(editAccBalance), logo: editAccLogo, 
-        isSavings: editAccIsSavings 
+        isSavings: editAccIsSavings,
+        targetBalance: editAccIsSavings && editAccTargetBalance ? Number(editAccTargetBalance) : null // <--- BARU: UPDATE TARGET
       });
-      setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccIsSavings(false);
+      setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false);
       alert("Dompet berhasil diperbarui!");
     } catch (e) { alert("Gagal memperbarui"); }
     finally { 
@@ -634,6 +658,19 @@ export default function FintrackerApp() {
   const expenseByDate = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc; }, {});
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
 
+  // --- ALGORITMA BARU: AMBIL TOTAL PENDAPATAN & PENGELUARAN BULAN LALU (MoM) ---
+  const prevAdminFeeTxs = prevMonthTransactions
+    .filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0)
+    .map(t => ({ amount: t.adminFee! }));
+  
+  const prevCombinedExpense = [
+    ...prevMonthTransactions.filter(t => t.type === 'expense'),
+    ...prevAdminFeeTxs
+  ];
+
+  const prevTotalExpense = prevCombinedExpense.reduce((a, b) => a + b.amount, 0);
+  const prevTotalIncome = prevMonthTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
+
   const handleExportToExcel = () => {
     if (reportTransactions.length === 0) return alert("Tidak ada data transaksi di bulan ini!");
     const excelData = reportTransactions.map((t, idx) => ({
@@ -673,6 +710,7 @@ export default function FintrackerApp() {
                   totalIncome={totalIncome} totalExpense={totalExpense} pieData={pieData} incomeCategoryList={incomeCategoryList} barData={barData}
                   categories={categories} reportTransactions={reportTransactions}
                   globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult} 
+                  prevTotalIncome={prevTotalIncome} prevTotalExpense={prevTotalExpense} // <--- PROPS BULAN LALU BARU
                 />
               )}
               {activeTab === "debts" && (
@@ -685,9 +723,11 @@ export default function FintrackerApp() {
                   accounts={accounts} walletTypes={walletTypes} accType={accType} setAccType={setAccType}
                   accName={accName} setAccName={setAccName} accBalance={accBalance} setAccBalance={setAccBalance}
                   accLogo={accLogo} handleLogoUpload={handleLogoUpload} accIsSavings={accIsSavings} setAccIsSavings={setAccIsSavings} 
+                  accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} // <--- PROPS TARGET BARU
                   handleCreateAccount={handleCreateAccount} editingAccId={editingAccId} setEditingAccId={setEditingAccId} 
                   editAccName={editAccName} setEditAccName={setEditAccName} editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} 
                   editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} 
+                  editAccTargetBalance={editAccTargetBalance} setEditAccTargetBalance={setEditAccTargetBalance} // <--- PROPS TARGET BARU
                   handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
                 />
               )}

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Download, ChevronDown } from "lucide-react";
+import { Download, ChevronDown, ArrowUp, ArrowDown } from "lucide-react";
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { CategoryData, TransactionData } from "../../types";
 
@@ -28,11 +28,13 @@ interface ReportsTabProps {
   reportTransactions: TransactionData[];
   globalSearch: string; setGlobalSearch: (val: string) => void;
   searchResult: TransactionData[];
+  prevTotalIncome: number; // <--- BARU: DATA BULAN LALU
+  prevTotalExpense: number; // <--- BARU: DATA BULAN LALU
 }
 
 export default function ReportsTab({
   reportMonth, setReportMonth, handleExportToExcel, totalIncome, totalExpense, pieData, incomeCategoryList, barData, categories, reportTransactions,
-  globalSearch, setGlobalSearch, searchResult
+  globalSearch, setGlobalSearch, searchResult, prevTotalIncome, prevTotalExpense
 }: ReportsTabProps) {
   
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
@@ -87,7 +89,7 @@ export default function ReportsTab({
   const varGrouped = groupTransactionsAndItems(varTxs);
   const incomeGrouped = groupTransactionsAndItems(incomeTxs);
 
-  // --- ALGORITMA BARU: URUTKAN DAFTAR KATEGORI BERDASARKAN TOTAL NOMINAL TERBESAR ---
+  // ALGORITMA BARU: URUTKAN DAFTAR KATEGORI BERDASARKAN TOTAL NOMINAL TERBESAR
   const sortedFixedKeys = Object.keys(fixedGrouped).sort((a, b) => fixedGrouped[b].total - fixedGrouped[a].total);
   const sortedVarKeys = Object.keys(varGrouped).sort((a, b) => varGrouped[b].total - varGrouped[a].total);
   const sortedIncomeKeys = Object.keys(incomeGrouped).sort((a, b) => incomeGrouped[b].total - incomeGrouped[a].total);
@@ -103,7 +105,21 @@ export default function ReportsTab({
 
   const budgetCategories = categories.filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0);
 
+  // URUTKAN DATA DARI PERSENTASE TERBESAR KE TERKECIL
   const sortedPieData = [...pieData].sort((a, b) => b.value - a.value);
+
+  // --- ALGORITMA BARU: HITUNG TREN PERBANDINGAN BULAN KE BULAN (MoM TREND) ---
+  const calcTrend = (current: number, prev: number) => {
+    if (prev === 0) return null;
+    const diff = ((current - prev) / prev) * 100;
+    return {
+      value: Math.abs(diff).toFixed(0),
+      isUp: diff > 0,
+    };
+  };
+
+  const incomeTrend = calcTrend(totalIncome, prevTotalIncome);
+  const expenseTrend = calcTrend(totalExpense, prevTotalExpense);
 
   return (
     <div className="space-y-6 animate-in fade-in">
@@ -158,13 +174,32 @@ export default function ReportsTab({
       </div>
       
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-green-50 p-5 rounded-3xl border border-green-100">
-            <p className="text-[10px] font-bold text-green-600 uppercase mb-1">Pemasukan Total</p>
-            <p className="text-lg font-black text-green-700">Rp {totalIncome.toLocaleString('id-ID')}</p>
+        {/* TOTAL INCOME WITH MOM TREND */}
+        <div className="bg-green-50 p-5 rounded-3xl border border-green-100 flex flex-col justify-between">
+            <div>
+              <p className="text-[10px] font-bold text-green-600 uppercase mb-1">Pemasukan Total</p>
+              <p className="text-lg font-black text-green-700">Rp {totalIncome.toLocaleString('id-ID')}</p>
+            </div>
+            {incomeTrend && (
+              <div className={`text-[9px] font-bold flex items-center gap-1 mt-2 ${incomeTrend.isUp ? "text-green-600" : "text-red-500"}`}>
+                {incomeTrend.isUp ? <ArrowUp size={12}/> : <ArrowDown size={12}/>}
+                <span>{incomeTrend.value}% dibanding bulan lalu</span>
+              </div>
+            )}
         </div>
-        <div className="bg-red-50 p-5 rounded-3xl border border-red-100">
-            <p className="text-[10px] font-bold text-red-600 uppercase mb-1">Pengeluaran Total</p>
-            <p className="text-lg font-black text-red-700">Rp {totalExpense.toLocaleString('id-ID')}</p>
+        
+        {/* TOTAL EXPENSE WITH MOM TREND */}
+        <div className="bg-red-50 p-5 rounded-3xl border border-red-100 flex flex-col justify-between">
+            <div>
+              <p className="text-[10px] font-bold text-red-600 uppercase mb-1">Pengeluaran Total</p>
+              <p className="text-lg font-black text-red-700">Rp {totalExpense.toLocaleString('id-ID')}</p>
+            </div>
+            {expenseTrend && (
+              <div className={`text-[9px] font-bold flex items-center gap-1 mt-2 ${expenseTrend.isUp ? "text-red-600" : "text-green-600"}`}>
+                {expenseTrend.isUp ? <ArrowUp size={12}/> : <ArrowDown size={12}/>}
+                <span>{expenseTrend.value}% dibanding bulan lalu</span>
+              </div>
+            )}
         </div>
       </div>
 
@@ -317,7 +352,7 @@ export default function ReportsTab({
         <h3 className="font-bold text-slate-800 text-sm px-1">Rincian Pemasukan</h3>
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm space-y-3">
           <p className="text-[10px] font-black text-green-500 uppercase tracking-widest mb-1">Detail Pemasukan</p>
-          {sortedIncomeKeys.length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
+          {Object.keys(incomeGrouped).length === 0 ? <p className="text-xs text-slate-400 italic">Kosong</p> : (
             <div className="space-y-2">
               {sortedIncomeKeys.map((key) => {
                 const data = incomeGrouped[key];
@@ -360,7 +395,7 @@ export default function ReportsTab({
         </div>
       </div>
 
-      {/* --- GRAFIK DONAT --- */}
+      {/* --- GRAFIK DONAT DENGAN SORTING --- */}
       {sortedPieData.length > 0 && (
         <div className="bg-white p-6 rounded-[30px] border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 text-sm mb-4">Grafik Donat (Semua Pengeluaran)</h3>
@@ -375,6 +410,7 @@ export default function ReportsTab({
             </ResponsiveContainer>
           </div>
 
+          {/* LEGENDA BESAR KE KECIL */}
           <div className="mt-5 pt-4 border-t border-slate-100 space-y-2.5">
             {sortedPieData.map((data, idx) => {
               const percentage = totalExpense > 0 ? ((data.value / totalExpense) * 100).toFixed(1) : "0";
@@ -429,7 +465,7 @@ export default function ReportsTab({
             </ResponsiveContainer>
           </div>
 
-          {/* LEGENDA DETAIL GRAFIK HARIAN */}
+          {/* LEGENDA DETAIL GRAFIK HARIAN (SINKRONUS DRILL-DOWN) */}
           <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
             {barData.map((data, idx) => {
               const dayNum = data.date.replace("Tgl ", "");
