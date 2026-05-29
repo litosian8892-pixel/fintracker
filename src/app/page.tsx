@@ -87,6 +87,9 @@ export default function FintrackerApp() {
   // DETEKSI PERANGKAT RESPONSIF (MOBILE vs DESKTOP)
   const [isMobile, setIsMobile] = useState(false);
 
+  // --- LOGIKA STATE TEMA DENGAN PERSISTENSI LOCALSTORAGE (TAILWIND V4 DARK MODE) ---
+  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768); 
@@ -95,6 +98,32 @@ export default function FintrackerApp() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Sinkronisasi inisialisasi tema dari LocalStorage saat dimuat
+  useEffect(() => {
+    const storedTheme = localStorage.getItem("theme") as "light" | "dark" | "system" | null;
+    if (storedTheme) {
+      setTheme(storedTheme);
+    }
+  }, []);
+
+  // Monitor perubahan preferensi sistem operasi dan set kelas Tailwind v4 .dark secara instan
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const applyTheme = () => {
+      if (theme === "dark" || (theme === "system" && mediaQuery.matches)) {
+        root.classList.add("dark");
+      } else {
+        root.classList.remove("dark");
+      }
+    };
+
+    applyTheme();
+    mediaQuery.addEventListener("change", applyTheme);
+    return () => mediaQuery.removeEventListener("change", applyTheme);
+  }, [theme]);
 
   // States: Asset / Wallet
   const [accName, setAccName] = useState("");
@@ -767,7 +796,7 @@ export default function FintrackerApp() {
   if (!user) return <AuthScreen />;
 
   return (
-    <main className="min-h-screen bg-slate-50 md:flex">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 md:flex transition-colors duration-200">
       <Sidebar user={user} activeTab={activeTab as any} setActiveTab={setActiveTab as any} onLogout={() => signOut(auth)} />
       <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
         <MobileHeader user={user} onLogout={() => signOut(auth)} />
@@ -820,6 +849,7 @@ export default function FintrackerApp() {
                   categories={categories} deleteCategory={deleteCategory} updateCategory={handleEditCategory}
                   newWalletTypeName={newWalletTypeName} setNewWalletTypeName={setNewWalletTypeName}
                   addCustomWalletType={addCustomWalletType} walletTypes={walletTypes} deleteWalletType={deleteWalletType}
+                  theme={theme} setTheme={setTheme}
                 />
               )}
             </div>
@@ -838,16 +868,16 @@ export default function FintrackerApp() {
       {/* POP-UP MODAL EDIT TRANSAKSI */}
       {editingTransaction && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="font-black text-slate-800 text-sm">Koreksi Transaksi</h3>
-              <button disabled={isSubmitting} onClick={() => { setEditingTransaction(null); setActiveEditKeypad(null); }} className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full disabled:opacity-50"><X size={14}/></button>
+          <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 border border-slate-100 dark:border-slate-800">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-850/50">
+              <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Koreksi Transaksi</h3>
+              <button disabled={isSubmitting} onClick={() => { setEditingTransaction(null); setActiveEditKeypad(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full disabled:opacity-50"><X size={14}/></button>
             </div>
             
             <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto pb-12">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipe Transaksi</label>
-                <div className="p-3 bg-slate-100 rounded-xl text-xs font-black text-slate-600 uppercase tracking-wider">
+                <div className="p-3 bg-slate-100 dark:bg-slate-850 rounded-xl text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                   {editTType === "expense" ? "🔴 Pengeluaran" : editTType === "income" ? "🟢 Pemasukan" : "🔵 Transfer Dana"}
                 </div>
               </div>
@@ -860,13 +890,13 @@ export default function FintrackerApp() {
                   type="text" 
                   inputMode={isMobile ? "none" : undefined} 
                   onFocus={() => { if(isMobile) setActiveEditKeypad("amount"); }}
-                  className={`w-full p-3.5 bg-slate-50 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 disabled:opacity-50 transition-all ${activeEditKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white' : 'border-slate-100'}`}
+                  className={`w-full p-3.5 bg-slate-50 dark:bg-slate-850 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 disabled:opacity-50 transition-all ${activeEditKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-100 dark:border-slate-800'}`}
                   value={editTAmount} 
                   onChange={(e) => setEditTAmount(e.target.value)} 
                 />
                 {editTAmount && (
                   <p className="text-[10px] font-bold text-slate-400 pl-1 animate-in fade-in duration-150">
-                    Terbaca: <span className="text-slate-600 font-black">{formatRupiahTerbaca(editTAmount)}</span>
+                    Terbaca: <span className="text-slate-600 dark:text-slate-300 font-black">{formatRupiahTerbaca(editTAmount)}</span>
                   </p>
                 )}
               </div>
@@ -880,13 +910,13 @@ export default function FintrackerApp() {
                     type="text" 
                     inputMode={isMobile ? "none" : undefined} 
                     onFocus={() => { if(isMobile) setActiveEditKeypad("adminFee"); }}
-                    className={`w-full p-3.5 bg-blue-50/20 border rounded-xl text-xs font-bold outline-blue-500 text-blue-900 disabled:opacity-50 transition-all ${activeEditKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white' : 'border-blue-100'}`}
+                    className={`w-full p-3.5 bg-blue-50/20 border rounded-xl text-xs font-bold outline-blue-500 text-blue-900 dark:text-blue-300 disabled:opacity-50 transition-all ${activeEditKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-blue-100 dark:border-slate-800/50'}`}
                     value={editTAdminFee} 
                     onChange={(e) => setEditTAdminFee(e.target.value)} 
                   />
                   {editTAdminFee && (
                     <p className="text-[10px] font-bold text-blue-400 pl-1 animate-in fade-in duration-150">
-                      Terbaca: <span className="text-blue-600 font-black">{formatRupiahTerbaca(editTAdminFee)}</span>
+                      Terbaca: <span className="text-blue-600 dark:text-blue-300 font-black">{formatRupiahTerbaca(editTAdminFee)}</span>
                     </p>
                   )}
                 </div>
@@ -894,13 +924,13 @@ export default function FintrackerApp() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</label>
-                <input disabled={isSubmitting} type="date" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer disabled:opacity-50" value={editTDate} onChange={(e) => setEditTDate(e.target.value)} />
+                <input disabled={isSubmitting} type="date" className="w-full p-3.5 bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer disabled:opacity-50" value={editTDate} onChange={(e) => setEditTDate(e.target.value)} />
               </div>
 
               {editTType !== "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
-                  <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer disabled:opacity-50" value={editTCategory} onChange={(e) => setEditTCategory(e.target.value)}>
+                  <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer disabled:opacity-50" value={editTCategory} onChange={(e) => setEditTCategory(e.target.value)}>
                     {categories.filter(c => c.type === editTType).map(cat => (
                       <option key={cat.id} value={cat.name}>{cat.name}</option>
                     ))}
@@ -910,7 +940,7 @@ export default function FintrackerApp() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dompet Asal</label>
-                <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer disabled:opacity-50" value={editTAccountId} onChange={(e) => setEditTAccountId(e.target.value)}>
+                <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer disabled:opacity-50" value={editTAccountId} onChange={(e) => setEditTAccountId(e.target.value)}>
                   {accounts.map(acc => (
                     <option key={acc.id} value={acc.id}>{acc.name}</option>
                   ))}
@@ -920,7 +950,7 @@ export default function FintrackerApp() {
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kirim Ke Dompet Tujuan</label>
-                  <select disabled={isSubmitting} className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold outline-blue-500 text-blue-900 cursor-pointer disabled:opacity-50" value={editTToAccountId} onChange={(e) => setEditTToAccountId(e.target.value)}>
+                  <select disabled={isSubmitting} className="w-full p-3.5 bg-blue-50/20 border border-blue-100 dark:border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-blue-900 dark:text-blue-100 cursor-pointer disabled:opacity-50" value={editTToAccountId} onChange={(e) => setEditTToAccountId(e.target.value)}>
                     {accounts.map(acc => (
                       <option key={acc.id} value={acc.id}>{acc.name}</option>
                     ))}
@@ -930,7 +960,7 @@ export default function FintrackerApp() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan</label>
-                <input disabled={isSubmitting} onFocus={() => setActiveEditKeypad(null)} type="text" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 disabled:opacity-50" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
+                <input disabled={isSubmitting} onFocus={() => setActiveEditKeypad(null)} type="text" className="w-full p-3.5 bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 disabled:opacity-50" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
               </div>
 
               <div className="flex gap-2 pt-2 shrink-0">
@@ -944,7 +974,7 @@ export default function FintrackerApp() {
                 <button 
                   disabled={isSubmitting} 
                   onClick={() => { setEditingTransaction(null); setActiveEditKeypad(null); }} 
-                  className="py-3 px-6 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                  className="py-3 px-6 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
                 >
                   Batal
                 </button>
@@ -954,51 +984,51 @@ export default function FintrackerApp() {
         </div>
       )}
 
-      {/* --- DRAW KEYPAD KALKULATOR KUSTOM UNTUK EDIT MODAL (HANYA AKTIF DI SELULER) --- */}
+      {/* --- DRAW KEYPAD KALKULATOR KUSTOM UNTUK EDIT MODAL (HANYA AKTIF DI SELULER DENGAN INTEGRASI TEMA RESPONSIF) --- */}
       {isMobile && editingTransaction && activeEditKeypad && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveEditKeypad(null)}></div>
-          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-slate-950 border-t border-slate-800 p-4 pb-6 transition-transform duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
             <div className="flex justify-between items-center mb-3 px-1">
-              <span className="text-[10px] font-black text-blue-500 tracking-widest uppercase">
+              <span className="text-[10px] font-black text-slate-500 dark:text-blue-500 tracking-widest uppercase">
                 {activeEditKeypad === "amount" ? "Kalkulator Nominal" : "Kalkulator Biaya Admin"}
               </span>
-              <button onClick={() => setActiveEditKeypad(null)} className="text-slate-400 hover:text-white p-1 text-xs font-bold flex items-center gap-1">
+              <button onClick={() => setActiveEditKeypad(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 text-xs font-bold flex items-center gap-1">
                 Tutup <X size={14} />
               </button>
             </div>
-            <div className="grid grid-cols-4 gap-2 text-white font-black text-base">
+            <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-white font-black text-base">
               {["+", "-", "*", "/"].map((op) => (
-                <button key={op} type="button" onClick={() => handleEditKeypadPress(op)} className="py-3.5 bg-slate-900 active:bg-slate-800 rounded-xl hover:bg-slate-800/80 transition-all select-none">
+                <button key={op} type="button" onClick={() => handleEditKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl hover:bg-slate-200/80 dark:hover:bg-slate-800/80 transition-all select-none">
                   {op === "*" ? "×" : op === "/" ? "÷" : op}
                 </button>
               ))}
               {["7", "8", "9"].map((num) => (
-                <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-800 active:bg-slate-700 rounded-xl hover:bg-slate-700/80 transition-all select-none">
+                <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-700/80 transition-all select-none">
                   {num}
                 </button>
               ))}
-              <button type="button" onClick={() => handleEditKeypadPress("C")} className="py-3.5 bg-red-950/40 text-red-400 border border-red-900/30 active:bg-red-900/30 rounded-xl transition-all select-none">
+              <button type="button" onClick={() => handleEditKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 active:bg-red-100 dark:active:bg-red-900/30 rounded-xl transition-all select-none">
                 C
               </button>
               {["4", "5", "6"].map((num) => (
-                <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-800 active:bg-slate-700 rounded-xl hover:bg-slate-700/80 transition-all select-none">
+                <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-700/80 transition-all select-none">
                   {num}
                 </button>
               ))}
-              <button type="button" onClick={() => handleEditKeypadPress("⌫")} className="py-3.5 bg-slate-900 active:bg-slate-800 rounded-xl text-slate-300 flex items-center justify-center transition-all select-none">
+              <button type="button" onClick={() => handleEditKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-300 flex items-center justify-center transition-all select-none">
                 ⌫
               </button>
               {["1", "2", "3"].map((num) => (
-                <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-800 active:bg-slate-700 rounded-xl hover:bg-slate-700/80 transition-all select-none">
+                <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-700/80 transition-all select-none">
                   {num}
                 </button>
               ))}
-              <button type="button" onClick={() => handleEditKeypadPress(".")} className="py-3.5 bg-slate-900 active:bg-slate-800 rounded-xl transition-all select-none">
+              <button type="button" onClick={() => handleEditKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">
                 .
               </button>
               {["(", "0", ")"].map((char) => (
-                <button key={char} type="button" onClick={() => handleEditKeypadPress(char)} className={`${char === "0" ? "bg-slate-800 active:bg-slate-700" : "bg-slate-900 active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none`}>
+                <button key={char} type="button" onClick={() => handleEditKeypadPress(char)} className={`${char === "0" ? "bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none`}>
                   {char}
                 </button>
               ))}

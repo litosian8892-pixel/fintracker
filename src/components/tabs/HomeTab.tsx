@@ -161,18 +161,18 @@ export default function HomeTab({
   };
 
   return (
-    <div className="bg-white rounded-[30px] p-6 shadow-xl border border-slate-100 relative">
-      <h2 className="text-xl font-black text-slate-800 mb-6">Catat Transaksi</h2>
+    <div className="bg-white dark:bg-slate-900 rounded-[30px] p-6 shadow-xl border border-slate-100 dark:border-slate-800 relative transition-colors duration-200">
+      <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-6">Catat Transaksi</h2>
 
       {/* Navigasi Tipe Transaksi */}
-      <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 rounded-2xl mb-6">
+      <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 dark:bg-slate-850 rounded-2xl mb-6">
         <button
           type="button"
           onClick={() => handleTypeChange("expense")}
           className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
             tType === "expense"
               ? "bg-red-500 text-white shadow-md"
-              : "text-slate-600 hover:text-slate-800"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250"
           }`}
         >
           <ArrowDownRight size={14} />
@@ -184,7 +184,7 @@ export default function HomeTab({
           className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
             tType === "income"
               ? "bg-emerald-500 text-white shadow-md"
-              : "text-slate-600 hover:text-slate-800"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250"
           }`}
         >
           <ArrowUpRight size={14} />
@@ -196,7 +196,7 @@ export default function HomeTab({
           className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
             tType === "transfer"
               ? "bg-blue-500 text-white shadow-md"
-              : "text-slate-600 hover:text-slate-800"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250"
           }`}
         >
           <ArrowRightLeft size={14} />
@@ -210,19 +210,19 @@ export default function HomeTab({
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
             NOMINAL (RP)
           </label>
-          {/* inputMode="none" Mencegah keyboard bawaan HP keluar HANYA saat dibuka di perangkat mobile */}
+          {/* inputMode="none" Mencegah keyboard standard QWERTY HP untuk keluar */}
           <input
             type="text"
             inputMode={isMobile ? "none" : undefined} 
             onFocus={() => { if(isMobile) setActiveKeypad("amount"); }}
-            className={`w-full max-w-full p-3.5 bg-white border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 transition-all ${activeKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-slate-800'}`}
+            className={`w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`}
             placeholder={isMobile ? "Ketuk untuk input nominal..." : "Rp 0 atau ketik ekspresi matematika..."}
             value={tAmount}
             onChange={(e) => setTAmount(e.target.value)}
           />
           {tAmount && (
             <p className="text-[10px] font-bold text-slate-400 pl-1 animate-in fade-in duration-150">
-              Terbaca: <span className="text-slate-600 font-black">{formatRupiahTerbaca(tAmount)}</span>
+              Terbaca: <span className="text-slate-600 dark:text-slate-300 font-black">{formatRupiahTerbaca(tAmount)}</span>
             </p>
           )}
         </div>
@@ -233,19 +233,19 @@ export default function HomeTab({
             <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
               Biaya Admin (Opsional)
             </label>
-            {/* inputMode="none" Mencegah keyboard bawaan HP keluar HANYA saat dibuka di perangkat mobile */}
+            {/* inputMode="none" Mencegah keyboard standard HP untuk keluar */}
             <input
               type="text"
               inputMode={isMobile ? "none" : undefined}
               onFocus={() => { if(isMobile) setActiveKeypad("adminFee"); }}
-              className={`w-full max-w-full p-3.5 bg-white border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 transition-all ${activeKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-slate-800'}`}
+              className={`w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`}
               placeholder={isMobile ? "Ketuk untuk input biaya admin..." : "Rp 0 atau ketik ekspresi matematika..."}
               value={tAdminFee}
               onChange={(e) => setTAdminFee(e.target.value)}
             />
             {tAdminFee && (
               <p className="text-[10px] font-bold text-blue-400 pl-1 animate-in fade-in duration-150">
-                Terbaca: <span className="text-blue-600 font-black">{formatRupiahTerbaca(tAdminFee)}</span>
+                Terbaca: <span className="text-blue-600 dark:text-blue-350 font-black">{formatRupiahTerbaca(tAdminFee)}</span>
               </p>
             )}
           </div>
@@ -260,7 +260,7 @@ export default function HomeTab({
             <input
               type="date"
               onFocus={() => setActiveKeypad(null)}
-              className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer appearance-none"
+              className="w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer appearance-none"
               value={tDate}
               onChange={(e) => setTDate(e.target.value)}
             />
@@ -273,7 +273,7 @@ export default function HomeTab({
               </label>
               <div 
                 onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }}
-                className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50"
+                className="w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-750"
               >
                 <span className="truncate">{tCategory || "Pilih Kategori"}</span>
                 <ChevronDown size={14} className="text-slate-400 shrink-0" />
@@ -284,7 +284,7 @@ export default function HomeTab({
               <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1">
                 🏷️ KATEGORI
               </label>
-              <div className="w-full p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl text-xs font-bold text-blue-600 flex items-center justify-center">
+              <div className="w-full p-3.5 bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-xl text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center justify-center">
                 Mode Transfer Antar Dompet
               </div>
             </div>
@@ -298,7 +298,7 @@ export default function HomeTab({
               💳 DOMPET
             </label>
             <select
-              className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
+              className="w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer"
               value={tAccountId}
               onFocus={() => setActiveKeypad(null)}
               onChange={(e) => setTAccountId(e.target.value)}
@@ -317,7 +317,7 @@ export default function HomeTab({
                 💳 DOMPET TUJUAN
               </label>
               <select
-                className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
+                className="w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer"
                 value={tToAccountId}
                 onFocus={() => setActiveKeypad(null)}
                 onChange={(e) => setTToAccountId(e.target.value)}
@@ -341,7 +341,7 @@ export default function HomeTab({
           <input
             type="text"
             onFocus={() => setActiveKeypad(null)}
-            className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
+            className="w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100"
             placeholder="Tulis keterangan transaksi..."
             value={tNote}
             onChange={(e) => setTNote(e.target.value)}
@@ -352,7 +352,7 @@ export default function HomeTab({
         <button
           type="button"
           onClick={handleTransaction}
-          className="w-full py-4 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-lg transition-all transform active:scale-[0.98] duration-75"
+          className="w-full py-4 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-lg transition-all transform active:scale-[0.98] duration-75 cursor-pointer"
         >
           Simpan Transaksi
         </button>
@@ -361,25 +361,25 @@ export default function HomeTab({
       {/* --- POP-UP MODAL CUSTOM KATEGORI 2-KOLOM --- */}
       {showCatModal && tType !== "transfer" && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh] border border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800">
             
             {/* Header Modal */}
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
-              <h3 className="font-black text-slate-800 flex items-center gap-2 text-sm">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-850/50 shrink-0">
+              <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
                 <span className={tType === 'expense' ? "text-red-500" : "text-green-500"}>🏷️</span> 
                 Pilih Kategori {tType === 'expense' ? 'Pengeluaran' : 'Pemasukan'}
               </h3>
-              <button type="button" onClick={() => setShowCatModal(false)} className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full transition-colors"><X size={14}/></button>
+              <button type="button" onClick={() => setShowCatModal(false)} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full transition-colors"><X size={14}/></button>
             </div>
 
             {/* BAR PENCARIAN */}
-            <div className="p-4 border-b border-slate-100 shrink-0 bg-white">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
               <div className="relative">
                 <Search className="absolute left-3 top-3 text-slate-400" size={16} />
                 <input 
                   type="text" 
                   placeholder="Ketik untuk mencari kategori..." 
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white text-slate-800"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-slate-100"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -387,18 +387,18 @@ export default function HomeTab({
             </div>
             
             {/* Isi List Kategori */}
-            <div className="p-5 overflow-y-auto bg-white">
+            <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
               {tType === "expense" ? (
                 <div className="grid grid-cols-2 gap-4">
                   {/* KOLOM KIRI: VARIABEL (Sering) */}
                   <div className="space-y-2 min-w-0">
-                    <div className="sticky top-0 bg-white pb-2 mb-2 border-b border-orange-100 z-10">
+                    <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 mb-2 border-b border-orange-100 dark:border-orange-900/30 z-10">
                       <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel (Sering)</p>
                     </div>
                     <div className="flex flex-col gap-2">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").length === 0 && <p className="text-[10px] text-slate-400 italic">Tidak ditemukan</p>}
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").map(cat => (
-                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border ${tCategory === cat.name ? "bg-orange-500 text-white border-orange-600 shadow-md" : "bg-slate-50 text-slate-700 border-slate-100 hover:bg-orange-50 hover:border-orange-200"}`}>
+                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border ${tCategory === cat.name ? "bg-orange-500 text-white border-orange-600 shadow-md" : "bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:border-orange-200"}`}>
                           {cat.name}
                         </button>
                       ))}
@@ -406,14 +406,14 @@ export default function HomeTab({
                   </div>
                   
                   {/* KOLOM KANAN: FIXED (Bulanan) */}
-                  <div className="space-y-2 border-l border-slate-100 pl-4 min-w-0">
-                    <div className="sticky top-0 bg-white pb-2 mb-2 border-b border-purple-100 z-10">
+                  <div className="space-y-2 border-l border-slate-100 dark:border-slate-800 pl-4 min-w-0">
+                    <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 mb-2 border-b border-purple-100 dark:border-purple-900/30 z-10">
                       <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">🟣 Tetap (Bulanan)</p>
                     </div>
                     <div className="flex flex-col gap-2">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType === "fixed").length === 0 && <p className="text-[10px] text-slate-400 italic">Tidak ditemukan</p>}
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType === "fixed").map(cat => (
-                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border ${tCategory === cat.name ? "bg-purple-500 text-white border-purple-600 shadow-md" : "bg-slate-50 text-slate-700 border-slate-100 hover:bg-purple-50 hover:border-purple-200"}`}>
+                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border ${tCategory === cat.name ? "bg-purple-500 text-white border-purple-600 shadow-md" : "bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-purple-50 dark:hover:bg-purple-950/20 hover:border-purple-200"}`}>
                           {cat.name}
                         </button>
                       ))}
@@ -425,7 +425,7 @@ export default function HomeTab({
                 <div className="grid grid-cols-2 gap-3">
                   {filteredCategories.filter(c => c.type === "income").length === 0 && <p className="text-[10px] text-slate-400 italic col-span-2 text-center py-4">Tidak ditemukan</p>}
                   {filteredCategories.filter(c => c.type === "income").map(cat => (
-                    <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border ${tCategory === cat.name ? "bg-green-500 text-white border-green-600 shadow-md" : "bg-slate-50 text-slate-700 border-slate-100 hover:bg-green-50 hover:border-green-200"}`}>
+                    <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border ${tCategory === cat.name ? "bg-green-500 text-white border-green-600 shadow-md" : "bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-300 border-slate-100 dark:border-slate-800 hover:bg-green-50 dark:hover:bg-green-950/20 hover:border-green-200"}`}>
                       {cat.name}
                     </button>
                   ))}
@@ -437,51 +437,51 @@ export default function HomeTab({
         </div>
       )}
 
-      {/* --- DRAW KEYPAD KALKULATOR KUSTOM (HANYA AKTIF DI SELULER) --- */}
+      {/* --- DRAW KEYPAD KALKULATOR KUSTOM (HANYA AKTIF DI SELULER DENGAN INTEGRASI TEMA RESPONSIF) --- */}
       {isMobile && activeKeypad && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
-          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-slate-950 border-t border-slate-800 p-4 pb-6 transition-transform duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
             <div className="flex justify-between items-center mb-3 px-1">
-              <span className="text-[10px] font-black text-blue-500 tracking-widest uppercase">
+              <span className="text-[10px] font-black text-slate-500 dark:text-blue-500 tracking-widest uppercase">
                 {activeKeypad === "amount" ? "Kalkulator Nominal" : "Kalkulator Biaya Admin"}
               </span>
-              <button onClick={() => setActiveKeypad(null)} className="text-slate-400 hover:text-white p-1 text-xs font-bold flex items-center gap-1">
+              <button onClick={() => setActiveKeypad(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 text-xs font-bold flex items-center gap-1">
                 Tutup <X size={14} />
               </button>
             </div>
-            <div className="grid grid-cols-4 gap-2 text-white font-black text-base">
+            <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-white font-black text-base">
               {["+", "-", "*", "/"].map((op) => (
-                <button key={op} type="button" onClick={() => handleKeypadPress(op)} className="py-3.5 bg-slate-900 active:bg-slate-800 rounded-xl hover:bg-slate-800/80 transition-all select-none">
+                <button key={op} type="button" onClick={() => handleKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl hover:bg-slate-200/80 dark:hover:bg-slate-800/80 transition-all select-none">
                   {op === "*" ? "×" : op === "/" ? "÷" : op}
                 </button>
               ))}
               {["7", "8", "9"].map((num) => (
-                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-800 active:bg-slate-700 rounded-xl hover:bg-slate-700/80 transition-all select-none">
+                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-700/80 transition-all select-none">
                   {num}
                 </button>
               ))}
-              <button type="button" onClick={() => handleKeypadPress("C")} className="py-3.5 bg-red-950/40 text-red-400 border border-red-900/30 active:bg-red-900/30 rounded-xl transition-all select-none">
+              <button type="button" onClick={() => handleKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-950/40 text-red-400 border border-red-100 dark:border-red-900/30 active:bg-red-100 dark:active:bg-red-900/30 rounded-xl transition-all select-none">
                 C
               </button>
               {["4", "5", "6"].map((num) => (
-                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-800 active:bg-slate-700 rounded-xl hover:bg-slate-700/80 transition-all select-none">
+                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-700/80 transition-all select-none">
                   {num}
                 </button>
               ))}
-              <button type="button" onClick={() => handleKeypadPress("⌫")} className="py-3.5 bg-slate-900 active:bg-slate-800 rounded-xl text-slate-300 flex items-center justify-center transition-all select-none">
+              <button type="button" onClick={() => handleKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-300 flex items-center justify-center transition-all select-none">
                 ⌫
               </button>
               {["1", "2", "3"].map((num) => (
-                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-800 active:bg-slate-700 rounded-xl hover:bg-slate-700/80 transition-all select-none">
+                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-700/80 transition-all select-none">
                   {num}
                 </button>
               ))}
-              <button type="button" onClick={() => handleKeypadPress(".")} className="py-3.5 bg-slate-900 active:bg-slate-800 rounded-xl transition-all select-none">
+              <button type="button" onClick={() => handleKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">
                 .
               </button>
               {["(", "0", ")"].map((char) => (
-                <button key={char} type="button" onClick={() => handleKeypadPress(char)} className={`${char === "0" ? "bg-slate-800 active:bg-slate-700" : "bg-slate-900 active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none`}>
+                <button key={char} type="button" onClick={() => handleKeypadPress(char)} className={`${char === "0" ? "bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none`}>
                   {char}
                 </button>
               ))}
