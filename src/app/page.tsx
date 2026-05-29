@@ -37,7 +37,7 @@ export default function FintrackerApp() {
   const [txLimit, setTxLimit] = useState(20);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); 
 
-  // --- STATES BARU: PENYIMPANAN DATA BULAN LALU (MoM TRENDS) ---
+  // --- PENYIMPANAN DATA BULAN LALU (MoM TRENDS) ---
   const [prevMonthTransactions, setPrevMonthTransactions] = useState<TransactionData[]>([]);
 
   // --- ANTIPASI DOUBLE CLICK ---
@@ -65,14 +65,14 @@ export default function FintrackerApp() {
   const [accType, setAccType] = useState("Cash");
   const [accLogo, setAccLogo] = useState<string>("");
   const [accIsSavings, setAccIsSavings] = useState(false); 
-  const [accTargetBalance, setAccTargetBalance] = useState(""); // <--- BIAYA TARGET ADD
+  const [accTargetBalance, setAccTargetBalance] = useState(""); 
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [editAccName, setEditAccName] = useState("");
   const [editAccBalance, setEditAccBalance] = useState("");
   const [editAccLogo, setEditAccLogo] = useState<string>("");
   const [editAccIsSavings, setEditAccIsSavings] = useState(false); 
-  const [editAccTargetBalance, setEditAccTargetBalance] = useState(""); // <--- BIAYA TARGET EDIT
+  const [editAccTargetBalance, setEditAccTargetBalance] = useState(""); 
 
   // States: Transaction
   const [tAmount, setTAmount] = useState("");
@@ -122,7 +122,7 @@ export default function FintrackerApp() {
     return () => { unsubAcc(); unsubCat(); unsubTypes(); unsubDebts(); };
   }, [user]);
 
-  // SINKRONISASI BARU: HYBRID SORTING (TANGGAL + MILIDETIK) PADA RIWAYAT JALAN KILAT
+  // HYBRID SORTING (TANGGAL + MILIDETIK) PADA RIWAYAT JALAN KILAT
   useEffect(() => {
     if (!user) return;
     const qHistory = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(txLimit));
@@ -403,7 +403,7 @@ export default function FintrackerApp() {
       await addDoc(collection(db, `users/${user.uid}/accounts`), {
         name: accName, balance: Number(accBalance), type: accType, logo: accLogo, order: accounts.length, 
         isSavings: accIsSavings,
-        targetBalance: accIsSavings && accTargetBalance ? Number(accTargetBalance) : null, // <--- BARU: SIMPAN TARGET
+        targetBalance: accIsSavings && accTargetBalance ? Number(accTargetBalance) : null, 
         createdAt: serverTimestamp()
       });
       setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); 
@@ -438,7 +438,7 @@ export default function FintrackerApp() {
       await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { 
         name: editAccName, balance: Number(editAccBalance), logo: editAccLogo, 
         isSavings: editAccIsSavings,
-        targetBalance: editAccIsSavings && editAccTargetBalance ? Number(editAccTargetBalance) : null // <--- BARU: UPDATE TARGET
+        targetBalance: editAccIsSavings && editAccTargetBalance ? Number(editAccTargetBalance) : null 
       });
       setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false);
       alert("Dompet berhasil diperbarui!");
@@ -693,7 +693,8 @@ export default function FintrackerApp() {
       <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
         <MobileHeader user={user} onLogout={() => signOut(auth)} />
         <div className="max-w-5xl w-full mx-auto p-4 md:p-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* OPTIMASI GRID: Menambahkan items-start untuk mengunci tinggi card form Beranda agar tidak melar & bebas space kosong */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
             <div className="md:col-span-2 space-y-6">
               {activeTab === "home" && (
                 <HomeTab 
@@ -710,7 +711,7 @@ export default function FintrackerApp() {
                   totalIncome={totalIncome} totalExpense={totalExpense} pieData={pieData} incomeCategoryList={incomeCategoryList} barData={barData}
                   categories={categories} reportTransactions={reportTransactions}
                   globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult} 
-                  prevTotalIncome={prevTotalIncome} prevTotalExpense={prevTotalExpense} // <--- PROPS BULAN LALU BARU
+                  prevTotalIncome={prevTotalIncome} prevTotalExpense={prevTotalExpense} 
                 />
               )}
               {activeTab === "debts" && (
@@ -723,11 +724,11 @@ export default function FintrackerApp() {
                   accounts={accounts} walletTypes={walletTypes} accType={accType} setAccType={setAccType}
                   accName={accName} setAccName={setAccName} accBalance={accBalance} setAccBalance={setAccBalance}
                   accLogo={accLogo} handleLogoUpload={handleLogoUpload} accIsSavings={accIsSavings} setAccIsSavings={setAccIsSavings} 
-                  accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} // <--- PROPS TARGET BARU
+                  accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} 
                   handleCreateAccount={handleCreateAccount} editingAccId={editingAccId} setEditingAccId={setEditingAccId} 
                   editAccName={editAccName} setEditAccName={setEditAccName} editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} 
                   editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} 
-                  editAccTargetBalance={editAccTargetBalance} setEditAccTargetBalance={setEditAccTargetBalance} // <--- PROPS TARGET BARU
+                  editAccTargetBalance={editAccTargetBalance} setEditAccTargetBalance={setEditAccTargetBalance} 
                   handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
                 />
               )}
