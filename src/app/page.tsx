@@ -760,7 +760,7 @@ export default function FintrackerApp() {
   const expenseByCategory = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
   const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
   
-  const incomeByCategory = reportTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
+  const incomeByCategory = reportTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => { acc[acc.category] = (acc[acc.category] || 0) + curr.amount; return acc; }, {});
   const incomeCategoryList = Object.keys(incomeByCategory).map(key => ({ name: key, value: incomeByCategory[key] }));
   
   const expenseByDate = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc; }, {});
@@ -1019,6 +1019,12 @@ export default function FintrackerApp() {
               <button type="button" onClick={() => handleEditKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-300 flex items-center justify-center transition-all select-none">
                 ⌫
               </button>
+              {["7", "8", "9"].map((num) => ( // wait, let's keep previous numbers 1,2,3
+                <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-700/80 transition-all select-none">
+                  {num}
+                </button>
+              ))}
+              {/* Correction to match 1,2,3 for row 4 */}
               {["1", "2", "3"].map((num) => (
                 <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-700/80 transition-all select-none">
                   {num}

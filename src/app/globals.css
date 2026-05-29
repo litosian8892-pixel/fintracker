@@ -1,1 +1,4 @@
 @import "tailwindcss";
+
+/* Baris Wajib: Agar Tailwind v4 mengizinkan kelas .dark menimpa setelan bawaan HP/Sistem */
+@variant dark (&:where(.dark, .dark *));
