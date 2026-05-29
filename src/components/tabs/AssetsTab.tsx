@@ -1,4 +1,5 @@
 "use client";
+import { useState, useEffect } from "react";
 import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, HelpCircle } from "lucide-react";
 import { AccountData, WalletTypeData } from "../../types";
 
@@ -22,14 +23,14 @@ interface AssetsTabProps {
   accBalance: string; setAccBalance: (val: string) => void;
   accLogo: string; handleLogoUpload: (e: React.ChangeEvent<HTMLInputElement>, isEdit?: boolean) => void;
   accIsSavings: boolean; setAccIsSavings: (val: boolean) => void; 
-  accTargetBalance: string; setAccTargetBalance: (val: string) => void; // <--- BARU
+  accTargetBalance: string; setAccTargetBalance: (val: string) => void;
   handleCreateAccount: () => void;
   editingAccId: string | null; setEditingAccId: (val: string | null) => void;
   editAccName: string; setEditAccName: (val: string) => void;
   editAccBalance: string; setEditAccBalance: (val: string) => void;
   editAccLogo: string; setEditAccLogo: (val: string) => void;
   editAccIsSavings: boolean; setEditAccIsSavings: (val: boolean) => void; 
-  editAccTargetBalance: string; setEditAccTargetBalance: (val: string) => void; // <--- BARU
+  editAccTargetBalance: string; setEditAccTargetBalance: (val: string) => void;
   handleEditAccount: (id: string) => void;
   deleteAccount: (id: string, name: string) => void;
   moveAccountOrder: (index: number, direction: "up" | "down") => void;
@@ -40,6 +41,16 @@ export default function AssetsTab({
   editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder
 }: AssetsTabProps) {
   
+  // STATE UNTUK KONTROL DETAILS SECARA KONSISTEN (ANTI RE-RENDER BUG)
+  const [isManageOpen, setIsManageOpen] = useState(false);
+
+  // Otomatis buka laci kelola jika user sedang dalam mode edit akun
+  useEffect(() => {
+    if (editingAccId) {
+      setIsManageOpen(true);
+    }
+  }, [editingAccId]);
+
   const activeAccounts = accounts.filter(a => !a.isSavings);
   const savingsAccounts = accounts.filter(a => a.isSavings);
   const totalActiveBalance = activeAccounts.reduce((a, b) => a + b.balance, 0);
@@ -138,14 +149,18 @@ export default function AssetsTab({
         </div>
       )}
 
-      {/* KELOLA AKUN */}
-      <details className="bg-slate-200/50 rounded-[25px] p-5 border border-slate-200/50">
-        <summary className="text-[10px] font-black text-slate-500 cursor-pointer uppercase tracking-widest outline-none">⚙️ Kelola Akun & Dompet</summary>
+      {/* KELOLA AKUN (DENGAN CONTROLLED STATE KONSISTEN) */}
+      <details 
+        open={isManageOpen} 
+        onToggle={(e) => setIsManageOpen(e.currentTarget.open)}
+        className="bg-slate-200/50 rounded-[25px] p-5 border border-slate-200/50 transition-all"
+      >
+        <summary className="text-[10px] font-black text-slate-500 cursor-pointer uppercase tracking-widest outline-none select-none">⚙️ Kelola Akun & Dompet</summary>
         <div className="mt-5 space-y-4">
           
           {/* FORM TAMBAH DOMPET BARU */}
           <div className="space-y-2">
-            <select className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold text-slate-700" value={accType} onChange={(e) => setAccType(e.target.value)}>
+            <select className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold text-slate-700 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
                 {walletTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
             </select>
             <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold text-slate-700" value={accName} onChange={(e) => setAccName(e.target.value)} />
@@ -153,8 +168,8 @@ export default function AssetsTab({
             
             {/* CHECKBOX JADIKAN TABUNGAN */}
             <div className="flex items-center gap-2 pt-1 pb-1">
-              <input type="checkbox" id="add-savings" checked={accIsSavings} onChange={(e) => setAccIsSavings(e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-slate-300" />
-              <label htmlFor="add-savings" className="text-[11px] font-bold text-slate-600">Simpan sebagai Tabungan (Sembunyikan saldo)</label>
+              <input type="checkbox" id="add-savings" checked={accIsSavings} onChange={(e) => setAccIsSavings(e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-slate-300 cursor-pointer" />
+              <label htmlFor="add-savings" className="text-[11px] font-bold text-slate-600 cursor-pointer select-none">Simpan sebagai Tabungan (Sembunyikan saldo)</label>
             </div>
 
             {/* INPUT TARGET TABUNGAN BARU */}
@@ -184,21 +199,27 @@ export default function AssetsTab({
             {accounts.map((acc, index) => (
               <div key={acc.id} className="bg-white p-4 rounded-xl flex flex-col gap-3 shadow-sm border border-slate-100">
                 {editingAccId === acc.id ? (
-                  <div className="space-y-3">
+                  <div className="space-y-3 animate-in fade-in duration-200">
                     <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold text-slate-700" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
                     <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Saldo Dompet</label><input type="number" className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold text-slate-700" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} /></div>
                     
                     {/* CHECKBOX EDIT TABUNGAN */}
                     <div className="flex items-center gap-2 pt-1 pb-1">
-                      <input type="checkbox" id={`edit-savings-${acc.id}`} checked={editAccIsSavings} onChange={(e) => setEditAccIsSavings(e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-slate-300" />
-                      <label htmlFor={`edit-savings-${acc.id}`} className="text-[10px] font-bold text-slate-500">Jadikan Tabungan (Sembunyikan dari total saldo)</label>
+                      <input 
+                        type="checkbox" 
+                        id={`edit-savings-${acc.id}`} 
+                        checked={editAccIsSavings} 
+                        onChange={(e) => setEditAccIsSavings(e.target.checked)} 
+                        className="w-4 h-4 text-blue-600 rounded border-slate-300 cursor-pointer" 
+                      />
+                      <label htmlFor={`edit-savings-${acc.id}`} className="text-[10px] font-bold text-slate-500 cursor-pointer select-none">Jadikan Tabungan (Sembunyikan dari total saldo)</label>
                     </div>
 
                     {/* INPUT EDIT TARGET TABUNGAN BARU */}
                     {editAccIsSavings && (
-                      <div className="space-y-1">
+                      <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Target Tabungan</label>
-                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full bg-slate-50 p-2.5 text-xs border border-blue-200 rounded-xl outline-none font-bold text-emerald-800 placeholder-emerald-300 animate-in slide-in-from-top-2" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full bg-slate-50 p-2.5 text-xs border border-blue-200 rounded-xl outline-none font-bold text-emerald-800 placeholder-emerald-300" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
                       </div>
                     )}
 
@@ -210,8 +231,8 @@ export default function AssetsTab({
                       </div>
                     </div>
                     <div className="flex gap-2 pt-1">
-                      <button onClick={() => handleEditAccount(acc.id)} className="flex-1 py-2 bg-green-500 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1"><Check size={14}/> Simpan</button>
-                      <button onClick={() => setEditingAccId(null)} className="flex-1 py-2 bg-slate-100 text-slate-500 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><X size={14}/> Batal</button>
+                      <button onClick={() => handleEditAccount(acc.id)} className="flex-1 py-2.5 bg-green-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-lg active:scale-95 transition-all"><Check size={14}/> Simpan</button>
+                      <button onClick={() => setEditingAccId(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-500 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-all"><X size={14}/> Batal</button>
                     </div>
                   </div>
                 ) : (
