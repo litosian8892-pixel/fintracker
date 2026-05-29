@@ -8,7 +8,7 @@ const getCardDesign = (type: string) => {
   if (t.includes("bank") || t.includes("kartu") || t.includes("credit") || t.includes("savings")) {
     return { bg: "bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-950 text-white shadow-lg", icon: <CreditCard size={14} />, chip: "bg-amber-400/20 border border-amber-300/30", textMuted: "text-blue-200/50" };
   } else if (t.includes("wallet") || t.includes("gopay") || t.includes("ovo") || t.includes("dana") || t.includes("pay")) {
-    return { bg: "bg-gradient-to-br from-purple-900 via-violet-850 to-pink-950 text-white shadow-lg", icon: <Smartphone size={14} />, chip: "bg-pink-400/20 border border-pink-300/30", textMuted: "text-purple-200/50" };
+    return { bg: "bg-gradient-to-br from-purple-900 via-violet-800 to-pink-950 text-white shadow-lg", icon: <Smartphone size={14} />, chip: "bg-pink-400/20 border border-pink-300/30", textMuted: "text-purple-200/50" };
   } else if (t.includes("cash") || t.includes("dompet") || t.includes("tunai")) {
     return { bg: "bg-gradient-to-br from-teal-900 via-emerald-900 to-green-950 text-white shadow-lg", icon: <Banknote size={14} />, chip: "bg-yellow-400/20 border border-yellow-300/30", textMuted: "text-emerald-200/50" };
   } else {
@@ -41,10 +41,8 @@ export default function AssetsTab({
   editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder
 }: AssetsTabProps) {
   
-  // STATE UNTUK KONTROL DETAILS SECARA KONSISTEN (ANTI RE-RENDER BUG)
   const [isManageOpen, setIsManageOpen] = useState(false);
 
-  // Otomatis buka laci kelola jika user sedang dalam mode edit akun
   useEffect(() => {
     if (editingAccId) {
       setIsManageOpen(true);
@@ -65,9 +63,9 @@ export default function AssetsTab({
         <h2 className="text-4xl font-black italic relative z-10">Rp {totalActiveBalance.toLocaleString('id-ID')}</h2>
       </div>
 
-      {/* DOMPET AKTIF */}
+      {/* DOMPET AKTIF (KOREKSI KONTRAS TEKS JUDUL) */}
       <div className="space-y-3">
-        <h3 className="font-bold text-slate-800 italic px-1 text-lg">Dompet Aktif</h3>
+        <h3 className="font-bold text-slate-800 dark:text-slate-100 italic px-1 text-lg transition-colors">Dompet Aktif</h3>
         {activeAccounts.length === 0 ? <p className="text-center py-6 text-slate-400 text-sm italic">Belum ada dompet aktif</p> : (
           <div className="grid grid-cols-3 gap-2.5">
             {activeAccounts.map((acc) => {
@@ -93,11 +91,11 @@ export default function AssetsTab({
         )}
       </div>
 
-      {/* TABUNGAN KHUSUS (DENGAN VISUAL PROGRESS BAR TARGET) */}
+      {/* TABUNGAN KHUSUS (KOREKSI KONTRAS TEKS JUDUL) */}
       {savingsAccounts.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="flex justify-between items-end px-1">
-             <h3 className="font-bold text-slate-800 italic text-lg">Tabungan Saya</h3>
+             <h3 className="font-bold text-slate-800 dark:text-slate-100 italic text-lg transition-colors">Tabungan Saya</h3>
              <span className="text-[10px] font-black text-emerald-600">Total: Rp {totalSavingsBalance.toLocaleString('id-ID')}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-95">
@@ -149,32 +147,32 @@ export default function AssetsTab({
         </div>
       )}
 
-      {/* KELOLA AKUN */}
+      {/* KELOLA AKUN (KOREKSI BACKGROUND DAN KONTRAS TEXT) */}
       <details 
         open={isManageOpen} 
         onToggle={(e) => setIsManageOpen(e.currentTarget.open)}
-        className="bg-slate-200/50 rounded-[25px] p-5 border border-slate-200/50 transition-all"
+        className="bg-slate-200/50 dark:bg-slate-800/40 rounded-[25px] p-5 border border-slate-200/50 dark:border-slate-700/50 transition-all duration-200"
       >
-        <summary className="text-[10px] font-black text-slate-500 cursor-pointer uppercase tracking-widest outline-none select-none">⚙️ Kelola Akun & Dompet</summary>
+        <summary className="text-[10px] font-black text-slate-500 dark:text-slate-300 cursor-pointer uppercase tracking-widest outline-none select-none">⚙️ Kelola Akun & Dompet</summary>
         <div className="mt-5 space-y-4">
           
           {/* FORM TAMBAH DOMPET BARU */}
           <div className="space-y-2">
-            <select className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold text-slate-700 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
+            <select className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl text-xs border-none outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
                 {walletTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
             </select>
-            <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold text-slate-700" value={accName} onChange={(e) => setAccName(e.target.value)} />
-            <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold text-slate-700" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
+            <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl text-xs border-none outline-none font-bold text-slate-700 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
+            <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl text-xs border-none outline-none font-bold text-slate-700 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
             
             {/* CUSTOM CHECKBOX TAMBAH TABUNGAN */}
             <div 
               onClick={() => setAccIsSavings(!accIsSavings)}
               className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none"
             >
-              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white'}`}>
+              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white dark:bg-slate-900 dark:border-slate-700'}`}>
                 {accIsSavings && <Check size={10} strokeWidth={4} />}
               </div>
-              <span className="text-[11px] font-bold text-slate-600">
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
                 Simpan sebagai Tabungan (Sembunyikan saldo)
               </span>
             </div>
@@ -184,41 +182,41 @@ export default function AssetsTab({
               <input 
                 type="number" 
                 placeholder="Target Nominal Tabungan (Opsional)" 
-                className="w-full p-3 bg-white border border-emerald-100 rounded-xl text-xs border-none outline-none font-bold text-emerald-800 placeholder-emerald-300 animate-in slide-in-from-top-2" 
+                className="w-full p-3 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-800 rounded-xl text-xs border-none outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 animate-in slide-in-from-top-2" 
                 value={accTargetBalance} 
                 onChange={(e) => setAccTargetBalance(e.target.value)} 
               />
             )}
 
             <div className="flex flex-col gap-1 pt-1">
-              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
-              <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-dashed border-slate-300">
+              <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
+              <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                 <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, false)} className="hidden" id="custom-logo-file" />
-                <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
-                <span className="text-[10px] text-slate-400 truncate">{accLogo ? "Logo Siap Diunggah ✅" : "Format PNG/JPG (Maks 500KB)"}</span>
+                <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{accLogo ? "Logo Siap Diunggah ✅" : "Format PNG/JPG (Maks 500KB)"}</span>
               </div>
             </div>
-            <button onClick={handleCreateAccount} className="w-full py-3 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-lg">Simpan Dompet</button>
+            <button onClick={handleCreateAccount} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg cursor-pointer transition-colors">Simpan Dompet</button>
           </div>
 
-          <div className="pt-4 border-t border-slate-300/30 space-y-2">
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Daftar Dompet (Ubah / Urutan / Hapus)</p>
+          <div className="pt-4 border-t border-slate-300/30 dark:border-slate-700 space-y-2">
+            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Daftar Dompet (Ubah / Urutan / Hapus)</p>
             {accounts.map((acc, index) => (
-              <div key={acc.id} className="bg-white p-4 rounded-xl flex flex-col gap-3 shadow-sm border border-slate-100">
+              <div key={acc.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl flex flex-col gap-3 shadow-sm border border-slate-100 dark:border-slate-800 transition-colors duration-200">
                 {editingAccId === acc.id ? (
                   <div className="space-y-3 animate-in fade-in duration-200">
-                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold text-slate-700" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
-                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Saldo Dompet</label><input type="number" className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold text-slate-700" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} /></div>
+                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 text-xs rounded-xl border border-blue-200 dark:border-blue-900 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
+                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Saldo Dompet</label><input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 text-xs rounded-xl border border-blue-200 dark:border-blue-900 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} /></div>
                     
-                    {/* CUSTOM CHECKBOX EDIT TABUNGAN (BEBAS DARI BUG KLIK BROWSER) */}
+                    {/* CUSTOM CHECKBOX EDIT TABUNGAN */}
                     <div 
                       onClick={() => setEditAccIsSavings(!editAccIsSavings)}
                       className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none"
                     >
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white'}`}>
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
                         {editAccIsSavings && <Check size={10} strokeWidth={4} />}
                       </div>
-                      <span className="text-[10px] font-bold text-slate-500">
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
                         Jadikan Tabungan (Sembunyikan dari total saldo)
                       </span>
                     </div>
@@ -227,40 +225,40 @@ export default function AssetsTab({
                     {editAccIsSavings && (
                       <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Target Tabungan</label>
-                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full bg-slate-50 p-2.5 text-xs border border-blue-200 rounded-xl outline-none font-bold text-emerald-800 placeholder-emerald-300" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 text-xs border border-blue-200 dark:border-blue-900 rounded-xl outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-350" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
                       </div>
                     )}
 
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Logo Dompet</label>
-                      <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-dashed border-slate-300">
-                        <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, true)} className="hidden" id={`edit-logo-file-${acc.id}`} /><label htmlFor={`edit-logo-file-${acc.id}`} className="cursor-pointer bg-white text-slate-600 p-2 rounded-lg text-xs font-bold flex items-center gap-2"><Upload size={14}/> Ganti Logo</label>
-                        <span className="text-[10px] text-slate-400 truncate">{editAccLogo ? "Logo Baru Terpasang ✅" : "Logo lama tetap aktif"}</span>
+                      <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 p-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                        <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, true)} className="hidden" id={`edit-logo-file-${acc.id}`} /><label htmlFor={`edit-logo-file-${acc.id}`} className="cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg text-xs font-bold flex items-center gap-2"><Upload size={14}/> Ganti Logo</label>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{editAccLogo ? "Logo Baru Terpasang ✅" : "Logo lama tetap aktif"}</span>
                       </div>
                     </div>
                     <div className="flex gap-2 pt-1">
-                      <button onClick={() => handleEditAccount(acc.id)} className="flex-1 py-2.5 bg-green-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-lg active:scale-95 transition-all"><Check size={14}/> Simpan</button>
-                      <button onClick={() => setEditingAccId(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-500 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-all"><X size={14}/> Batal</button>
+                      <button onClick={() => handleEditAccount(acc.id)} className="flex-1 py-2.5 bg-green-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-lg active:scale-95 transition-all cursor-pointer"><Check size={14}/> Simpan</button>
+                      <button onClick={() => setEditingAccId(null)} className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer"><X size={14}/> Batal</button>
                     </div>
                   </div>
                 ) : (
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      {acc.logo ? <img src={acc.logo} className="w-8 h-8 rounded-lg object-contain bg-slate-100 p-1" alt="logo" /> : <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500">{getCardDesign(acc.type).icon}</div>}
+                      {acc.logo ? <img src={acc.logo} className="w-8 h-8 rounded-lg object-contain bg-slate-100 dark:bg-slate-800 p-1" alt="logo" /> : <div className="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-500 dark:text-slate-400">{getCardDesign(acc.type).icon}</div>}
                       <div>
                         <div className="flex items-center gap-1.5 mb-1">
-                          <p className="text-xs font-bold text-slate-700 leading-none">{acc.name}</p>
-                          {acc.isSavings && <span className="text-[8px] bg-emerald-100 text-emerald-600 px-1 py-0.5 rounded font-black">TABUNGAN</span>}
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-none">{acc.name}</p>
+                          {acc.isSavings && <span className="text-[8px] bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 px-1 py-0.5 rounded font-black">TABUNGAN</span>}
                         </div>
-                        <p className="text-[10px] font-black text-blue-600 leading-none mb-0.5">Rp {acc.balance.toLocaleString('id-ID')}</p>
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{acc.type}</p>
+                        <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 leading-none mb-0.5">Rp {acc.balance.toLocaleString('id-ID')}</p>
+                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{acc.type}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => moveAccountOrder(index, "up")} disabled={index === 0} className={`p-1.5 rounded-lg border ${index === 0 ? "text-slate-200 border-slate-100" : "text-slate-400 border-slate-200 hover:bg-slate-100"}`}><ArrowUp size={12}/></button>
-                      <button onClick={() => moveAccountOrder(index, "down")} disabled={index === accounts.length - 1} className={`p-1.5 rounded-lg border ${index === accounts.length - 1 ? "text-slate-200 border-slate-100" : "text-slate-400 border-slate-200 hover:bg-slate-100"}`}><ArrowDown size={12}/></button>
-                      <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); setEditAccIsSavings(!!acc.isSavings); setEditAccTargetBalance(acc.targetBalance?.toString() || ""); }} className="text-slate-300 hover:text-blue-500 p-1.5"><Edit2 size={12}/></button>
-                      <button onClick={() => deleteAccount(acc.id, acc.name)} className="text-slate-300 hover:text-red-500 p-1.5"><Trash2 size={12}/></button>
+                      <button onClick={() => moveAccountOrder(index, "up")} disabled={index === 0} className={`p-1.5 rounded-lg border cursor-pointer ${index === 0 ? "text-slate-200 border-slate-100 dark:border-slate-850 dark:text-slate-800" : "text-slate-400 border-slate-200 dark:border-slate-750 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"}`}><ArrowUp size={12}/></button>
+                      <button onClick={() => moveAccountOrder(index, "down")} disabled={index === accounts.length - 1} className={`p-1.5 rounded-lg border cursor-pointer ${index === accounts.length - 1 ? "text-slate-200 border-slate-100 dark:border-slate-850 dark:text-slate-800" : "text-slate-400 border-slate-200 dark:border-slate-750 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"}`}><ArrowDown size={12}/></button>
+                      <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); setEditAccIsSavings(!!acc.isSavings); setEditAccTargetBalance(acc.targetBalance?.toString() || ""); }} className="text-slate-300 hover:text-blue-500 dark:text-slate-600 dark:hover:text-blue-400 p-1.5 cursor-pointer"><Edit2 size={12}/></button>
+                      <button onClick={() => deleteAccount(acc.id, acc.name)} className="text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 p-1.5 cursor-pointer"><Trash2 size={12}/></button>
                     </div>
                   </div>
                 )}

@@ -37,7 +37,7 @@ export default function SettingsTab({
           <h3 className="font-black text-lg text-slate-800 dark:text-slate-100">{user?.displayName}</h3>
           <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold">{user?.email}</p>
         </div>
-        <button onClick={onLogout} className="px-6 py-2.5 bg-red-50 dark:bg-red-950/25 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"><LogOut size={14}/> Logout</button>
+        <button onClick={onLogout} className="px-6 py-2.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"><LogOut size={14}/> Logout</button>
       </div>
 
       {/* SEGMENTED CONTROL: KUSTOMISASI TEMA VISUAL (TAILWIND V4 DARK MODE) */}
@@ -45,7 +45,7 @@ export default function SettingsTab({
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2">
           <Sun size={16} className="text-blue-600 dark:text-blue-500" /> Tema Aplikasi
         </h3>
-        <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 dark:bg-slate-850 rounded-2xl">
+        <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl">
           <button
             onClick={() => {
               setTheme("light");
@@ -91,7 +91,7 @@ export default function SettingsTab({
         </div>
       </div>
 
-      {/* KELOLA KATEGORI (OPTIMASI KONTRAS TEKS TINGGI DAN SOLID BACKGROUND) */}
+      {/* KELOLA KATEGORI */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2"><Tag size={16} className="text-blue-600 dark:text-blue-500"/> Kelola Kategori ({tType === 'expense' ? 'Pengeluaran' : 'Pemasukan'})</h3>
         <div className="flex gap-2">
@@ -99,9 +99,9 @@ export default function SettingsTab({
           <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-colors cursor-pointer ${tType === "income" ? "bg-green-500 text-white shadow-md animate-none" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>PEMASUKAN</button>
         </div>
         <div className="flex gap-2">
-          <input type="text" placeholder="Kategori Baru..." className="flex-1 p-3 bg-slate-50 dark:bg-slate-850 border border-transparent dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 placeholder-slate-400" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
+          <input type="text" placeholder="Kategori Baru..." className="flex-1 p-3 bg-slate-50 dark:bg-slate-800 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 placeholder-slate-400" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
           {tType === "expense" && (
-            <select className="p-3 bg-slate-50 dark:bg-slate-850 border border-transparent dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer" value={newExpenseType} onChange={(e) => setNewExpenseType(e.target.value as "fixed" | "variable")}>
+            <select className="p-3 bg-slate-50 dark:bg-slate-800 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer" value={newExpenseType} onChange={(e) => setNewExpenseType(e.target.value as "fixed" | "variable")}>
               <option value="variable">Variabel</option>
               <option value="fixed">Tetap (Fixed)</option>
             </select>
@@ -109,7 +109,6 @@ export default function SettingsTab({
           <button onClick={addCustomCategory} className="bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-xl text-xs font-bold cursor-pointer transition-colors">Tambah</button>
         </div>
         
-        {/* SINKRONISASI KONTRAS WARNA KARTU KATEGORI */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2">
           {categories.filter(c => c.type === tType).map(cat => (
             <div key={cat.id} className="bg-slate-100 dark:bg-slate-800 p-3.5 rounded-[20px] border border-slate-200 dark:border-slate-700/80 transition-colors duration-200 shadow-sm">
@@ -135,7 +134,6 @@ export default function SettingsTab({
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5">
-                      {/* Warna text-slate-800 & dark:text-slate-100 memiliki rasio kontras 100% terbaca tajam */}
                       <span className="text-xs font-black text-slate-800 dark:text-slate-100 leading-none">{cat.name}</span>
                       {tType === 'expense' && (
                         <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${cat.expenseType === 'fixed' ? 'bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400' : 'bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400'}`}>
@@ -158,17 +156,17 @@ export default function SettingsTab({
         </div>
       </div>
 
-      {/* KELOLA TIPE DOMPET */}
+      {/* KELOLA TIPE DOMPET (KOREKSI KONTRAS WARNA TAG BUKAN 850) */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2"><CreditCard size={16} className="text-blue-600 dark:text-blue-500"/> Kelola Tipe Dompet</h3>
         <div className="flex gap-2">
-          <input type="text" placeholder="Kategori dompet (Misal: Investasi)" className="flex-1 p-3 bg-slate-50 dark:bg-slate-850 border border-transparent dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={newWalletTypeName} onChange={(e) => setNewWalletTypeName(e.target.value)} />
+          <input type="text" placeholder="Kategori dompet (Misal: Investasi)" className="flex-1 p-3 bg-slate-50 dark:bg-slate-800 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={newWalletTypeName} onChange={(e) => setNewWalletTypeName(e.target.value)} />
           <button onClick={addCustomWalletType} className="bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-xl text-xs font-bold cursor-pointer transition-colors">Tambah</button>
         </div>
         <div className="flex flex-wrap gap-2 pt-2">
           {walletTypes.map(t => (
-            <span key={t.id} className="bg-slate-100 dark:bg-slate-850 px-3 py-1.5 rounded-full text-[9px] font-bold flex items-center gap-2 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 shadow-sm">
-              {t.name} <X size={12} className="text-red-500 cursor-pointer hover:scale-125 transition-transform" onClick={() => deleteWalletType(t.id)}/>
+            <span key={t.id} className="bg-slate-150 dark:bg-slate-800 px-3 py-1.5 rounded-full text-[9px] font-bold flex items-center gap-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-sm transition-colors duration-200">
+              {t.name} <X size={12} className="text-red-500 dark:text-red-400 cursor-pointer hover:scale-125 transition-transform" onClick={() => deleteWalletType(t.id)}/>
             </span>
           ))}
         </div>
