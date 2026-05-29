@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { AccountData, CategoryData } from "../../types";
-import { Wallet, ArrowUpRight, ArrowDownRight, ArrowRightLeft, Calendar, Tag, FileText } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, ArrowRightLeft } from "lucide-react";
 
 interface HomeTabProps {
   tType: "income" | "expense" | "transfer";
@@ -53,9 +53,7 @@ export default function HomeTab({
     ? accounts.filter((acc) => !acc.isSavings)
     : accounts;
 
-  const filteredCategories = categories.filter((cat) => cat.type === tType);
-
-  // Helper untuk memformat angka input ke Rupiah terbaca
+  // Helper untuk memformat angka input ke Rupiah terbaca di bawah input utama
   const formatRupiahTerbaca = (val: string) => {
     if (!val) return "Rp 0";
     const parsed = parseFloat(val);
@@ -68,13 +66,14 @@ export default function HomeTab({
     }).format(parsed);
   };
 
-  // Auto-select akun & kategori pertama jika pilihan kosong
+  // Auto-select akun pertama jika pilihan kosong
   useEffect(() => {
     if (filteredAccounts.length > 0 && !tAccountId) {
       setTAccountId(filteredAccounts[0].id);
     }
   }, [filteredAccounts, tAccountId, setTAccountId]);
 
+  // Sinkronisasi kategori default saat tipe transaksi berganti
   useEffect(() => {
     if (tType === "transfer") {
       setTCategory("Transfer");
@@ -134,20 +133,15 @@ export default function HomeTab({
         {/* Input Nominal Utama */}
         <div className="space-y-1">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            Nominal (Rp)
+            NOMINAL (RP)
           </label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">
-              Rp
-            </span>
-            <input
-              type="number"
-              className="w-full pl-10 pr-4 py-3.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
-              placeholder="0"
-              value={tAmount}
-              onChange={(e) => setTAmount(e.target.value)}
-            />
-          </div>
+          <input
+            type="number"
+            className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
+            placeholder="Rp 0"
+            value={tAmount}
+            onChange={(e) => setTAmount(e.target.value)}
+          />
           {tAmount && (
             <p className="text-[10px] font-bold text-slate-400 pl-1 animate-in fade-in duration-150">
               Terbaca: <span className="text-slate-600 font-black">{formatRupiahTerbaca(tAmount)}</span>
@@ -155,24 +149,19 @@ export default function HomeTab({
           )}
         </div>
 
-        {/* Biaya Admin Tambahan (Muncul Eksklusif untuk Mode Transfer) */}
+        {/* Biaya Admin Tambahan (Transfer) */}
         {tType === "transfer" && (
           <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
             <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
               Biaya Admin (Opsional)
             </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-blue-400">
-                Rp
-              </span>
-              <input
-                type="number"
-                className="w-full pl-10 pr-4 py-3.5 bg-blue-50/50 border border-blue-100 rounded-xl text-xs font-bold outline-blue-500 text-blue-900"
-                placeholder="0"
-                value={tAdminFee}
-                onChange={(e) => setTAdminFee(e.target.value)}
-              />
-            </div>
+            <input
+              type="number"
+              className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
+              placeholder="Rp 0"
+              value={tAdminFee}
+              onChange={(e) => setTAdminFee(e.target.value)}
+            />
             {tAdminFee && (
               <p className="text-[10px] font-bold text-blue-400 pl-1 animate-in fade-in duration-150">
                 Terbaca: <span className="text-blue-600 font-black">{formatRupiahTerbaca(tAdminFee)}</span>
@@ -185,11 +174,11 @@ export default function HomeTab({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-              <Calendar size={10} /> Tanggal
+              📅 TANGGAL
             </label>
             <input
               type="date"
-              className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
+              className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
               value={tDate}
               onChange={(e) => setTDate(e.target.value)}
             />
@@ -198,18 +187,43 @@ export default function HomeTab({
           {tType !== "transfer" && (
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                <Tag size={10} /> Kategori
+                🏷️ KATEGORI
               </label>
               <select
-                className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
+                className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
                 value={tCategory}
                 onChange={(e) => setTCategory(e.target.value)}
               >
-                {filteredCategories.map((cat) => (
-                  <option key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
+                {tType === "expense" ? (
+                  <>
+                    <optgroup label="Pengeluaran Tetap (Fixed Expense)">
+                      {categories
+                        .filter((cat) => cat.type === "expense" && cat.expenseType === "fixed")
+                        .map((cat) => (
+                          <option key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                    <optgroup label="Pengeluaran Variabel (Variable Expense)">
+                      {categories
+                        .filter((cat) => cat.type === "expense" && cat.expenseType !== "fixed")
+                        .map((cat) => (
+                          <option key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                  </>
+                ) : (
+                  categories
+                    .filter((cat) => cat.type === "income")
+                    .map((cat) => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </option>
+                    ))
+                )}
               </select>
             </div>
           )}
@@ -219,10 +233,10 @@ export default function HomeTab({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-              <Wallet size={10} /> Dompet {tType === "transfer" ? "Asal" : ""}
+              💳 DOMPET
             </label>
             <select
-              className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
+              className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
               value={tAccountId}
               onChange={(e) => setTAccountId(e.target.value)}
             >
@@ -237,10 +251,10 @@ export default function HomeTab({
           {tType === "transfer" && (
             <div className="space-y-1 animate-in fade-in slide-in-from-left-2 duration-200">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                <Wallet size={10} /> Dompet Tujuan
+                💳 DOMPET TUJUAN
               </label>
               <select
-                className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
+                className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 cursor-pointer"
                 value={tToAccountId}
                 onChange={(e) => setTToAccountId(e.target.value)}
               >
@@ -258,11 +272,11 @@ export default function HomeTab({
         {/* Catatan Transaksi */}
         <div className="space-y-1">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-            <FileText size={10} /> Catatan
+            📝 CATATAN
           </label>
           <input
             type="text"
-            className="w-full p-3.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
+            className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
             placeholder="Tulis keterangan transaksi..."
             value={tNote}
             onChange={(e) => setTNote(e.target.value)}
