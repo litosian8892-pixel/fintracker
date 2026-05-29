@@ -28,8 +28,8 @@ interface ReportsTabProps {
   reportTransactions: TransactionData[];
   globalSearch: string; setGlobalSearch: (val: string) => void;
   searchResult: TransactionData[];
-  prevTotalIncome: number; // <--- BARU: DATA BULAN LALU
-  prevTotalExpense: number; // <--- BARU: DATA BULAN LALU
+  prevTotalIncome: number; 
+  prevTotalExpense: number; 
 }
 
 export default function ReportsTab({
@@ -174,28 +174,28 @@ export default function ReportsTab({
       </div>
       
       <div className="grid grid-cols-2 gap-4">
-        {/* TOTAL INCOME WITH MOM TREND */}
-        <div className="bg-green-50 p-5 rounded-3xl border border-green-100 flex flex-col justify-between">
+        {/* TOTAL INCOME WITH MOM TREND (KOREKSI LAYOUT RATA TENGAH & SIMETRIS) */}
+        <div className="bg-green-50 p-5 rounded-3xl border border-green-100 flex flex-col items-center text-center justify-between">
             <div>
               <p className="text-[10px] font-bold text-green-600 uppercase mb-1">Pemasukan Total</p>
               <p className="text-lg font-black text-green-700">Rp {totalIncome.toLocaleString('id-ID')}</p>
             </div>
             {incomeTrend && (
-              <div className={`text-[9px] font-bold flex items-center gap-1 mt-2 ${incomeTrend.isUp ? "text-green-600" : "text-red-500"}`}>
+              <div className={`text-[9px] font-bold flex items-center justify-center gap-1 mt-2 ${incomeTrend.isUp ? "text-green-600" : "text-red-500"}`}>
                 {incomeTrend.isUp ? <ArrowUp size={12}/> : <ArrowDown size={12}/>}
                 <span>{incomeTrend.value}% dibanding bulan lalu</span>
               </div>
             )}
         </div>
         
-        {/* TOTAL EXPENSE WITH MOM TREND */}
-        <div className="bg-red-50 p-5 rounded-3xl border border-red-100 flex flex-col justify-between">
+        {/* TOTAL EXPENSE WITH MOM TREND (KOREKSI LAYOUT RATA TENGAH & SIMETRIS) */}
+        <div className="bg-red-50 p-5 rounded-3xl border border-red-100 flex flex-col items-center text-center justify-between">
             <div>
               <p className="text-[10px] font-bold text-red-600 uppercase mb-1">Pengeluaran Total</p>
               <p className="text-lg font-black text-red-700">Rp {totalExpense.toLocaleString('id-ID')}</p>
             </div>
             {expenseTrend && (
-              <div className={`text-[9px] font-bold flex items-center gap-1 mt-2 ${expenseTrend.isUp ? "text-red-600" : "text-green-600"}`}>
+              <div className={`text-[9px] font-bold flex items-center justify-center gap-1 mt-2 ${expenseTrend.isUp ? "text-red-600" : "text-green-600"}`}>
                 {expenseTrend.isUp ? <ArrowUp size={12}/> : <ArrowDown size={12}/>}
                 <span>{expenseTrend.value}% dibanding bulan lalu</span>
               </div>
