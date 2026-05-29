@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { AccountData, CategoryData } from "../../types";
-import { ArrowUpRight, ArrowDownRight, ArrowRightLeft, Calendar, Tag, ChevronDown, X, Search } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, ArrowRightLeft, ChevronDown, X, Search } from "lucide-react";
 
 interface HomeTabProps {
   tType: "income" | "expense" | "transfer";
@@ -25,6 +25,30 @@ interface HomeTabProps {
   accounts: AccountData[];
   handleTransaction: () => void;
 }
+
+// --- PARSER MATEMATIKA AMAN (ANTI-EVAL & TAHAN EROR SINTAKS) ---
+const safeEvaluate = (expr: string): number => {
+  if (!expr) return 0;
+  // Bersihkan input, hanya izinkan angka, operator dasar, kurung, dan titik desimal
+  let sanitized = expr.replace(/[^0-9+\-*/().]/g, "");
+  if (!sanitized) return 0;
+
+  // Bersihkan operator menggantung di akhir (misalnya: "15000+" menjadi "15000")
+  sanitized = sanitized.replace(/[+\-*/(.]*$/, "");
+  if (!sanitized) return 0;
+
+  try {
+    // Evaluasi terisolasi menggunakan Function constructor di dalam strict mode
+    const result = new Function(`"use strict"; return (${sanitized});`)();
+    if (typeof result === "number" && isFinite(result)) {
+      return result;
+    }
+    return 0;
+  } catch {
+    const fallback = parseFloat(sanitized);
+    return isNaN(fallback) ? 0 : fallback;
+  }
+};
 
 export default function HomeTab({
   tType,
@@ -59,8 +83,7 @@ export default function HomeTab({
 
   const formatRupiahTerbaca = (val: string) => {
     if (!val) return "Rp 0";
-    const parsed = parseFloat(val);
-    if (isNaN(parsed)) return "Rp 0";
+    const parsed = safeEvaluate(val);
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
@@ -147,9 +170,9 @@ export default function HomeTab({
             NOMINAL (RP)
           </label>
           <input
-            type="number"
+            type="text"
             className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
-            placeholder="Rp 0"
+            placeholder="Rp 0 atau ekspresi matematika (contoh: 20000+15000)"
             value={tAmount}
             onChange={(e) => setTAmount(e.target.value)}
           />
@@ -167,9 +190,9 @@ export default function HomeTab({
               Biaya Admin (Opsional)
             </label>
             <input
-              type="number"
+              type="text"
               className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800"
-              placeholder="Rp 0"
+              placeholder="Rp 0 atau ekspresi matematika"
               value={tAdminFee}
               onChange={(e) => setTAdminFee(e.target.value)}
             />
@@ -220,7 +243,7 @@ export default function HomeTab({
           )}
         </div>
 
-        {/* Akun Sumber / Tujuan (MENGGUNAKAN LOGIKA md:col-span-2 DINAMIS UNTUK MEMBASMI SPACE KOSONG) */}
+        {/* Akun Sumber / Tujuan */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className={`space-y-1 ${tType === "transfer" ? "" : "md:col-span-2"}`}> 
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
@@ -292,13 +315,13 @@ export default function HomeTab({
             {/* Header Modal */}
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
               <h3 className="font-black text-slate-800 flex items-center gap-2 text-sm">
-                <Tag size={16} className={tType === 'expense' ? "text-red-500" : "text-green-500"}/> 
+                <span className={tType === 'expense' ? "text-red-500" : "text-green-500"}>🏷️</span> 
                 Pilih Kategori {tType === 'expense' ? 'Pengeluaran' : 'Pemasukan'}
               </h3>
               <button type="button" onClick={() => setShowCatModal(false)} className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full transition-colors"><X size={14}/></button>
             </div>
 
-            {/* BAR PENCARIAN (Tanpa autoFocus agar tidak memicu keyboard otomatis di HP) */}
+            {/* BAR PENCARIAN */}
             <div className="p-4 border-b border-slate-100 shrink-0 bg-white">
               <div className="relative">
                 <Search className="absolute left-3 top-3 text-slate-400" size={16} />

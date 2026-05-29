@@ -19,7 +19,31 @@ import AssetsTab from "../components/tabs/AssetsTab";
 import SettingsTab from "../components/tabs/SettingsTab";
 import DebtsTab from "../components/tabs/DebtsTab";
 
-import { X, Calendar, Tag, Wallet } from "lucide-react";
+import { X } from "lucide-react";
+
+// --- PARSER MATEMATIKA AMAN (ANTI-EVAL & TAHAN EROR SINTAKS) ---
+const safeEvaluate = (expr: string): number => {
+  if (!expr) return 0;
+  // Bersihkan input, hanya izinkan angka, operator dasar, kurung, dan titik desimal
+  let sanitized = expr.replace(/[^0-9+\-*/().]/g, "");
+  if (!sanitized) return 0;
+
+  // Bersihkan operator menggantung di akhir (misalnya: "15000+" menjadi "15000")
+  sanitized = sanitized.replace(/[+\-*/(.]*$/, "");
+  if (!sanitized) return 0;
+
+  try {
+    // Evaluasi terisolasi menggunakan Function constructor di dalam strict mode
+    const result = new Function(`"use strict"; return (${sanitized});`)();
+    if (typeof result === "number" && isFinite(result)) {
+      return result;
+    }
+    return 0;
+  } catch {
+    const fallback = parseFloat(sanitized);
+    return isNaN(fallback) ? 0 : fallback;
+  }
+};
 
 export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
@@ -95,6 +119,17 @@ export default function FintrackerApp() {
     const [y, m] = ym.split("-").map(Number);
     const d = new Date(y, m - 2, 1); 
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  const formatRupiahTerbaca = (val: string) => {
+    if (!val) return "Rp 0";
+    const parsed = safeEvaluate(val);
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(parsed);
   };
 
   // --- FIREBASE EFFECTS ---
@@ -475,8 +510,11 @@ export default function FintrackerApp() {
     if (!user || !tAmount || !tAccountId) return alert("Isi data dengan lengkap!");
     if (tType === "transfer" && (!tToAccountId || tAccountId === tToAccountId)) return alert("Pilih dompet tujuan yang berbeda!");
     
-    const amount = Number(tAmount);
-    const adminFee = tType === "transfer" && tAdminFee ? Number(tAdminFee) : 0; 
+    // Evaluasi ekspresi matematika dari tAmount & tAdminFee sebelum disimpan
+    const amount = safeEvaluate(tAmount);
+    if (amount <= 0) return alert("Nominal transaksi tidak valid!");
+
+    const adminFee = tType === "transfer" && tAdminFee ? safeEvaluate(tAdminFee) : 0; 
     const sourceAcc = accounts.find(a => a.id === tAccountId);
     if (!sourceAcc) return alert("Dompet asal tidak ditemukan!");
 
@@ -558,8 +596,10 @@ export default function FintrackerApp() {
     if (!user || !editingTransaction) return;
     
     const oldT = editingTransaction;
-    const newAmount = Number(editTAmount);
-    const newAdminFee = editTType === "transfer" && editTAdminFee ? Number(editTAdminFee) : 0; 
+    const newAmount = safeEvaluate(editTAmount);
+    if (newAmount <= 0) return alert("Nominal transaksi tidak valid!");
+
+    const newAdminFee = editTType === "transfer" && editTAdminFee ? safeEvaluate(editTAdminFee) : 0; 
 
     isSubmittingRef.current = true;
     setIsSubmitting(true);
@@ -775,13 +815,23 @@ export default function FintrackerApp() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
-                <input disabled={isSubmitting} type="number" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 disabled:opacity-50" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
+                <input disabled={isSubmitting} type="text" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 disabled:opacity-50" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
+                {editTAmount && (
+                  <p className="text-[10px] font-bold text-slate-400 pl-1 animate-in fade-in duration-150">
+                    Terbaca: <span className="text-slate-600 font-black">{formatRupiahTerbaca(editTAmount)}</span>
+                  </p>
+                )}
               </div>
 
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Biaya Admin (Opsional)</label>
-                  <input disabled={isSubmitting} type="number" className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold outline-blue-500 text-blue-900 disabled:opacity-50" value={editTAdminFee} onChange={(e) => setEditTAdminFee(e.target.value)} />
+                  <input disabled={isSubmitting} type="text" className="w-full p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold outline-blue-500 text-blue-900 disabled:opacity-50" value={editTAdminFee} onChange={(e) => setEditTAdminFee(e.target.value)} />
+                  {editTAdminFee && (
+                    <p className="text-[10px] font-bold text-blue-400 pl-1 animate-in fade-in duration-150">
+                      Terbaca: <span className="text-blue-600 font-black">{formatRupiahTerbaca(editTAdminFee)}</span>
+                    </p>
+                  )}
                 </div>
               )}
 
