@@ -149,7 +149,7 @@ export default function AssetsTab({
         </div>
       )}
 
-      {/* KELOLA AKUN (DENGAN CONTROLLED STATE KONSISTEN) */}
+      {/* KELOLA AKUN */}
       <details 
         open={isManageOpen} 
         onToggle={(e) => setIsManageOpen(e.currentTarget.open)}
@@ -166,10 +166,17 @@ export default function AssetsTab({
             <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold text-slate-700" value={accName} onChange={(e) => setAccName(e.target.value)} />
             <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white rounded-xl text-xs border-none outline-none font-bold text-slate-700" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
             
-            {/* CHECKBOX JADIKAN TABUNGAN */}
-            <div className="flex items-center gap-2 pt-1 pb-1">
-              <input type="checkbox" id="add-savings" checked={accIsSavings} onChange={(e) => setAccIsSavings(e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-slate-300 cursor-pointer" />
-              <label htmlFor="add-savings" className="text-[11px] font-bold text-slate-600 cursor-pointer select-none">Simpan sebagai Tabungan (Sembunyikan saldo)</label>
+            {/* CUSTOM CHECKBOX TAMBAH TABUNGAN */}
+            <div 
+              onClick={() => setAccIsSavings(!accIsSavings)}
+              className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none"
+            >
+              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white'}`}>
+                {accIsSavings && <Check size={10} strokeWidth={4} />}
+              </div>
+              <span className="text-[11px] font-bold text-slate-600">
+                Simpan sebagai Tabungan (Sembunyikan saldo)
+              </span>
             </div>
 
             {/* INPUT TARGET TABUNGAN BARU */}
@@ -203,16 +210,17 @@ export default function AssetsTab({
                     <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold text-slate-700" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
                     <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Saldo Dompet</label><input type="number" className="w-full bg-slate-50 p-2.5 text-xs rounded-xl border border-blue-200 outline-none font-bold text-slate-700" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} /></div>
                     
-                    {/* CHECKBOX EDIT TABUNGAN */}
-                    <div className="flex items-center gap-2 pt-1 pb-1">
-                      <input 
-                        type="checkbox" 
-                        id={`edit-savings-${acc.id}`} 
-                        checked={editAccIsSavings} 
-                        onChange={(e) => setEditAccIsSavings(e.target.checked)} 
-                        className="w-4 h-4 text-blue-600 rounded border-slate-300 cursor-pointer" 
-                      />
-                      <label htmlFor={`edit-savings-${acc.id}`} className="text-[10px] font-bold text-slate-500 cursor-pointer select-none">Jadikan Tabungan (Sembunyikan dari total saldo)</label>
+                    {/* CUSTOM CHECKBOX EDIT TABUNGAN (BEBAS DARI BUG KLIK BROWSER) */}
+                    <div 
+                      onClick={() => setEditAccIsSavings(!editAccIsSavings)}
+                      className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none"
+                    >
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white'}`}>
+                        {editAccIsSavings && <Check size={10} strokeWidth={4} />}
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-500">
+                        Jadikan Tabungan (Sembunyikan dari total saldo)
+                      </span>
                     </div>
 
                     {/* INPUT EDIT TARGET TABUNGAN BARU */}
@@ -251,7 +259,7 @@ export default function AssetsTab({
                     <div className="flex items-center gap-1">
                       <button onClick={() => moveAccountOrder(index, "up")} disabled={index === 0} className={`p-1.5 rounded-lg border ${index === 0 ? "text-slate-200 border-slate-100" : "text-slate-400 border-slate-200 hover:bg-slate-100"}`}><ArrowUp size={12}/></button>
                       <button onClick={() => moveAccountOrder(index, "down")} disabled={index === accounts.length - 1} className={`p-1.5 rounded-lg border ${index === accounts.length - 1 ? "text-slate-200 border-slate-100" : "text-slate-400 border-slate-200 hover:bg-slate-100"}`}><ArrowDown size={12}/></button>
-                      <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); setEditAccIsSavings(acc.isSavings || false); setEditAccTargetBalance(acc.targetBalance?.toString() || ""); }} className="text-slate-300 hover:text-blue-500 p-1.5"><Edit2 size={12}/></button>
+                      <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); setEditAccIsSavings(!!acc.isSavings); setEditAccTargetBalance(acc.targetBalance?.toString() || ""); }} className="text-slate-300 hover:text-blue-500 p-1.5"><Edit2 size={12}/></button>
                       <button onClick={() => deleteAccount(acc.id, acc.name)} className="text-slate-300 hover:text-red-500 p-1.5"><Trash2 size={12}/></button>
                     </div>
                   </div>
