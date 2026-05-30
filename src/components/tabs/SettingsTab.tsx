@@ -91,15 +91,15 @@ export default function SettingsTab({
         </div>
       </div>
 
-      {/* KELOLA KATEGORI (KOREKSI INPUT DAN DROPDOWN DARK-MODE) */}
+      {/* KELOLA KATEGORI */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2"><Tag size={16} className="text-blue-600 dark:text-blue-500"/> Kelola Kategori ({tType === 'expense' ? 'Pengeluaran' : 'Pemasukan'})</h3>
         <div className="flex gap-2">
           <button onClick={() => setTType("expense")} className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-colors cursor-pointer ${tType === "expense" ? "bg-red-500 text-white shadow-md animate-none" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>PENGELUARAN</button>
-          <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-colors cursor-pointer ${tType === "income" ? "bg-green-500 text-white shadow-md animate-none" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>PEMASUKAN</button>
+          <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-colors cursor-pointer ${tType === "income" ? "bg-green-50 text-white shadow-md animate-none" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>PEMASUKAN</button>
         </div>
         
-        {/* FORM INPUT RESPONSIF DENGAN KOREKSI KELAS 850 */}
+        {/* FORM INPUT RESPONSIF */}
         <div className="flex flex-col sm:flex-row gap-2">
           <input 
             type="text" 
@@ -134,18 +134,29 @@ export default function SettingsTab({
             <div key={cat.id} className="bg-slate-100 dark:bg-slate-800 p-3.5 rounded-[20px] border border-slate-200 dark:border-slate-700/80 transition-colors duration-200 shadow-sm">
               
               {editingCatId === cat.id ? (
-                <div className="space-y-2">
-                  <input type="text" placeholder="Nama Kategori" className="w-full p-2 bg-white dark:bg-slate-750 border border-blue-200 dark:border-blue-900 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editCatName} onChange={e => setEditCatName(e.target.value)} />
+                <div className="space-y-2 animate-in fade-in duration-200">
+                  {/* KOREKSI INPUT EDIT NAMA (DARI KELAS 750 KE 900) */}
+                  <div className="space-y-1 text-left">
+                    <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-widest px-1">Ubah Nama Kategori</label>
+                    <input type="text" placeholder="Nama Kategori" className="w-full p-2 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editCatName} onChange={e => setEditCatName(e.target.value)} />
+                  </div>
                   {tType === 'expense' && (
-                    <div className="flex gap-2">
-                      <input type="number" placeholder="Batas Budget (Rp)" className="flex-1 p-2 bg-white dark:bg-slate-755 border border-blue-200 dark:border-blue-900 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editCatBudget} onChange={e => setEditCatBudget(e.target.value)} />
-                      <select className="w-24 p-2 bg-white dark:bg-slate-755 border border-blue-200 dark:border-blue-900 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer" value={editCatExpType} onChange={(e) => setEditCatExpType(e.target.value as "fixed" | "variable")}>
-                        <option value="variable">Variabel</option>
-                        <option value="fixed">Tetap</option>
-                      </select>
+                    <div className="flex gap-2 text-left">
+                      {/* KOREKSI INPUT EDIT BUDGET & SELECT EXPENSE TYPE (DARI KELAS 755 KE 900) */}
+                      <div className="flex-1 space-y-1">
+                        <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-widest px-1">Ubah Batas Budget</label>
+                        <input type="number" placeholder="Batas Budget (Rp)" className="w-full p-2 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editCatBudget} onChange={e => setEditCatBudget(e.target.value)} />
+                      </div>
+                      <div className="w-24 space-y-1">
+                        <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-widest px-1">Jenis Pengeluaran</label>
+                        <select className="w-full p-2 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer" value={editCatExpType} onChange={(e) => setEditCatExpType(e.target.value as "fixed" | "variable")}>
+                          <option value="variable">Variabel</option>
+                          <option value="fixed">Tetap</option>
+                        </select>
+                      </div>
                     </div>
                   )}
-                  <div className="flex gap-2 pt-1">
+                  <div className="flex gap-2 pt-2">
                     <button onClick={() => { updateCategory(cat.id, editCatName, Number(editCatBudget), editCatExpType); setEditingCatId(null); }} className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer"><Check size={12}/> Simpan</button>
                     <button onClick={() => setEditingCatId(null)} className="flex-1 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer"><X size={12}/> Batal</button>
                   </div>
@@ -176,7 +187,7 @@ export default function SettingsTab({
         </div>
       </div>
 
-      {/* KELOLA TIPE DOMPET (KOREKSI FORM INPUT DENGAN KELASI 850) */}
+      {/* KELOLA TIPE DOMPET */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2"><CreditCard size={16} className="text-blue-600 dark:text-blue-500"/> Kelola Tipe Dompet</h3>
         <div className="flex flex-col sm:flex-row gap-2">
