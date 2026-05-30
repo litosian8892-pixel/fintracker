@@ -205,7 +205,7 @@ export default function HomeTab({
       </div>
 
       <div className="space-y-4">
-        {/* Input Nominal Utama */}
+        {/* Input Nominal Utama (KOREKSI LAYOUT BACKGROUND UNTUK DESTOP & HP) */}
         <div className="space-y-1">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
             NOMINAL (RP)
@@ -214,7 +214,7 @@ export default function HomeTab({
             type="text"
             inputMode={isMobile ? "none" : undefined} 
             onFocus={() => { if(isMobile) setActiveKeypad("amount"); }}
-            className={`w-full max-w-full p-3.5 bg-white border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`}
+            className={`w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-slate-50 dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`}
             placeholder={isMobile ? "Ketuk untuk input nominal..." : "Rp 0 atau ketik ekspresi matematika..."}
             value={tAmount}
             onChange={(e) => setTAmount(e.target.value)}
@@ -226,7 +226,7 @@ export default function HomeTab({
           )}
         </div>
 
-        {/* Biaya Admin Tambahan (Transfer) */}
+        {/* Biaya Admin Tambahan (KOREKSI LAYOUT BACKGROUND UNTUK DESTOP & HP) */}
         {tType === "transfer" && (
           <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
             <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
@@ -236,7 +236,7 @@ export default function HomeTab({
               type="text"
               inputMode={isMobile ? "none" : undefined}
               onFocus={() => { if(isMobile) setActiveKeypad("adminFee"); }}
-              className={`w-full max-w-full p-3.5 bg-white border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`}
+              className={`w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-slate-50 dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`}
               placeholder={isMobile ? "Ketuk untuk input biaya admin..." : "Rp 0 atau ketik ekspresi matematika..."}
               value={tAdminFee}
               onChange={(e) => setTAdminFee(e.target.value)}
@@ -357,7 +357,7 @@ export default function HomeTab({
         </button>
       </div>
 
-      {/* --- POP-UP MODAL CUSTOM KATEGORI 2-KOLOM (KOREKSI FOKUS PENCARIAN TEMA GELAP) --- */}
+      {/* --- POP-UP MODAL CUSTOM KATEGORI 2-KOLOM (KOREKSI INPUT PENCARIAN TEMA GELAP) --- */}
       {showCatModal && tType !== "transfer" && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800">
@@ -371,7 +371,7 @@ export default function HomeTab({
               <button type="button" onClick={() => setShowCatModal(false)} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full transition-colors"><X size={14}/></button>
             </div>
 
-            {/* BAR PENCARIAN (KOREKSI FOKUS DARI KELAS 750 KE 800) */}
+            {/* BAR PENCARIAN */}
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
               <div className="relative">
                 <Search className="absolute left-3 top-3.5 text-slate-400" size={16} />
