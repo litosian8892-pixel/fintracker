@@ -91,7 +91,7 @@ export default function SettingsTab({
         </div>
       </div>
 
-      {/* KELOLA KATEGORI (OPTIMASI FORM INPUT RESPONSIF AGAR TIDAK OFFSIDE) */}
+      {/* KELOLA KATEGORI (KOREKSI INPUT DAN DROPDOWN DARK-MODE) */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2"><Tag size={16} className="text-blue-600 dark:text-blue-500"/> Kelola Kategori ({tType === 'expense' ? 'Pengeluaran' : 'Pemasukan'})</h3>
         <div className="flex gap-2">
@@ -99,19 +99,19 @@ export default function SettingsTab({
           <button onClick={() => setTType("income")} className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-colors cursor-pointer ${tType === "income" ? "bg-green-500 text-white shadow-md animate-none" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}`}>PEMASUKAN</button>
         </div>
         
-        {/* FORM INPUT RESPONSIF */}
+        {/* FORM INPUT RESPONSIF DENGAN KOREKSI KELAS 850 */}
         <div className="flex flex-col sm:flex-row gap-2">
           <input 
             type="text" 
             placeholder="Kategori Baru..." 
-            className="w-full sm:flex-1 p-3 bg-slate-50 dark:bg-slate-850 border border-transparent dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 placeholder-slate-400" 
+            className="w-full sm:flex-1 p-3 bg-slate-50 dark:bg-slate-800 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 placeholder-slate-400" 
             value={newCatName} 
             onChange={(e) => setNewCatName(e.target.value)} 
           />
           <div className="flex gap-2 w-full sm:w-auto">
             {tType === "expense" && (
               <select 
-                className="flex-1 sm:flex-none p-3 bg-slate-50 dark:bg-slate-850 border border-transparent dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer min-w-[110px]" 
+                className="flex-1 sm:flex-none p-3 bg-slate-50 dark:bg-slate-800 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer min-w-[110px]" 
                 value={newExpenseType} 
                 onChange={(e) => setNewExpenseType(e.target.value as "fixed" | "variable")}
               >
@@ -176,7 +176,7 @@ export default function SettingsTab({
         </div>
       </div>
 
-      {/* KELOLA TIPE DOMPET (OPTIMASI RESPONSIF UNTUK FORM INPUT) */}
+      {/* KELOLA TIPE DOMPET (KOREKSI FORM INPUT DENGAN KELASI 850) */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2"><CreditCard size={16} className="text-blue-600 dark:text-blue-500"/> Kelola Tipe Dompet</h3>
         <div className="flex flex-col sm:flex-row gap-2">
