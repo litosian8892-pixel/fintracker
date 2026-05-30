@@ -760,7 +760,7 @@ export default function FintrackerApp() {
   const expenseByCategory = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
   const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
   
-  const incomeByCategory = reportTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => { acc[acc.category] = (acc[acc.category] || 0) + curr.amount; return acc; }, {});
+  const incomeByCategory = reportTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
   const incomeCategoryList = Object.keys(incomeByCategory).map(key => ({ name: key, value: incomeByCategory[key] }));
   
   const expenseByDate = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc; }, {});
@@ -835,7 +835,7 @@ export default function FintrackerApp() {
                   accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} 
                   handleCreateAccount={handleCreateAccount} editingAccId={editingAccId} setEditingAccId={setEditingAccId} 
                   editAccName={editAccName} setEditAccName={setEditAccName} editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} 
-                  editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} 
+                  editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setAccIsSavings} 
                   editAccTargetBalance={editAccTargetBalance} setEditAccTargetBalance={setEditAccTargetBalance} 
                   handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
                 />
@@ -865,72 +865,92 @@ export default function FintrackerApp() {
       </div>
       <BottomNav activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
 
-      {/* POP-UP MODAL EDIT TRANSAKSI */}
+      {/* POP-UP MODAL EDIT TRANSAKSI (SINKRONISASI KONTRAS WARNA INPUT DI MODE GELAP) */}
       {editingTransaction && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 border border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-850/50">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Koreksi Transaksi</h3>
-              <button disabled={isSubmitting} onClick={() => { setEditingTransaction(null); setActiveEditKeypad(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full disabled:opacity-50"><X size={14}/></button>
+              <button disabled={isSubmitting} onClick={() => { setEditingTransaction(null); setActiveEditKeypad(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full disabled:opacity-50 transition-colors"><X size={14}/></button>
             </div>
             
-            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto pb-12">
+            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto pb-12 text-left">
+              {/* DROPDOWN PEMILIH TIPE TRANSAKSI BARU (AKTIF BISA DIUBAH DINAMIS) */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipe Transaksi</label>
-                <div className="p-3 bg-slate-100 dark:bg-slate-850 rounded-xl text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                  {editTType === "expense" ? "🔴 Pengeluaran" : editTType === "income" ? "🟢 Pemasukan" : "🔵 Transfer Dana"}
-                </div>
+                <select 
+                  disabled={isSubmitting} 
+                  className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer disabled:opacity-50 transition-colors"
+                  value={editTType}
+                  onChange={(e) => {
+                    const newType = e.target.value as "income" | "expense" | "transfer";
+                    setEditTType(newType);
+                    // Sesuaikan kategori secara dinamis jika tipe transaksi berubah
+                    if (newType !== "transfer") {
+                      const filtered = categories.filter(c => c.type === newType);
+                      setEditTCategory(filtered.length > 0 ? filtered[0].name : (newType === "income" ? "Gaji" : "Makanan"));
+                    } else {
+                      setEditTCategory("Transfer");
+                    }
+                  }}
+                >
+                  <option value="expense">🔴 Pengeluaran</option>
+                  <option value="income">🟢 Pemasukan</option>
+                  <option value="transfer">🔵 Transfer Dana</option>
+                </select>
               </div>
 
+              {/* INPUT NOMINAL DENGAN KONTRAS TINGGI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
-                {/* Atribut inputMode dikondisikan secara responsif */}
                 <input 
                   disabled={isSubmitting} 
                   type="text" 
                   inputMode={isMobile ? "none" : undefined} 
                   onFocus={() => { if(isMobile) setActiveEditKeypad("amount"); }}
-                  className={`w-full p-3.5 bg-slate-50 dark:bg-slate-850 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 disabled:opacity-50 transition-all ${activeEditKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-100 dark:border-slate-800'}`}
+                  className={`w-full p-3.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white disabled:opacity-50 transition-all ${activeEditKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-slate-100 dark:border-slate-700'}`}
                   value={editTAmount} 
                   onChange={(e) => setEditTAmount(e.target.value)} 
                 />
                 {editTAmount && (
-                  <p className="text-[10px] font-bold text-slate-400 pl-1 animate-in fade-in duration-150">
-                    Terbaca: <span className="text-slate-600 dark:text-slate-300 font-black">{formatRupiahTerbaca(editTAmount)}</span>
+                  <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">
+                    Terbaca: <span className="text-slate-600 dark:text-slate-200 font-black">{formatRupiahTerbaca(editTAmount)}</span>
                   </p>
                 )}
               </div>
 
+              {/* INPUT BIAYA ADMIN BILA MODE TRANSFER */}
               {editTType === "transfer" && (
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Biaya Admin (Opsional)</label>
-                  {/* Atribut inputMode dikondisikan secara responsif */}
+                  <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Biaya Admin (Opsional)</label>
                   <input 
                     disabled={isSubmitting} 
                     type="text" 
                     inputMode={isMobile ? "none" : undefined} 
                     onFocus={() => { if(isMobile) setActiveEditKeypad("adminFee"); }}
-                    className={`w-full p-3.5 bg-blue-50/20 border rounded-xl text-xs font-bold outline-blue-500 text-blue-900 dark:text-blue-300 disabled:opacity-50 transition-all ${activeEditKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-blue-100 dark:border-slate-800/50'}`}
+                    className={`w-full p-3.5 bg-blue-50/20 dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-blue-900 dark:text-white disabled:opacity-50 transition-all ${activeEditKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-blue-100 dark:border-slate-700'}`}
                     value={editTAdminFee} 
                     onChange={(e) => setEditTAdminFee(e.target.value)} 
                   />
                   {editTAdminFee && (
-                    <p className="text-[10px] font-bold text-blue-400 pl-1 animate-in fade-in duration-150">
-                      Terbaca: <span className="text-blue-600 dark:text-blue-300 font-black">{formatRupiahTerbaca(editTAdminFee)}</span>
+                    <p className="text-[10px] font-bold text-blue-400 dark:text-blue-300 pl-1 animate-in fade-in duration-150">
+                      Terbaca: <span className="text-blue-600 dark:text-blue-200 font-black">{formatRupiahTerbaca(editTAdminFee)}</span>
                     </p>
                   )}
                 </div>
               )}
 
+              {/* INPUT TANGGAL DENGAN KONTRAS TINGGI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</label>
-                <input disabled={isSubmitting} type="date" className="w-full p-3.5 bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer disabled:opacity-50" value={editTDate} onChange={(e) => setEditTDate(e.target.value)} />
+                <input disabled={isSubmitting} type="date" className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTDate} onChange={(e) => setEditTDate(e.target.value)} />
               </div>
 
+              {/* DROP DOWN KATEGORI DENGAN KONTRAS TINGGI */}
               {editTType !== "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
-                  <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer disabled:opacity-50" value={editTCategory} onChange={(e) => setEditTCategory(e.target.value)}>
+                  <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTCategory} onChange={(e) => setEditTCategory(e.target.value)}>
                     {categories.filter(c => c.type === editTType).map(cat => (
                       <option key={cat.id} value={cat.name}>{cat.name}</option>
                     ))}
@@ -938,19 +958,21 @@ export default function FintrackerApp() {
                 </div>
               )}
 
+              {/* DROP DOWN DOMPET DENGAN KONTRAS TINGGI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dompet Asal</label>
-                <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer disabled:opacity-50" value={editTAccountId} onChange={(e) => setEditTAccountId(e.target.value)}>
+                <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTAccountId} onChange={(e) => setEditTAccountId(e.target.value)}>
                   {accounts.map(acc => (
                     <option key={acc.id} value={acc.id}>{acc.name}</option>
                   ))}
                 </select>
               </div>
 
+              {/* DROP DOWN DOMPET TUJUAN DENGAN KONTRAS TINGGI */}
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kirim Ke Dompet Tujuan</label>
-                  <select disabled={isSubmitting} className="w-full p-3.5 bg-blue-50/20 border border-blue-100 dark:border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-blue-900 dark:text-blue-100 cursor-pointer disabled:opacity-50" value={editTToAccountId} onChange={(e) => setEditTToAccountId(e.target.value)}>
+                  <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-850 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTToAccountId} onChange={(e) => setEditTToAccountId(e.target.value)}>
                     {accounts.map(acc => (
                       <option key={acc.id} value={acc.id}>{acc.name}</option>
                     ))}
@@ -958,9 +980,10 @@ export default function FintrackerApp() {
                 </div>
               )}
 
+              {/* INPUT CATATAN DENGAN KONTRAS TINGGI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan</label>
-                <input disabled={isSubmitting} onFocus={() => setActiveEditKeypad(null)} type="text" className="w-full p-3.5 bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 disabled:opacity-50" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
+                <input disabled={isSubmitting} onFocus={() => setActiveEditKeypad(null)} type="text" className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white disabled:opacity-50 transition-colors" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
               </div>
 
               <div className="flex gap-2 pt-2 shrink-0">
@@ -1019,12 +1042,6 @@ export default function FintrackerApp() {
               <button type="button" onClick={() => handleEditKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-300 flex items-center justify-center transition-all select-none">
                 ⌫
               </button>
-              {["7", "8", "9"].map((num) => ( // wait, let's keep previous numbers 1,2,3
-                <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-700/80 transition-all select-none">
-                  {num}
-                </button>
-              ))}
-              {/* Correction to match 1,2,3 for row 4 */}
               {["1", "2", "3"].map((num) => (
                 <button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-700/80 transition-all select-none">
                   {num}
