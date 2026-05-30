@@ -16,6 +16,25 @@ const getCardDesign = (type: string) => {
   }
 };
 
+// --- PARSER MATEMATIKA AMAN (ANTI-EVAL & TAHAN EROR SINTAKS) ---
+const safeEvaluate = (expr: string): number => {
+  if (!expr) return 0;
+  let sanitized = expr.replace(/[^0-9+\-*/().]/g, "");
+  if (!sanitized) return 0;
+  sanitized = sanitized.replace(/[+\-*/(.]*$/, "");
+  if (!sanitized) return 0;
+  try {
+    const result = new Function(`"use strict"; return (${sanitized});`)();
+    if (typeof result === "number" && isFinite(result)) {
+      return result;
+    }
+    return 0;
+  } catch {
+    const fallback = parseFloat(sanitized);
+    return isNaN(fallback) ? 0 : fallback;
+  }
+};
+
 interface AssetsTabProps {
   accounts: AccountData[]; walletTypes: WalletTypeData[];
   accType: string; setAccType: (val: string) => void;
@@ -41,18 +60,32 @@ export default function AssetsTab({
   editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder
 }: AssetsTabProps) {
   
+  // STATE UNTUK KONTROL DETAILS SECARA KONSISTEN (ANTI RE-RENDER BUG)
   const [isManageOpen, setIsManageOpen] = useState(false);
 
+  // Otomatis buka laci kelola jika user sedang dalam mode edit akun
   useEffect(() => {
     if (editingAccId) {
       setIsManageOpen(true);
     }
   }, [editingAccId]);
 
-  const activeAccounts = accounts.filter(a => !a.isSavings);
-  const savingsAccounts = accounts.filter(a => a.isSavings);
-  const totalActiveBalance = activeAccounts.reduce((a, b) => a + b.balance, 0);
-  const totalSavingsBalance = savingsAccounts.reduce((a, b) => a + b.balance, 0);
+  // DEKLARASI TIPE DATUM SECARA EKSPLISIT PADA FILTER DAN REDUCE (TAJAM DI STRICT MODE)
+  const activeAccounts = accounts.filter((a: AccountData) => !a.isSavings);
+  const savingsAccounts = accounts.filter((a: AccountData) => a.isSavings);
+  const totalActiveBalance = activeAccounts.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
+  const totalSavingsBalance = savingsAccounts.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
+
+  const formatRupiahTerbaca = (val: string) => {
+    if (!val) return "Rp 0";
+    const parsed = safeEvaluate(val);
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(parsed);
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in">
@@ -63,12 +96,12 @@ export default function AssetsTab({
         <h2 className="text-4xl font-black italic relative z-10">Rp {totalActiveBalance.toLocaleString('id-ID')}</h2>
       </div>
 
-      {/* DOMPET AKTIF (KOREKSI KONTRAS TEKS JUDUL) */}
+      {/* DOMPET AKTIF */}
       <div className="space-y-3">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 italic px-1 text-lg transition-colors">Dompet Aktif</h3>
         {activeAccounts.length === 0 ? <p className="text-center py-6 text-slate-400 text-sm italic">Belum ada dompet aktif</p> : (
           <div className="grid grid-cols-3 gap-2.5">
-            {activeAccounts.map((acc) => {
+            {activeAccounts.map((acc: AccountData) => {
               const design = getCardDesign(acc.type);
               return (
                 <div key={acc.id} className={`${design.bg} p-3 rounded-[20px] h-28 flex flex-col justify-between relative overflow-hidden active:scale-95`}>
@@ -91,7 +124,7 @@ export default function AssetsTab({
         )}
       </div>
 
-      {/* TABUNGAN KHUSUS (KOREKSI KONTRAS TEKS JUDUL) */}
+      {/* TABUNGAN KHUSUS (DENGAN VISUAL PROGRESS BAR TARGET) */}
       {savingsAccounts.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="flex justify-between items-end px-1">
@@ -99,7 +132,7 @@ export default function AssetsTab({
              <span className="text-[10px] font-black text-emerald-600">Total: Rp {totalSavingsBalance.toLocaleString('id-ID')}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-95">
-            {savingsAccounts.map((acc) => {
+            {savingsAccounts.map((acc: AccountData) => {
               const design = getCardDesign(acc.type);
               
               // Hitung Persentase Target Tabungan
@@ -147,7 +180,7 @@ export default function AssetsTab({
         </div>
       )}
 
-      {/* KELOLA AKUN (KOREKSI BACKGROUND DAN KONTRAS TEXT) */}
+      {/* KELOLA AKUN */}
       <details 
         open={isManageOpen} 
         onToggle={(e) => setIsManageOpen(e.currentTarget.open)}
@@ -159,7 +192,7 @@ export default function AssetsTab({
           {/* FORM TAMBAH DOMPET BARU */}
           <div className="space-y-2">
             <select className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl text-xs border-none outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
-                {walletTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
             </select>
             <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl text-xs border-none outline-none font-bold text-slate-700 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
             <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl text-xs border-none outline-none font-bold text-slate-700 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
@@ -169,7 +202,7 @@ export default function AssetsTab({
               onClick={() => setAccIsSavings(!accIsSavings)}
               className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none"
             >
-              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white dark:bg-slate-900 dark:border-slate-700'}`}>
+              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
                 {accIsSavings && <Check size={10} strokeWidth={4} />}
               </div>
               <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
@@ -177,15 +210,22 @@ export default function AssetsTab({
               </span>
             </div>
 
-            {/* INPUT TARGET TABUNGAN BARU */}
+            {/* INPUT TARGET TABUNGAN BARU DENGAN PRATINJAU TITIK RUPIAH */}
             {accIsSavings && (
-              <input 
-                type="number" 
-                placeholder="Target Nominal Tabungan (Opsional)" 
-                className="w-full p-3 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-800 rounded-xl text-xs border-none outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 animate-in slide-in-from-top-2" 
-                value={accTargetBalance} 
-                onChange={(e) => setAccTargetBalance(e.target.value)} 
-              />
+              <div className="space-y-1">
+                <input 
+                  type="text" 
+                  placeholder="Target Nominal Tabungan (Opsional)" 
+                  className="w-full p-3 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-800 rounded-xl text-xs border-none outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300" 
+                  value={accTargetBalance} 
+                  onChange={(e) => setAccTargetBalance(e.target.value)} 
+                />
+                {accTargetBalance && (
+                  <p className="text-[10px] font-bold text-emerald-650 dark:text-emerald-400/80 pl-1 animate-in fade-in duration-150">
+                    Terbaca: <span className="font-black">{formatRupiahTerbaca(accTargetBalance)}</span>
+                  </p>
+                )}
+              </div>
             )}
 
             <div className="flex flex-col gap-1 pt-1">
@@ -201,7 +241,7 @@ export default function AssetsTab({
 
           <div className="pt-4 border-t border-slate-300/30 dark:border-slate-700 space-y-2">
             <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Daftar Dompet (Ubah / Urutan / Hapus)</p>
-            {accounts.map((acc, index) => (
+            {accounts.map((acc: AccountData, index: number) => (
               <div key={acc.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl flex flex-col gap-3 shadow-sm border border-slate-100 dark:border-slate-800 transition-colors duration-200">
                 {editingAccId === acc.id ? (
                   <div className="space-y-3 animate-in fade-in duration-200">
@@ -221,11 +261,16 @@ export default function AssetsTab({
                       </span>
                     </div>
 
-                    {/* INPUT EDIT TARGET TABUNGAN BARU */}
+                    {/* INPUT EDIT TARGET TABUNGAN BARU DENGAN PRATINJAU TITIK RUPIAH */}
                     {editAccIsSavings && (
                       <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Target Tabungan</label>
-                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 text-xs border border-blue-200 dark:border-blue-900 rounded-xl outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-350" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+                        <input type="text" placeholder="Target Nominal Tabungan" className="w-full bg-slate-50 dark:bg-slate-900 p-2.5 text-xs border border-blue-200 dark:border-slate-700 rounded-xl outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-350" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+                        {editAccTargetBalance && (
+                          <p className="text-[10px] font-bold text-emerald-650 dark:text-emerald-400/80 pl-1 animate-in fade-in duration-150">
+                            Terbaca: <span className="font-black">{formatRupiahTerbaca(editAccTargetBalance)}</span>
+                          </p>
+                        )}
                       </div>
                     )}
 
@@ -250,7 +295,7 @@ export default function AssetsTab({
                           <p className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-none">{acc.name}</p>
                           {acc.isSavings && <span className="text-[8px] bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 px-1 py-0.5 rounded font-black">TABUNGAN</span>}
                         </div>
-                        <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 leading-none mb-0.5">Rp {acc.balance.toLocaleString('id-ID')}</p>
+                        <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 leading-none mb-0.5">Rp {acc.balance.toLocaleString("id-ID")}</p>
                         <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{acc.type}</p>
                       </div>
                     </div>

@@ -393,6 +393,7 @@ export default function FintrackerApp() {
     }
   };
 
+  // LOGIKA PAY DEBT DENGAN KATEGORI DINAMIS "PENGEMBALIAN HUTANG" SAAT TERIMA PIUTANG
   const handlePayDebt = async (debtId: string, payAmount: number, accountId: string) => {
     if (isSubmittingRef.current) return; 
     if (!user) return;
@@ -419,7 +420,7 @@ export default function FintrackerApp() {
         await updateDoc(doc(db, `users/${user.uid}/accounts/${accountId}`), { balance: acc.balance + payAmount });
         await addDoc(collection(db, `users/${user.uid}/transactions`), {
           amount: payAmount, type: "income", accountId, accountName: acc.name,
-          category: "Terima Piutang", note: `Cicilan masuk dari ${debt.personName}`,
+          category: "Pengembalian Hutang", note: `Cicilan masuk dari ${debt.personName}`, // <--- OTOMATIS KATEGORI PENGEMBALIAN HUTANG
           tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp()
         });
       }
@@ -470,6 +471,7 @@ export default function FintrackerApp() {
     }
   };
 
+  // LOGIKA TAMBAH AKUN: PARSING TARGET NOMINAL VIA SAFEEVALUATE
   const handleCreateAccount = async () => {
     if (isSubmittingRef.current) return; 
     if (!user || !accName || !accBalance) return;
@@ -480,7 +482,7 @@ export default function FintrackerApp() {
       await addDoc(collection(db, `users/${user.uid}/accounts`), {
         name: accName, balance: Number(accBalance), type: accType, logo: accLogo, order: accounts.length, 
         isSavings: accIsSavings,
-        targetBalance: accIsSavings && accTargetBalance ? Number(accTargetBalance) : null, 
+        targetBalance: accIsSavings && accTargetBalance ? safeEvaluate(accTargetBalance) : null, // <--- PARSER MATEMATIKA AMAN
         createdAt: serverTimestamp()
       });
       setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); 
@@ -505,6 +507,7 @@ export default function FintrackerApp() {
     }
   };
 
+  // LOGIKA EDIT AKUN: PARSING TARGET NOMINAL VIA SAFEEVALUATE
   const handleEditAccount = async (id: string) => {
     if (isSubmittingRef.current) return; 
     if (!user || !editAccName || !editAccBalance) return;
@@ -515,7 +518,7 @@ export default function FintrackerApp() {
       await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { 
         name: editAccName, balance: Number(editAccBalance), logo: editAccLogo, 
         isSavings: editAccIsSavings,
-        targetBalance: editAccIsSavings && editAccTargetBalance ? Number(editAccTargetBalance) : null 
+        targetBalance: editAccIsSavings && editAccTargetBalance ? safeEvaluate(editAccTargetBalance) : null // <--- PARSER MATEMATIKA AMAN
       });
       setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false);
       alert("Dompet berhasil diperbarui!");
@@ -865,7 +868,7 @@ export default function FintrackerApp() {
       </div>
       <BottomNav activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
 
-      {/* POP-UP MODAL EDIT TRANSAKSI (SINKRONISASI KONTRAS WARNA INPUT DI MODE GELAP) */}
+      {/* POP-UP MODAL EDIT TRANSAKSI */}
       {editingTransaction && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
@@ -875,7 +878,6 @@ export default function FintrackerApp() {
             </div>
             
             <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto pb-12 text-left">
-              {/* DROPDOWN PEMILIH TIPE TRANSAKSI BARU (AKTIF BISA DIUBAH DINAMIS) */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipe Transaksi</label>
                 <select 
@@ -885,7 +887,6 @@ export default function FintrackerApp() {
                   onChange={(e) => {
                     const newType = e.target.value as "income" | "expense" | "transfer";
                     setEditTType(newType);
-                    // Sesuaikan kategori secara dinamis jika tipe transaksi berubah
                     if (newType !== "transfer") {
                       const filtered = categories.filter(c => c.type === newType);
                       setEditTCategory(filtered.length > 0 ? filtered[0].name : (newType === "income" ? "Gaji" : "Makanan"));
@@ -900,7 +901,6 @@ export default function FintrackerApp() {
                 </select>
               </div>
 
-              {/* INPUT NOMINAL DENGAN KONTRAS TINGGI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
                 <input 
@@ -919,7 +919,6 @@ export default function FintrackerApp() {
                 )}
               </div>
 
-              {/* INPUT BIAYA ADMIN BILA MODE TRANSFER */}
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Biaya Admin (Opsional)</label>
@@ -940,13 +939,11 @@ export default function FintrackerApp() {
                 </div>
               )}
 
-              {/* INPUT TANGGAL DENGAN KONTRAS TINGGI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</label>
                 <input disabled={isSubmitting} type="date" className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTDate} onChange={(e) => setEditTDate(e.target.value)} />
               </div>
 
-              {/* DROP DOWN KATEGORI DENGAN KONTRAS TINGGI */}
               {editTType !== "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
@@ -958,7 +955,6 @@ export default function FintrackerApp() {
                 </div>
               )}
 
-              {/* DROP DOWN DOMPET DENGAN KONTRAS TINGGI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dompet Asal</label>
                 <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTAccountId} onChange={(e) => setEditTAccountId(e.target.value)}>
@@ -968,7 +964,6 @@ export default function FintrackerApp() {
                 </select>
               </div>
 
-              {/* DROP DOWN DOMPET TUJUAN DENGAN KONTRAS TINGGI */}
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kirim Ke Dompet Tujuan</label>
@@ -980,7 +975,6 @@ export default function FintrackerApp() {
                 </div>
               )}
 
-              {/* INPUT CATATAN DENGAN KONTRAS TINGGI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan</label>
                 <input disabled={isSubmitting} onFocus={() => setActiveEditKeypad(null)} type="text" className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white disabled:opacity-50 transition-colors" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
