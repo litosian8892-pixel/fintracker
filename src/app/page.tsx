@@ -342,7 +342,8 @@ export default function FintrackerApp() {
     }
   };
 
-  const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string, accountId?: string) => {
+  // LOGIKA TAMBAH UTANG/PIUTANG BARU DENGAN FIELD TANGGAL JATUH TEMPO
+  const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string, dueDate: string, accountId?: string) => {
     if (isSubmittingRef.current) return; 
     if (!user) return;
     
@@ -369,7 +370,7 @@ export default function FintrackerApp() {
       }
 
       await addDoc(collection(db, `users/${user.uid}/debts`), {
-        type, personName: person, amount, paidAmount: 0, status: "active", note, createdAt: new Date().toISOString()
+        type, personName: person, amount, paidAmount: 0, status: "active", note, dueDate, createdAt: new Date().toISOString()
       });
       alert("Catatan berhasil ditambahkan & saldo dompet Anda otomatis terpotong!");
     } catch (e) { alert("Gagal menambah catatan"); }
@@ -868,16 +869,18 @@ export default function FintrackerApp() {
       </div>
       <BottomNav activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
 
-      {/* POP-UP MODAL EDIT TRANSAKSI */}
+      {/* POP-UP MODAL EDIT TRANSAKSI (SINKRONISASI KONTRAS WARNA INPUT DI MODE GELAP) */}
       {editingTransaction && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
-            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+          {/* PEMBUNGKUS UTAMA KARTU DIUBAH MENJADI DARK-MODE COMPATIBLE KONTRAST TINGGI (dark:bg-slate-900) */}
+          <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Koreksi Transaksi</h3>
               <button disabled={isSubmitting} onClick={() => { setEditingTransaction(null); setActiveEditKeypad(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full disabled:opacity-50 transition-colors"><X size={14}/></button>
             </div>
             
             <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto pb-12 text-left">
+              {/* DROPDOWN PEMILIH TIPE TRANSAKSI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipe Transaksi</label>
                 <select 
@@ -887,6 +890,7 @@ export default function FintrackerApp() {
                   onChange={(e) => {
                     const newType = e.target.value as "income" | "expense" | "transfer";
                     setEditTType(newType);
+                    // Sesuaikan kategori secara dinamis jika tipe transaksi berubah
                     if (newType !== "transfer") {
                       const filtered = categories.filter(c => c.type === newType);
                       setEditTCategory(filtered.length > 0 ? filtered[0].name : (newType === "income" ? "Gaji" : "Makanan"));
@@ -901,6 +905,7 @@ export default function FintrackerApp() {
                 </select>
               </div>
 
+              {/* INPUT NOMINAL DENGAN KONTRAS TINGGI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
                 <input 
@@ -919,6 +924,7 @@ export default function FintrackerApp() {
                 )}
               </div>
 
+              {/* INPUT BIAYA ADMIN BILA MODE TRANSFER */}
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Biaya Admin (Opsional)</label>
@@ -939,11 +945,13 @@ export default function FintrackerApp() {
                 </div>
               )}
 
+              {/* INPUT TANGGAL DENGAN KONTRAS TINGGI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</label>
                 <input disabled={isSubmitting} type="date" className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTDate} onChange={(e) => setEditTDate(e.target.value)} />
               </div>
 
+              {/* DROP DOWN KATEGORI DENGAN KONTRAS TINGGI */}
               {editTType !== "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
@@ -955,6 +963,7 @@ export default function FintrackerApp() {
                 </div>
               )}
 
+              {/* DROP DOWN DOMPET DENGAN KONTRAS TINGGI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dompet Asal</label>
                 <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTAccountId} onChange={(e) => setEditTAccountId(e.target.value)}>
@@ -964,6 +973,7 @@ export default function FintrackerApp() {
                 </select>
               </div>
 
+              {/* DROP DOWN DOMPET TUJUAN DENGAN KONTRAS TINGGI */}
               {editTType === "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kirim Ke Dompet Tujuan</label>
@@ -975,6 +985,7 @@ export default function FintrackerApp() {
                 </div>
               )}
 
+              {/* INPUT CATATAN DENGAN KONTRAS TINGGI */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan</label>
                 <input disabled={isSubmitting} onFocus={() => setActiveEditKeypad(null)} type="text" className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white disabled:opacity-50 transition-colors" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />

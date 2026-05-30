@@ -6,7 +6,7 @@ export interface AccountData {
   logo?: string; 
   order?: number; 
   isSavings?: boolean; 
-  targetBalance?: number; // <--- BARU: TARGET TABUNGAN
+  targetBalance?: number; // <--- TARGET TABUNGAN
 }
 
 export interface TransactionData { 
@@ -25,13 +25,27 @@ export interface TransactionData {
 }
 
 export interface CategoryData { 
-  id: string; name: string; type: string; budgetLimit?: number; expenseType?: "fixed" | "variable";
+  id: string; 
+  name: string; 
+  type: string; 
+  budgetLimit?: number; 
+  expenseType?: "fixed" | "variable";
 }
 
 export interface WalletTypeData { 
-  id: string; name: string; order: number; 
+  id: string; 
+  name: string; 
+  order: number; 
 }
 
 export interface DebtData {
-  id: string; type: "debt" | "receivable"; personName: string; amount: number; paidAmount: number; status: "active" | "paid"; note: string; createdAt?: string;
+  id: string; 
+  type: "debt" | "receivable"; 
+  personName: string; 
+  amount: number; 
+  paidAmount: number; 
+  status: "active" | "paid"; 
+  note: string; 
+  dueDate?: string; // <--- BARU: TANGGAL JATUH TEMPO (OPSIONAL)
+  createdAt?: string;
 }
