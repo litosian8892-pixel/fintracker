@@ -214,7 +214,7 @@ export default function HomeTab({
             type="text"
             inputMode={isMobile ? "none" : undefined} 
             onFocus={() => { if(isMobile) setActiveKeypad("amount"); }}
-            className={`w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`}
+            className={`w-full max-w-full p-3.5 bg-white border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`}
             placeholder={isMobile ? "Ketuk untuk input nominal..." : "Rp 0 atau ketik ekspresi matematika..."}
             value={tAmount}
             onChange={(e) => setTAmount(e.target.value)}
@@ -236,7 +236,7 @@ export default function HomeTab({
               type="text"
               inputMode={isMobile ? "none" : undefined}
               onFocus={() => { if(isMobile) setActiveKeypad("adminFee"); }}
-              className={`w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`}
+              className={`w-full max-w-full p-3.5 bg-white border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`}
               placeholder={isMobile ? "Ketuk untuk input biaya admin..." : "Rp 0 atau ketik ekspresi matematika..."}
               value={tAdminFee}
               onChange={(e) => setTAdminFee(e.target.value)}
@@ -264,6 +264,7 @@ export default function HomeTab({
             />
           </div>
 
+          {/* SINKRONISASI PEMILIH KATEGORI (KOREKSI HOVER STATE GELAP) */}
           {tType !== "transfer" ? (
             <div className="space-y-1 min-w-0"> 
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
@@ -271,7 +272,7 @@ export default function HomeTab({
               </label>
               <div 
                 onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }}
-                className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-750"
+                className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
               >
                 <span className="truncate">{tCategory || "Pilih Kategori"}</span>
                 <ChevronDown size={14} className="text-slate-400 shrink-0" />
@@ -315,7 +316,7 @@ export default function HomeTab({
                 💳 DOMPET TUJUAN
               </label>
               <select
-                className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer"
+                className="w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer"
                 value={tToAccountId}
                 onFocus={() => setActiveKeypad(null)}
                 onChange={(e) => setTToAccountId(e.target.value)}
@@ -339,7 +340,7 @@ export default function HomeTab({
           <input
             type="text"
             onFocus={() => setActiveKeypad(null)}
-            className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+            className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 dark:bg-slate-800 dark:border-slate-700"
             placeholder="Tulis keterangan transaksi..."
             value={tNote}
             onChange={(e) => setTNote(e.target.value)}
@@ -356,7 +357,7 @@ export default function HomeTab({
         </button>
       </div>
 
-      {/* --- POP-UP MODAL CUSTOM KATEGORI 2-KOLOM (KOREKSI INPUT PENCARIAN TEMA GELAP) --- */}
+      {/* --- POP-UP MODAL CUSTOM KATEGORI 2-KOLOM (KOREKSI FOKUS PENCARIAN TEMA GELAP) --- */}
       {showCatModal && tType !== "transfer" && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800">
@@ -370,14 +371,14 @@ export default function HomeTab({
               <button type="button" onClick={() => setShowCatModal(false)} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full transition-colors"><X size={14}/></button>
             </div>
 
-            {/* BAR PENCARIAN (KOREKSI LAYOUT DARI KELAS 850 KE 800) */}
+            {/* BAR PENCARIAN (KOREKSI FOKUS DARI KELAS 750 KE 800) */}
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
               <div className="relative">
                 <Search className="absolute left-3 top-3.5 text-slate-400" size={16} />
                 <input 
                   type="text" 
                   placeholder="Ketik untuk mencari kategori..." 
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white dark:focus:bg-slate-750 text-slate-800 dark:text-slate-100 placeholder-slate-450"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-450"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -396,7 +397,7 @@ export default function HomeTab({
                     <div className="flex flex-col gap-2">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").length === 0 && <p className="text-[10px] text-slate-400 italic">Tidak ditemukan</p>}
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").map(cat => (
-                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-orange-500 text-white border-orange-600 shadow-md animate-none" : "bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:border-orange-200 dark:hover:bg-orange-900/50"}`}>
+                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-orange-500 text-white border-orange-600 shadow-md animate-none" : "bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:border-orange-200 dark:hover:border-orange-900/50"}`}>
                           {cat.name}
                         </button>
                       ))}
@@ -423,7 +424,7 @@ export default function HomeTab({
                 <div className="grid grid-cols-2 gap-3">
                   {filteredCategories.filter(c => c.type === "income").length === 0 && <p className="text-[10px] text-slate-400 italic col-span-2 text-center py-4">Tidak ditemukan</p>}
                   {filteredCategories.filter(c => c.type === "income").map(cat => (
-                    <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-green-500 text-white border-green-600 shadow-md animate-none" : "bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-green-50 dark:hover:bg-green-950/30 hover:border-green-200 dark:hover:bg-green-900/50"}`}>
+                    <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-green-500 text-white border-green-600 shadow-md" : "bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-green-50 dark:hover:bg-green-950/30 hover:border-green-200 dark:hover:bg-green-900/50"}`}>
                       {cat.name}
                     </button>
                   ))}
