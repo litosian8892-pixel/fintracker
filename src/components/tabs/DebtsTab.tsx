@@ -1,12 +1,13 @@
 "use client";
 import { useState } from "react";
-import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Calendar } from "lucide-react";
+import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil } from "lucide-react";
 import { DebtData, AccountData } from "../../types";
 
 interface DebtsTabProps {
   debts: DebtData[];
   accounts: AccountData[];
-  handleAddDebt: (type: "debt" | "receivable", person: string, amount: number, note: string, dueDate: string, accountId?: string) => void; // <--- UPDATE JATUH TEMPO
+  handleAddDebt: (type: "debt" | "receivable", person: string, amount: number, note: string, dueDate: string, accountId?: string) => void;
+  handleEditDebt: (id: string, person: string, amount: number, note: string, dueDate: string) => void; // <--- PROP EDIT
   handlePayDebt: (debtId: string, payAmount: number, accountId: string) => void;
   handleDeleteDebt: (debtId: string) => void;
 }
@@ -30,7 +31,7 @@ const safeEvaluate = (expr: string): number => {
   }
 };
 
-export default function DebtsTab({ debts, accounts, handleAddDebt, handlePayDebt, handleDeleteDebt }: DebtsTabProps) {
+export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDebt, handlePayDebt, handleDeleteDebt }: DebtsTabProps) {
   const [activeType, setActiveType] = useState<"debt" | "receivable">("debt");
   
   // State Form Tambah Utang
@@ -38,8 +39,15 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handlePayDebt
   const [person, setPerson] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [dueDate, setDueDate] = useState(""); // <--- STATE BARU: JATUH TEMPO
+  const [dueDate, setDueDate] = useState(""); 
   const [sourceAccountId, setSourceAccountId] = useState("");
+
+  // State Form Edit Utang/Piutang (Baru)
+  const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
+  const [editPerson, setEditPerson] = useState("");
+  const [editAmount, setEditAmount] = useState("");
+  const [editNote, setEditNote] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
 
   // State Form Bayar Cicilan
   const [payingDebtId, setPayingDebtId] = useState<string | null>(null);
@@ -73,9 +81,24 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handlePayDebt
       return alert("Pilih dompet pengirim uang terlebih dahulu agar saldo otomatis terpotong!");
     }
     
-    // safeEvaluate dioper sebelum masuk ke fungsi induk
     handleAddDebt(activeType, person, safeEvaluate(amount), note, dueDate, sourceAccountId);
     setShowAddForm(false); setPerson(""); setAmount(""); setNote(""); setDueDate(""); setSourceAccountId("");
+  };
+
+  // Logika Pemanggilan Edit
+  const startEdit = (debt: DebtData) => {
+    setEditingDebtId(debt.id);
+    setEditPerson(debt.personName);
+    setEditAmount(debt.amount.toString());
+    setEditNote(debt.note || "");
+    setEditDueDate(debt.dueDate || "");
+    setPayingDebtId(null); 
+  };
+
+  const submitEdit = (id: string) => {
+    if (!editPerson || !editAmount) return alert("Nama dan Nominal harus diisi!");
+    handleEditDebt(id, editPerson, safeEvaluate(editAmount), editNote, editDueDate);
+    setEditingDebtId(null);
   };
 
   const submitPay = (id: string) => {
@@ -93,8 +116,8 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handlePayDebt
       {/* Header Toggle */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         <div className="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl">
-          <button onClick={() => { setActiveType("debt"); setShowAddForm(false); }} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${activeType === "debt" ? "bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm border border-transparent dark:border-red-900/30" : "text-slate-400 dark:text-slate-50"}`}>UTANG SAYA</button>
-          <button onClick={() => { setActiveType("receivable"); setShowAddForm(false); }} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${activeType === "receivable" ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-transparent dark:border-emerald-900/30" : "text-slate-400 dark:text-slate-50"}`}>PIUTANG ORANG</button>
+          <button onClick={() => { setActiveType("debt"); setShowAddForm(false); setEditingDebtId(null); }} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${activeType === "debt" ? "bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm border border-transparent dark:border-red-900/30" : "text-slate-400 dark:text-slate-50"}`}>UTANG SAYA</button>
+          <button onClick={() => { setActiveType("receivable"); setShowAddForm(false); setEditingDebtId(null); }} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${activeType === "receivable" ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-transparent dark:border-emerald-900/30" : "text-slate-400 dark:text-slate-50"}`}>PIUTANG ORANG</button>
         </div>
         
         <div className={`p-5 rounded-2xl transition-colors ${activeType === "debt" ? "bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30" : "bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30"}`}>
@@ -105,7 +128,7 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handlePayDebt
         </div>
 
         {!showAddForm ? (
-          <button onClick={() => setShowAddForm(true)} className="w-full py-3.5 bg-slate-900 dark:bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg cursor-pointer transition-colors"><Plus size={16}/> Tambah Catatan Baru</button>
+          <button onClick={() => { setShowAddForm(true); setEditingDebtId(null); }} className="w-full py-3.5 bg-slate-900 dark:bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg cursor-pointer transition-colors"><Plus size={16}/> Tambah Catatan Baru</button>
         ) : (
           <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3 animate-in slide-in-from-top-2 duration-200 text-left">
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">{activeType === "debt" ? "Mencatat Utang Baru" : "Mencatat Piutang Baru"}</h4>
@@ -167,69 +190,108 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handlePayDebt
 
             return (
               <div key={debt.id} className={`bg-white p-5 rounded-[25px] border shadow-sm transition-all duration-200 ${isPaid ? "border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"}`}>
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3 text-left">
-                    {isPaid ? <CheckCircle2 className="text-emerald-500" size={24}/> : <CircleDashed className="text-slate-300 dark:text-slate-600" size={24}/>}
-                    <div>
-                      <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{debt.personName}</h4>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{debt.note}</p>
-                      
-                      {/* TAMPILAN TANGGAL JATUH TEMPO DENGAN OVERDUE ALERTS */}
-                      {debt.dueDate && (
-                        <p className={`text-[9px] font-black uppercase tracking-wider mt-1.5 ${overdue ? "text-red-500 animate-pulse" : "text-slate-400 dark:text-slate-500"}`}>
-                          Jatuh Tempo: {new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}
-                          {overdue && " • Terlewat / Overdue! ⚠️"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <button onClick={() => handleDeleteDebt(debt.id)} className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 cursor-pointer transition-colors"><Trash2 size={16}/></button>
-                </div>
+                
+                {/* --- RENDER FORM EDIT JIKA ID COCOK --- */}
+                {editingDebtId === debt.id ? (
+                  <div className="space-y-3 animate-in fade-in text-left pb-2">
+                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest text-center mb-2">Form Koreksi {activeType === "debt" ? "Utang" : "Piutang"}</p>
 
-                <div className="space-y-1.5 mb-4">
-                  <div className="flex justify-between text-xs font-black">
-                    <span className="text-slate-500 dark:text-slate-400">Terkumpul: Rp {debt.paidAmount.toLocaleString('id-ID')}</span>
-                    <span className="text-slate-800 dark:text-slate-200">Total: Rp {debt.amount.toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className={`h-full ${isPaid ? "bg-emerald-500" : "bg-blue-500"}`} style={{ width: `${percentage}%` }}></div>
-                  </div>
-                </div>
-
-                {!isPaid && payingDebtId !== debt.id && (
-                  <button onClick={() => setPayingDebtId(debt.id)} className="w-full py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer">
-                    Catat Pembayaran / Cicilan
-                  </button>
-                )}
-
-                {payingDebtId === debt.id && (
-                  <div className="mt-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-2xl space-y-3 animate-in slide-in-from-top-2 duration-200 text-left">
-                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest text-center">Form Pembayaran</p>
+                    <input type="text" placeholder={activeType === "debt" ? "Utang ke siapa?" : "Siapa yang pinjam?"} className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editPerson} onChange={e => setEditPerson(e.target.value)} />
                     
-                    {/* INPUT NOMINAL CICILAN DENGAN PRATINJAU TITIK */}
                     <div className="space-y-1">
-                      <input type="text" placeholder="Nominal Bayar (Rp)" className="w-full p-3 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
-                      {payAmount && (
+                      <input type="text" placeholder="Nominal Total (Rp)" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editAmount} onChange={e => setEditAmount(e.target.value)} />
+                      {editAmount && (
                         <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">
-                          Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(payAmount)}</span>
+                          Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(editAmount)}</span>
                         </p>
                       )}
                     </div>
 
-                    <div className="relative">
-                      <Wallet className="absolute left-3 top-3.5 text-slate-400" size={16}/>
-                      <select className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 appearance-none text-slate-700 dark:text-slate-200 cursor-pointer" value={payAccountId} onChange={e => setPayAccountId(e.target.value)}>
-                        <option value="">Pilih Dompet...</option>
-                        {accounts.map(acc => (
-                          <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>
-                        ))}
-                      </select>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 px-1">📅 Jatuh Tempo (Opsional)</label>
+                      <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer appearance-none" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} />
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => submitPay(debt.id)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors">Konfirmasi</button>
-                      <button onClick={() => setPayingDebtId(null)} className="py-2.5 px-4 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-350 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer">Batal</button>
+
+                    <input type="text" placeholder="Catatan / Tujuan pinjam" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editNote} onChange={e => setEditNote(e.target.value)} />
+
+                    <div className="flex gap-2 pt-2">
+                      <button onClick={() => submitEdit(debt.id)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-md shadow-blue-500/20">Simpan Koreksi</button>
+                      <button onClick={() => setEditingDebtId(null)} className="py-2.5 px-4 bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-350 rounded-xl text-xs font-bold border border-transparent dark:border-slate-700 cursor-pointer transition-colors">Batal</button>
                     </div>
                   </div>
+                ) : (
+                  /* --- TAMPILAN KARTU NORMAL --- */
+                  <>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3 text-left">
+                        {isPaid ? <CheckCircle2 className="text-emerald-500" size={24}/> : <CircleDashed className="text-slate-300 dark:text-slate-600" size={24}/>}
+                        <div>
+                          <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{debt.personName}</h4>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{debt.note}</p>
+                          
+                          {/* TAMPILAN TANGGAL JATUH TEMPO DENGAN OVERDUE ALERTS */}
+                          {debt.dueDate && (
+                            <p className={`text-[9px] font-black uppercase tracking-wider mt-1.5 ${overdue ? "text-red-500 animate-pulse" : "text-slate-400 dark:text-slate-500"}`}>
+                              Jatuh Tempo: {new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}
+                              {overdue && " • Terlewat / Overdue! ⚠️"}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* IKON EDIT DAN HAPUS */}
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => startEdit(debt)} className="p-1.5 text-slate-300 dark:text-slate-600 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer transition-colors"><Pencil size={15}/></button>
+                        <button onClick={() => handleDeleteDebt(debt.id)} className="p-1.5 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 cursor-pointer transition-colors"><Trash2 size={16}/></button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 mb-4">
+                      <div className="flex justify-between text-xs font-black">
+                        <span className="text-slate-500 dark:text-slate-400">Terkumpul: Rp {debt.paidAmount.toLocaleString('id-ID')}</span>
+                        <span className="text-slate-800 dark:text-slate-200">Total: Rp {debt.amount.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div className={`h-full ${isPaid ? "bg-emerald-500" : "bg-blue-500"}`} style={{ width: `${percentage}%` }}></div>
+                      </div>
+                    </div>
+
+                    {!isPaid && payingDebtId !== debt.id && (
+                      <button onClick={() => setPayingDebtId(debt.id)} className="w-full py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer">
+                        Catat Pembayaran / Cicilan
+                      </button>
+                    )}
+
+                    {payingDebtId === debt.id && (
+                      <div className="mt-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-2xl space-y-3 animate-in slide-in-from-top-2 duration-200 text-left">
+                        <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest text-center">Form Pembayaran</p>
+                        
+                        {/* INPUT NOMINAL CICILAN DENGAN PRATINJAU TITIK */}
+                        <div className="space-y-1">
+                          <input type="text" placeholder="Nominal Bayar (Rp)" className="w-full p-3 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
+                          {payAmount && (
+                            <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">
+                              Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(payAmount)}</span>
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="relative">
+                          <Wallet className="absolute left-3 top-3.5 text-slate-400" size={16}/>
+                          <select className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 appearance-none text-slate-700 dark:text-slate-200 cursor-pointer" value={payAccountId} onChange={e => setPayAccountId(e.target.value)}>
+                            <option value="">Pilih Dompet...</option>
+                            {accounts.map(acc => (
+                              <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => submitPay(debt.id)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors">Konfirmasi</button>
+                          <button onClick={() => setPayingDebtId(null)} className="py-2.5 px-4 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-350 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer">Batal</button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             );

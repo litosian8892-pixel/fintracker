@@ -394,6 +394,35 @@ export default function FintrackerApp() {
     }
   };
 
+  // LOGIKA BARU: EDIT CATATAN UTANG/PIUTANG
+  const handleEditDebt = async (id: string, personName: string, amount: number, note: string, dueDate: string) => {
+    if (isSubmittingRef.current) return;
+    if (!user) return;
+
+    const debtToEdit = debts.find(d => d.id === id);
+    if (!debtToEdit) return;
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    try {
+      // Dinamis hitung ulang status, jika nominal baru diubah jadi lebih kecil atau sama dengan nominal yang sudah dibayar
+      const newStatus = debtToEdit.paidAmount >= amount ? "paid" : "active";
+
+      await updateDoc(doc(db, `users/${user.uid}/debts/${id}`), {
+        personName,
+        amount,
+        note,
+        dueDate,
+        status: newStatus
+      });
+    } catch (e) {
+      alert("Gagal memperbarui catatan");
+    } finally {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  };
+
   // LOGIKA PAY DEBT DENGAN KATEGORI DINAMIS "PENGEMBALIAN HUTANG" SAAT TERIMA PIUTANG
   const handlePayDebt = async (debtId: string, payAmount: number, accountId: string) => {
     if (isSubmittingRef.current) return; 
@@ -828,7 +857,11 @@ export default function FintrackerApp() {
               )}
               {activeTab === "debts" && (
                 <DebtsTab 
-                  debts={debts} accounts={accounts} handleAddDebt={handleAddDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
+                  debts={debts} accounts={accounts} 
+                  handleAddDebt={handleAddDebt} 
+                  handleEditDebt={handleEditDebt} // <--- INJEKSI PROP BARU
+                  handlePayDebt={handlePayDebt} 
+                  handleDeleteDebt={handleDeleteDebt} 
                 />
               )}
               {activeTab === "assets" && (
