@@ -58,7 +58,9 @@ export default function FintrackerApp() {
   
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
   const [reportTransactions, setReportTransactions] = useState<TransactionData[]>([]);
-  const [txLimit, setTxLimit] = useState(20);
+  
+  // OPTIMASI LIMIT: Diubah dari 20 menjadi 10 agar lebih ringan
+  const [txLimit, setTxLimit] = useState(10);
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); 
 
   // --- PENYIMPANAN DATA BULAN LALU (MoM TRENDS) ---
@@ -147,7 +149,7 @@ export default function FintrackerApp() {
   const [tAccountId, setTAccountId] = useState("");
   const [tToAccountId, setTToAccountId] = useState("");
   const [tNote, setTNote] = useState("");
-  const [tCategory, setTCategory] = useState(""); // Kategori akan dibiarkan kosong secara default
+  const [tCategory, setTCategory] = useState("");
   const [tDate, setTDate] = useState(new Date().toISOString().split('T')[0]);
 
   // CATEGORY STATES
@@ -268,13 +270,6 @@ export default function FintrackerApp() {
     });
     return () => unsubGlobal();
   }, [user, globalSearch]);
-
-  // LOGIKA AUTO-SELECT KATEGORI DIHAPUS - Hanya mengatur default untuk Transfer
-  useEffect(() => {
-    if (tType === "transfer") {
-      setTCategory("Transfer");
-    }
-  }, [tType]);
 
   // --- FUNCTIONS ---
   const setupDefaultCategories = async (uid: string) => {
@@ -507,7 +502,7 @@ export default function FintrackerApp() {
       await addDoc(collection(db, `users/${user.uid}/accounts`), {
         name: accName, balance: Number(accBalance), type: accType, logo: accLogo, order: accounts.length, 
         isSavings: accIsSavings,
-        targetBalance: accIsSavings && accTargetBalance ? safeEvaluate(accTargetBalance) : null,
+        targetBalance: accIsSavings && accTargetBalance ? safeEvaluate(accTargetBalance) : null, 
         createdAt: serverTimestamp()
       });
       setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); 
@@ -579,7 +574,6 @@ export default function FintrackerApp() {
     if (!user || !tAmount || !tAccountId) return alert("Isi data dengan lengkap!");
     if (tType === "transfer" && (!tToAccountId || tAccountId === tToAccountId)) return alert("Pilih dompet tujuan yang berbeda!");
     
-    // VALIDASI BARU: Jika tipe bukan transfer dan kategori kosong, blokir simpan
     if (tType !== "transfer" && !tCategory) {
       return alert("Kategori transaksi wajib dipilih terlebih dahulu!");
     }
@@ -616,7 +610,6 @@ export default function FintrackerApp() {
           amount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: tNote, category: tCategory, tDate, createdAt: serverTimestamp()
         });
       }
-      // RESET SEMUA TERMASUK KATEGORI
       setTAmount(""); setTNote(""); setTAdminFee(""); setTCategory(""); 
       alert("Transaksi Sukses!");
     } catch (e) { alert("Gagal simpan transaksi"); }
@@ -830,8 +823,11 @@ export default function FintrackerApp() {
       <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
         <MobileHeader user={user} onLogout={() => signOut(auth)} />
         <div className="max-w-5xl w-full mx-auto p-4 md:p-8">
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-            <div className="md:col-span-2 space-y-6">
+            
+            {/* OPTIMASI LAYOUT: Jika bukan di tab Beranda / Laporan, lebarkan penuh menjadi col-span-3 */}
+            <div className={`space-y-6 ${(activeTab === "home" || activeTab === "reports") ? "md:col-span-2" : "md:col-span-3"}`}>
               {activeTab === "home" && (
                 <HomeTab 
                   tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
@@ -886,11 +882,14 @@ export default function FintrackerApp() {
               )}
             </div>
 
-            <HistoryList 
-              transactions={transactions} onDelete={handleDeleteTransaction} 
-              onEdit={openEditModal} 
-              onLoadMore={() => setTxLimit(prev => prev + 20)} hasMore={transactions.length >= txLimit}
-            />
+            {/* OPTIMASI PERFORMA: Hanya tampilkan History List jika berada di Beranda atau Laporan */}
+            {(activeTab === "home" || activeTab === "reports") && (
+              <HistoryList 
+                transactions={transactions} onDelete={handleDeleteTransaction} 
+                onEdit={openEditModal} 
+                onLoadMore={() => setTxLimit(prev => prev + 10)} hasMore={transactions.length >= txLimit}
+              />
+            )}
 
           </div>
         </div>
