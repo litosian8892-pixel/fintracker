@@ -171,7 +171,7 @@ export default function HomeTab({
           className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
             tType === "expense"
               ? "bg-red-500 text-white shadow-md animate-none"
-              : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
           }`}
         >
           <ArrowDownRight size={14} />
@@ -183,7 +183,7 @@ export default function HomeTab({
           className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
             tType === "income"
               ? "bg-emerald-500 text-white shadow-md animate-none"
-              : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
           }`}
         >
           <ArrowUpRight size={14} />
@@ -195,7 +195,7 @@ export default function HomeTab({
           className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${
             tType === "transfer"
               ? "bg-blue-500 text-white shadow-md animate-none"
-              : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
           }`}
         >
           <ArrowRightLeft size={14} />
@@ -242,7 +242,7 @@ export default function HomeTab({
             />
             {tAdminFee && (
               <p className="text-[10px] font-bold text-blue-400 pl-1 animate-in fade-in duration-150">
-                Terbaca: <span className="text-blue-600 dark:text-blue-350 font-black">{formatRupiahTerbaca(tAdminFee)}</span>
+                Terbaca: <span className="text-blue-600 dark:text-blue-300 font-black">{formatRupiahTerbaca(tAdminFee)}</span>
               </p>
             )}
           </div>
@@ -379,7 +379,7 @@ export default function HomeTab({
                 <input 
                   type="text" 
                   placeholder="Ketik untuk mencari kategori..." 
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-450"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
