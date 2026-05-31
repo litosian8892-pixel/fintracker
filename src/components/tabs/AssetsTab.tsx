@@ -1,18 +1,43 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, HelpCircle } from "lucide-react";
+import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, HelpCircle, Wallet } from "lucide-react";
 import { AccountData, WalletTypeData } from "../../types";
 
+// --- DESAIN BARU: CLEAN, MODERN, READABLE (No Heavy Gradients) ---
 const getCardDesign = (type: string) => {
   const t = type.toLowerCase();
   if (t.includes("bank") || t.includes("kartu") || t.includes("credit") || t.includes("savings")) {
-    return { bg: "bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-950 text-white shadow-lg", icon: <CreditCard size={14} />, chip: "bg-amber-400/20 border border-amber-300/30", textMuted: "text-blue-200/50" };
+    return { 
+      bg: "bg-white dark:bg-slate-900 border-2 border-blue-100 dark:border-blue-900/30 hover:border-blue-300 dark:hover:border-blue-800", 
+      icon: <CreditCard size={18} className="text-blue-600 dark:text-blue-400" />, 
+      iconBg: "bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/50",
+      chip: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800", 
+      progressBar: "bg-blue-500"
+    };
   } else if (t.includes("wallet") || t.includes("gopay") || t.includes("ovo") || t.includes("dana") || t.includes("pay")) {
-    return { bg: "bg-gradient-to-br from-purple-900 via-violet-800 to-pink-950 text-white shadow-lg", icon: <Smartphone size={14} />, chip: "bg-pink-400/20 border border-pink-300/30", textMuted: "text-purple-200/50" };
+    return { 
+      bg: "bg-white dark:bg-slate-900 border-2 border-purple-100 dark:border-purple-900/30 hover:border-purple-300 dark:hover:border-purple-800", 
+      icon: <Smartphone size={18} className="text-purple-600 dark:text-purple-400" />, 
+      iconBg: "bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/50",
+      chip: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-800",
+      progressBar: "bg-purple-500" 
+    };
   } else if (t.includes("cash") || t.includes("dompet") || t.includes("tunai")) {
-    return { bg: "bg-gradient-to-br from-teal-900 via-emerald-900 to-green-950 text-white shadow-lg", icon: <Banknote size={14} />, chip: "bg-yellow-400/20 border border-yellow-300/30", textMuted: "text-emerald-200/50" };
+    return { 
+      bg: "bg-white dark:bg-slate-900 border-2 border-emerald-100 dark:border-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-800", 
+      icon: <Banknote size={18} className="text-emerald-600 dark:text-emerald-400" />, 
+      iconBg: "bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/50",
+      chip: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800",
+      progressBar: "bg-emerald-500" 
+    };
   } else {
-    return { bg: "bg-gradient-to-br from-slate-800 via-slate-900 to-neutral-950 text-white shadow-lg", icon: <HelpCircle size={14} />, chip: "bg-slate-400/20 border border-slate-300/30", textMuted: "text-slate-300/50" };
+    return { 
+      bg: "bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700", 
+      icon: <Wallet size={18} className="text-slate-600 dark:text-slate-400" />, 
+      iconBg: "bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50",
+      chip: "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700",
+      progressBar: "bg-slate-500" 
+    };
   }
 };
 
@@ -60,17 +85,12 @@ export default function AssetsTab({
   editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder
 }: AssetsTabProps) {
   
-  // STATE UNTUK KONTROL DETAILS SECARA KONSISTEN (ANTI RE-RENDER BUG)
   const [isManageOpen, setIsManageOpen] = useState(false);
 
-  // Otomatis buka laci kelola jika user sedang dalam mode edit akun
   useEffect(() => {
-    if (editingAccId) {
-      setIsManageOpen(true);
-    }
+    if (editingAccId) setIsManageOpen(true);
   }, [editingAccId]);
 
-  // DEKLARASI TIPE DATUM SECARA EKSPLISIT PADA FILTER DAN REDUCE (TAJAM DI STRICT MODE)
   const activeAccounts = accounts.filter((a: AccountData) => !a.isSavings);
   const savingsAccounts = accounts.filter((a: AccountData) => a.isSavings);
   const totalActiveBalance = activeAccounts.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
@@ -90,32 +110,34 @@ export default function AssetsTab({
   return (
     <div className="space-y-6 animate-in fade-in">
       {/* TOTAL BALANCE CARD */}
-      <div className="bg-blue-600 p-8 rounded-[35px] text-white shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-10"><CreditCard size={100} /></div>
-        <p className="text-blue-100 text-[10px] font-bold uppercase tracking-widest mb-1 relative z-10">Total Uang Bisa Dipakai</p>
-        <h2 className="text-4xl font-black italic relative z-10">Rp {totalActiveBalance.toLocaleString('id-ID')}</h2>
+      <div className="bg-blue-600 p-8 md:p-10 rounded-[35px] text-white shadow-xl relative overflow-hidden">
+        <div className="absolute -top-4 -right-4 p-8 opacity-10"><CreditCard size={120} /></div>
+        <p className="text-blue-100 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1 relative z-10">Total Uang Bisa Dipakai</p>
+        <h2 className="text-4xl md:text-5xl font-black italic relative z-10">Rp {totalActiveBalance.toLocaleString('id-ID')}</h2>
       </div>
 
-      {/* DOMPET AKTIF */}
+      {/* DOMPET AKTIF DENGAN GRID DESKTOP (4 KOLOM) */}
       <div className="space-y-3">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 italic px-1 text-lg transition-colors">Dompet Aktif</h3>
-        {activeAccounts.length === 0 ? <p className="text-center py-6 text-slate-400 text-sm italic">Belum ada dompet aktif</p> : (
-          <div className="grid grid-cols-3 gap-2.5">
+        {activeAccounts.length === 0 ? <p className="text-center py-6 text-slate-400 text-sm italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">Belum ada dompet aktif</p> : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {activeAccounts.map((acc: AccountData) => {
               const design = getCardDesign(acc.type);
               return (
-                <div key={acc.id} className={`${design.bg} p-3 rounded-[20px] h-28 flex flex-col justify-between relative overflow-hidden active:scale-95`}>
-                    <div className="absolute -top-8 -right-8 w-16 h-16 bg-white/5 rounded-full blur-lg"></div>
-                    <div className="flex justify-between items-start">
-                      {acc.logo ? <img src={acc.logo} alt="custom-logo" className="w-6 h-6 rounded-lg object-contain bg-white/90 p-0.5 border border-white/20 shadow-sm" /> : (
-                        <div className="w-6 h-6 bg-white/10 backdrop-blur-md rounded-lg flex items-center justify-center border border-white/10">{design.icon}</div>
+                <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[120px] md:min-h-[135px]`}>
+                    
+                    <div className="flex justify-between items-start mb-4">
+                      {acc.logo ? (
+                        <img src={acc.logo} alt="custom-logo" className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-contain bg-white p-1 border border-slate-100 shadow-sm" /> 
+                      ) : (
+                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div>
                       )}
-                      <div className={`w-5 h-3.5 rounded-sm ${design.chip}`}></div>
+                      <div className={`px-2 py-1 rounded-md text-[8px] md:text-[10px] font-black uppercase tracking-widest ${design.chip}`}>{acc.type}</div>
                     </div>
-                    <div className="space-y-0.5 mt-auto z-10">
-                      <p className="text-xs font-black tracking-tight leading-none truncate">{acc.name}</p>
-                      <p className={`text-[8px] font-bold uppercase tracking-widest leading-none ${design.textMuted}`}>{acc.type}</p>
-                      <p className="text-[10px] font-black tracking-tight pt-0.5 whitespace-nowrap overflow-hidden">Rp{acc.balance.toLocaleString('id-ID')}</p>
+                    
+                    <div className="space-y-0.5 mt-auto">
+                      <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none truncate mb-1.5">{acc.name}</p>
+                      <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate">Rp {acc.balance.toLocaleString('id-ID')}</p>
                     </div>
                 </div>
               );
@@ -124,52 +146,52 @@ export default function AssetsTab({
         )}
       </div>
 
-      {/* TABUNGAN KHUSUS (DENGAN VISUAL PROGRESS BAR TARGET) */}
+      {/* TABUNGAN KHUSUS DENGAN GRID DESKTOP (2 KOLOM) */}
       {savingsAccounts.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="flex justify-between items-end px-1">
              <h3 className="font-bold text-slate-800 dark:text-slate-100 italic text-lg transition-colors">Tabungan Saya</h3>
-             <span className="text-[10px] font-black text-emerald-600">Total: Rp {totalSavingsBalance.toLocaleString('id-ID')}</span>
+             <span className="text-[10px] md:text-xs font-black text-emerald-600 dark:text-emerald-400">Total: Rp {totalSavingsBalance.toLocaleString('id-ID')}</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-95">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             {savingsAccounts.map((acc: AccountData) => {
               const design = getCardDesign(acc.type);
-              
-              // Hitung Persentase Target Tabungan
               const hasTarget = acc.targetBalance && acc.targetBalance > 0;
               const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
 
               return (
-                <div key={acc.id} className={`${design.bg} border border-emerald-500/20 p-4 rounded-[25px] h-[115px] flex flex-col justify-between relative overflow-hidden`}>
-                    <div className="absolute -top-8 -right-8 w-16 h-16 bg-white/5 rounded-full blur-lg"></div>
-                    <div className="flex justify-between items-start">
-                      {acc.logo ? <img src={acc.logo} alt="custom-logo" className="w-7 h-7 rounded-lg object-contain bg-white/90 p-0.5 border border-white/20 shadow-sm" /> : (
-                        <div className="w-7 h-7 bg-emerald-500/20 backdrop-blur-md rounded-lg flex items-center justify-center border border-emerald-500/30 text-emerald-300"><Banknote size={16}/></div>
+                <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[130px] md:min-h-[145px]`}>
+                    
+                    <div className="flex justify-between items-start mb-4">
+                      {acc.logo ? (
+                        <img src={acc.logo} alt="custom-logo" className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-contain bg-white p-1 border border-slate-100 shadow-sm" /> 
+                      ) : (
+                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div>
                       )}
                       {hasTarget ? (
-                        <div className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/30 border border-emerald-400/30 text-emerald-200 font-bold">
+                        <div className={`text-[9px] md:text-[10px] px-2.5 py-1 rounded-md font-black uppercase tracking-widest ${percentage >= 100 ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : design.chip}`}>
                           {percentage.toFixed(0)}% Terisi
                         </div>
                       ) : (
-                        <div className="text-[9px] px-2 py-0.5 rounded-full bg-slate-500/30 border border-slate-400/30 text-slate-300 font-bold">No Target</div>
+                        <div className="text-[9px] md:text-[10px] px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">No Target</div>
                       )}
                     </div>
                     
-                    <div className="space-y-1 mt-auto z-10 w-full">
+                    <div className="space-y-1 mt-auto w-full">
                       <div className="flex justify-between items-end">
                         <div>
-                          <p className="text-xs font-black tracking-tight leading-none text-emerald-50 mb-1">{acc.name}</p>
-                          <p className="text-[11px] font-black tracking-tight leading-none text-white">Rp{acc.balance.toLocaleString('id-ID')}</p>
+                          <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5">{acc.name}</p>
+                          <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate">Rp {acc.balance.toLocaleString('id-ID')}</p>
                         </div>
                         {hasTarget && (
-                          <span className="text-[8px] text-emerald-200 font-bold">Target: Rp{acc.targetBalance!.toLocaleString('id-ID')}</span>
+                          <span className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold">Target: Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>
                         )}
                       </div>
 
                       {/* PROGRESS BAR TARGET TABUNGAN */}
                       {hasTarget && (
-                        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden border border-white/5 mt-1">
-                          <div className="h-full bg-emerald-400 rounded-full transition-all duration-1000 ease-out" style={{ width: `${percentage}%` }}></div>
+                        <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 mt-2">
+                          <div className={`h-full ${percentage >= 100 ? 'bg-emerald-500' : design.progressBar} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div>
                         </div>
                       )}
                     </div>
@@ -184,29 +206,32 @@ export default function AssetsTab({
       <details 
         open={isManageOpen} 
         onToggle={(e) => setIsManageOpen(e.currentTarget.open)}
-        className="bg-slate-200/50 dark:bg-slate-800/40 rounded-[25px] p-5 border border-slate-200/50 dark:border-slate-700/50 transition-all duration-200"
+        className="bg-white dark:bg-slate-900 rounded-[25px] p-5 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-200"
       >
-        <summary className="text-[10px] font-black text-slate-500 dark:text-slate-300 cursor-pointer uppercase tracking-widest outline-none select-none">⚙️ Kelola Akun & Dompet</summary>
+        <summary className="text-[10px] font-black text-slate-500 dark:text-slate-400 cursor-pointer uppercase tracking-widest outline-none select-none flex items-center gap-2">
+          <span>⚙️ Kelola Akun & Dompet</span>
+        </summary>
         <div className="mt-5 space-y-4">
           
           {/* FORM TAMBAH DOMPET BARU */}
-          <div className="space-y-2">
-            <select className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl text-xs border-none outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
+          <div className="space-y-2 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 mb-3">Tambah Dompet Baru</h4>
+            <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
                 {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
             </select>
-            <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl text-xs border-none outline-none font-bold text-slate-700 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
-            <input type="number" placeholder="Saldo Awal" className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl text-xs border-none outline-none font-bold text-slate-700 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
+            <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
+            <input type="number" placeholder="Saldo Awal" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
             
             {/* CUSTOM CHECKBOX TAMBAH TABUNGAN */}
             <div 
               onClick={() => setAccIsSavings(!accIsSavings)}
               className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none"
             >
-              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
+              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>
                 {accIsSavings && <Check size={10} strokeWidth={4} />}
               </div>
               <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                Simpan sebagai Tabungan (Sembunyikan saldo)
+                Simpan sebagai Tabungan (Sembunyikan saldo utama)
               </span>
             </div>
 
@@ -216,12 +241,12 @@ export default function AssetsTab({
                 <input 
                   type="text" 
                   placeholder="Target Nominal Tabungan (Opsional)" 
-                  className="w-full p-3 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-800 rounded-xl text-xs border-none outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300" 
+                  className="w-full p-3.5 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" 
                   value={accTargetBalance} 
                   onChange={(e) => setAccTargetBalance(e.target.value)} 
                 />
                 {accTargetBalance && (
-                  <p className="text-[10px] font-bold text-emerald-650 dark:text-emerald-400/80 pl-1 animate-in fade-in duration-150">
+                  <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">
                     Terbaca: <span className="font-black">{formatRupiahTerbaca(accTargetBalance)}</span>
                   </p>
                 )}
@@ -236,27 +261,28 @@ export default function AssetsTab({
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{accLogo ? "Logo Siap Diunggah ✅" : "Format PNG/JPG (Maks 500KB)"}</span>
               </div>
             </div>
-            <button onClick={handleCreateAccount} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg cursor-pointer transition-colors">Simpan Dompet</button>
+            <button onClick={handleCreateAccount} className="w-full py-3.5 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg cursor-pointer transition-colors">Simpan Dompet Baru</button>
           </div>
 
-          <div className="pt-4 border-t border-slate-300/30 dark:border-slate-700 space-y-2">
-            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Daftar Dompet (Ubah / Urutan / Hapus)</p>
+          {/* DAFTAR EDIT DOMPET */}
+          <div className="pt-4 space-y-3">
+            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Daftar Dompet (Ubah / Urutan / Hapus)</p>
             {accounts.map((acc: AccountData, index: number) => (
-              <div key={acc.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl flex flex-col gap-3 shadow-sm border border-slate-100 dark:border-slate-800 transition-colors duration-200">
+              <div key={acc.id} className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl flex flex-col gap-3 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
                 {editingAccId === acc.id ? (
                   <div className="space-y-3 animate-in fade-in duration-200">
-                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 text-xs rounded-xl border border-blue-200 dark:border-blue-900 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
-                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Saldo Dompet</label><input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 text-xs rounded-xl border border-blue-200 dark:border-blue-900 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} /></div>
+                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-900/50 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
+                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Saldo Dompet</label><input type="number" className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-900/50 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} /></div>
                     
                     {/* CUSTOM CHECKBOX EDIT TABUNGAN */}
                     <div 
                       onClick={() => setEditAccIsSavings(!editAccIsSavings)}
                       className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none"
                     >
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>
                         {editAccIsSavings && <Check size={10} strokeWidth={4} />}
                       </div>
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                      <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
                         Jadikan Tabungan (Sembunyikan dari total saldo)
                       </span>
                     </div>
@@ -265,9 +291,9 @@ export default function AssetsTab({
                     {editAccIsSavings && (
                       <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Target Tabungan</label>
-                        <input type="text" placeholder="Target Nominal Tabungan" className="w-full bg-slate-50 dark:bg-slate-900 p-2.5 text-xs border border-blue-200 dark:border-slate-700 rounded-xl outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-350" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+                        <input type="text" placeholder="Target Nominal Tabungan" className="w-full bg-white dark:bg-slate-900 p-3 text-xs border border-blue-200 dark:border-slate-700 rounded-xl outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
                         {editAccTargetBalance && (
-                          <p className="text-[10px] font-bold text-emerald-650 dark:text-emerald-400/80 pl-1 animate-in fade-in duration-150">
+                          <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">
                             Terbaca: <span className="font-black">{formatRupiahTerbaca(editAccTargetBalance)}</span>
                           </p>
                         )}
@@ -276,34 +302,39 @@ export default function AssetsTab({
 
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Logo Dompet</label>
-                      <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 p-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                        <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, true)} className="hidden" id={`edit-logo-file-${acc.id}`} /><label htmlFor={`edit-logo-file-${acc.id}`} className="cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg text-xs font-bold flex items-center gap-2"><Upload size={14}/> Ganti Logo</label>
+                      <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                        <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, true)} className="hidden" id={`edit-logo-file-${acc.id}`} /><label htmlFor={`edit-logo-file-${acc.id}`} className="cursor-pointer bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700"><Upload size={14}/> Ganti Logo</label>
                         <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{editAccLogo ? "Logo Baru Terpasang ✅" : "Logo lama tetap aktif"}</span>
                       </div>
                     </div>
-                    <div className="flex gap-2 pt-1">
-                      <button onClick={() => handleEditAccount(acc.id)} className="flex-1 py-2.5 bg-green-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-lg active:scale-95 transition-all cursor-pointer"><Check size={14}/> Simpan</button>
-                      <button onClick={() => setEditingAccId(null)} className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer"><X size={14}/> Batal</button>
+                    <div className="flex gap-2 pt-2">
+                      <button onClick={() => handleEditAccount(acc.id)} className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"><Check size={14}/> Simpan Perubahan</button>
+                      <button onClick={() => setEditingAccId(null)} className="py-3 px-5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-750"><X size={14}/> Batal</button>
                     </div>
                   </div>
                 ) : (
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      {acc.logo ? <img src={acc.logo} className="w-8 h-8 rounded-lg object-contain bg-slate-100 dark:bg-slate-800 p-1" alt="logo" /> : <div className="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-500 dark:text-slate-400">{getCardDesign(acc.type).icon}</div>}
+                      {acc.logo ? (
+                        <img src={acc.logo} className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200 dark:border-slate-700 p-1 shadow-sm" alt="logo" /> 
+                      ) : (
+                        <div className="w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400">{getCardDesign(acc.type).icon}</div>
+                      )}
                       <div>
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-none">{acc.name}</p>
-                          {acc.isSavings && <span className="text-[8px] bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 px-1 py-0.5 rounded font-black">TABUNGAN</span>}
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-none">{acc.name}</p>
+                          {acc.isSavings && <span className="text-[8px] bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Tabungan</span>}
                         </div>
-                        <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 leading-none mb-0.5">Rp {acc.balance.toLocaleString("id-ID")}</p>
-                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{acc.type}</p>
+                        <p className="text-xs font-black text-blue-600 dark:text-blue-400 leading-none mb-1">Rp {acc.balance.toLocaleString("id-ID")}</p>
+                        <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{acc.type}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => moveAccountOrder(index, "up")} disabled={index === 0} className={`p-1.5 rounded-lg border cursor-pointer ${index === 0 ? "text-slate-200 border-slate-100 dark:border-slate-850 dark:text-slate-800" : "text-slate-400 border-slate-200 dark:border-slate-750 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"}`}><ArrowUp size={12}/></button>
-                      <button onClick={() => moveAccountOrder(index, "down")} disabled={index === accounts.length - 1} className={`p-1.5 rounded-lg border cursor-pointer ${index === accounts.length - 1 ? "text-slate-200 border-slate-100 dark:border-slate-850 dark:text-slate-800" : "text-slate-400 border-slate-200 dark:border-slate-750 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"}`}><ArrowDown size={12}/></button>
-                      <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); setEditAccIsSavings(!!acc.isSavings); setEditAccTargetBalance(acc.targetBalance?.toString() || ""); }} className="text-slate-300 hover:text-blue-500 dark:text-slate-600 dark:hover:text-blue-400 p-1.5 cursor-pointer"><Edit2 size={12}/></button>
-                      <button onClick={() => deleteAccount(acc.id, acc.name)} className="text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 p-1.5 cursor-pointer"><Trash2 size={12}/></button>
+                      <button onClick={() => moveAccountOrder(index, "up")} disabled={index === 0} className={`p-2 rounded-xl bg-white dark:bg-slate-900 border cursor-pointer ${index === 0 ? "text-slate-200 border-slate-100 dark:border-slate-850 dark:text-slate-800" : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-800 hover:text-blue-600 dark:hover:text-blue-400"}`}><ArrowUp size={14}/></button>
+                      <button onClick={() => moveAccountOrder(index, "down")} disabled={index === accounts.length - 1} className={`p-2 rounded-xl bg-white dark:bg-slate-900 border cursor-pointer ${index === accounts.length - 1 ? "text-slate-200 border-slate-100 dark:border-slate-850 dark:text-slate-800" : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-800 hover:text-blue-600 dark:hover:text-blue-400"}`}><ArrowDown size={14}/></button>
+                      <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                      <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); setEditAccIsSavings(!!acc.isSavings); setEditAccTargetBalance(acc.targetBalance?.toString() || ""); }} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 hover:border-blue-300 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:border-blue-800 cursor-pointer transition-colors"><Edit2 size={14}/></button>
+                      <button onClick={() => deleteAccount(acc.id, acc.name)} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-red-500 hover:border-red-300 dark:text-slate-400 dark:hover:text-red-400 dark:hover:border-red-800 cursor-pointer transition-colors"><Trash2 size={14}/></button>
                     </div>
                   </div>
                 )}
