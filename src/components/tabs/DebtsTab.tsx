@@ -7,7 +7,7 @@ interface DebtsTabProps {
   debts: DebtData[];
   accounts: AccountData[];
   handleAddDebt: (type: "debt" | "receivable", person: string, amount: number, note: string, dueDate: string, accountId?: string) => void;
-  handleEditDebt: (id: string, person: string, amount: number, note: string, dueDate: string) => void; // <--- PROP EDIT
+  handleEditDebt: (id: string, person: string, amount: number, note: string, dueDate: string) => void; 
   handlePayDebt: (debtId: string, payAmount: number, accountId: string) => void;
   handleDeleteDebt: (debtId: string) => void;
 }
@@ -145,10 +145,16 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
               )}
             </div>
             
-            {/* INPUT TANGGAL JATUH TEMPO */}
+            {/* INPUT TANGGAL JATUH TEMPO - DENGAN AUTO POPUP SHOWPICKER */}
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 px-1">📅 Jatuh Tempo (Opsional)</label>
-              <input type="date" className="w-full p-3.5 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-slate-700 dark:text-slate-100 cursor-pointer appearance-none" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+              <input 
+                type="date" 
+                className="w-full p-3.5 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-slate-700 dark:text-slate-100 cursor-pointer" 
+                value={dueDate} 
+                onChange={e => setDueDate(e.target.value)} 
+                onClick={(e) => (e.target as HTMLInputElement).showPicker && (e.target as HTMLInputElement).showPicker()}
+              />
             </div>
 
             {/* DROPDOWN PILIHAN DOMPET */}
@@ -207,9 +213,16 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
                       )}
                     </div>
 
+                    {/* INPUT TANGGAL EDIT - DENGAN AUTO POPUP SHOWPICKER */}
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 px-1">📅 Jatuh Tempo (Opsional)</label>
-                      <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer appearance-none" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} />
+                      <input 
+                        type="date" 
+                        className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer" 
+                        value={editDueDate} 
+                        onChange={e => setEditDueDate(e.target.value)} 
+                        onClick={(e) => (e.target as HTMLInputElement).showPicker && (e.target as HTMLInputElement).showPicker()}
+                      />
                     </div>
 
                     <input type="text" placeholder="Catatan / Tujuan pinjam" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editNote} onChange={e => setEditNote(e.target.value)} />
