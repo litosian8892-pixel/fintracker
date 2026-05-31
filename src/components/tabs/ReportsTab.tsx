@@ -139,10 +139,11 @@ export default function ReportsTab({
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2">🔍 Pencarian Riwayat (Semua Waktu)</h3>
         <div className="relative">
           <Download className="absolute left-3 top-3.5 text-slate-400 rotate-90" size={16} />
+          {/* PERBAIKAN KONTRAS PADA INPUT PENCARIAN */}
           <input 
             type="text" 
             placeholder="Cari pengeluaran/bensin/servis motor..." 
-            className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white dark:focus:bg-slate-750 text-slate-800 dark:text-slate-100 placeholder-slate-400"
+            className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400"
             value={globalSearch}
             onChange={(e) => setGlobalSearch(e.target.value)}
           />
