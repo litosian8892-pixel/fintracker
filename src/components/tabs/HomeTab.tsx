@@ -29,16 +29,11 @@ interface HomeTabProps {
 // --- PARSER MATEMATIKA AMAN (ANTI-EVAL & TAHAN EROR SINTAKS) ---
 const safeEvaluate = (expr: string): number => {
   if (!expr) return 0;
-  // Bersihkan input, hanya izinkan angka, operator dasar, kurung, dan titik desimal
   let sanitized = expr.replace(/[^0-9+\-*/().]/g, "");
   if (!sanitized) return 0;
-
-  // Bersihkan operator menggantung di akhir (misalnya: "15000+" menjadi "15000")
   sanitized = sanitized.replace(/[+\-*/(.]*$/, "");
   if (!sanitized) return 0;
-
   try {
-    // Evaluasi terisolasi menggunakan Function constructor di dalam strict mode
     const result = new Function(`"use strict"; return (${sanitized});`)();
     if (typeof result === "number" && isFinite(result)) {
       return result;
@@ -75,10 +70,7 @@ export default function HomeTab({
   const [showCatModal, setShowCatModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   
-  // STATE KEYPAD KUSTOM (PENCATAT AKTIF)
   const [activeKeypad, setActiveKeypad] = useState<"amount" | "adminFee" | null>(null);
-
-  // DETEKSI PERANGKAT RESPONSIF (MOBILE vs DESKTOP)
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -117,15 +109,23 @@ export default function HomeTab({
     setTType(newType);
     setTAccountId("");
     setTToAccountId("");
+    // HAPUS KATEGORI TERPILIH SAAT PINDAH TAB (KECUALI KE TRANSFER)
+    if (newType !== "transfer") {
+      setTCategory("");
+    }
   };
 
+  // LOGIKA AUTO-SELECT KATEGORI DIHAPUS 
+  // Sekarang form kategori akan selalu kosong di awal dan mewajibkan user memilih.
   useEffect(() => {
     if (tType === "transfer") {
       setTCategory("Transfer");
     } else {
+      // Jika user mengubah tipe transaksi, pastikan kategori yang sudah ada itu valid untuk tipe tersebut
+      // Jika tidak valid (misal dari Gaji ke Pengeluaran), hapus state-nya.
       const matchingCats = categories.filter((cat) => cat.type === tType);
-      if (matchingCats.length > 0 && !matchingCats.some(c => c.name === tCategory)) {
-        setTCategory(matchingCats[0].name);
+      if (tCategory && !matchingCats.some(c => c.name === tCategory)) {
+        setTCategory("");
       }
     }
   }, [tType, categories, tCategory, setTCategory]);
@@ -134,7 +134,6 @@ export default function HomeTab({
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // --- LOGIKA FEEDBACK GETARAN RINGAN PADA HP ---
   const triggerHaptic = () => {
     if (typeof window !== "undefined" && navigator.vibrate) {
       navigator.vibrate(10);
@@ -205,7 +204,7 @@ export default function HomeTab({
       </div>
 
       <div className="space-y-4">
-        {/* Input Nominal Utama (KOREKSI LAYOUT BACKGROUND UNTUK DESTOP & HP) */}
+        {/* Input Nominal Utama */}
         <div className="space-y-1">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
             NOMINAL (RP)
@@ -226,7 +225,7 @@ export default function HomeTab({
           )}
         </div>
 
-        {/* Biaya Admin Tambahan (KOREKSI LAYOUT BACKGROUND UNTUK DESTOP & HP) */}
+        {/* Biaya Admin Tambahan */}
         {tType === "transfer" && (
           <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
             <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
@@ -264,7 +263,6 @@ export default function HomeTab({
             />
           </div>
 
-          {/* SINKRONISASI PEMILIH KATEGORI (KOREKSI HOVER STATE GELAP) */}
           {tType !== "transfer" ? (
             <div className="space-y-1 min-w-0"> 
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
@@ -274,7 +272,10 @@ export default function HomeTab({
                 onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }}
                 className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
               >
-                <span className="truncate">{tCategory || "Pilih Kategori"}</span>
+                {/* EFEK WARNA PUDAR JIKA KATEGORI BELUM DIPILIH */}
+                <span className={`truncate ${!tCategory ? "text-slate-400 dark:text-slate-500 font-medium" : ""}`}>
+                  {tCategory || "Pilih Kategori..."}
+                </span>
                 <ChevronDown size={14} className="text-slate-400 shrink-0" />
               </div>
             </div>
@@ -357,7 +358,7 @@ export default function HomeTab({
         </button>
       </div>
 
-      {/* --- POP-UP MODAL CUSTOM KATEGORI 2-KOLOM (KOREKSI INPUT PENCARIAN TEMA GELAP) --- */}
+      {/* --- POP-UP MODAL CUSTOM KATEGORI 2-KOLOM --- */}
       {showCatModal && tType !== "transfer" && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800">
@@ -436,7 +437,7 @@ export default function HomeTab({
         </div>
       )}
 
-      {/* --- DRAW KEYPAD KALKULATOR KUSTOM (HANYA AKTIF DI SELULER DENGAN INTEGRASI TEMA RESPONSIF) --- */}
+      {/* --- DRAW KEYPAD KALKULATOR KUSTOM --- */}
       {isMobile && activeKeypad && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
