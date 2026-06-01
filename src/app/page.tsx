@@ -110,7 +110,7 @@ export default function FintrackerApp() {
   const [accLogo, setAccLogo] = useState<string>("");
   const [accIsSavings, setAccIsSavings] = useState(false); 
   const [accTargetBalance, setAccTargetBalance] = useState(""); 
-  const [accExcludeFromTotal, setAccExcludeFromTotal] = useState(false); // <--- STATE BARU
+  const [accExcludeFromTotal, setAccExcludeFromTotal] = useState(false); 
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [editAccName, setEditAccName] = useState("");
@@ -118,7 +118,7 @@ export default function FintrackerApp() {
   const [editAccLogo, setEditAccLogo] = useState<string>("");
   const [editAccIsSavings, setEditAccIsSavings] = useState(false); 
   const [editAccTargetBalance, setEditAccTargetBalance] = useState(""); 
-  const [editAccExcludeFromTotal, setEditAccExcludeFromTotal] = useState(false); // <--- STATE BARU
+  const [editAccExcludeFromTotal, setEditAccExcludeFromTotal] = useState(false); 
 
   // States: Transaction
   const [tAmount, setTAmount] = useState("");
@@ -397,7 +397,7 @@ export default function FintrackerApp() {
         name: accName, balance: Number(accBalance), type: accType, logo: accLogo, order: accounts.length, 
         isSavings: accIsSavings,
         targetBalance: accIsSavings && accTargetBalance ? safeEvaluate(accTargetBalance) : null, 
-        excludeFromTotal: accExcludeFromTotal, // <--- INJEKSI KE DATABASE
+        excludeFromTotal: accExcludeFromTotal,
         createdAt: serverTimestamp()
       });
       setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); setAccExcludeFromTotal(false);
@@ -423,7 +423,7 @@ export default function FintrackerApp() {
         name: editAccName, balance: Number(editAccBalance), logo: editAccLogo, 
         isSavings: editAccIsSavings,
         targetBalance: editAccIsSavings && editAccTargetBalance ? safeEvaluate(editAccTargetBalance) : null,
-        excludeFromTotal: editAccExcludeFromTotal // <--- INJEKSI KE DATABASE
+        excludeFromTotal: editAccExcludeFromTotal
       });
       setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false);
       alert("Dompet berhasil diperbarui!");
@@ -450,7 +450,7 @@ export default function FintrackerApp() {
 
   const handleTransaction = async () => {
     if (isSubmittingRef.current) return; 
-    if (!user || !tAmount || !tAccountId) return alert("Isi data dengan lengkap!");
+    if (!user || !tAmount || !tAccountId) return alert("Isi data dompet dan nominal dengan lengkap!");
     if (tType === "transfer" && (!tToAccountId || tAccountId === tToAccountId)) return alert("Pilih dompet tujuan yang berbeda!");
     if (tType !== "transfer" && !tCategory) return alert("Kategori transaksi wajib dipilih terlebih dahulu!");
     
@@ -475,7 +475,15 @@ export default function FintrackerApp() {
         await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: newBal });
         await addDoc(collection(db, `users/${user.uid}/transactions`), { amount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: tNote, category: tCategory, tDate, createdAt: serverTimestamp() });
       }
-      setTAmount(""); setTNote(""); setTAdminFee(""); setTCategory(""); 
+      
+      // LOGIKA RESET KESELURUHAN (TERMASUK DOMPET)
+      setTAmount(""); 
+      setTNote(""); 
+      setTAdminFee(""); 
+      setTCategory(""); 
+      setTAccountId(""); // <--- RESET DOMPET SUMBER
+      setTToAccountId(""); // <--- RESET DOMPET TUJUAN
+      
       alert("Transaksi Sukses!");
     } catch (e) { alert("Gagal simpan transaksi"); }
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
@@ -613,7 +621,6 @@ export default function FintrackerApp() {
       <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
         <MobileHeader user={user} onLogout={() => signOut(auth)} />
         <div className="max-w-5xl w-full mx-auto p-4 md:p-8">
-          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
             <div className={`space-y-6 ${(activeTab === "home" || activeTab === "reports") ? "md:col-span-2" : "md:col-span-3"}`}>
               {activeTab === "home" && (
@@ -646,11 +653,8 @@ export default function FintrackerApp() {
                   accName={accName} setAccName={setAccName} accBalance={accBalance} setAccBalance={setAccBalance}
                   accLogo={accLogo} handleLogoUpload={handleLogoUpload} accIsSavings={accIsSavings} setAccIsSavings={setAccIsSavings} 
                   accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} 
-                  
-                  // MENGIRIM PROP STATE PENGECUALIAN TOTAL BARU KE ASSETS TAB
                   accExcludeFromTotal={accExcludeFromTotal} setAccExcludeFromTotal={setAccExcludeFromTotal}
                   editAccExcludeFromTotal={editAccExcludeFromTotal} setEditAccExcludeFromTotal={setEditAccExcludeFromTotal}
-
                   handleCreateAccount={handleCreateAccount} editingAccId={editingAccId} setEditingAccId={setEditingAccId} 
                   editAccName={editAccName} setEditAccName={setEditAccName} editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} 
                   editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} 
