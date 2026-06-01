@@ -1,9 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, HelpCircle, Wallet } from "lucide-react";
+import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, Wallet } from "lucide-react";
 import { AccountData, WalletTypeData } from "../../types";
 
-// --- DESAIN BARU: CLEAN, MODERN, READABLE (No Heavy Gradients) ---
 const getCardDesign = (type: string) => {
   const t = type.toLowerCase();
   if (t.includes("bank") || t.includes("kartu") || t.includes("credit") || t.includes("savings")) {
@@ -41,7 +40,6 @@ const getCardDesign = (type: string) => {
   }
 };
 
-// --- PARSER MATEMATIKA AMAN (ANTI-EVAL & TAHAN EROR SINTAKS) ---
 const safeEvaluate = (expr: string): number => {
   if (!expr) return 0;
   let sanitized = expr.replace(/[^0-9+\-*/().]/g, "");
@@ -50,9 +48,7 @@ const safeEvaluate = (expr: string): number => {
   if (!sanitized) return 0;
   try {
     const result = new Function(`"use strict"; return (${sanitized});`)();
-    if (typeof result === "number" && isFinite(result)) {
-      return result;
-    }
+    if (typeof result === "number" && isFinite(result)) return result;
     return 0;
   } catch {
     const fallback = parseFloat(sanitized);
@@ -68,6 +64,11 @@ interface AssetsTabProps {
   accLogo: string; handleLogoUpload: (e: React.ChangeEvent<HTMLInputElement>, isEdit?: boolean) => void;
   accIsSavings: boolean; setAccIsSavings: (val: boolean) => void; 
   accTargetBalance: string; setAccTargetBalance: (val: string) => void;
+  
+  // PROPS BARU UNTUK KECUALIKAN TOTAL
+  accExcludeFromTotal: boolean; setAccExcludeFromTotal: (val: boolean) => void;
+  editAccExcludeFromTotal: boolean; setEditAccExcludeFromTotal: (val: boolean) => void;
+
   handleCreateAccount: () => void;
   editingAccId: string | null; setEditingAccId: (val: string | null) => void;
   editAccName: string; setEditAccName: (val: string) => void;
@@ -81,8 +82,9 @@ interface AssetsTabProps {
 }
 
 export default function AssetsTab({
-  accounts, walletTypes, accType, setAccType, accName, setAccName, accBalance, setAccBalance, accLogo, handleLogoUpload, accIsSavings, setAccIsSavings, accTargetBalance, setAccTargetBalance, handleCreateAccount,
-  editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder
+  accounts, walletTypes, accType, setAccType, accName, setAccName, accBalance, setAccBalance, accLogo, handleLogoUpload, accIsSavings, setAccIsSavings, accTargetBalance, setAccTargetBalance, 
+  accExcludeFromTotal, setAccExcludeFromTotal, editAccExcludeFromTotal, setEditAccExcludeFromTotal,
+  handleCreateAccount, editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder
 }: AssetsTabProps) {
   
   const [isManageOpen, setIsManageOpen] = useState(false);
@@ -93,7 +95,13 @@ export default function AssetsTab({
 
   const activeAccounts = accounts.filter((a: AccountData) => !a.isSavings);
   const savingsAccounts = accounts.filter((a: AccountData) => a.isSavings);
-  const totalActiveBalance = activeAccounts.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
+  
+  // LOGIKA BARU: FILTER OUT YANG EXCLUDE DARI TOTAL
+  const totalActiveBalance = activeAccounts.reduce((accVal: number, curr: AccountData) => {
+    if (curr.excludeFromTotal) return accVal;
+    return accVal + curr.balance;
+  }, 0);
+
   const totalSavingsBalance = savingsAccounts.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
 
   const formatRupiahTerbaca = (val: string) => {
@@ -136,7 +144,13 @@ export default function AssetsTab({
                     </div>
                     
                     <div className="space-y-0.5 mt-auto">
-                      <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none truncate mb-1.5">{acc.name}</p>
+                      <div className="flex items-center mb-1.5">
+                        <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none truncate">{acc.name}</p>
+                        {/* LABEL INDIKATOR EXCLUDE */}
+                        {acc.excludeFromTotal && (
+                          <span className="text-[7px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-slate-200 dark:border-slate-700">Dikecualikan</span>
+                        )}
+                      </div>
                       <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate">Rp {acc.balance.toLocaleString('id-ID')}</p>
                     </div>
                 </div>
@@ -188,7 +202,6 @@ export default function AssetsTab({
                         )}
                       </div>
 
-                      {/* PROGRESS BAR TARGET TABUNGAN */}
                       {hasTarget && (
                         <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 mt-2">
                           <div className={`h-full ${percentage >= 100 ? 'bg-emerald-500' : design.progressBar} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div>
@@ -222,20 +235,26 @@ export default function AssetsTab({
             <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
             <input type="number" placeholder="Saldo Awal" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
             
-            {/* CUSTOM CHECKBOX TAMBAH TABUNGAN */}
-            <div 
-              onClick={() => setAccIsSavings(!accIsSavings)}
-              className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none"
-            >
-              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>
-                {accIsSavings && <Check size={10} strokeWidth={4} />}
+            {/* CHECKBOX 1: PISAH DARI TOTAL SALDO UTAMA (BARU) */}
+            <div onClick={() => setAccExcludeFromTotal(!accExcludeFromTotal)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>
+                {accExcludeFromTotal && <Check size={10} strokeWidth={4} />}
               </div>
               <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                Simpan sebagai Tabungan (Sembunyikan saldo utama)
+                Sembunyikan dari "Total Uang Bisa Dipakai" (Pemisahan Saldo)
               </span>
             </div>
 
-            {/* INPUT TARGET TABUNGAN BARU DENGAN PRATINJAU TITIK RUPIAH */}
+            {/* CHECKBOX 2: TABUNGAN */}
+            <div onClick={() => setAccIsSavings(!accIsSavings)} className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none">
+              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>
+                {accIsSavings && <Check size={10} strokeWidth={4} />}
+              </div>
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                Jadikan Kategori "Tabungan" di bagian bawah
+              </span>
+            </div>
+
             {accIsSavings && (
               <div className="space-y-1">
                 <input 
@@ -274,20 +293,26 @@ export default function AssetsTab({
                     <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-900/50 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
                     <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Saldo Dompet</label><input type="number" className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-900/50 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} /></div>
                     
-                    {/* CUSTOM CHECKBOX EDIT TABUNGAN */}
-                    <div 
-                      onClick={() => setEditAccIsSavings(!editAccIsSavings)}
-                      className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none"
-                    >
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>
-                        {editAccIsSavings && <Check size={10} strokeWidth={4} />}
+                    {/* CHECKBOX 1 EDIT: PISAH DARI TOTAL SALDO UTAMA */}
+                    <div onClick={() => setEditAccExcludeFromTotal(!editAccExcludeFromTotal)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>
+                        {editAccExcludeFromTotal && <Check size={10} strokeWidth={4} />}
                       </div>
-                      <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                        Jadikan Tabungan (Sembunyikan dari total saldo)
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                        Sembunyikan dari Total Saldo (Pemisahan Saldo)
                       </span>
                     </div>
 
-                    {/* INPUT EDIT TARGET TABUNGAN BARU DENGAN PRATINJAU TITIK RUPIAH */}
+                    {/* CHECKBOX 2 EDIT: TABUNGAN */}
+                    <div onClick={() => setEditAccIsSavings(!editAccIsSavings)} className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none">
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
+                        {editAccIsSavings && <Check size={10} strokeWidth={4} />}
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                        Jadikan Kategori "Tabungan"
+                      </span>
+                    </div>
+
                     {editAccIsSavings && (
                       <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Target Tabungan</label>
@@ -324,6 +349,7 @@ export default function AssetsTab({
                         <div className="flex items-center gap-2 mb-0.5">
                           <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-none">{acc.name}</p>
                           {acc.isSavings && <span className="text-[8px] bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Tabungan</span>}
+                          {acc.excludeFromTotal && <span className="text-[8px] bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Terpisah</span>}
                         </div>
                         <p className="text-xs font-black text-blue-600 dark:text-blue-400 leading-none mb-1">Rp {acc.balance.toLocaleString("id-ID")}</p>
                         <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{acc.type}</p>
@@ -333,7 +359,7 @@ export default function AssetsTab({
                       <button onClick={() => moveAccountOrder(index, "up")} disabled={index === 0} className={`p-2 rounded-xl bg-white dark:bg-slate-900 border cursor-pointer ${index === 0 ? "text-slate-200 border-slate-100 dark:border-slate-850 dark:text-slate-800" : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-800 hover:text-blue-600 dark:hover:text-blue-400"}`}><ArrowUp size={14}/></button>
                       <button onClick={() => moveAccountOrder(index, "down")} disabled={index === accounts.length - 1} className={`p-2 rounded-xl bg-white dark:bg-slate-900 border cursor-pointer ${index === accounts.length - 1 ? "text-slate-200 border-slate-100 dark:border-slate-850 dark:text-slate-800" : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-800 hover:text-blue-600 dark:hover:text-blue-400"}`}><ArrowDown size={14}/></button>
                       <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                      <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); setEditAccIsSavings(!!acc.isSavings); setEditAccTargetBalance(acc.targetBalance?.toString() || ""); }} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 hover:border-blue-300 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:border-blue-800 cursor-pointer transition-colors"><Edit2 size={14}/></button>
+                      <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); setEditAccIsSavings(!!acc.isSavings); setEditAccTargetBalance(acc.targetBalance?.toString() || ""); setEditAccExcludeFromTotal(!!acc.excludeFromTotal); }} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 hover:border-blue-300 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:border-blue-800 cursor-pointer transition-colors"><Edit2 size={14}/></button>
                       <button onClick={() => deleteAccount(acc.id, acc.name)} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-red-500 hover:border-red-300 dark:text-slate-400 dark:hover:text-red-400 dark:hover:border-red-800 cursor-pointer transition-colors"><Trash2 size={14}/></button>
                     </div>
                   </div>

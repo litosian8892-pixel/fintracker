@@ -6,7 +6,8 @@ export interface AccountData {
   logo?: string; 
   order?: number; 
   isSavings?: boolean; 
-  targetBalance?: number; // <--- TARGET TABUNGAN
+  targetBalance?: number; 
+  excludeFromTotal?: boolean; // <--- BARU: PEMISAHAN SALDO E-WALLET/LAINNYA
 }
 
 export interface TransactionData { 
@@ -46,6 +47,6 @@ export interface DebtData {
   paidAmount: number; 
   status: "active" | "paid"; 
   note: string; 
-  dueDate?: string; // <--- BARU: TANGGAL JATUH TEMPO (OPSIONAL)
+  dueDate?: string; 
   createdAt?: string;
 }
