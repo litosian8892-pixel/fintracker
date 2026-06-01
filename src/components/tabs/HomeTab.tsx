@@ -109,20 +109,15 @@ export default function HomeTab({
     setTType(newType);
     setTAccountId("");
     setTToAccountId("");
-    // HAPUS KATEGORI TERPILIH SAAT PINDAH TAB (KECUALI KE TRANSFER)
     if (newType !== "transfer") {
       setTCategory("");
     }
   };
 
-  // LOGIKA AUTO-SELECT KATEGORI DIHAPUS 
-  // Sekarang form kategori akan selalu kosong di awal dan mewajibkan user memilih.
   useEffect(() => {
     if (tType === "transfer") {
       setTCategory("Transfer");
     } else {
-      // Jika user mengubah tipe transaksi, pastikan kategori yang sudah ada itu valid untuk tipe tersebut
-      // Jika tidak valid (misal dari Gaji ke Pengeluaran), hapus state-nya.
       const matchingCats = categories.filter((cat) => cat.type === tType);
       if (tCategory && !matchingCats.some(c => c.name === tCategory)) {
         setTCategory("");
@@ -130,9 +125,10 @@ export default function HomeTab({
     }
   }, [tType, categories, tCategory, setTCategory]);
 
-  const filteredCategories = categories.filter(c => 
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // LOGIKA BARU: OTOMATIS URUTKAN KATEGORI BERDASARKAN ABJAD (A-Z) AGAR RAPI
+  const filteredCategories = categories
+    .filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const triggerHaptic = () => {
     if (typeof window !== "undefined" && navigator.vibrate) {
@@ -272,7 +268,6 @@ export default function HomeTab({
                 onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }}
                 className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
               >
-                {/* EFEK WARNA PUDAR JIKA KATEGORI BELUM DIPILIH */}
                 <span className={`truncate ${!tCategory ? "text-slate-400 dark:text-slate-500 font-medium" : ""}`}>
                   {tCategory || "Pilih Kategori..."}
                 </span>
@@ -386,7 +381,7 @@ export default function HomeTab({
               </div>
             </div>
             
-            {/* Isi List Kategori */}
+            {/* Isi List Kategori (SEKARANG SUDAH TERURUT A-Z OTOMATIS) */}
             <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
               {tType === "expense" ? (
                 <div className="grid grid-cols-2 gap-4">
