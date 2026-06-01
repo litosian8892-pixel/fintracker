@@ -125,10 +125,15 @@ export default function HomeTab({
     }
   }, [tType, categories, tCategory, setTCategory]);
 
-  // LOGIKA BARU: OTOMATIS URUTKAN KATEGORI BERDASARKAN ABJAD (A-Z) AGAR RAPI
+  // LOGIKA BARU: MENGURUTKAN ABJAD (A-Z) DENGAN MENGABAIKAN EMOJI / SIMBOL DI DEPAN
   const filteredCategories = categories
     .filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => {
+      // Menghapus semua karakter kecuali huruf dan angka hanya untuk proses komparasi
+      const cleanA = a.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      const cleanB = b.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      return cleanA.localeCompare(cleanB);
+    });
 
   const triggerHaptic = () => {
     if (typeof window !== "undefined" && navigator.vibrate) {
@@ -381,7 +386,7 @@ export default function HomeTab({
               </div>
             </div>
             
-            {/* Isi List Kategori (SEKARANG SUDAH TERURUT A-Z OTOMATIS) */}
+            {/* Isi List Kategori */}
             <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
               {tType === "expense" ? (
                 <div className="grid grid-cols-2 gap-4">
