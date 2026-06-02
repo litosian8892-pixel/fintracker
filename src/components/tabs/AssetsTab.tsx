@@ -83,12 +83,17 @@ interface AssetsTabProps {
   handleEditAccount: (id: string) => void;
   deleteAccount: (id: string, name: string) => void;
   moveAccountOrder: (index: number, direction: "up" | "down") => void;
+
+  // PROPS UNTUK SAVINGS GOAL TITLE
+  accSavingsGoalTitle: string; setAccSavingsGoalTitle: (val: string) => void;
+  editAccSavingsGoalTitle: string; setEditAccSavingsGoalTitle: (val: string) => void;
 }
 
 export default function AssetsTab({
   accounts, walletTypes, accType, setAccType, accName, setAccName, accBalance, setAccBalance, accLogo, handleLogoUpload, accIsSavings, setAccIsSavings, accTargetBalance, setAccTargetBalance, 
   accExcludeFromTotal, setAccExcludeFromTotal, editAccExcludeFromTotal, setEditAccExcludeFromTotal,
-  handleCreateAccount, editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder
+  handleCreateAccount, editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder,
+  accSavingsGoalTitle, setAccSavingsGoalTitle, editAccSavingsGoalTitle, setEditAccSavingsGoalTitle
 }: AssetsTabProps) {
   
   const [isManageOpen, setIsManageOpen] = useState(false);
@@ -97,10 +102,10 @@ export default function AssetsTab({
     if (editingAccId) setIsManageOpen(true);
   }, [editingAccId]);
 
-  // PEMBAGIAN TIGA KATEGORI TEGAS SECARA DINAMIS
+  // SINKRONISASI PEMBAGIAN TIGA KATEGORI TEGAS
   const activeAccounts = accounts.filter((a: AccountData) => !a.isSavings);
-  const emergencyAccounts = accounts.filter((a: AccountData) => a.isSavings && (!a.targetBalance || a.targetBalance <= 0));
-  const dreamGoals = accounts.filter((a: AccountData) => a.isSavings && a.targetBalance && a.targetBalance > 0);
+  const emergencyAccounts = accounts.filter((a: AccountData) => a.isSavings && !a.savingsGoalTitle);
+  const dreamGoals = accounts.filter((a: AccountData) => a.isSavings && a.savingsGoalTitle);
   
   // FILTER OUT YANG EXCLUDE DARI TOTAL
   const totalActiveBalance = activeAccounts.reduce((accVal: number, curr: AccountData) => {
@@ -117,9 +122,10 @@ export default function AssetsTab({
   const totalEmergencyBalance = emergencyAccounts.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
   const totalDreamBalance = dreamGoals.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
 
-  // KONDISI INTEGRASI BARU: AKUMULASI TARGET IMPIAN MENABUNG
-  const totalTargetAmount = dreamGoals.reduce((sum, a) => sum + (a.targetBalance || 0), 0);
-  const totalSavedAmount = dreamGoals.reduce((sum, a) => sum + a.balance, 0);
+  // AKUMULASI TARGET SELURUH TABUNGAN YANG MEMILIKI TARGET SALDO
+  const savingsWithTargets = accounts.filter(a => a.isSavings && a.targetBalance && a.targetBalance > 0);
+  const totalTargetAmount = savingsWithTargets.reduce((sum, a) => sum + (a.targetBalance || 0), 0);
+  const totalSavedAmount = savingsWithTargets.reduce((sum, a) => sum + a.balance, 0);
   const overallPercentage = totalTargetAmount > 0 ? Math.min((totalSavedAmount / totalTargetAmount) * 100, 100) : 0;
 
   const formatRupiahTerbaca = (val: string) => {
@@ -146,7 +152,7 @@ export default function AssetsTab({
         )}
       </div>
 
-      {/* KATEGORI 1: DOMPET AKTIF DENGAN GRID DESKTOP */}
+      {/* KATEGORI 1: DOMPET AKTIF */}
       <div className="space-y-3">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 italic px-1 text-lg transition-colors text-left">Dompet Aktif</h3>
         {activeAccounts.length === 0 ? <p className="text-center py-6 text-slate-400 text-sm italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">Belum ada dompet aktif</p> : (
@@ -179,7 +185,7 @@ export default function AssetsTab({
         )}
       </div>
 
-      {/* KATEGORI 2: TABUNGAN UTAMA & DANA DARURAT */}
+      {/* KATEGORI 2: TABUNGAN UTAMA & DANA DARURAT (DENGAN MOTIVASI TARGET JIKA AKTIF) */}
       {emergencyAccounts.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="flex justify-between items-end px-1">
@@ -189,8 +195,13 @@ export default function AssetsTab({
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {emergencyAccounts.map((acc: AccountData) => {
               const design = getCardDesign(acc.type);
+              const hasTarget = acc.targetBalance && acc.targetBalance > 0;
+              const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
+              const remaining = hasTarget ? Math.max(0, acc.targetBalance! - acc.balance) : 0;
+              const status = getGoalStatus(percentage);
+
               return (
-                <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[120px] md:min-h-[135px]`}>
+                <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[130px] md:min-h-[145px]`}>
                     
                     <div className="flex justify-between items-start mb-4">
                       {acc.logo ? (
@@ -198,12 +209,42 @@ export default function AssetsTab({
                       ) : (
                         <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div>
                       )}
-                      <div className="text-[9px] md:text-[10px] px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-bold uppercase tracking-widest">Dana Darurat</div>
+                      {hasTarget ? (
+                        <div className={`text-[9px] md:text-[10px] px-2.5 py-1 rounded-md font-black uppercase tracking-widest border ${status.color}`}>
+                          {status.label} • {percentage.toFixed(0)}%
+                        </div>
+                      ) : (
+                        <div className="text-[9px] md:text-[10px] px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-bold uppercase tracking-widest">Dana Darurat</div>
+                      )}
                     </div>
                     
-                    <div className="space-y-0.5 mt-auto text-left">
-                      <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5 truncate">{acc.name}</p>
-                      <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate">Rp {acc.balance.toLocaleString('id-ID')}</p>
+                    <div className="space-y-1 mt-auto w-full text-left">
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5 truncate">{acc.name}</p>
+                          <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate">Rp {acc.balance.toLocaleString('id-ID')}</p>
+                        </div>
+                        {hasTarget && (
+                          <span className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold">Target: Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>
+                        )}
+                      </div>
+
+                      {hasTarget && (
+                        <div className="w-full mt-2 space-y-1.5">
+                          <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+                            <div className={`h-full ${percentage >= 100 ? 'bg-emerald-500' : design.progressBar} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div>
+                          </div>
+                          {remaining > 0 ? (
+                            <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold text-right leading-none">
+                              Kurang Rp {remaining.toLocaleString('id-ID')} lagi
+                            </p>
+                          ) : (
+                            <p className="text-[9px] text-emerald-500 dark:text-emerald-400 font-black text-right uppercase tracking-wider leading-none">
+                              Target Terpenuhi! 🎉
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                 </div>
               );
@@ -212,7 +253,7 @@ export default function AssetsTab({
         </div>
       )}
 
-      {/* KATEGORI 3: TARGET IMPIAN BELANJA */}
+      {/* KATEGORI 3: TARGET IMPIAN MENABUNG (DENGAN BARANG GOAL BELANJA) */}
       {dreamGoals.length > 0 && (
         <div className="space-y-4 pt-2">
           <div className="flex justify-between items-end px-1">
@@ -220,27 +261,29 @@ export default function AssetsTab({
              <span className="text-[10px] md:text-xs font-black text-emerald-600 dark:text-emerald-400">Total Impian: Rp {totalDreamBalance.toLocaleString('id-ID')}</span>
           </div>
 
-          {/* WIDGET AKUMULASI TARGET IMPIAN */}
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-[30px] text-white shadow-lg relative overflow-hidden transition-all duration-300">
-            <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
-              <CreditCard size={120} />
-            </div>
-            <div className="flex justify-between items-center mb-4">
-              <div className="text-left">
-                <p className="text-emerald-100 text-[10px] uppercase tracking-widest font-bold mb-1">Akumulasi Target Impian</p>
-                <h3 className="text-2xl font-black">Rp {totalSavedAmount.toLocaleString('id-ID')}</h3>
+          {/* WIDGET AKUMULASI TARGET SELURUH TABUNGAN YANG MEMILIKI TARGET */}
+          {savingsWithTargets.length > 0 && (
+            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-[30px] text-white shadow-lg relative overflow-hidden transition-all duration-300">
+              <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
+                <CreditCard size={120} />
               </div>
-              <span className="bg-emerald-400/30 text-emerald-100 text-[10px] font-black px-2.5 py-1 rounded-full uppercase border border-emerald-300/20">
-                {overallPercentage.toFixed(0)}% Terkumpul
-              </span>
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-left">
+                  <p className="text-emerald-100 text-[10px] uppercase tracking-widest font-bold mb-1">Akumulasi Target Impian</p>
+                  <h3 className="text-2xl font-black">Rp {totalSavedAmount.toLocaleString('id-ID')}</h3>
+                </div>
+                <span className="bg-emerald-400/30 text-emerald-100 text-[10px] font-black px-2.5 py-1 rounded-full uppercase border border-emerald-300/20">
+                  {overallPercentage.toFixed(0)}% Terkumpul
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-emerald-700/50 rounded-full overflow-hidden border border-emerald-500/20 mb-2">
+                <div className="h-full bg-white rounded-full transition-all duration-1000 ease-out" style={{ width: `${overallPercentage}%` }}></div>
+              </div>
+              <p className="text-[10px] text-emerald-100/95 font-bold text-left leading-relaxed">
+                Telah terkumpul <span className="font-black text-white">Rp {totalSavedAmount.toLocaleString('id-ID')}</span> dari target <span className="font-black text-white">Rp {totalTargetAmount.toLocaleString('id-ID')}</span> untuk seluruh impian masa depan Anda.
+              </p>
             </div>
-            <div className="w-full h-2.5 bg-emerald-700/50 rounded-full overflow-hidden border border-emerald-500/20 mb-2">
-              <div className="h-full bg-white rounded-full transition-all duration-1000 ease-out" style={{ width: `${overallPercentage}%` }}></div>
-            </div>
-            <p className="text-[10px] text-emerald-100/95 font-bold text-left leading-relaxed">
-              Telah terkumpul <span className="font-black text-white">Rp {totalSavedAmount.toLocaleString('id-ID')}</span> dari target <span className="font-black text-white">Rp {totalTargetAmount.toLocaleString('id-ID')}</span> untuk seluruh impian masa depan Anda.
-            </p>
-          </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             {dreamGoals.map((acc: AccountData) => {
@@ -263,9 +306,10 @@ export default function AssetsTab({
                       </div>
                     </div>
                     
-                    <div className="space-y-1 mt-auto w-full">
+                    <div className="space-y-1 mt-auto w-full text-left">
                       <div className="flex justify-between items-end">
                         <div className="text-left">
+                          <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none mb-1">🎯 Impian: {acc.savingsGoalTitle}</p>
                           <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5">{acc.name}</p>
                           <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate">Rp {acc.balance.toLocaleString('id-ID')}</p>
                         </div>
@@ -325,12 +369,20 @@ export default function AssetsTab({
             </div>
 
             {accIsSavings && (
-              <div className="space-y-1">
-                <input type="text" placeholder="Target Nominal Tabungan (Opsional)" className="w-full p-3.5 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
-                {accTargetBalance && <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="font-black">{formatRupiahTerbaca(accTargetBalance)}</span></p>}
-                <p className="text-[9px] text-slate-400 dark:text-slate-550 pl-1">
-                  💡 Kosongkan jika dompet ini merupakan Tabungan Jangka Panjang / Dana Darurat Anda (tanpa barang impian).
-                </p>
+              <div className="space-y-3">
+                <div className="space-y-1 text-left">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Nama Impian / Barang Belanja (Opsional)</label>
+                  <input type="text" placeholder="Contoh: Beli Handphone Baru, DP Rumah" className="w-full p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-slate-700 dark:text-slate-200" value={accSavingsGoalTitle} onChange={(e) => setAccSavingsGoalTitle(e.target.value)} />
+                  <p className="text-[9px] text-slate-400 dark:text-slate-550 pl-1 leading-normal">
+                    💡 Isi nama barang belanjaan impian di atas untuk mengelompokkannya ke area "Target Impian Menabung". Kosongkan jika merupakan Tabungan Jangka Panjang / Dana Darurat.
+                  </p>
+                </div>
+
+                <div className="space-y-1 text-left">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Target Nominal Tabungan (Opsional)</label>
+                  <input type="text" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
+                  {accTargetBalance && <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="font-black">{formatRupiahTerbaca(accTargetBalance)}</span></p>}
+                </div>
               </div>
             )}
 
@@ -347,7 +399,7 @@ export default function AssetsTab({
 
           {/* DAFTAR EDIT DOMPET */}
           <div className="pt-4 space-y-3 text-left">
-            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Daftar Dompet (Ubah / Urutan / Hapus)</p>
+            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest pl-1">Daftar Dompet (Ubah / Urutan / Hapus)</p>
             {accounts.map((acc: AccountData, index: number) => (
               <div key={acc.id} className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl flex flex-col gap-3 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
                 {editingAccId === acc.id ? (
@@ -373,13 +425,20 @@ export default function AssetsTab({
                     </div>
 
                     {editAccIsSavings && (
-                      <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Target Tabungan</label>
-                        <input type="text" placeholder="Target Nominal Tabungan" className="w-full bg-white dark:bg-slate-900 p-3 text-xs border border-blue-200 dark:border-slate-700 rounded-xl outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
-                        {editAccTargetBalance && <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="font-black">{formatRupiahTerbaca(editAccTargetBalance)}</span></p>}
-                        <p className="text-[9px] text-slate-400 dark:text-slate-550 pl-1">
-                          💡 Kosongkan jika dompet ini merupakan Tabungan Jangka Panjang / Dana Darurat Anda (tanpa barang impian).
-                        </p>
+                      <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Impian / Barang Belanja (Opsional)</label>
+                          <input type="text" placeholder="Contoh: Beli Handphone Baru, DP Rumah" className="w-full bg-white dark:bg-slate-900 p-3 text-xs border border-blue-200 dark:border-slate-700 rounded-xl outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
+                          <p className="text-[9px] text-slate-400 dark:text-slate-550 pl-1 leading-normal">
+                            💡 Isi nama barang belanjaan impian di atas untuk mengelompokkannya ke area "Target Impian Menabung". Kosongkan jika merupakan Tabungan Jangka Panjang / Dana Darurat.
+                          </p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Target Tabungan</label>
+                          <input type="text" placeholder="Target Nominal Tabungan" className="w-full bg-white dark:bg-slate-900 p-3 text-xs border border-blue-200 dark:border-slate-700 rounded-xl outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+                          {editAccTargetBalance && <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="font-black">{formatRupiahTerbaca(editAccTargetBalance)}</span></p>}
+                        </div>
                       </div>
                     )}
 
@@ -399,7 +458,7 @@ export default function AssetsTab({
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
                       {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200 dark:border-slate-700 p-1 shadow-sm" alt="logo" /> ) : ( <div className="w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400">{getCardDesign(acc.type).icon}</div> )}
-                      <div>
+                      <div className="text-left">
                         <div className="flex items-center gap-2 mb-0.5">
                           <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-none">{acc.name}</p>
                           {acc.isSavings && <span className="text-[8px] bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Tabungan</span>}
@@ -413,7 +472,16 @@ export default function AssetsTab({
                       <button onClick={() => moveAccountOrder(index, "up")} disabled={index === 0} className={`p-2 rounded-xl bg-white dark:bg-slate-900 border cursor-pointer ${index === 0 ? "text-slate-200 border-slate-100 dark:border-slate-850 dark:text-slate-800" : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-800 hover:text-blue-600 dark:hover:text-blue-400"}`}><ArrowUp size={14}/></button>
                       <button onClick={() => moveAccountOrder(index, "down")} disabled={index === accounts.length - 1} className={`p-2 rounded-xl bg-white dark:bg-slate-900 border cursor-pointer ${index === accounts.length - 1 ? "text-slate-200 border-slate-100 dark:border-slate-850 dark:text-slate-800" : "text-slate-500 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-800 hover:text-blue-600 dark:hover:text-blue-400"}`}><ArrowDown size={14}/></button>
                       <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                      <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccLogo(acc.logo || ""); setEditAccIsSavings(!!acc.isSavings); setEditAccTargetBalance(acc.targetBalance?.toString() || ""); setEditAccExcludeFromTotal(!!acc.excludeFromTotal); }} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 hover:border-blue-300 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:border-blue-800 cursor-pointer transition-colors"><Edit2 size={14}/></button>
+                      <button onClick={() => { 
+                        setEditingAccId(acc.id); 
+                        setEditAccName(acc.name); 
+                        setEditAccBalance(acc.balance.toString()); 
+                        setEditAccLogo(acc.logo || ""); 
+                        setEditAccIsSavings(!!acc.isSavings); 
+                        setEditAccTargetBalance(acc.targetBalance?.toString() || ""); 
+                        setEditAccExcludeFromTotal(!!acc.excludeFromTotal); 
+                        setEditAccSavingsGoalTitle(acc.savingsGoalTitle || ""); 
+                      }} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 hover:border-blue-300 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:border-blue-800 cursor-pointer transition-colors"><Edit2 size={14}/></button>
                       <button onClick={() => deleteAccount(acc.id, acc.name)} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-red-500 hover:border-red-300 dark:text-slate-400 dark:hover:text-red-400 dark:hover:border-red-800 cursor-pointer transition-colors"><Trash2 size={14}/></button>
                     </div>
                   </div>

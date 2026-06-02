@@ -7,7 +7,8 @@ export interface AccountData {
   order?: number; 
   isSavings?: boolean; 
   targetBalance?: number; 
-  excludeFromTotal?: boolean; // <--- BARU: PEMISAHAN SALDO E-WALLET/LAINNYA
+  excludeFromTotal?: boolean; // <--- PEMISAHAN SALDO E-WALLET/LAINNYA
+  savingsGoalTitle?: string;  // <--- BARU: TUJUAN/NAMA IMPIAN TABUNGAN (misal: Beli HP Baru, Dana Darurat)
 }
 
 export interface SplitItemData {
@@ -29,7 +30,7 @@ export interface TransactionData {
   tDate: string; 
   adminFee?: number;
   createdAt?: any; 
-  splits?: SplitItemData[]; // <--- BARU: DAFTAR PECAHAN KATEGORI & NOMINAL
+  splits?: SplitItemData[]; // <--- DAFTAR PECAHAN KATEGORI & NOMINAL
 }
 
 export interface CategoryData { 

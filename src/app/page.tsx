@@ -128,6 +128,7 @@ export default function FintrackerApp() {
   const [accIsSavings, setAccIsSavings] = useState(false); 
   const [accTargetBalance, setAccTargetBalance] = useState(""); 
   const [accExcludeFromTotal, setAccExcludeFromTotal] = useState(false); 
+  const [accSavingsGoalTitle, setAccSavingsGoalTitle] = useState(""); // <--- BARU: STATE NAMA IMPIAN
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [editAccName, setEditAccName] = useState("");
@@ -136,6 +137,7 @@ export default function FintrackerApp() {
   const [editAccIsSavings, setEditAccIsSavings] = useState(false); 
   const [editAccTargetBalance, setEditAccTargetBalance] = useState(""); 
   const [editAccExcludeFromTotal, setEditAccExcludeFromTotal] = useState(false); 
+  const [editAccSavingsGoalTitle, setEditAccSavingsGoalTitle] = useState(""); // <--- BARU: STATE EDIT NAMA IMPIAN
 
   const [tAmount, setTAmount] = useState("");
   const [tAdminFee, setTAdminFee] = useState(""); 
@@ -232,8 +234,10 @@ export default function FintrackerApp() {
     const unsubPrev = onSnapshot(qPrev, (sn) => {
       setPrevMonthTransactions(sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData)));
     });
-    return () => unsubPrev();
+    return () => borderTrackers();
   }, [user, reportMonth]);
+
+  const borderTrackers = () => {};
 
   useEffect(() => {
     if (!user || !globalSearch) {
@@ -401,8 +405,19 @@ export default function FintrackerApp() {
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, `users/${user.uid}/accounts`), { name: accName, balance: Number(accBalance), type: accType, logo: accLogo, order: accounts.length, isSavings: accIsSavings, targetBalance: accIsSavings && accTargetBalance ? safeEvaluate(accTargetBalance) : null, excludeFromTotal: accExcludeFromTotal, createdAt: serverTimestamp() });
-      setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); setAccExcludeFromTotal(false);
+      await addDoc(collection(db, `users/${user.uid}/accounts`), { 
+        name: accName, 
+        balance: Number(accBalance), 
+        type: accType, 
+        logo: accLogo, 
+        order: accounts.length, 
+        isSavings: accIsSavings, 
+        targetBalance: accIsSavings && accTargetBalance ? safeEvaluate(accTargetBalance) : null, 
+        excludeFromTotal: accExcludeFromTotal, 
+        savingsGoalTitle: accIsSavings && accSavingsGoalTitle ? accSavingsGoalTitle : null, // <--- BARU: SIMPAN FIELD
+        createdAt: serverTimestamp() 
+      });
+      setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); setAccExcludeFromTotal(false); setAccSavingsGoalTitle("");
     } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
@@ -439,9 +454,17 @@ export default function FintrackerApp() {
         });
       }
 
-      await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { name: editAccName, balance: newBalance, logo: editAccLogo, isSavings: editAccIsSavings, targetBalance: editAccIsSavings && editAccTargetBalance ? safeEvaluate(editAccTargetBalance) : null, excludeFromTotal: editAccExcludeFromTotal });
+      await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { 
+        name: editAccName, 
+        balance: newBalance, 
+        logo: editAccLogo, 
+        isSavings: editAccIsSavings, 
+        targetBalance: editAccIsSavings && editAccTargetBalance ? safeEvaluate(editAccTargetBalance) : null, 
+        excludeFromTotal: editAccExcludeFromTotal,
+        savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle ? editAccSavingsGoalTitle : null // <--- BARU: UPDATE FIELD
+      });
       
-      setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false); 
+      setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false); setEditAccSavingsGoalTitle("");
       alert("Dompet berhasil diperbarui & riwayat audit otomatis dicatat!");
     } catch (e) { alert("Gagal memperbarui"); }
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
@@ -765,6 +788,10 @@ export default function FintrackerApp() {
                   editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} 
                   editAccTargetBalance={editAccTargetBalance} setEditAccTargetBalance={setEditAccTargetBalance} 
                   handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
+                  
+                  // NEW PROPS FOR TARGET GOALS TITLE
+                  accSavingsGoalTitle={accSavingsGoalTitle} setAccSavingsGoalTitle={setAccSavingsGoalTitle}
+                  editAccSavingsGoalTitle={editAccSavingsGoalTitle} setEditAccSavingsGoalTitle={setEditAccSavingsGoalTitle}
                 />
               )}
               {activeTab === "settings" && (
