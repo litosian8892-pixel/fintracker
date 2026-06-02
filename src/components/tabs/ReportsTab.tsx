@@ -112,7 +112,7 @@ export default function ReportsTab({
 
   const [yearStr, monthStr] = reportMonth.split('-');
   const yearNum = parseInt(yearStr, 10);
-  const monthNum = parseInt(monthStr, 10);
+  const monthNum = parseInt(monthStr, 15);
   const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
   const firstDayOfWeek = new Date(yearNum, monthNum - 1, 1).getDay(); 
 
@@ -177,7 +177,7 @@ export default function ReportsTab({
         {globalSearch && (
           <div className="space-y-2 pt-2 animate-in fade-in">
             <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest border-b border-blue-100 dark:border-blue-900/30 pb-2">Hasil Pencarian ({searchResult.length})</p>
-            {searchResult.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-500 italic py-2">Tidak ada transaksi yang cocok.</p> : (
+            {searchResult.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-550 italic py-2">Tidak ada transaksi yang cocok.</p> : (
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {unrollSplits(searchResult).map((t) => (
                   <div key={t.id} className="bg-slate-50 dark:bg-slate-800 p-3.5 rounded-xl border border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs">
@@ -252,6 +252,13 @@ export default function ReportsTab({
                 const dayTxs = expenseTxs.filter(t => t.tDate === selectedHeatmapDate);
                 if (dayTxs.length === 0) return <p className="text-xs text-slate-400 dark:text-slate-500 italic text-center py-4">Tidak ada pengeluaran di hari ini.</p>;
                 
+                // BARU: URUTKAN BERDASARKAN KATEGORI SECARA ALFABETIS & NOMINAL TERBESAR KE TERKECIL
+                dayTxs.sort((a, b) => {
+                  const catCompare = a.category.localeCompare(b.category);
+                  if (catCompare !== 0) return catCompare;
+                  return b.amount - a.amount;
+                });
+
                 const totalDay = dayTxs.reduce((a,b) => a + b.amount, 0);
                 return (
                   <>
