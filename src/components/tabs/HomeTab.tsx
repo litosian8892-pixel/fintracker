@@ -131,23 +131,19 @@ export default function HomeTab({
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* PERBAIKAN: HILANGKAN KATEGORI JIKA TRANSFER */}
+        <div className={`grid grid-cols-1 ${tType !== "transfer" ? "md:grid-cols-2" : ""} gap-4`}>
           <div className="space-y-1 min-w-0"> 
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">📅 TANGGAL</label>
             <input type="date" onFocus={() => setActiveKeypad(null)} className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer appearance-none dark:bg-slate-800 dark:border-slate-700" value={tDate} onChange={(e) => setTDate(e.target.value)} />
           </div>
 
-          {tType !== "transfer" ? (
+          {tType !== "transfer" && (
             <div className="space-y-1 min-w-0"> 
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">🏷️ KATEGORI</label>
               <div onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-700">
                 <span className={`truncate ${!tCategory ? "text-slate-400 dark:text-slate-500 font-medium" : ""}`}>{tCategory || "Pilih Kategori..."}</span><ChevronDown size={14} className="text-slate-400 shrink-0" />
               </div>
-            </div>
-          ) : (
-            <div className="space-y-1 min-w-0"> 
-              <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1">🏷️ KATEGORI</label>
-              <div className="w-full p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl text-xs font-bold text-blue-600 flex items-center justify-center dark:bg-blue-950/30 dark:border-blue-900/50 dark:text-blue-400">Mode Transfer Antar Dompet</div>
             </div>
           )}
         </div>
@@ -156,10 +152,7 @@ export default function HomeTab({
           <div className={`space-y-1 min-w-0 ${tType === "transfer" ? "" : "md:col-span-2"}`}> 
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">💳 DOMPET</label>
             <select className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer" value={tAccountId} onFocus={() => setActiveKeypad(null)} onChange={(e) => setTAccountId(e.target.value)}>
-              
-              {/* --- PERBAIKAN: TAMBAH DEFAULT OPTION KOSONG --- */}
               <option value="" disabled>Pilih Dompet...</option>
-              
               {availableSourceAccounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString("id-ID")})</option>
               ))}
