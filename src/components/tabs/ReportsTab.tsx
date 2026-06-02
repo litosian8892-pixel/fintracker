@@ -50,21 +50,12 @@ export default function ReportsTab({
 
   const getCatType = (catName: string) => categories.find(c => c.name === catName)?.expenseType === "fixed" ? "fixed" : "variable";
   
-  // Ekstrak Biaya Admin dari Transfer dan jadikan Pengeluaran Rincian secara otomatis
   const adminFeeTxs = reportTransactions
     .filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0)
     .map(t => ({
-      id: `fee-${t.id}`,
-      amount: t.adminFee!,
-      type: "expense",
-      accountId: t.accountId,
-      accountName: t.accountName,
-      category: "Biaya Admin",
-      note: `Biaya admin transfer ke ${t.toAccountName}`,
-      tDate: t.tDate
+      id: `fee-${t.id}`, amount: t.adminFee!, type: "expense", accountId: t.accountId, accountName: t.accountName, category: "Biaya Admin", note: `Biaya admin transfer ke ${t.toAccountName}`, tDate: t.tDate
     } as TransactionData));
 
-  // Gabungkan pengeluaran murni dan biaya admin virtual
   const expenseTxs = [...reportTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
   const fixedTxs = expenseTxs.filter(t => getCatType(t.category) === "fixed");
   const varTxs = expenseTxs.filter(t => getCatType(t.category) === "variable");
@@ -73,14 +64,10 @@ export default function ReportsTab({
   const totalFixed = fixedTxs.reduce((a, b) => a + b.amount, 0);
   const totalVar = varTxs.reduce((a, b) => a + b.amount, 0);
 
-  // Grouping untuk Drill-Down
   const groupTransactionsAndItems = (txs: TransactionData[]) => {
     return txs.reduce((acc: Record<string, { total: number; items: TransactionData[] }>, curr) => {
-      if (!acc[curr.category]) {
-        acc[curr.category] = { total: 0, items: [] };
-      }
-      acc[curr.category].total += curr.amount;
-      acc[curr.category].items.push(curr);
+      if (!acc[curr.category]) { acc[curr.category] = { total: 0, items: [] }; }
+      acc[curr.category].total += curr.amount; acc[curr.category].items.push(curr);
       return acc;
     }, {});
   };
@@ -89,7 +76,6 @@ export default function ReportsTab({
   const varGrouped = groupTransactionsAndItems(varTxs);
   const incomeGrouped = groupTransactionsAndItems(incomeTxs);
 
-  // ALGORITMA BARU: URUTKAN DAFTAR KATEGORI BERDASARKAN TOTAL NOMINAL TERBESAR
   const sortedFixedKeys = Object.keys(fixedGrouped).sort((a, b) => fixedGrouped[b].total - fixedGrouped[a].total);
   const sortedVarKeys = Object.keys(varGrouped).sort((a, b) => varGrouped[b].total - varGrouped[a].total);
   const sortedIncomeKeys = Object.keys(incomeGrouped).sort((a, b) => incomeGrouped[b].total - incomeGrouped[a].total);
@@ -104,22 +90,63 @@ export default function ReportsTab({
   };
 
   const budgetCategories = categories.filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0);
-
-  // URUTKAN DATA DARI PERSENTASE TERBESAR KE TERKECIL
   const sortedPieData = [...pieData].sort((a, b) => b.value - a.value);
 
-  // --- ALGORITMA BARU: HITUNG TREN PERBANDINGAN BULAN KE BULAN (MoM TREND) ---
   const calcTrend = (current: number, prev: number) => {
     if (prev === 0) return null;
     const diff = ((current - prev) / prev) * 100;
-    return {
-      value: Math.abs(diff).toFixed(0),
-      isUp: diff > 0,
-    };
+    return { value: Math.abs(diff).toFixed(0), isUp: diff > 0 };
   };
 
   const incomeTrend = calcTrend(totalIncome, prevTotalIncome);
   const expenseTrend = calcTrend(totalExpense, prevTotalExpense);
+
+  // --- ALGORITMA KALENDER HEATMAP ---
+  const [yearStr, monthStr] = reportMonth.split('-');
+  const yearNum = parseInt(yearStr, 10);
+  const monthNum = parseInt(monthStr, 10);
+  const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+  const firstDayOfWeek = new Date(yearNum, monthNum - 1, 1).getDay(); // 0 = Minggu, 1 = Senin
+
+  const dailyExpenseMap: Record<number, number> = {};
+  expenseTxs.forEach(t => {
+    if (t.tDate.startsWith(reportMonth)) {
+      const day = parseInt(t.tDate.split('-')[2], 10);
+      dailyExpenseMap[day] = (dailyExpenseMap[day] || 0) + t.amount;
+    }
+  });
+
+  const maxDaily = Math.max(...Object.values(dailyExpenseMap), 1); // Cari hari paling boros
+
+  const getHeatmapColor = (amount: number) => {
+    if (!amount || amount === 0) return "bg-slate-50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800";
+    const ratio = amount / maxDaily;
+    if (ratio <= 0.15) return "bg-orange-200 dark:bg-orange-900/40 border-orange-300 dark:border-orange-800";
+    if (ratio <= 0.45) return "bg-orange-400 dark:bg-orange-700/60 border-orange-500 dark:border-orange-600";
+    if (ratio <= 0.75) return "bg-red-500 dark:bg-red-600 border-red-600 dark:border-red-500";
+    return "bg-red-700 dark:bg-red-800 border-red-800 dark:border-red-900"; // Paling boros
+  };
+
+  const calendarCells = [];
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    calendarCells.push(<div key={`empty-${i}`} className="w-full aspect-square rounded-md opacity-0 pointer-events-none"></div>);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const amount = dailyExpenseMap[d] || 0;
+    calendarCells.push(
+      <div 
+        key={`day-${d}`} 
+        className={`w-full aspect-square rounded-xl border ${getHeatmapColor(amount)} flex items-center justify-center relative group cursor-crosshair transition-all hover:scale-110 hover:z-10 shadow-sm`}
+      >
+        <span className="text-[10px] md:text-xs font-black opacity-60 text-slate-700 dark:text-slate-100">{d}</span>
+        
+        {/* Tooltip Hover ala Github */}
+        <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 hidden group-hover:block bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] px-2.5 py-1.5 rounded-lg shadow-xl whitespace-nowrap z-50 font-black pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-900 dark:before:border-t-white">
+          Tgl {d}: Rp {amount.toLocaleString('id-ID')}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in">
@@ -129,8 +156,8 @@ export default function ReportsTab({
           <h2 className="font-black text-xl italic text-slate-800 dark:text-slate-100">Laporan</h2>
           <input type="month" className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs font-bold text-blue-600 dark:text-blue-400 border-none outline-none cursor-pointer" value={reportMonth} onChange={(e) => setReportMonth(e.target.value)}/>
         </div>
-        <button onClick={handleExportToExcel} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors">
-          <Download size={14}/> Export Bulan Ini ke Excel
+        <button onClick={handleExportToExcel} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-lg shadow-emerald-600/20 active:scale-95">
+          <Download size={14}/> Export Laporan Excel
         </button>
       </div>
 
@@ -139,7 +166,6 @@ export default function ReportsTab({
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2">🔍 Pencarian Riwayat (Semua Waktu)</h3>
         <div className="relative">
           <Download className="absolute left-3 top-3.5 text-slate-400 rotate-90" size={16} />
-          {/* PERBAIKAN KONTRAS PADA INPUT PENCARIAN */}
           <input 
             type="text" 
             placeholder="Cari pengeluaran/bensin/servis motor..." 
@@ -220,6 +246,35 @@ export default function ReportsTab({
         </div>
       )}
 
+      {/* --- FITUR BARU: KALENDER HEATMAP ALA GITHUB --- */}
+      {expenseTxs.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-200">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-3">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Kalender Pengeluaran</h3>
+            
+            {/* Legend Heatmap */}
+            <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-lg border border-slate-100 dark:border-slate-700">
+              <span>Hemat</span>
+              <div className="flex gap-1">
+                <div className="w-3 h-3 rounded bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800"></div>
+                <div className="w-3 h-3 rounded bg-orange-200 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-800"></div>
+                <div className="w-3 h-3 rounded bg-orange-400 dark:bg-orange-700/60 border border-orange-500 dark:border-orange-600"></div>
+                <div className="w-3 h-3 rounded bg-red-500 dark:bg-red-600 border border-red-600 dark:border-red-500"></div>
+                <div className="w-3 h-3 rounded bg-red-700 dark:bg-red-800 border border-red-800 dark:border-red-900"></div>
+              </div>
+              <span>Boros</span>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-7 gap-2 md:gap-3">
+            {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map(day => (
+              <div key={day} className="text-center text-[10px] font-black text-slate-400 uppercase mb-1">{day}</div>
+            ))}
+            {calendarCells}
+          </div>
+        </div>
+      )}
+
       {/* STATUS ANGGARAN (BUDGET) */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Status Anggaran (Budget)</h3>
@@ -258,7 +313,6 @@ export default function ReportsTab({
       <div className="space-y-4">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm px-1">Rincian Pengeluaran</h3>
         
-        {/* TABEL FIXED DENGAN DRILL DOWN (TERURUT) */}
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
           <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-1">Pengeluaran Tetap (Fixed)</p>
           {sortedFixedKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-500 italic">Kosong</p> : (
@@ -268,28 +322,15 @@ export default function ReportsTab({
                 const isExpanded = !!expandedCategories[key];
                 return (
                   <div key={key} className="border-b border-slate-50 dark:border-slate-800/40 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
-                    <div 
-                      onClick={() => toggleExpand(key)} 
-                      className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all"
-                    >
-                      <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1">
-                        {key}
-                        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span>
-                      </span>
-                      <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">
-                        Rp {data.total.toLocaleString('id-ID')}
-                        <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                      </span>
+                    <div onClick={() => toggleExpand(key)} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all">
+                      <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1">{key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span></span>
+                      <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">Rp {data.total.toLocaleString('id-ID')} <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} /></span>
                     </div>
-                    
                     {isExpanded && (
                       <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl space-y-1.5 border border-slate-100 dark:border-slate-700/60 animate-in slide-in-from-top-2 duration-200">
                         {data.items.map((item) => (
                           <div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none">
-                            <div className="flex flex-col text-left">
-                              <span className="text-slate-400 dark:text-slate-500 font-semibold">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span>
-                              <span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
-                            </div>
+                            <div className="flex flex-col text-left"><span className="text-slate-400 dark:text-slate-500 font-semibold">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span><span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span></div>
                             <span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
                           </div>
                         ))}
@@ -303,7 +344,6 @@ export default function ReportsTab({
           )}
         </div>
 
-        {/* TABEL VARIABLE DENGAN DRILL DOWN (TERURUT) */}
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
           <p className="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest mb-1">Pengeluaran Variabel (Jajan)</p>
           {sortedVarKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-500 italic">Kosong</p> : (
@@ -313,28 +353,15 @@ export default function ReportsTab({
                 const isExpanded = !!expandedCategories[key];
                 return (
                   <div key={key} className="border-b border-slate-50 dark:border-slate-800/40 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
-                    <div 
-                      onClick={() => toggleExpand(key)} 
-                      className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all"
-                    >
-                      <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1">
-                        {key}
-                        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span>
-                      </span>
-                      <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">
-                        Rp {data.total.toLocaleString('id-ID')}
-                        <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                      </span>
+                    <div onClick={() => toggleExpand(key)} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all">
+                      <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1">{key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span></span>
+                      <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">Rp {data.total.toLocaleString('id-ID')} <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} /></span>
                     </div>
-                    
                     {isExpanded && (
                       <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl space-y-1.5 border border-slate-100 dark:border-slate-700/60 animate-in slide-in-from-top-2 duration-200">
                         {data.items.map((item) => (
                           <div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none">
-                            <div className="flex flex-col text-left">
-                              <span className="text-slate-400 dark:text-slate-500 font-semibold">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span>
-                              <span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
-                            </div>
+                            <div className="flex flex-col text-left"><span className="text-slate-400 dark:text-slate-500 font-semibold">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span><span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span></div>
                             <span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
                           </div>
                         ))}
@@ -349,7 +376,6 @@ export default function ReportsTab({
         </div>
       </div>
 
-      {/* TABEL PEMASUKAN DENGAN DRILL DOWN (TERURUT) */}
       <div className="space-y-4">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm px-1">Rincian Pemasukan</h3>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
@@ -361,28 +387,15 @@ export default function ReportsTab({
                 const isExpanded = !!expandedCategories[key];
                 return (
                   <div key={key} className="border-b border-slate-50 dark:border-slate-800/40 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
-                    <div 
-                      onClick={() => toggleExpand(key)} 
-                      className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all"
-                    >
-                      <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1">
-                        {key}
-                        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span>
-                      </span>
-                      <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">
-                        Rp {data.total.toLocaleString('id-ID')}
-                        <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                      </span>
+                    <div onClick={() => toggleExpand(key)} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all">
+                      <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1">{key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span></span>
+                      <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">Rp {data.total.toLocaleString('id-ID')} <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} /></span>
                     </div>
-                    
                     {isExpanded && (
                       <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl space-y-1.5 border border-slate-100 dark:border-slate-700/60 animate-in slide-in-from-top-2 duration-200">
                         {data.items.map((item) => (
                           <div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none">
-                            <div className="flex flex-col text-left">
-                              <span className="text-slate-400 dark:text-slate-500 font-semibold">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span>
-                              <span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
-                            </div>
+                            <div className="flex flex-col text-left"><span className="text-slate-400 dark:text-slate-500 font-semibold">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span><span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span></div>
                             <span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
                           </div>
                         ))}
@@ -397,7 +410,6 @@ export default function ReportsTab({
         </div>
       </div>
 
-      {/* --- GRAFIK DONAT DENGAN SORTING --- */}
       {sortedPieData.length > 0 && (
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-200">
           <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm mb-4">Grafik Donat (Semua Pengeluaran)</h3>
@@ -411,8 +423,6 @@ export default function ReportsTab({
               </RePieChart>
             </ResponsiveContainer>
           </div>
-
-          {/* LEGENDA BESAR KE KECIL */}
           <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
             {sortedPieData.map((data, idx) => {
               const percentage = totalExpense > 0 ? ((data.value / totalExpense) * 100).toFixed(1) : "0";
@@ -428,11 +438,10 @@ export default function ReportsTab({
               );
             })}
           </div>
-
         </div>
       )}
       
-      {/* --- GRAFIK HARIAN --- */}
+      {/* GRAFIK HARIAN (TETAP DIPERTAHANKAN) */}
       {barData.length > 0 && (
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm animate-in transition-colors duration-200">
           <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm mb-4">Grafik Harian</h3>
@@ -442,32 +451,14 @@ export default function ReportsTab({
               <BarChart data={barData} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" className="dark:stroke-slate-800/30" />
                 <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} stroke="#94a3b8" />
-                <YAxis 
-                  fontSize={9} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  stroke="#94a3b8"
-                  tickFormatter={(value) => {
-                    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}jt`;
-                    if (value >= 1000) return `${(value / 1000).toFixed(0)}rb`;
-                    return value;
-                  }}
-                />
+                <YAxis fontSize={9} tickLine={false} axisLine={false} stroke="#94a3b8" tickFormatter={(value) => { if (value >= 1000000) return `${(value / 1000000).toFixed(1)}jt`; if (value >= 1000) return `${(value / 1000).toFixed(0)}rb`; return value; }} />
                 <Tooltip content={<CustomTooltip />} cursor={{fill: '#f1f5f9', className: 'dark:fill-slate-800/10'}} />
-                <Legend 
-                  verticalAlign="top" 
-                  height={36} 
-                  iconType="circle" 
-                  iconSize={8} 
-                  wrapperStyle={{ fontSize: 10, fontWeight: "bold" }}
-                  formatter={() => <span className="text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[9px]">Pengeluaran Harian</span>}
-                />
+                <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10, fontWeight: "bold" }} formatter={() => <span className="text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[9px]">Pengeluaran Harian</span>} />
                 <Bar name="amount" dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          {/* LEGENDA DETAIL GRAFIK HARIAN (SINKRONUS DRILL-DOWN) */}
           <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
             {barData.map((data, idx) => {
               const dayNum = data.date.replace("Tgl ", "");
@@ -477,29 +468,17 @@ export default function ReportsTab({
 
               return (
                 <div key={idx} className="border-b border-slate-50 dark:border-slate-800/40 last:border-0 pb-2 pt-2 first:pt-0 last:pb-0">
-                  <div 
-                    onClick={() => toggleExpandDay(data.date)}
-                    className="flex justify-between items-center text-xs font-bold cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1.5 rounded-lg transition-all"
-                  >
+                  <div onClick={() => toggleExpandDay(data.date)} className="flex justify-between items-center text-xs font-bold cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1.5 rounded-lg transition-all">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-2.5 h-2.5 rounded bg-blue-500 shrink-0"></div>
-                      <span className="text-slate-600 dark:text-slate-350">{formattedDate}</span>
-                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({dayTxs.length}x)</span>
+                      <div className="w-2.5 h-2.5 rounded bg-blue-500 shrink-0"></div><span className="text-slate-600 dark:text-slate-350">{formattedDate}</span><span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({dayTxs.length}x)</span>
                     </div>
-                    <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">
-                      Rp {data.amount.toLocaleString('id-ID')}
-                      <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                    </span>
+                    <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">Rp {data.amount.toLocaleString('id-ID')} <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} /></span>
                   </div>
-
                   {isExpanded && (
                     <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl space-y-1.5 border border-slate-100 dark:border-slate-700/60 animate-in slide-in-from-top-2 duration-200">
                       {dayTxs.map((item) => (
                         <div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none">
-                          <div className="flex flex-col text-left">
-                            <span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider text-[8px]">{item.category}</span>
-                            <span className="text-slate-600 dark:text-slate-350 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
-                          </div>
+                          <div className="flex flex-col text-left"><span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider text-[8px]">{item.category}</span><span className="text-slate-600 dark:text-slate-350 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span></div>
                           <span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
                         </div>
                       ))}
@@ -509,7 +488,6 @@ export default function ReportsTab({
               );
             })}
           </div>
-
         </div>
       )}
     </div>
