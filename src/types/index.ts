@@ -10,6 +10,12 @@ export interface AccountData {
   excludeFromTotal?: boolean; // <--- BARU: PEMISAHAN SALDO E-WALLET/LAINNYA
 }
 
+export interface SplitItemData {
+  category: string;
+  amount: number;
+  note?: string;
+}
+
 export interface TransactionData { 
   id: string; 
   amount: number; 
@@ -23,6 +29,7 @@ export interface TransactionData {
   tDate: string; 
   adminFee?: number;
   createdAt?: any; 
+  splits?: SplitItemData[]; // <--- BARU: DAFTAR PECAHAN KATEGORI & NOMINAL
 }
 
 export interface CategoryData { 

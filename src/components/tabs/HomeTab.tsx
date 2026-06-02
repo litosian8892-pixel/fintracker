@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { AccountData, CategoryData } from "../../types";
-import { ArrowUpRight, ArrowDownRight, ArrowRightLeft, ChevronDown, X, Search } from "lucide-react";
+import { AccountData, CategoryData, SplitItemData } from "../../types";
+import { ArrowUpRight, ArrowDownRight, ArrowRightLeft, ChevronDown, X, Search, Plus } from "lucide-react";
 
 interface HomeTabProps {
   tType: "income" | "expense" | "transfer";
@@ -23,7 +23,7 @@ interface HomeTabProps {
   setTNote: (note: string) => void;
   categories: CategoryData[];
   accounts: AccountData[];
-  handleTransaction: () => void;
+  handleTransaction: (customSplits?: SplitItemData[]) => void;
 }
 
 const safeEvaluate = (expr: string): number => {
@@ -53,12 +53,26 @@ export default function HomeTab({
   const [activeKeypad, setActiveKeypad] = useState<"amount" | "adminFee" | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
+  // State baru untuk mendukung pecahan transaksi
+  const [splits, setSplits] = useState<SplitItemData[]>([]);
+  const [showSplitModal, setShowSplitModal] = useState(false);
+  const [tempSplits, setTempSplits] = useState<SplitItemData[]>([]);
+  const [activeSplitIndex, setActiveSplitIndex] = useState<number | null>(null);
+  const [showSplitCatModal, setShowSplitCatModal] = useState(false);
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768); 
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Membersihkan pecahan jika input nominal dibersihkan oleh parent (setelah transaksi sukses)
+  useEffect(() => {
+    if (!tAmount || safeEvaluate(tAmount) === 0) {
+      setSplits([]);
+    }
+  }, [tAmount]);
 
   const availableSourceAccounts = tType === "transfer" ? accounts : accounts.filter(acc => !acc.isSavings);
 
@@ -72,6 +86,7 @@ export default function HomeTab({
     setTType(newType);
     setTAccountId("");
     setTToAccountId("");
+    setSplits([]);
     if (newType !== "transfer") setTCategory("");
   };
 
@@ -80,7 +95,7 @@ export default function HomeTab({
       setTCategory("Transfer");
     } else {
       const matchingCats = categories.filter((cat) => cat.type === tType);
-      if (tCategory && !matchingCats.some(c => c.name === tCategory)) {
+      if (tCategory && !matchingCats.some(c => c.name === tCategory) && tCategory !== "Split Transaksi") {
         setTCategory("");
       }
     }
@@ -95,6 +110,7 @@ export default function HomeTab({
     });
 
   const triggerHaptic = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
+  
   const handleKeypadPress = (key: string) => {
     triggerHaptic();
     const currentVal = activeKeypad === "amount" ? tAmount : tAdminFee;
@@ -104,6 +120,42 @@ export default function HomeTab({
     else if (key === "=") { const evaluated = safeEvaluate(currentVal); setVal(evaluated > 0 ? evaluated.toString() : ""); } 
     else if (key === "Ya") setActiveKeypad(null);
     else setVal(currentVal + key);
+  };
+
+  const handleAddSplitItem = () => {
+    const targetAmount = safeEvaluate(tAmount);
+    const currentSum = tempSplits.reduce((sum, s) => sum + s.amount, 0);
+    const remaining = Math.max(0, targetAmount - currentSum);
+    setTempSplits([...tempSplits, { category: "", amount: remaining, note: "" }]);
+  };
+
+  const handleSelectSplitCategory = (catName: string) => {
+    if (activeSplitIndex !== null) {
+      const updated = [...tempSplits];
+      updated[activeSplitIndex].category = catName;
+      setTempSplits(updated);
+    }
+    setShowSplitCatModal(false);
+    setActiveSplitIndex(null);
+  };
+
+  const handleConfirmSplits = () => {
+    const targetAmount = safeEvaluate(tAmount);
+    const currentSum = tempSplits.reduce((sum, s) => sum + s.amount, 0);
+    
+    if (tempSplits.some(s => !s.category)) {
+      return alert("Seluruh pecahan wajib dipilih kategorinya!");
+    }
+    if (tempSplits.some(s => s.amount <= 0)) {
+      return alert("Nominal pecahan tidak boleh kosong atau bernilai 0!");
+    }
+    if (currentSum !== targetAmount) {
+      return alert(`Total alokasi pecahan (Rp ${currentSum.toLocaleString('id-ID')}) harus sama persis dengan nominal transaksi utama (Rp ${targetAmount.toLocaleString('id-ID')})!`);
+    }
+
+    setSplits(tempSplits);
+    setTCategory("Split Transaksi");
+    setShowSplitModal(false);
   };
 
   return (
@@ -131,7 +183,6 @@ export default function HomeTab({
           </div>
         )}
 
-        {/* PERBAIKAN: HILANGKAN KATEGORI JIKA TRANSFER */}
         <div className={`grid grid-cols-1 ${tType !== "transfer" ? "md:grid-cols-2" : ""} gap-4`}>
           <div className="space-y-1 min-w-0"> 
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">📅 TANGGAL</label>
@@ -141,9 +192,30 @@ export default function HomeTab({
           {tType !== "transfer" && (
             <div className="space-y-1 min-w-0"> 
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">🏷️ KATEGORI</label>
-              <div onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-700">
-                <span className={`truncate ${!tCategory ? "text-slate-400 dark:text-slate-500 font-medium" : ""}`}>{tCategory || "Pilih Kategori..."}</span><ChevronDown size={14} className="text-slate-400 shrink-0" />
-              </div>
+              {splits.length > 0 ? (
+                <div className="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs font-bold text-blue-700 dark:bg-blue-950/40 dark:border-blue-900/50 dark:text-blue-300 flex items-center justify-between transition-all">
+                  <span className="truncate">✂️ {splits.length} Pecahan Terpilih</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button type="button" onClick={() => { setTempSplits([...splits]); setShowSplitModal(true); }} className="text-[10px] font-black underline hover:text-blue-800">Edit</button>
+                    <button type="button" onClick={() => { setSplits([]); setTCategory(""); }} className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-full text-blue-500"><X size={12} /></button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2 items-center">
+                  <div onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="flex-1 p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-700 truncate">
+                    <span className={`truncate ${!tCategory ? "text-slate-400 dark:text-slate-500 font-medium" : ""}`}>{tCategory || "Pilih Kategori..."}</span><ChevronDown size={14} className="text-slate-400 shrink-0" />
+                  </div>
+                  {safeEvaluate(tAmount) > 0 && (
+                    <button type="button" onClick={() => {
+                      const initialAmount = safeEvaluate(tAmount);
+                      setTempSplits([{ category: "", amount: initialAmount, note: "" }]);
+                      setShowSplitModal(true);
+                    }} className="px-3 py-3.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-black border border-blue-200 dark:border-blue-900/30 shrink-0 flex items-center gap-1 cursor-pointer transition-colors">
+                      ✂️ Pecah
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -177,7 +249,13 @@ export default function HomeTab({
           <input type="text" onFocus={() => setActiveKeypad(null)} className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 dark:bg-slate-800 dark:border-slate-700" placeholder="Tulis keterangan transaksi..." value={tNote} onChange={(e) => setTNote(e.target.value)} />
         </div>
 
-        <button type="button" onClick={handleTransaction} className="w-full py-4 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-lg transition-all transform active:scale-[0.98] duration-75 cursor-pointer">Simpan Transaksi</button>
+        <button type="button" onClick={() => {
+          if (splits.length > 0) {
+            handleTransaction(splits);
+          } else {
+            handleTransaction();
+          }
+        }} className="w-full py-4 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-lg transition-all transform active:scale-[0.98] duration-75 cursor-pointer">Simpan Transaksi</button>
       </div>
 
       {showCatModal && tType !== "transfer" && (
@@ -218,6 +296,164 @@ export default function HomeTab({
                   {filteredCategories.filter(c => c.type === "income").length === 0 && <p className="text-[10px] text-slate-400 italic col-span-2 text-center py-4">Tidak ditemukan</p>}
                   {filteredCategories.filter(c => c.type === "income").map(cat => (
                     <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-green-500 text-white border-green-600 shadow-md" : "bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-green-50 dark:hover:bg-green-950/30 hover:border-green-200 dark:hover:bg-green-900/50"}`}>{cat.name}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DETIL ALOKASI PECAHAN (SPLIT MODAL) */}
+      {showSplitModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh] border border-slate-100 dark:bg-slate-900 dark:border-slate-800">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
+              <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
+                <span>✂️</span> Pecah Transaksi ({formatRupiahTerbaca(tAmount)})
+              </h3>
+              <button type="button" onClick={() => setShowSplitModal(false)} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full transition-colors">
+                <X size={14}/>
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto space-y-4 bg-white dark:bg-slate-900 flex-1">
+              <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30">
+                <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                  <span>Nominal Transaksi:</span>
+                  <span className="font-black text-slate-800 dark:text-white">{formatRupiahTerbaca(tAmount)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs font-bold mt-2 pt-2 border-t border-blue-100/50 dark:border-blue-900/20">
+                  <span>Total Dialokasikan:</span>
+                  <span className={`font-black ${tempSplits.reduce((sum, s) => sum + s.amount, 0) === safeEvaluate(tAmount) ? 'text-emerald-600' : 'text-amber-500'}`}>
+                    {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(tempSplits.reduce((sum, s) => sum + s.amount, 0))}
+                  </span>
+                </div>
+                {safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + s.amount, 0) !== 0 && (
+                  <div className="text-[10px] font-black text-amber-500 mt-2 text-right">
+                    Sisa yang belum dialokasikan: {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + s.amount, 0))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                {tempSplits.map((item, i) => (
+                  <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-3 relative text-left">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-400">PECAHAN #{i + 1}</span>
+                      {tempSplits.length > 1 && (
+                        <button type="button" onClick={() => {
+                          triggerHaptic();
+                          const updated = tempSplits.filter((_, idx) => idx !== i);
+                          setTempSplits(updated);
+                        }} className="text-red-500 hover:text-red-700 text-xs font-bold flex items-center gap-0.5 cursor-pointer">
+                          <X size={14} /> Hapus
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Kategori</label>
+                        <div onClick={() => {
+                          triggerHaptic();
+                          setActiveSplitIndex(i);
+                          setShowSplitCatModal(true);
+                          setSearchQuery("");
+                        }} className="p-3 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 truncate">
+                          <span className="truncate">{item.category || "Pilih Kategori..."}</span>
+                          <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Nominal (Rp)</label>
+                        <input type="text" placeholder="Contoh: 15000" className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.amount === 0 ? "" : item.amount} onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, "");
+                          const updated = [...tempSplits];
+                          updated[i].amount = val ? Number(val) : 0;
+                          setTempSplits(updated);
+                        }} />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Catatan Khusus (Opsional)</label>
+                      <input type="text" placeholder="Contoh: Belanja bumbu masak" className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.note || ""} onChange={(e) => {
+                        const updated = [...tempSplits];
+                        updated[i].note = e.target.value;
+                        setTempSplits(updated);
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button type="button" onClick={() => { triggerHaptic(); handleAddSplitItem(); }} className="w-full py-3 border border-dashed border-blue-300 text-blue-600 dark:border-blue-800 dark:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 rounded-xl text-xs font-black transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                <Plus size={14} /> Tambah Pecahan Kategori
+              </button>
+            </div>
+
+            <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex gap-3 shrink-0">
+              <button type="button" onClick={() => { triggerHaptic(); handleConfirmSplits(); }} className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer">
+                Konfirmasi Pecahan
+              </button>
+              <button type="button" onClick={() => setShowSplitModal(false)} className="py-3.5 px-6 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-bold transition-all">
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POP-UP PILIH KATEGORI UNTUK ITEM SPLIT */}
+      {showSplitCatModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-100 dark:border-slate-800">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
+              <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
+                <span>🏷️</span> Pilih Kategori Pecahan #{activeSplitIndex !== null ? activeSplitIndex + 1 : ""}
+              </h3>
+              <button type="button" onClick={() => { setShowSplitCatModal(false); setActiveSplitIndex(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full transition-colors"><X size={14}/></button>
+            </div>
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
+              <div className="relative">
+                <Search className="absolute left-3 top-3.5 text-slate-400" size={16} />
+                <input type="text" placeholder="Ketik untuk mencari kategori..." className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 transition-colors focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              </div>
+            </div>
+            
+            <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
+              {tType === "expense" ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 min-w-0 text-left">
+                    <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 mb-2 border-b border-orange-100 dark:border-orange-950/30 z-10">
+                      <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel</p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").length === 0 && <p className="text-[10px] text-slate-400 italic">Tidak ditemukan</p>}
+                      {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").map(cat => (
+                        <button key={cat.id} type="button" onClick={() => handleSelectSplitCategory(cat.name)} className="w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:border-orange-200 dark:hover:bg-orange-900/50">{cat.name}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2 border-l border-slate-100 dark:border-slate-800 pl-4 min-w-0 text-left">
+                    <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 mb-2 border-b border-purple-100 dark:border-purple-950/30 z-10">
+                      <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">🟣 Tetap</p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {filteredCategories.filter(c => c.type === "expense" && c.expenseType === "fixed").length === 0 && <p className="text-[10px] text-slate-400 italic">Tidak ditemukan</p>}
+                      {filteredCategories.filter(c => c.type === "expense" && c.expenseType === "fixed").map(cat => (
+                        <button key={cat.id} type="button" onClick={() => handleSelectSplitCategory(cat.name)} className="w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-200 dark:hover:bg-purple-900/50">{cat.name}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {filteredCategories.filter(c => c.type === "income").length === 0 && <p className="text-[10px] text-slate-400 italic col-span-2 text-center py-4">Tidak ditemukan</p>}
+                  {filteredCategories.filter(c => c.type === "income").map(cat => (
+                    <button key={cat.id} type="button" onClick={() => handleSelectSplitCategory(cat.name)} className="w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-green-50 dark:hover:bg-green-950/30 hover:border-green-200 dark:hover:bg-green-900/50">{cat.name}</button>
                   ))}
                 </div>
               )}

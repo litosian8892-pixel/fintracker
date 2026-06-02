@@ -6,7 +6,7 @@ import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc } from "firebase/firestore";
 import * as XLSX from "xlsx";
 
-import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData } from "../types";
+import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData, SplitItemData } from "../types";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import AuthScreen from "../components/shared/AuthScreen";
 import HistoryList from "../components/shared/HistoryList";
@@ -464,14 +464,21 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
-  const handleTransaction = async () => {
+  const handleTransaction = async (customSplits?: SplitItemData[]) => {
     if (isSubmittingRef.current) return; 
     if (!user || !tAmount || !tAccountId) return alert("Isi data dompet dan nominal dengan lengkap!");
     if (tType === "transfer" && (!tToAccountId || tAccountId === tToAccountId)) return alert("Pilih dompet tujuan yang berbeda!");
-    if (tType !== "transfer" && !tCategory) return alert("Kategori transaksi wajib dipilih terlebih dahulu!");
+    if (tType !== "transfer" && !tCategory && (!customSplits || customSplits.length === 0)) return alert("Kategori transaksi wajib dipilih terlebih dahulu!");
     
     const amount = safeEvaluate(tAmount);
     if (amount <= 0) return alert("Nominal transaksi tidak valid!");
+
+    if (customSplits && customSplits.length > 0) {
+      const splitsTotal = customSplits.reduce((acc, curr) => acc + curr.amount, 0);
+      if (splitsTotal !== amount) {
+        return alert(`Total pecahan (Rp ${splitsTotal.toLocaleString('id-ID')}) harus sama dengan total nominal transaksi (Rp ${amount.toLocaleString('id-ID')})!`);
+      }
+    }
 
     const adminFee = tType === "transfer" && tAdminFee ? safeEvaluate(tAdminFee) : 0; 
     const sourceAcc = accounts.find(a => a.id === tAccountId);
@@ -489,7 +496,21 @@ export default function FintrackerApp() {
       } else {
         const newBal = tType === "income" ? sourceAcc.balance + amount : sourceAcc.balance - amount;
         await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: newBal });
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: tNote, category: tCategory, tDate, createdAt: serverTimestamp() });
+        
+        const docData: any = { 
+          amount, 
+          type: tType, 
+          accountId: tAccountId, 
+          accountName: sourceAcc.name, 
+          note: tNote, 
+          category: (customSplits && customSplits.length > 0) ? "Split Transaksi" : tCategory, 
+          tDate, 
+          createdAt: serverTimestamp() 
+        };
+        if (customSplits && customSplits.length > 0) {
+          docData.splits = customSplits;
+        }
+        await addDoc(collection(db, `users/${user.uid}/transactions`), docData);
       }
       setTAmount(""); setTNote(""); setTAdminFee(""); setTCategory(""); setTAccountId(""); setTToAccountId(""); 
       alert("Transaksi Sukses!");
@@ -574,6 +595,15 @@ export default function FintrackerApp() {
       } else {
         updateData.toAccountId = null; updateData.toAccountName = null; updateData.adminFee = null;
       }
+      
+      if (oldT.splits) {
+        if (newAmount === oldT.amount && editTType === oldT.type) {
+          updateData.splits = oldT.splits;
+        } else {
+          updateData.splits = null; 
+        }
+      }
+
       await updateDoc(tRef, updateData);
       setEditingTransaction(null); setEditTAdminFee(""); alert("Transaksi berhasil diperbarui!");
     } catch (e) { alert("Gagal memperbarui transaksi: " + e); } 
@@ -595,9 +625,31 @@ export default function FintrackerApp() {
   const combinedExpenseTxs = [...reportTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
   const totalIncome = reportTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
   const totalExpense = combinedExpenseTxs.reduce((a, b) => a + b.amount, 0); 
-  const expenseByCategory = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
+  
+  const expenseByCategory = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => {
+    if (curr.splits && curr.splits.length > 0) {
+      curr.splits.forEach(s => {
+        acc[s.category] = (acc[s.category] || 0) + s.amount;
+      });
+    } else {
+      acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
+    }
+    return acc;
+  }, {});
+
   const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
-  const incomeByCategory = reportTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; return acc; }, {});
+  
+  const incomeByCategory = reportTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => {
+    if (curr.splits && curr.splits.length > 0) {
+      curr.splits.forEach(s => {
+        acc[s.category] = (acc[s.category] || 0) + s.amount;
+      });
+    } else {
+      acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
+    }
+    return acc;
+  }, {});
+
   const incomeCategoryList = Object.keys(incomeByCategory).map(key => ({ name: key, value: incomeByCategory[key] }));
   const expenseByDate = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc; }, {});
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
@@ -608,11 +660,36 @@ export default function FintrackerApp() {
 
   const handleExportToExcel = () => {
     if (reportTransactions.length === 0) return alert("Tidak ada data transaksi di bulan ini!");
-    const excelData = reportTransactions.map((t, idx) => ({ "No": idx + 1, "Tanggal": t.tDate, "Tipe": t.type === "income" ? "Pemasukan" : t.type === "expense" ? "Pengeluaran" : "Transfer", "Kategori": t.category, "Dompet": t.type === "transfer" ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName, "Nominal (Rp)": t.amount, "Catatan": t.note || "-" }));
+    
+    const excelData = reportTransactions.map((t, idx) => {
+      let categoryStr = t.category;
+      if (t.splits && t.splits.length > 0) {
+        categoryStr = "Split: " + t.splits.map(s => `${s.category} (Rp ${s.amount.toLocaleString('id-ID')})`).join(', ');
+      }
+      
+      let noteStr = t.note || "-";
+      if (t.splits && t.splits.length > 0) {
+        const splitNotes = t.splits.map(s => s.note).filter(Boolean);
+        if (splitNotes.length > 0) {
+          noteStr = `${noteStr} [Pecahan: ${splitNotes.join(', ')}]`;
+        }
+      }
+
+      return { 
+        "No": idx + 1, 
+        "Tanggal": t.tDate, 
+        "Tipe": t.type === "income" ? "Pemasukan" : t.type === "expense" ? "Pengeluaran" : "Transfer", 
+        "Kategori": categoryStr, 
+        "Dompet": t.type === "transfer" ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName, 
+        "Nominal (Rp)": t.amount, 
+        "Catatan": noteStr 
+      };
+    });
+
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan");
-    worksheet["!cols"] = [{ wch: 5 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 18 }, { wch: 25 }];
+    worksheet["!cols"] = [{ wch: 5 }, { wch: 12 }, { wch: 15 }, { wch: 25 }, { wch: 25 }, { wch: 18 }, { wch: 35 }];
     XLSX.writeFile(workbook, `Fintracker_Laporan_${reportMonth}.xlsx`);
   };
 
