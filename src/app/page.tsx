@@ -19,7 +19,7 @@ import AssetsTab from "../components/tabs/AssetsTab";
 import SettingsTab from "../components/tabs/SettingsTab";
 import DebtsTab from "../components/tabs/DebtsTab";
 
-import { X, Lock } from "lucide-react"; 
+import { X, Lock, ChevronDown } from "lucide-react"; 
 
 const safeEvaluate = (expr: string): number => {
   if (!expr) return 0;
@@ -70,6 +70,7 @@ export default function FintrackerApp() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [searchResult, setSearchResult] = useState<TransactionData[]>([]);
 
+  // STATES UNTUK EDIT TRANSAKSI
   const [editingTransaction, setEditingTransaction] = useState<TransactionData | null>(null);
   const [editTAmount, setEditTAmount] = useState("");
   const [editTType, setEditTType] = useState<"income" | "expense" | "transfer">("expense");
@@ -80,6 +81,11 @@ export default function FintrackerApp() {
   const [editTDate, setEditTDate] = useState("");
   const [editTAdminFee, setEditTAdminFee] = useState(""); 
   const [activeEditKeypad, setActiveEditKeypad] = useState<"amount" | "adminFee" | null>(null);
+  
+  // STATES RINCIAN PECAHAN EDIT BARU
+  const [editTSplits, setEditTSplits] = useState<SplitItemData[]>([]);
+  const [activeEditSplitIndex, setActiveEditSplitIndex] = useState<number | null>(null);
+  const [showEditSplitCatModal, setShowEditSplitCatModal] = useState(false);
 
   const [isMobile, setIsMobile] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
@@ -128,7 +134,7 @@ export default function FintrackerApp() {
   const [accIsSavings, setAccIsSavings] = useState(false); 
   const [accTargetBalance, setAccTargetBalance] = useState(""); 
   const [accExcludeFromTotal, setAccExcludeFromTotal] = useState(false); 
-  const [accSavingsGoalTitle, setAccSavingsGoalTitle] = useState(""); // <--- BARU: STATE NAMA IMPIAN
+  const [accSavingsGoalTitle, setAccSavingsGoalTitle] = useState(""); 
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [editAccName, setEditAccName] = useState("");
@@ -137,7 +143,7 @@ export default function FintrackerApp() {
   const [editAccIsSavings, setEditAccIsSavings] = useState(false); 
   const [editAccTargetBalance, setEditAccTargetBalance] = useState(""); 
   const [editAccExcludeFromTotal, setEditAccExcludeFromTotal] = useState(false); 
-  const [editAccSavingsGoalTitle, setEditAccSavingsGoalTitle] = useState(""); // <--- BARU: STATE EDIT NAMA IMPIAN
+  const [editAccSavingsGoalTitle, setEditAccSavingsGoalTitle] = useState(""); 
 
   const [tAmount, setTAmount] = useState("");
   const [tAdminFee, setTAdminFee] = useState(""); 
@@ -414,7 +420,7 @@ export default function FintrackerApp() {
         isSavings: accIsSavings, 
         targetBalance: accIsSavings && accTargetBalance ? safeEvaluate(accTargetBalance) : null, 
         excludeFromTotal: accExcludeFromTotal, 
-        savingsGoalTitle: accIsSavings && accSavingsGoalTitle ? accSavingsGoalTitle : null, // <--- BARU: SIMPAN FIELD
+        savingsGoalTitle: accIsSavings && accSavingsGoalTitle ? accSavingsGoalTitle : null, 
         createdAt: serverTimestamp() 
       });
       setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); setAccExcludeFromTotal(false); setAccSavingsGoalTitle("");
@@ -461,7 +467,7 @@ export default function FintrackerApp() {
         isSavings: editAccIsSavings, 
         targetBalance: editAccIsSavings && editAccTargetBalance ? safeEvaluate(editAccTargetBalance) : null, 
         excludeFromTotal: editAccExcludeFromTotal,
-        savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle ? editAccSavingsGoalTitle : null // <--- BARU: UPDATE FIELD
+        savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle ? editAccSavingsGoalTitle : null 
       });
       
       setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false); setEditAccSavingsGoalTitle("");
@@ -564,17 +570,22 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
+  // INITIALIZE POPULASI SPLITS UNTUK MODAL EDIT KOREKSI
   const openEditModal = (t: TransactionData) => {
     setEditingTransaction(t); setEditTAmount(t.amount.toString()); setEditTType(t.type as any); setEditTAccountId(t.accountId);
     setEditTToAccountId(t.toAccountId || ""); setEditTNote(t.note || ""); setEditTCategory(t.category); setEditTDate(t.tDate); setEditTAdminFee(t.adminFee?.toString() || ""); 
+    setEditTSplits(t.splits ? t.splits.map(s => ({ ...s })) : []); // Deep copy splits
   };
 
   const handleUpdateTransaction = async () => {
     if (isSubmittingRef.current) return; 
     if (!user || !editingTransaction) return;
     const oldT = editingTransaction;
-    const newAmount = safeEvaluate(editTAmount);
+    
+    // Auto calculate amount if splits are present, or use the input box
+    const newAmount = editTSplits.length > 0 ? editTSplits.reduce((sum, s) => sum + s.amount, 0) : safeEvaluate(editTAmount);
     if (newAmount <= 0) return alert("Nominal transaksi tidak valid!");
+    
     const newAdminFee = editTType === "transfer" && editTAdminFee ? safeEvaluate(editTAdminFee) : 0; 
 
     isSubmittingRef.current = true;
@@ -612,18 +623,25 @@ export default function FintrackerApp() {
       }
 
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
-      const updateData: any = { amount: newAmount, type: editTType, accountId: editTAccountId, accountName: accounts.find(a => a.id === editTAccountId)?.name || "", note: editTNote, category: editTType === "transfer" ? "Transfer" : editTCategory, tDate: editTDate };
+      const updateData: any = { 
+        amount: newAmount, 
+        type: editTType, 
+        accountId: editTAccountId, 
+        accountName: accounts.find(a => a.id === editTAccountId)?.name || "", 
+        note: editTNote, 
+        category: editTSplits.length > 0 ? "Split Transaksi" : (editTType === "transfer" ? "Transfer" : editTCategory), 
+        tDate: editTDate 
+      };
+      
       if (editTType === "transfer") {
         updateData.toAccountId = editTToAccountId; updateData.toAccountName = accounts.find(a => a.id === editTToAccountId)?.name || ""; updateData.adminFee = newAdminFee; 
+        updateData.splits = null;
       } else {
         updateData.toAccountId = null; updateData.toAccountName = null; updateData.adminFee = null;
-      }
-      
-      if (oldT.splits) {
-        if (newAmount === oldT.amount && editTType === oldT.type) {
-          updateData.splits = oldT.splits;
+        if (editTSplits.length > 0) {
+          updateData.splits = editTSplits;
         } else {
-          updateData.splits = null; 
+          updateData.splits = null;
         }
       }
 
@@ -642,6 +660,16 @@ export default function FintrackerApp() {
     else if (key === "=") { const evaluated = safeEvaluate(currentVal); setVal(evaluated > 0 ? evaluated.toString() : ""); } 
     else if (key === "Ya") setActiveEditKeypad(null);
     else setVal(currentVal + key);
+  };
+
+  const handleSelectEditSplitCategory = (catName: string) => {
+    if (activeEditSplitIndex !== null) {
+      const updated = [...editTSplits];
+      updated[activeEditSplitIndex].category = catName;
+      setEditTSplits(updated);
+    }
+    setShowEditSplitCatModal(false);
+    setActiveEditSplitIndex(null);
   };
 
   const adminFeeTxs = reportTransactions.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ id: `fee-${t.id}`, amount: t.adminFee!, type: "expense", accountId: t.accountId, accountName: t.accountName, category: "Biaya Admin", note: `Biaya admin transfer ke ${t.toAccountName}`, tDate: t.tDate } as TransactionData));
@@ -834,11 +862,14 @@ export default function FintrackerApp() {
                 </select>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
-                <input disabled={isSubmitting} type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveEditKeypad("amount"); }} className={`w-full p-3.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white disabled:opacity-50 transition-all ${activeEditKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-100 dark:border-slate-700'}`} value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
-                {editTAmount && <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-slate-600 dark:text-slate-200 font-black">{formatRupiahTerbaca(editTAmount)}</span></p>}
-              </div>
+              {/* JIKA BUKAN SPLIT, MENAMPILKAN NOMINAL UTAMA */}
+              {editTSplits.length === 0 && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
+                  <input disabled={isSubmitting} type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveEditKeypad("amount"); }} className={`w-full p-3.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white disabled:opacity-50 transition-all ${activeEditKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-100 dark:border-slate-700'}`} value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
+                  {editTAmount && <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-slate-600 dark:text-slate-200 font-black">{formatRupiahTerbaca(editTAmount)}</span></p>}
+                </div>
+              )}
 
               {editTType === "transfer" && (
                 <div className="space-y-1">
@@ -853,17 +884,13 @@ export default function FintrackerApp() {
                 <input disabled={isSubmitting} type="date" className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTDate} onChange={(e) => setEditTDate(e.target.value)} />
               </div>
 
-              {editTType !== "transfer" && (
+              {editTType !== "transfer" && editTSplits.length === 0 && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
-                  
-                  {/* --- PERBAIKAN: INJEKSI KATEGORI SISTEM DI DROPDOWN EDIT MODAL --- */}
                   <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTCategory} onChange={(e) => setEditTCategory(e.target.value)}>
-                    
                     {editTCategory && !categories.some(c => c.type === editTType && c.name === editTCategory) && (
                       <option value={editTCategory}>{editTCategory} (Sistem)</option>
                     )}
-                    
                     {categories.filter(c => c.type === editTType).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
                   </select>
                 </div>
@@ -886,17 +913,117 @@ export default function FintrackerApp() {
               )}
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan</label>
-                <input disabled={isSubmitting} onFocus={() => setActiveEditKeypad(null)} type="text" className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white disabled:opacity-50 transition-colors" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan (Struk Utama)</label>
+                <input disabled={isSubmitting} onFocus={() => { setActiveEditKeypad(null); }} type="text" className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white disabled:opacity-50 transition-colors" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
               </div>
 
-              <div className="flex gap-2 pt-2 shrink-0">
+              {/* BARU: INLINE SPLIT EDITOR DI DALAM KOREKSI TRANSAKSI */}
+              {editTSplits && editTSplits.length > 0 && (
+                <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800 mt-2">
+                  <div className="flex justify-between items-center">
+                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">✂️ Koreksi Rincian Pecahan</p>
+                    <span className="text-[10px] font-black text-emerald-600">Total: Rp {editTSplits.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}</span>
+                  </div>
+                  {editTSplits.map((item, i) => (
+                    <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-150 dark:border-slate-800 space-y-3 relative text-left">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black text-slate-400">PECAHAN #{i + 1}</span>
+                        {editTSplits.length > 1 && (
+                          <button type="button" onClick={() => {
+                            const updated = editTSplits.filter((_, idx) => idx !== i);
+                            setEditTSplits(updated);
+                          }} className="text-red-500 hover:text-red-700 text-xs font-bold flex items-center gap-0.5 cursor-pointer">
+                            <X size={14} /> Hapus
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Kategori</label>
+                          <div onClick={() => {
+                            setActiveEditSplitIndex(i);
+                            setShowEditSplitCatModal(true);
+                          }} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-750 truncate">
+                            <span className="truncate">{item.category || "Pilih..."}</span>
+                            <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Nominal (Rp)</label>
+                          <input type="text" placeholder="Contoh: 15000" className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.amount === 0 ? "" : item.amount} onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, "");
+                            const updated = [...editTSplits];
+                            updated[i].amount = val ? Number(val) : 0;
+                            setEditTSplits(updated);
+                          }} />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Catatan Khusus Pecahan</label>
+                        <input type="text" placeholder="Keterangan..." className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.note || ""} onChange={(e) => {
+                          const updated = [...editTSplits];
+                          updated[i].note = e.target.value;
+                          setEditTSplits(updated);
+                        }} />
+                      </div>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => {
+                    const totalSoFar = editTSplits.reduce((sum, s) => sum + s.amount, 0);
+                    const diff = Math.max(0, safeEvaluate(editTAmount) - totalSoFar);
+                    setEditTSplits([...editTSplits, { category: "", amount: diff, note: "" }]);
+                  }} className="w-full py-2.5 border border-dashed border-blue-300 text-blue-600 dark:border-blue-800 dark:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 rounded-xl text-xs font-black flex items-center justify-center gap-1 cursor-pointer">
+                    + Tambah Baris Pecahan
+                  </button>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-4 shrink-0">
                 <button disabled={isSubmitting} onClick={handleUpdateTransaction} className={`flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg transition-all ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}>
                   {isSubmitting ? "Menyimpan..." : "Simpan Koreksi"}
                 </button>
                 <button disabled={isSubmitting} onClick={() => { setEditingTransaction(null); setActiveEditKeypad(null); }} className="py-3 px-6 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-bold transition-all disabled:opacity-50">
                   Batal
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POP-UP PILIH KATEGORI UNTUK ITEM SPLIT DI MODAL EDIT KOREKSI */}
+      {showEditSplitCatModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-100 dark:border-slate-800">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
+              <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
+                <span>🏷️</span> Pilih Kategori Pecahan #{activeEditSplitIndex !== null ? activeEditSplitIndex + 1 : ""}
+              </h3>
+              <button type="button" onClick={() => { setShowEditSplitCatModal(false); setActiveEditSplitIndex(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full transition-colors"><X size={14}/></button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 min-w-0 text-left">
+                  <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 mb-2 border-b border-orange-100 dark:border-orange-950/30 z-10">
+                    <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel</p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {categories.filter(c => c.type === editTType && c.expenseType !== "fixed").map(cat => (
+                      <button key={cat.id} type="button" onClick={() => handleSelectEditSplitCategory(cat.name)} className="w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:border-orange-200 dark:hover:border-orange-900/50">{cat.name}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2 border-l border-slate-100 dark:border-slate-800 pl-4 min-w-0 text-left">
+                  <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 mb-2 border-b border-purple-100 dark:border-purple-950/30 z-10">
+                    <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">🟣 Tetap</p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {categories.filter(c => c.type === editTType && c.expenseType === "fixed").map(cat => (
+                      <button key={cat.id} type="button" onClick={() => handleSelectEditSplitCategory(cat.name)} className="w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-200 dark:hover:bg-purple-900/50">{cat.name}</button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

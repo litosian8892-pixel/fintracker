@@ -53,12 +53,17 @@ export default function HomeTab({
   const [activeKeypad, setActiveKeypad] = useState<"amount" | "adminFee" | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // State baru untuk mendukung pecahan transaksi
+  // States baru untuk mendukung pecahan transaksi yang fleksibel
   const [splits, setSplits] = useState<SplitItemData[]>([]);
   const [showSplitModal, setShowSplitModal] = useState(false);
-  const [tempSplits, setTempSplits] = useState<SplitItemData[]>([]);
+  
+  // Mengubah tempSplits menyimpan string expression agar bisa dikalkulasi per baris
+  const [tempSplits, setTempSplits] = useState<{ category: string; amountStr: string; note: string }[]>([]);
   const [activeSplitIndex, setActiveSplitIndex] = useState<number | null>(null);
   const [showSplitCatModal, setShowSplitCatModal] = useState(false);
+
+  // State untuk melacak input pecahan mana yang sedang diketik via kalkulator seluler
+  const [activeSplitKeypadIndex, setActiveSplitKeypadIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768); 
@@ -122,11 +127,34 @@ export default function HomeTab({
     else setVal(currentVal + key);
   };
 
+  // LOGIKA BARU: KEYPAD KHUSUS NOMINAL PECAHAN
+  const handleSplitKeypadPress = (key: string) => {
+    triggerHaptic();
+    if (activeSplitKeypadIndex === null) return;
+    const currentVal = tempSplits[activeSplitKeypadIndex].amountStr || "";
+    const updated = [...tempSplits];
+    
+    if (key === "⌫") {
+      updated[activeSplitKeypadIndex].amountStr = currentVal.slice(0, -1);
+    } else if (key === "C") {
+      updated[activeSplitKeypadIndex].amountStr = "";
+    } else if (key === "=") {
+      const evaluated = safeEvaluate(currentVal);
+      updated[activeSplitKeypadIndex].amountStr = evaluated > 0 ? evaluated.toString() : "";
+    } else if (key === "Ya") {
+      setActiveSplitKeypadIndex(null);
+      return;
+    } else {
+      updated[activeSplitKeypadIndex].amountStr = currentVal + key;
+    }
+    setTempSplits(updated);
+  };
+
   const handleAddSplitItem = () => {
     const targetAmount = safeEvaluate(tAmount);
-    const currentSum = tempSplits.reduce((sum, s) => sum + s.amount, 0);
+    const currentSum = tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0);
     const remaining = Math.max(0, targetAmount - currentSum);
-    setTempSplits([...tempSplits, { category: "", amount: remaining, note: "" }]);
+    setTempSplits([...tempSplits, { category: "", amountStr: remaining > 0 ? remaining.toString() : "", note: "" }]);
   };
 
   const handleSelectSplitCategory = (catName: string) => {
@@ -141,19 +169,27 @@ export default function HomeTab({
 
   const handleConfirmSplits = () => {
     const targetAmount = safeEvaluate(tAmount);
-    const currentSum = tempSplits.reduce((sum, s) => sum + s.amount, 0);
     
-    if (tempSplits.some(s => !s.category)) {
+    // Evaluasi seluruh nominal pecahan matematika terlebih dahulu
+    const evaluatedSplits = tempSplits.map(s => ({
+      category: s.category,
+      amount: safeEvaluate(s.amountStr),
+      note: s.note
+    }));
+
+    const currentSum = evaluatedSplits.reduce((sum, s) => sum + s.amount, 0);
+    
+    if (evaluatedSplits.some(s => !s.category)) {
       return alert("Seluruh pecahan wajib dipilih kategorinya!");
     }
-    if (tempSplits.some(s => s.amount <= 0)) {
+    if (evaluatedSplits.some(s => s.amount <= 0)) {
       return alert("Nominal pecahan tidak boleh kosong atau bernilai 0!");
     }
     if (currentSum !== targetAmount) {
       return alert(`Total alokasi pecahan (Rp ${currentSum.toLocaleString('id-ID')}) harus sama persis dengan nominal transaksi utama (Rp ${targetAmount.toLocaleString('id-ID')})!`);
     }
 
-    setSplits(tempSplits);
+    setSplits(evaluatedSplits);
     setTCategory("Split Transaksi");
     setShowSplitModal(false);
   };
@@ -171,22 +207,22 @@ export default function HomeTab({
       <div className="space-y-4">
         <div className="space-y-1">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">NOMINAL (RP)</label>
-          <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("amount"); }} className={`w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-slate-50 dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`} placeholder={isMobile ? "Ketuk untuk input nominal..." : "Rp 0 atau ketik ekspresi matematika..."} value={tAmount} onChange={(e) => setTAmount(e.target.value)} />
-          {tAmount && <p className="text-[10px] font-bold text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-slate-600 dark:text-slate-300 font-black">{formatRupiahTerbaca(tAmount)}</span></p>}
+          <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("amount"); setActiveSplitKeypadIndex(null); } }} className={`w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-slate-50 dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`} placeholder={isMobile ? "Ketuk untuk input nominal..." : "Rp 0 atau ketik ekspresi matematika..."} value={tAmount} onChange={(e) => setTAmount(e.target.value)} />
+          {tAmount && <p className="text-[10px] font-bold text-slate-400 pl-1 text-left animate-in fade-in duration-150">Terbaca: <span className="text-slate-600 dark:text-slate-300 font-black">{formatRupiahTerbaca(tAmount)}</span></p>}
         </div>
 
         {tType === "transfer" && (
           <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
             <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Biaya Admin (Opsional)</label>
-            <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("adminFee"); }} className={`w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-slate-50 dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`} placeholder={isMobile ? "Ketuk untuk input biaya admin..." : "Rp 0 atau ketik ekspresi matematika..."} value={tAdminFee} onChange={(e) => setTAdminFee(e.target.value)} />
-            {tAdminFee && <p className="text-[10px] font-bold text-blue-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-blue-600 dark:text-blue-300 font-black">{formatRupiahTerbaca(tAdminFee)}</span></p>}
+            <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("adminFee"); setActiveSplitKeypadIndex(null); } }} className={`w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 transition-all ${activeKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-slate-50 dark:bg-slate-800' : 'border-slate-800 dark:border-slate-700'}`} placeholder={isMobile ? "Ketuk untuk input biaya admin..." : "Rp 0 atau ketik ekspresi matematika..."} value={tAdminFee} onChange={(e) => setTAdminFee(e.target.value)} />
+            {tAdminFee && <p className="text-[10px] font-bold text-blue-400 pl-1 text-left animate-in fade-in duration-150">Terbaca: <span className="text-blue-600 dark:text-blue-300 font-black">{formatRupiahTerbaca(tAdminFee)}</span></p>}
           </div>
         )}
 
         <div className={`grid grid-cols-1 ${tType !== "transfer" ? "md:grid-cols-2" : ""} gap-4`}>
           <div className="space-y-1 min-w-0"> 
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">📅 TANGGAL</label>
-            <input type="date" onFocus={() => setActiveKeypad(null)} className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer appearance-none dark:bg-slate-800 dark:border-slate-700" value={tDate} onChange={(e) => setTDate(e.target.value)} />
+            <input type="date" onFocus={() => { setActiveKeypad(null); setActiveSplitKeypadIndex(null); }} className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer appearance-none dark:bg-slate-800 dark:border-slate-700" value={tDate} onChange={(e) => setTDate(e.target.value)} />
           </div>
 
           {tType !== "transfer" && (
@@ -196,20 +232,25 @@ export default function HomeTab({
                 <div className="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs font-bold text-blue-700 dark:bg-blue-950/40 dark:border-blue-900/50 dark:text-blue-300 flex items-center justify-between transition-all">
                   <span className="truncate">✂️ {splits.length} Pecahan Terpilih</span>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <button type="button" onClick={() => { setTempSplits([...splits]); setShowSplitModal(true); }} className="text-[10px] font-black underline hover:text-blue-800">Edit</button>
+                    <button type="button" onClick={() => { 
+                      setTempSplits(splits.map(s => ({ category: s.category, amountStr: s.amount.toString(), note: s.note || "" }))); 
+                      setShowSplitModal(true); 
+                    }} className="text-[10px] font-black underline hover:text-blue-800">Edit</button>
                     <button type="button" onClick={() => { setSplits([]); setTCategory(""); }} className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-full text-blue-500"><X size={12} /></button>
                   </div>
                 </div>
               ) : (
                 <div className="flex gap-2 items-center">
-                  <div onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="flex-1 p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-700 truncate">
+                  <div onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); setActiveSplitKeypadIndex(null); }} className="flex-1 p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer flex items-center justify-between transition-colors hover:bg-slate-50 dark:hover:bg-slate-700 truncate">
                     <span className={`truncate ${!tCategory ? "text-slate-400 dark:text-slate-500 font-medium" : ""}`}>{tCategory || "Pilih Kategori..."}</span><ChevronDown size={14} className="text-slate-400 shrink-0" />
                   </div>
                   {safeEvaluate(tAmount) > 0 && (
                     <button type="button" onClick={() => {
                       const initialAmount = safeEvaluate(tAmount);
-                      setTempSplits([{ category: "", amount: initialAmount, note: "" }]);
+                      setTempSplits([{ category: "", amountStr: initialAmount.toString(), note: "" }]);
                       setShowSplitModal(true);
+                      setActiveSplitKeypadIndex(null);
+                      setActiveKeypad(null);
                     }} className="px-3 py-3.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-black border border-blue-200 dark:border-blue-900/30 shrink-0 flex items-center gap-1 cursor-pointer transition-colors">
                       ✂️ Pecah
                     </button>
@@ -223,7 +264,7 @@ export default function HomeTab({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className={`space-y-1 min-w-0 ${tType === "transfer" ? "" : "md:col-span-2"}`}> 
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">💳 DOMPET</label>
-            <select className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer" value={tAccountId} onFocus={() => setActiveKeypad(null)} onChange={(e) => setTAccountId(e.target.value)}>
+            <select className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-white cursor-pointer" value={tAccountId} onFocus={() => { setActiveKeypad(null); setActiveSplitKeypadIndex(null); }} onChange={(e) => setTAccountId(e.target.value)}>
               <option value="" disabled>Pilih Dompet...</option>
               {availableSourceAccounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString("id-ID")})</option>
@@ -234,7 +275,7 @@ export default function HomeTab({
           {tType === "transfer" && (
             <div className="space-y-1 min-w-0 animate-in fade-in slide-in-from-left-2 duration-200">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">💳 DOMPET TUJUAN</label>
-              <select className="w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" value={tToAccountId} onFocus={() => setActiveKeypad(null)} onChange={(e) => setTToAccountId(e.target.value)}>
+              <select className="w-full max-w-full p-3.5 bg-white dark:bg-slate-800 border border-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" value={tToAccountId} onFocus={() => { setActiveKeypad(null); setActiveSplitKeypadIndex(null); }} onChange={(e) => setTToAccountId(e.target.value)}>
                 <option value="" disabled>Pilih Tujuan...</option>
                 {accounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString("id-ID")})</option>
@@ -246,7 +287,7 @@ export default function HomeTab({
 
         <div className="space-y-1">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">📝 CATATAN</label>
-          <input type="text" onFocus={() => setActiveKeypad(null)} className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 dark:bg-slate-800 dark:border-slate-700" placeholder="Tulis keterangan transaksi..." value={tNote} onChange={(e) => setTNote(e.target.value)} />
+          <input type="text" onFocus={() => { setActiveKeypad(null); setActiveSplitKeypadIndex(null); }} className="w-full max-w-full p-3.5 bg-white border border-slate-800 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 dark:bg-slate-800 dark:border-slate-700" placeholder="Tulis keterangan transaksi..." value={tNote} onChange={(e) => setTNote(e.target.value)} />
         </div>
 
         <button type="button" onClick={() => {
@@ -277,7 +318,7 @@ export default function HomeTab({
                     <div className="flex flex-col gap-2">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").length === 0 && <p className="text-[10px] text-slate-400 italic">Tidak ditemukan</p>}
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").map(cat => (
-                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-orange-500 text-white border-orange-600 shadow-md animate-none" : "bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:border-orange-200 dark:hover:border-orange-900/50"}`}>{cat.name}</button>
+                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-orange-500 text-white border-orange-600 shadow-md animate-none" : "bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:border-orange-200 dark:hover:bg-orange-900/50"}`}>{cat.name}</button>
                       ))}
                     </div>
                   </div>
@@ -286,7 +327,7 @@ export default function HomeTab({
                     <div className="flex flex-col gap-2">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType === "fixed").length === 0 && <p className="text-[10px] text-slate-400 italic">Tidak ditemukan</p>}
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType === "fixed").map(cat => (
-                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-purple-500 text-white border-purple-600 shadow-md animate-none" : "bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-200 dark:hover:border-purple-900/50"}`}>{cat.name}</button>
+                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-purple-500 text-white border-purple-600 shadow-md animate-none" : "bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-200 dark:hover:bg-purple-900/50"}`}>{cat.name}</button>
                       ))}
                     </div>
                   </div>
@@ -312,7 +353,7 @@ export default function HomeTab({
               <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
                 <span>✂️</span> Pecah Transaksi ({formatRupiahTerbaca(tAmount)})
               </h3>
-              <button type="button" onClick={() => setShowSplitModal(false)} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full transition-colors">
+              <button type="button" onClick={() => { setShowSplitModal(false); setActiveSplitKeypadIndex(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full transition-colors">
                 <X size={14}/>
               </button>
             </div>
@@ -325,13 +366,13 @@ export default function HomeTab({
                 </div>
                 <div className="flex justify-between items-center text-xs font-bold mt-2 pt-2 border-t border-blue-100/50 dark:border-blue-900/20">
                   <span>Total Dialokasikan:</span>
-                  <span className={`font-black ${tempSplits.reduce((sum, s) => sum + s.amount, 0) === safeEvaluate(tAmount) ? 'text-emerald-600' : 'text-amber-500'}`}>
-                    {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(tempSplits.reduce((sum, s) => sum + s.amount, 0))}
+                  <span className={`font-black ${tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0) === safeEvaluate(tAmount) ? 'text-emerald-600' : 'text-amber-500'}`}>
+                    {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0))}
                   </span>
                 </div>
-                {safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + s.amount, 0) !== 0 && (
-                  <div className="text-[10px] font-black text-amber-500 mt-2 text-right">
-                    Sisa yang belum dialokasikan: {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + s.amount, 0))}
+                {safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0) !== 0 && (
+                  <div className="text-[10px] font-black text-amber-500 mt-2 text-right animate-in fade-in">
+                    Sisa yang belum dialokasikan: {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0))}
                   </div>
                 )}
               </div>
@@ -360,6 +401,7 @@ export default function HomeTab({
                           setActiveSplitIndex(i);
                           setShowSplitCatModal(true);
                           setSearchQuery("");
+                          setActiveSplitKeypadIndex(null); // Tutup keypad nominal saat buka modal kategori
                         }} className="p-3 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 truncate">
                           <span className="truncate">{item.category || "Pilih Kategori..."}</span>
                           <ChevronDown size={14} className="text-slate-400 shrink-0" />
@@ -368,18 +410,19 @@ export default function HomeTab({
 
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Nominal (Rp)</label>
-                        <input type="text" placeholder="Contoh: 15000" className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.amount === 0 ? "" : item.amount} onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, "");
+                        {/* INPUT NOMINAL DENGAN PENCEGAHAN KEYBOARD BAWAAN SISTEM DI MOBILE */}
+                        <input type="text" placeholder="Contoh: 15000" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveSplitKeypadIndex(i); setActiveKeypad(null); } }} className={`w-full p-3 bg-white dark:bg-slate-900 border rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500 transition-all ${activeSplitKeypadIndex === i && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-slate-50 dark:bg-slate-900' : 'border-slate-200 dark:border-slate-700'}`} value={item.amountStr} onChange={(e) => {
                           const updated = [...tempSplits];
-                          updated[i].amount = val ? Number(val) : 0;
+                          updated[i].amountStr = e.target.value;
                           setTempSplits(updated);
                         }} />
+                        {item.amountStr && <p className="text-[9px] font-bold text-slate-400 pl-1">Terbaca: <span className="font-black text-slate-600 dark:text-slate-300">{formatRupiahTerbaca(item.amountStr)}</span></p>}
                       </div>
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Catatan Khusus (Opsional)</label>
-                      <input type="text" placeholder="Contoh: Belanja bumbu masak" className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.note || ""} onChange={(e) => {
+                      <input type="text" onFocus={() => { setActiveSplitKeypadIndex(null); }} placeholder="Contoh: Belanja bumbu masak" className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.note || ""} onChange={(e) => {
                         const updated = [...tempSplits];
                         updated[i].note = e.target.value;
                         setTempSplits(updated);
@@ -398,7 +441,7 @@ export default function HomeTab({
               <button type="button" onClick={() => { triggerHaptic(); handleConfirmSplits(); }} className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer">
                 Konfirmasi Pecahan
               </button>
-              <button type="button" onClick={() => setShowSplitModal(false)} className="py-3.5 px-6 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-bold transition-all">
+              <button type="button" onClick={() => { setShowSplitModal(false); setActiveSplitKeypadIndex(null); }} className="py-3.5 px-6 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-bold transition-all">
                 Batal
               </button>
             </div>
@@ -462,6 +505,7 @@ export default function HomeTab({
         </div>
       )}
 
+      {/* FLOATING KEYPAD DRAWER UNTUK MAIN NOMINAL */}
       {isMobile && activeKeypad && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
@@ -480,6 +524,30 @@ export default function HomeTab({
               <button type="button" onClick={() => handleKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
               {["(", "0", ")"].map((char) => (<button key={char} type="button" onClick={() => handleKeypadPress(char)} className={`${char === "0" ? "bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none`}>{char}</button>))}
               <button type="button" onClick={() => handleKeypadPress("Ya")} className="py-3.5 bg-blue-600 active:bg-blue-700 rounded-xl text-white font-black hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition-all select-none">Ya</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* BARU: FLOATING KEYPAD DRAWER UNTUK NOMINAL PECAHAN (SPLIT KEYPAD) */}
+      {isMobile && activeSplitKeypadIndex !== null && (
+        <>
+          <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveSplitKeypadIndex(null)}></div>
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
+            <div className="flex justify-between items-center mb-3 px-1">
+              <span className="text-[10px] font-black text-slate-500 dark:text-blue-500 tracking-widest uppercase">Kalkulator Pecahan #{activeSplitKeypadIndex + 1}</span>
+              <button onClick={() => setActiveSplitKeypadIndex(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 text-xs font-bold flex items-center gap-1">Tutup <X size={14} /></button>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-white font-black text-base">
+              {["+", "-", "*", "/"].map((op) => (<button key={op} type="button" onClick={() => handleSplitKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>))}
+              {["7", "8", "9"].map((num) => (<button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl transition-all select-none">{num}</button>))}
+              <button type="button" onClick={() => handleSplitKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 active:bg-red-100 dark:active:bg-red-900/30 rounded-xl transition-all select-none">C</button>
+              {["4", "5", "6"].map((num) => (<button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl transition-all select-none">{num}</button>))}
+              <button type="button" onClick={() => handleSplitKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-300 flex items-center justify-center transition-all select-none">⌫</button>
+              {["1", "2", "3"].map((num) => (<button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl transition-all select-none">{num}</button>))}
+              <button type="button" onClick={() => handleSplitKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
+              {["(", "0", ")"].map((char) => (<button key={char} type="button" onClick={() => handleSplitKeypadPress(char)} className={`${char === "0" ? "bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none`}>{char}</button>))}
+              <button type="button" onClick={() => handleSplitKeypadPress("Ya")} className="py-3.5 bg-blue-600 active:bg-blue-700 rounded-xl text-white font-black hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition-all select-none">Ya</button>
             </div>
           </div>
         </>
