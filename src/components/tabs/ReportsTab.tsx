@@ -112,7 +112,7 @@ export default function ReportsTab({
 
   const [yearStr, monthStr] = reportMonth.split('-');
   const yearNum = parseInt(yearStr, 10);
-  const monthNum = parseInt(monthStr, 15);
+  const monthNum = parseInt(monthStr, 10);
   const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
   const firstDayOfWeek = new Date(yearNum, monthNum - 1, 1).getDay(); 
 
@@ -252,9 +252,11 @@ export default function ReportsTab({
                 const dayTxs = expenseTxs.filter(t => t.tDate === selectedHeatmapDate);
                 if (dayTxs.length === 0) return <p className="text-xs text-slate-400 dark:text-slate-500 italic text-center py-4">Tidak ada pengeluaran di hari ini.</p>;
                 
-                // BARU: URUTKAN BERDASARKAN KATEGORI SECARA ALFABETIS & NOMINAL TERBESAR KE TERKECIL
+                // URUTKAN BERDASARKAN KATEGORI SECARA ALFABETIS MURNI (KEBAL INTERUPSI EMOJI) & NOMINAL TERBESAR KE TERKECIL
                 dayTxs.sort((a, b) => {
-                  const catCompare = a.category.localeCompare(b.category);
+                  const cleanA = a.category.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                  const cleanB = b.category.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                  const catCompare = cleanA.localeCompare(cleanB);
                   if (catCompare !== 0) return catCompare;
                   return b.amount - a.amount;
                 });
@@ -295,7 +297,7 @@ export default function ReportsTab({
               let color = "bg-emerald-400"; if(percentage >= 90) color = "bg-red-500"; else if(percentage >= 75) color = "bg-amber-400";
               return (
                 <div key={cat.id} className="space-y-1.5">
-                  <div className="flex justify-between items-end"><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{cat.name}</span><div className="text-right"><span className={`text-[10px] font-black ${percentage >= 100 ? 'text-red-500' : 'text-slate-800 dark:text-slate-200'}`}>Rp {spent.toLocaleString('id-ID')}</span><span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold"> / Rp {limit.toLocaleString('id-ID')}</span></div></div>
+                  <div className="flex justify-between items-end"><span className="text-xs font-bold text-slate-700 dark:text-slate-300">{cat.name}</span><div className="text-right"><span className={`text-[10px] font-black ${percentage >= 100 ? 'text-red-500' : 'text-slate-800 dark:text-slate-200'}`}>Rp {spent.toLocaleString('id-ID')}</span><span className="text-[9px] text-slate-400 dark:text-slate-550 font-bold"> / Rp {limit.toLocaleString('id-ID')}</span></div></div>
                   <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700"><div className={`h-full ${color} transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div></div>
                   {percentage >= 100 && <p className="text-[9px] font-black text-red-500 uppercase tracking-widest text-right mt-0.5">Budget Habis!</p>}
                 </div>
@@ -309,7 +311,7 @@ export default function ReportsTab({
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm px-1">Rincian Pengeluaran</h3>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
           <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-1">Pengeluaran Tetap (Fixed)</p>
-          {sortedFixedKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-500 italic">Kosong</p> : (
+          {sortedFixedKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-550 italic">Kosong</p> : (
             <div className="space-y-2">
               {sortedFixedKeys.map((key) => {
                 const data = fixedGrouped[key];
@@ -327,7 +329,7 @@ export default function ReportsTab({
         </div>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
           <p className="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest mb-1">Pengeluaran Variabel (Jajan)</p>
-          {sortedVarKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-500 italic">Kosong</p> : (
+          {sortedVarKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-550 italic">Kosong</p> : (
             <div className="space-y-2">
               {sortedVarKeys.map((key) => {
                 const data = varGrouped[key];
@@ -335,7 +337,7 @@ export default function ReportsTab({
                 return (
                   <div key={key} className="border-b border-slate-50 dark:border-slate-800/40 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
                     <div onClick={() => toggleExpand(key)} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all"><span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1">{key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span></span><span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">Rp {data.total.toLocaleString('id-ID')} <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} /></span></div>
-                    {isExpanded && <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl space-y-1.5 border border-slate-100 dark:border-slate-700/60 animate-in slide-in-from-top-2 duration-200">{data.items.map((item) => (<div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none"><div className="flex flex-col text-left"><span className="text-slate-400 dark:text-slate-500 font-semibold text-[9px]">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span><span className="text-slate-600 dark:text-slate-350 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span></div><span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span></div>))}</div>}
+                    {isExpanded && <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl space-y-1.5 border border-slate-100 dark:border-slate-700/60 animate-in slide-in-from-top-2 duration-200">{data.items.map((item) => (<div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none"><div className="flex flex-col text-left"><span className="text-slate-400 dark:text-slate-550 font-semibold text-[9px]">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span><span className="text-slate-600 dark:text-slate-350 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span></div><span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span></div>))}</div>}
                   </div>
                 );
               })}
@@ -349,7 +351,7 @@ export default function ReportsTab({
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm px-1">Rincian Pemasukan</h3>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
           <p className="text-[10px] font-black text-green-500 dark:text-green-455 uppercase tracking-widest mb-1">Detail Pemasukan</p>
-          {Object.keys(incomeGrouped).length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-500 italic">Kosong</p> : (
+          {Object.keys(incomeGrouped).length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-550 italic">Kosong</p> : (
             <div className="space-y-2">
               {sortedIncomeKeys.map((key) => {
                 const data = incomeGrouped[key];
