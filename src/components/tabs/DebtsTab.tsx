@@ -1,18 +1,18 @@
 "use client";
 import { useState } from "react";
-import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil } from "lucide-react";
-import { DebtData, AccountData } from "../../types";
+import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil, Tag } from "lucide-react";
+import { DebtData, AccountData, CategoryData } from "../../types";
 
 interface DebtsTabProps {
   debts: DebtData[];
   accounts: AccountData[];
+  categories: CategoryData[]; // <--- Menerima Prop Categories
   handleAddDebt: (type: "debt" | "receivable", person: string, amount: number, note: string, dueDate: string, accountId?: string) => void;
   handleEditDebt: (id: string, person: string, amount: number, note: string, dueDate: string) => void; 
-  handlePayDebt: (debtId: string, payAmount: number, accountId: string) => void;
+  handlePayDebt: (debtId: string, payAmount: number, accountId: string, category: string, note: string) => void; // <--- Diperbarui
   handleDeleteDebt: (debtId: string) => void;
 }
 
-// --- PARSER MATEMATIKA AMAN (ANTI-EVAL & TAHAN EROR SINTAKS) ---
 const safeEvaluate = (expr: string): number => {
   if (!expr) return 0;
   let sanitized = expr.replace(/[^0-9+\-*/().]/g, "");
@@ -31,10 +31,10 @@ const safeEvaluate = (expr: string): number => {
   }
 };
 
-export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDebt, handlePayDebt, handleDeleteDebt }: DebtsTabProps) {
+export default function DebtsTab({ debts, accounts, categories, handleAddDebt, handleEditDebt, handlePayDebt, handleDeleteDebt }: DebtsTabProps) {
   const [activeType, setActiveType] = useState<"debt" | "receivable">("debt");
   
-  // State Form Tambah Utang
+  // State Form Tambah
   const [showAddForm, setShowAddForm] = useState(false);
   const [person, setPerson] = useState("");
   const [amount, setAmount] = useState("");
@@ -42,17 +42,18 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
   const [dueDate, setDueDate] = useState(""); 
   const [sourceAccountId, setSourceAccountId] = useState("");
 
-  // State Form Edit Utang/Piutang (Baru)
+  // State Form Edit
   const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
   const [editPerson, setEditPerson] = useState("");
   const [editAmount, setEditAmount] = useState("");
   const [editNote, setEditNote] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
 
-  // State Form Bayar Cicilan
+  // State Form Bayar
   const [payingDebtId, setPayingDebtId] = useState<string | null>(null);
   const [payAmount, setPayAmount] = useState("");
   const [payAccountId, setPayAccountId] = useState("");
+  const [payCategory, setPayCategory] = useState(""); // <--- State Kategori Baru
 
   const formatRupiahTerbaca = (val: string) => {
     if (!val) return "Rp 0";
@@ -65,7 +66,6 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
     }).format(parsed);
   };
 
-  // Kalkulasi Overdue (Jatuh Tempo Terlewati)
   const isOverdue = (dateStr: string) => {
     if (!dateStr) return false;
     const today = new Date();
@@ -77,22 +77,15 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
 
   const submitAdd = () => {
     if (!person || !amount) return alert("Nama dan Nominal harus diisi!");
-    if (activeType === "receivable" && !sourceAccountId) {
-      return alert("Pilih dompet pengirim uang terlebih dahulu agar saldo otomatis terpotong!");
-    }
+    if (activeType === "receivable" && !sourceAccountId) return alert("Pilih dompet pengirim uang terlebih dahulu!");
     
     handleAddDebt(activeType, person, safeEvaluate(amount), note, dueDate, sourceAccountId);
     setShowAddForm(false); setPerson(""); setAmount(""); setNote(""); setDueDate(""); setSourceAccountId("");
   };
 
-  // Logika Pemanggilan Edit
   const startEdit = (debt: DebtData) => {
-    setEditingDebtId(debt.id);
-    setEditPerson(debt.personName);
-    setEditAmount(debt.amount.toString());
-    setEditNote(debt.note || "");
-    setEditDueDate(debt.dueDate || "");
-    setPayingDebtId(null); 
+    setEditingDebtId(debt.id); setEditPerson(debt.personName); setEditAmount(debt.amount.toString());
+    setEditNote(debt.note || ""); setEditDueDate(debt.dueDate || ""); setPayingDebtId(null); 
   };
 
   const submitEdit = (id: string) => {
@@ -101,10 +94,16 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
     setEditingDebtId(null);
   };
 
-  const submitPay = (id: string) => {
-    if (!payAmount || !payAccountId) return alert("Nominal dan Dompet harus diisi!");
-    handlePayDebt(id, safeEvaluate(payAmount), payAccountId);
-    setPayingDebtId(null); setPayAmount(""); setPayAccountId("");
+  // LOGIKA PEMBAYARAN: MEWAJIBKAN KATEGORI & MENGAMBIL CATATAN ASLI
+  const submitPay = (debt: DebtData) => {
+    if (!payAmount || !payAccountId || !payCategory) return alert("Nominal, Dompet, dan Kategori harus diisi!");
+    
+    // Gunakan catatan asli utang, atau buat catatan bawaan jika kosong
+    const finalNote = debt.note ? debt.note : `Cicilan ${debt.type === 'debt' ? 'Utang ke' : 'Piutang dari'} ${debt.personName}`;
+    
+    handlePayDebt(debt.id, safeEvaluate(payAmount), payAccountId, payCategory, finalNote);
+    
+    setPayingDebtId(null); setPayAmount(""); setPayAccountId(""); setPayCategory("");
   };
 
   const filteredDebts = debts.filter(d => d.type === activeType);
@@ -135,41 +134,22 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
             
             <input type="text" placeholder={activeType === "debt" ? "Utang ke siapa?" : "Siapa yang pinjam?"} className="w-full p-3.5 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-slate-700 dark:text-slate-100" value={person} onChange={e => setPerson(e.target.value)} />
             
-            {/* INPUT NOMINAL DENGAN PRATINJAU TITIK */}
             <div className="space-y-1">
               <input type="text" placeholder="Nominal Total (Rp)" className="w-full p-3.5 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-slate-700 dark:text-slate-100" value={amount} onChange={e => setAmount(e.target.value)} />
-              {amount && (
-                <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">
-                  Terbaca: <span className="text-slate-600 dark:text-slate-200 font-black">{formatRupiahTerbaca(amount)}</span>
-                </p>
-              )}
+              {amount && <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-slate-600 dark:text-slate-200 font-black">{formatRupiahTerbaca(amount)}</span></p>}
             </div>
             
-            {/* INPUT TANGGAL JATUH TEMPO - DENGAN AUTO POPUP SHOWPICKER */}
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 px-1">📅 Jatuh Tempo (Opsional)</label>
-              <input 
-                type="date" 
-                className="w-full p-3.5 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-slate-700 dark:text-slate-100 cursor-pointer" 
-                value={dueDate} 
-                onChange={e => setDueDate(e.target.value)} 
-                onClick={(e) => (e.target as HTMLInputElement).showPicker && (e.target as HTMLInputElement).showPicker()}
-              />
+              <input type="date" className="w-full p-3.5 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-slate-700 dark:text-slate-100 cursor-pointer" value={dueDate} onChange={e => setDueDate(e.target.value)} onClick={(e) => (e.target as HTMLInputElement).showPicker && (e.target as HTMLInputElement).showPicker()} />
             </div>
 
-            {/* DROPDOWN PILIHAN DOMPET */}
             {activeType === "receivable" && (
               <div className="relative">
                 <Wallet className="absolute left-3 top-3.5 text-slate-400" size={16}/>
-                <select 
-                  className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 rounded-xl text-xs font-bold outline-none text-slate-700 dark:text-slate-200 appearance-none cursor-pointer border border-slate-100 dark:border-slate-700" 
-                  value={sourceAccountId} 
-                  onChange={e => setSourceAccountId(e.target.value)}
-                >
-                  <option value="">Kirim dari Dompet...</option>
-                  {accounts.map(acc => (
-                    <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>
-                  ))}
+                <select className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 rounded-xl text-xs font-bold outline-none text-slate-700 dark:text-slate-200 cursor-pointer border border-slate-100 dark:border-slate-700" value={sourceAccountId} onChange={e => setSourceAccountId(e.target.value)}>
+                  <option value="" disabled>Kirim dari Dompet...</option>
+                  {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>)}
                 </select>
               </div>
             )}
@@ -197,7 +177,6 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
             return (
               <div key={debt.id} className={`bg-white p-5 rounded-[25px] border shadow-sm transition-all duration-200 ${isPaid ? "border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/20" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"}`}>
                 
-                {/* --- RENDER FORM EDIT JIKA ID COCOK --- */}
                 {editingDebtId === debt.id ? (
                   <div className="space-y-3 animate-in fade-in text-left pb-2">
                     <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest text-center mb-2">Form Koreksi {activeType === "debt" ? "Utang" : "Piutang"}</p>
@@ -206,23 +185,12 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
                     
                     <div className="space-y-1">
                       <input type="text" placeholder="Nominal Total (Rp)" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editAmount} onChange={e => setEditAmount(e.target.value)} />
-                      {editAmount && (
-                        <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">
-                          Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(editAmount)}</span>
-                        </p>
-                      )}
+                      {editAmount && <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(editAmount)}</span></p>}
                     </div>
 
-                    {/* INPUT TANGGAL EDIT - DENGAN AUTO POPUP SHOWPICKER */}
                     <div className="space-y-1">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 px-1">📅 Jatuh Tempo (Opsional)</label>
-                      <input 
-                        type="date" 
-                        className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer" 
-                        value={editDueDate} 
-                        onChange={e => setEditDueDate(e.target.value)} 
-                        onClick={(e) => (e.target as HTMLInputElement).showPicker && (e.target as HTMLInputElement).showPicker()}
-                      />
+                      <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100 cursor-pointer" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} onClick={(e) => (e.target as HTMLInputElement).showPicker && (e.target as HTMLInputElement).showPicker()} />
                     </div>
 
                     <input type="text" placeholder="Catatan / Tujuan pinjam" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editNote} onChange={e => setEditNote(e.target.value)} />
@@ -233,7 +201,6 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
                     </div>
                   </div>
                 ) : (
-                  /* --- TAMPILAN KARTU NORMAL --- */
                   <>
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3 text-left">
@@ -242,7 +209,6 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
                           <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{debt.personName}</h4>
                           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{debt.note}</p>
                           
-                          {/* TAMPILAN TANGGAL JATUH TEMPO DENGAN OVERDUE ALERTS */}
                           {debt.dueDate && (
                             <p className={`text-[9px] font-black uppercase tracking-wider mt-1.5 ${overdue ? "text-red-500 animate-pulse" : "text-slate-400 dark:text-slate-500"}`}>
                               Jatuh Tempo: {new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}
@@ -252,7 +218,6 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
                         </div>
                       </div>
                       
-                      {/* IKON EDIT DAN HAPUS */}
                       <div className="flex items-center gap-1">
                         <button onClick={() => startEdit(debt)} className="p-1.5 text-slate-300 dark:text-slate-600 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer transition-colors"><Pencil size={15}/></button>
                         <button onClick={() => handleDeleteDebt(debt.id)} className="p-1.5 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 cursor-pointer transition-colors"><Trash2 size={16}/></button>
@@ -270,7 +235,7 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
                     </div>
 
                     {!isPaid && payingDebtId !== debt.id && (
-                      <button onClick={() => setPayingDebtId(debt.id)} className="w-full py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer">
+                      <button onClick={() => { setPayingDebtId(debt.id); setPayCategory(""); setPayAccountId(""); setPayAmount(""); }} className="w-full py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer">
                         Catat Pembayaran / Cicilan
                       </button>
                     )}
@@ -279,27 +244,38 @@ export default function DebtsTab({ debts, accounts, handleAddDebt, handleEditDeb
                       <div className="mt-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-2xl space-y-3 animate-in slide-in-from-top-2 duration-200 text-left">
                         <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest text-center">Form Pembayaran</p>
                         
-                        {/* INPUT NOMINAL CICILAN DENGAN PRATINJAU TITIK */}
                         <div className="space-y-1">
                           <input type="text" placeholder="Nominal Bayar (Rp)" className="w-full p-3 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
-                          {payAmount && (
-                            <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">
-                              Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(payAmount)}</span>
-                            </p>
-                          )}
+                          {payAmount && <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(payAmount)}</span></p>}
                         </div>
 
                         <div className="relative">
                           <Wallet className="absolute left-3 top-3.5 text-slate-400" size={16}/>
                           <select className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 appearance-none text-slate-700 dark:text-slate-200 cursor-pointer" value={payAccountId} onChange={e => setPayAccountId(e.target.value)}>
-                            <option value="">Pilih Dompet...</option>
-                            {accounts.map(acc => (
-                              <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>
-                            ))}
+                            <option value="" disabled>Pilih Dompet...</option>
+                            {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>)}
                           </select>
                         </div>
+
+                        {/* --- KATEGORI DROPDOWN (BARU) --- */}
+                        <div className="relative">
+                          <Tag className="absolute left-3 top-3.5 text-slate-400" size={16}/>
+                          <select className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 appearance-none text-slate-700 dark:text-slate-200 cursor-pointer" value={payCategory} onChange={e => setPayCategory(e.target.value)}>
+                            <option value="" disabled>Pilih Kategori Pembayaran...</option>
+                            {categories
+                              .filter(c => c.type === (debt.type === "debt" ? "expense" : "income"))
+                              .sort((a, b) => {
+                                const cleanA = a.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                                const cleanB = b.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                                return cleanA.localeCompare(cleanB);
+                              })
+                              .map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)
+                            }
+                          </select>
+                        </div>
+
                         <div className="flex gap-2">
-                          <button onClick={() => submitPay(debt.id)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors">Konfirmasi</button>
+                          <button onClick={() => submitPay(debt)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors">Konfirmasi</button>
                           <button onClick={() => setPayingDebtId(null)} className="py-2.5 px-4 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-350 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer">Batal</button>
                         </div>
                       </div>

@@ -103,7 +103,6 @@ export default function FintrackerApp() {
     return () => mediaQuery.removeEventListener("change", applyTheme);
   }, [theme]);
 
-  // States: Asset / Wallet
   const [accName, setAccName] = useState("");
   const [accBalance, setAccBalance] = useState("");
   const [accType, setAccType] = useState("Cash");
@@ -120,7 +119,6 @@ export default function FintrackerApp() {
   const [editAccTargetBalance, setEditAccTargetBalance] = useState(""); 
   const [editAccExcludeFromTotal, setEditAccExcludeFromTotal] = useState(false); 
 
-  // States: Transaction
   const [tAmount, setTAmount] = useState("");
   const [tAdminFee, setTAdminFee] = useState(""); 
   const [tType, setTType] = useState<"income" | "expense" | "transfer">("expense");
@@ -130,7 +128,6 @@ export default function FintrackerApp() {
   const [tCategory, setTCategory] = useState("");
   const [tDate, setTDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // CATEGORY STATES
   const [newCatName, setNewCatName] = useState("");
   const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("variable"); 
 
@@ -145,12 +142,7 @@ export default function FintrackerApp() {
   const formatRupiahTerbaca = (val: string) => {
     if (!val) return "Rp 0";
     const parsed = safeEvaluate(val);
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(parsed);
+    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(parsed);
   };
 
   useEffect(() => {
@@ -265,10 +257,7 @@ export default function FintrackerApp() {
       if (tType === "expense") data.expenseType = newExpenseType;
       await addDoc(collection(db, `users/${user.uid}/categories`), data);
       setNewCatName("");
-    } finally {
-      isSubmittingRef.current = false;
-      setIsSubmitting(false);
-    }
+    } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
   const deleteCategory = async (id: string) => {
@@ -285,9 +274,8 @@ export default function FintrackerApp() {
     if (!user) return;
     isSubmittingRef.current = true;
     setIsSubmitting(true);
-    try { 
-      await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { name: newName, budgetLimit: newBudget, expenseType: expenseType }); 
-    } catch (e) { alert("Gagal memperbarui kategori!"); }
+    try { await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { name: newName, budgetLimit: newBudget, expenseType: expenseType }); } 
+    catch (e) { alert("Gagal memperbarui kategori!"); }
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
@@ -333,24 +321,36 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
-  const handlePayDebt = async (debtId: string, payAmount: number, accountId: string) => {
+  // --- LOGIKA BARU: MENERIMA KATEGORI DAN CATATAN LANGSUNG DARI FORM ---
+  const handlePayDebt = async (debtId: string, payAmount: number, accountId: string, categoryName: string, transactionNote: string) => {
     if (isSubmittingRef.current) return; 
     if (!user) return;
     const debt = debts.find(d => d.id === debtId);
     const acc = accounts.find(a => a.id === accountId);
     if (!debt || !acc) return alert("Data tidak ditemukan!");
+
     const newPaidAmount = debt.paidAmount + payAmount;
     const newStatus = newPaidAmount >= debt.amount ? "paid" : "active";
+
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       await updateDoc(doc(db, `users/${user.uid}/debts/${debtId}`), { paidAmount: newPaidAmount, status: newStatus });
+      
       if (debt.type === "debt") {
         await updateDoc(doc(db, `users/${user.uid}/accounts/${accountId}`), { balance: acc.balance - payAmount });
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount: payAmount, type: "expense", accountId, accountName: acc.name, category: "Bayar Utang", note: `Cicilan utang ke ${debt.personName}`, tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp() });
+        await addDoc(collection(db, `users/${user.uid}/transactions`), {
+          amount: payAmount, type: "expense", accountId, accountName: acc.name,
+          category: categoryName, note: transactionNote,
+          tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp()
+        });
       } else {
         await updateDoc(doc(db, `users/${user.uid}/accounts/${accountId}`), { balance: acc.balance + payAmount });
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount: payAmount, type: "income", accountId, accountName: acc.name, category: "Pengembalian Hutang", note: `Cicilan masuk dari ${debt.personName}`, tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp() });
+        await addDoc(collection(db, `users/${user.uid}/transactions`), {
+          amount: payAmount, type: "income", accountId, accountName: acc.name,
+          category: categoryName, note: transactionNote, 
+          tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp()
+        });
       }
       alert("Pembayaran berhasil dicatat & saldo otomatis diperbarui!");
     } catch (e) { alert("Gagal memproses pembayaran"); }
@@ -475,15 +475,7 @@ export default function FintrackerApp() {
         await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: newBal });
         await addDoc(collection(db, `users/${user.uid}/transactions`), { amount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: tNote, category: tCategory, tDate, createdAt: serverTimestamp() });
       }
-      
-      // LOGIKA RESET KESELURUHAN (TERMASUK DOMPET)
-      setTAmount(""); 
-      setTNote(""); 
-      setTAdminFee(""); 
-      setTCategory(""); 
-      setTAccountId(""); // <--- RESET DOMPET SUMBER
-      setTToAccountId(""); // <--- RESET DOMPET TUJUAN
-      
+      setTAmount(""); setTNote(""); setTAdminFee(""); setTCategory(""); setTAccountId(""); setTToAccountId(""); 
       alert("Transaksi Sukses!");
     } catch (e) { alert("Gagal simpan transaksi"); }
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
@@ -520,11 +512,9 @@ export default function FintrackerApp() {
   const handleUpdateTransaction = async () => {
     if (isSubmittingRef.current) return; 
     if (!user || !editingTransaction) return;
-    
     const oldT = editingTransaction;
     const newAmount = safeEvaluate(editTAmount);
     if (newAmount <= 0) return alert("Nominal transaksi tidak valid!");
-
     const newAdminFee = editTType === "transfer" && editTAdminFee ? safeEvaluate(editTAdminFee) : 0; 
 
     isSubmittingRef.current = true;
@@ -563,7 +553,6 @@ export default function FintrackerApp() {
 
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
       const updateData: any = { amount: newAmount, type: editTType, accountId: editTAccountId, accountName: accounts.find(a => a.id === editTAccountId)?.name || "", note: editTNote, category: editTType === "transfer" ? "Transfer" : editTCategory, tDate: editTDate };
-
       if (editTType === "transfer") {
         updateData.toAccountId = editTToAccountId; updateData.toAccountName = accounts.find(a => a.id === editTToAccountId)?.name || ""; updateData.adminFee = newAdminFee; 
       } else {
@@ -643,7 +632,7 @@ export default function FintrackerApp() {
               )}
               {activeTab === "debts" && (
                 <DebtsTab 
-                  debts={debts} accounts={accounts} 
+                  debts={debts} accounts={accounts} categories={categories}
                   handleAddDebt={handleAddDebt} handleEditDebt={handleEditDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
                 />
               )}
