@@ -415,7 +415,6 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
-  // --- LOGIKA BARU: AUDIT SALDO DOMPET ---
   const handleEditAccount = async (id: string) => {
     if (isSubmittingRef.current) return; 
     if (!user || !editAccName || !editAccBalance) return;
@@ -425,7 +424,6 @@ export default function FintrackerApp() {
       const oldAcc = accounts.find(a => a.id === id);
       const newBalance = Number(editAccBalance);
 
-      // JIKA ADA SELISIH ANTARA SALDO BARU DAN SALDO LAMA, BUATKAN TRANSAKSI KOREKSI
       if (oldAcc && newBalance !== oldAcc.balance) {
         const diff = newBalance - oldAcc.balance;
         const tType = diff > 0 ? "income" : "expense";
@@ -754,7 +752,14 @@ export default function FintrackerApp() {
               {editTType !== "transfer" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
+                  
+                  {/* --- PERBAIKAN: INJEKSI KATEGORI SISTEM DI DROPDOWN EDIT MODAL --- */}
                   <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTCategory} onChange={(e) => setEditTCategory(e.target.value)}>
+                    
+                    {editTCategory && !categories.some(c => c.type === editTType && c.name === editTCategory) && (
+                      <option value={editTCategory}>{editTCategory} (Sistem)</option>
+                    )}
+                    
                     {categories.filter(c => c.type === editTType).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
                   </select>
                 </div>
