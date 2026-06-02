@@ -6,37 +6,13 @@ import { AccountData, WalletTypeData } from "../../types";
 const getCardDesign = (type: string) => {
   const t = type.toLowerCase();
   if (t.includes("bank") || t.includes("kartu") || t.includes("credit") || t.includes("savings")) {
-    return { 
-      bg: "bg-white dark:bg-slate-900 border-2 border-blue-100 dark:border-blue-900/30 hover:border-blue-300 dark:hover:border-blue-800", 
-      icon: <CreditCard size={18} className="text-blue-600 dark:text-blue-400" />, 
-      iconBg: "bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/50",
-      chip: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800", 
-      progressBar: "bg-blue-500"
-    };
+    return { bg: "bg-white dark:bg-slate-900 border-2 border-blue-100 dark:border-blue-900/30 hover:border-blue-300 dark:hover:border-blue-800", icon: <CreditCard size={18} className="text-blue-600 dark:text-blue-400" />, iconBg: "bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/50", chip: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800", progressBar: "bg-blue-500" };
   } else if (t.includes("wallet") || t.includes("gopay") || t.includes("ovo") || t.includes("dana") || t.includes("pay")) {
-    return { 
-      bg: "bg-white dark:bg-slate-900 border-2 border-purple-100 dark:border-purple-900/30 hover:border-purple-300 dark:hover:border-purple-800", 
-      icon: <Smartphone size={18} className="text-purple-600 dark:text-purple-400" />, 
-      iconBg: "bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/50",
-      chip: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-800",
-      progressBar: "bg-purple-500" 
-    };
+    return { bg: "bg-white dark:bg-slate-900 border-2 border-purple-100 dark:border-purple-900/30 hover:border-purple-300 dark:hover:border-purple-800", icon: <Smartphone size={18} className="text-purple-600 dark:text-purple-400" />, iconBg: "bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/50", chip: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-800", progressBar: "bg-purple-500" };
   } else if (t.includes("cash") || t.includes("dompet") || t.includes("tunai")) {
-    return { 
-      bg: "bg-white dark:bg-slate-900 border-2 border-emerald-100 dark:border-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-800", 
-      icon: <Banknote size={18} className="text-emerald-600 dark:text-emerald-400" />, 
-      iconBg: "bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/50",
-      chip: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800",
-      progressBar: "bg-emerald-500" 
-    };
+    return { bg: "bg-white dark:bg-slate-900 border-2 border-emerald-100 dark:border-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-800", icon: <Banknote size={18} className="text-emerald-600 dark:text-emerald-400" />, iconBg: "bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/50", chip: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800", progressBar: "bg-emerald-500" };
   } else {
-    return { 
-      bg: "bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700", 
-      icon: <Wallet size={18} className="text-slate-600 dark:text-slate-400" />, 
-      iconBg: "bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50",
-      chip: "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700",
-      progressBar: "bg-slate-500" 
-    };
+    return { bg: "bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700", icon: <Wallet size={18} className="text-slate-600 dark:text-slate-400" />, iconBg: "bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50", chip: "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700", progressBar: "bg-slate-500" };
   }
 };
 
@@ -64,11 +40,8 @@ interface AssetsTabProps {
   accLogo: string; handleLogoUpload: (e: React.ChangeEvent<HTMLInputElement>, isEdit?: boolean) => void;
   accIsSavings: boolean; setAccIsSavings: (val: boolean) => void; 
   accTargetBalance: string; setAccTargetBalance: (val: string) => void;
-  
-  // PROPS BARU UNTUK KECUALIKAN TOTAL
   accExcludeFromTotal: boolean; setAccExcludeFromTotal: (val: boolean) => void;
   editAccExcludeFromTotal: boolean; setEditAccExcludeFromTotal: (val: boolean) => void;
-
   handleCreateAccount: () => void;
   editingAccId: string | null; setEditingAccId: (val: string | null) => void;
   editAccName: string; setEditAccName: (val: string) => void;
@@ -96,7 +69,6 @@ export default function AssetsTab({
   const activeAccounts = accounts.filter((a: AccountData) => !a.isSavings);
   const savingsAccounts = accounts.filter((a: AccountData) => a.isSavings);
   
-  // LOGIKA BARU: FILTER OUT YANG EXCLUDE DARI TOTAL
   const totalActiveBalance = activeAccounts.reduce((accVal: number, curr: AccountData) => {
     if (curr.excludeFromTotal) return accVal;
     return accVal + curr.balance;
@@ -107,24 +79,17 @@ export default function AssetsTab({
   const formatRupiahTerbaca = (val: string) => {
     if (!val) return "Rp 0";
     const parsed = safeEvaluate(val);
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(parsed);
+    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(parsed);
   };
 
   return (
     <div className="space-y-6 animate-in fade-in">
-      {/* TOTAL BALANCE CARD */}
       <div className="bg-blue-600 p-8 md:p-10 rounded-[35px] text-white shadow-xl relative overflow-hidden">
         <div className="absolute -top-4 -right-4 p-8 opacity-10"><CreditCard size={120} /></div>
         <p className="text-blue-100 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1 relative z-10">Total Uang Bisa Dipakai</p>
         <h2 className="text-4xl md:text-5xl font-black italic relative z-10">Rp {totalActiveBalance.toLocaleString('id-ID')}</h2>
       </div>
 
-      {/* DOMPET AKTIF DENGAN GRID DESKTOP (4 KOLOM) */}
       <div className="space-y-3">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 italic px-1 text-lg transition-colors">Dompet Aktif</h3>
         {activeAccounts.length === 0 ? <p className="text-center py-6 text-slate-400 text-sm italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">Belum ada dompet aktif</p> : (
@@ -133,23 +98,14 @@ export default function AssetsTab({
               const design = getCardDesign(acc.type);
               return (
                 <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[120px] md:min-h-[135px]`}>
-                    
                     <div className="flex justify-between items-start mb-4">
-                      {acc.logo ? (
-                        <img src={acc.logo} alt="custom-logo" className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-contain bg-white p-1 border border-slate-100 shadow-sm" /> 
-                      ) : (
-                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div>
-                      )}
+                      {acc.logo ? ( <img src={acc.logo} alt="custom-logo" className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-contain bg-white p-1 border border-slate-100 shadow-sm" /> ) : ( <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
                       <div className={`px-2 py-1 rounded-md text-[8px] md:text-[10px] font-black uppercase tracking-widest ${design.chip}`}>{acc.type}</div>
                     </div>
-                    
                     <div className="space-y-0.5 mt-auto">
                       <div className="flex items-center mb-1.5">
                         <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none truncate">{acc.name}</p>
-                        {/* LABEL INDIKATOR EXCLUDE */}
-                        {acc.excludeFromTotal && (
-                          <span className="text-[7px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-slate-200 dark:border-slate-700">Dikecualikan</span>
-                        )}
+                        {acc.excludeFromTotal && <span className="text-[7px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-slate-200 dark:border-slate-700">Dikecualikan</span>}
                       </div>
                       <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate">Rp {acc.balance.toLocaleString('id-ID')}</p>
                     </div>
@@ -160,7 +116,6 @@ export default function AssetsTab({
         )}
       </div>
 
-      {/* TABUNGAN KHUSUS DENGAN GRID DESKTOP (2 KOLOM) */}
       {savingsAccounts.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="flex justify-between items-end px-1">
@@ -175,33 +130,18 @@ export default function AssetsTab({
 
               return (
                 <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[130px] md:min-h-[145px]`}>
-                    
                     <div className="flex justify-between items-start mb-4">
-                      {acc.logo ? (
-                        <img src={acc.logo} alt="custom-logo" className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-contain bg-white p-1 border border-slate-100 shadow-sm" /> 
-                      ) : (
-                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div>
-                      )}
-                      {hasTarget ? (
-                        <div className={`text-[9px] md:text-[10px] px-2.5 py-1 rounded-md font-black uppercase tracking-widest ${percentage >= 100 ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : design.chip}`}>
-                          {percentage.toFixed(0)}% Terisi
-                        </div>
-                      ) : (
-                        <div className="text-[9px] md:text-[10px] px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">No Target</div>
-                      )}
+                      {acc.logo ? ( <img src={acc.logo} alt="custom-logo" className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-contain bg-white p-1 border border-slate-100 shadow-sm" /> ) : ( <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
+                      {hasTarget ? ( <div className={`text-[9px] md:text-[10px] px-2.5 py-1 rounded-md font-black uppercase tracking-widest ${percentage >= 100 ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : design.chip}`}>{percentage.toFixed(0)}% Terisi</div> ) : ( <div className="text-[9px] md:text-[10px] px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">No Target</div> )}
                     </div>
-                    
                     <div className="space-y-1 mt-auto w-full">
                       <div className="flex justify-between items-end">
                         <div>
                           <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5">{acc.name}</p>
                           <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate">Rp {acc.balance.toLocaleString('id-ID')}</p>
                         </div>
-                        {hasTarget && (
-                          <span className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold">Target: Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>
-                        )}
+                        {hasTarget && <span className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold">Target: Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>}
                       </div>
-
                       {hasTarget && (
                         <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 mt-2">
                           <div className={`h-full ${percentage >= 100 ? 'bg-emerald-500' : design.progressBar} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div>
@@ -215,18 +155,10 @@ export default function AssetsTab({
         </div>
       )}
 
-      {/* KELOLA AKUN */}
-      <details 
-        open={isManageOpen} 
-        onToggle={(e) => setIsManageOpen(e.currentTarget.open)}
-        className="bg-white dark:bg-slate-900 rounded-[25px] p-5 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-200"
-      >
-        <summary className="text-[10px] font-black text-slate-500 dark:text-slate-400 cursor-pointer uppercase tracking-widest outline-none select-none flex items-center gap-2">
-          <span>⚙️ Kelola Akun & Dompet</span>
-        </summary>
+      <details open={isManageOpen} onToggle={(e) => setIsManageOpen(e.currentTarget.open)} className="bg-white dark:bg-slate-900 rounded-[25px] p-5 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-200">
+        <summary className="text-[10px] font-black text-slate-500 dark:text-slate-400 cursor-pointer uppercase tracking-widest outline-none select-none flex items-center gap-2"><span>⚙️ Kelola Akun & Dompet</span></summary>
         <div className="mt-5 space-y-4">
           
-          {/* FORM TAMBAH DOMPET BARU */}
           <div className="space-y-2 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 mb-3">Tambah Dompet Baru</h4>
             <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
@@ -235,40 +167,20 @@ export default function AssetsTab({
             <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
             <input type="number" placeholder="Saldo Awal" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
             
-            {/* CHECKBOX 1: PISAH DARI TOTAL SALDO UTAMA (BARU) */}
             <div onClick={() => setAccExcludeFromTotal(!accExcludeFromTotal)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
-              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>
-                {accExcludeFromTotal && <Check size={10} strokeWidth={4} />}
-              </div>
-              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                Sembunyikan dari "Total Uang Bisa Dipakai" (Pemisahan Saldo)
-              </span>
+              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{accExcludeFromTotal && <Check size={10} strokeWidth={4} />}</div>
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Sembunyikan dari "Total Uang Bisa Dipakai" (Pemisahan Saldo)</span>
             </div>
 
-            {/* CHECKBOX 2: TABUNGAN */}
             <div onClick={() => setAccIsSavings(!accIsSavings)} className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none">
-              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>
-                {accIsSavings && <Check size={10} strokeWidth={4} />}
-              </div>
-              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                Jadikan Kategori "Tabungan" di bagian bawah
-              </span>
+              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{accIsSavings && <Check size={10} strokeWidth={4} />}</div>
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Jadikan Kategori "Tabungan" di bagian bawah</span>
             </div>
 
             {accIsSavings && (
               <div className="space-y-1">
-                <input 
-                  type="text" 
-                  placeholder="Target Nominal Tabungan (Opsional)" 
-                  className="w-full p-3.5 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" 
-                  value={accTargetBalance} 
-                  onChange={(e) => setAccTargetBalance(e.target.value)} 
-                />
-                {accTargetBalance && (
-                  <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">
-                    Terbaca: <span className="font-black">{formatRupiahTerbaca(accTargetBalance)}</span>
-                  </p>
-                )}
+                <input type="text" placeholder="Target Nominal Tabungan (Opsional)" className="w-full p-3.5 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
+                {accTargetBalance && <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="font-black">{formatRupiahTerbaca(accTargetBalance)}</span></p>}
               </div>
             )}
 
@@ -283,7 +195,6 @@ export default function AssetsTab({
             <button onClick={handleCreateAccount} className="w-full py-3.5 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg cursor-pointer transition-colors">Simpan Dompet Baru</button>
           </div>
 
-          {/* DAFTAR EDIT DOMPET */}
           <div className="pt-4 space-y-3">
             <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Daftar Dompet (Ubah / Urutan / Hapus)</p>
             {accounts.map((acc: AccountData, index: number) => (
@@ -291,37 +202,31 @@ export default function AssetsTab({
                 {editingAccId === acc.id ? (
                   <div className="space-y-3 animate-in fade-in duration-200">
                     <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-900/50 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
-                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Saldo Dompet</label><input type="number" className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-900/50 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} /></div>
                     
-                    {/* CHECKBOX 1 EDIT: PISAH DARI TOTAL SALDO UTAMA */}
+                    {/* --- FITUR AUDIT SALDO BARU --- */}
+                    <div className="space-y-1 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                      <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Audit Saldo Nyata (Real)</label>
+                      <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400 leading-tight mb-2">
+                        Ubah jika uang fisik Anda berbeda. Sistem akan otomatis mencatat selisihnya sebagai Penyesuaian.
+                      </p>
+                      <input type="number" className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-800 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
+                    </div>
+                    
                     <div onClick={() => setEditAccExcludeFromTotal(!editAccExcludeFromTotal)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>
-                        {editAccExcludeFromTotal && <Check size={10} strokeWidth={4} />}
-                      </div>
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                        Sembunyikan dari Total Saldo (Pemisahan Saldo)
-                      </span>
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{editAccExcludeFromTotal && <Check size={10} strokeWidth={4} />}</div>
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Sembunyikan dari Total Saldo (Pemisahan Saldo)</span>
                     </div>
 
-                    {/* CHECKBOX 2 EDIT: TABUNGAN */}
                     <div onClick={() => setEditAccIsSavings(!editAccIsSavings)} className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none">
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
-                        {editAccIsSavings && <Check size={10} strokeWidth={4} />}
-                      </div>
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                        Jadikan Kategori "Tabungan"
-                      </span>
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900'}`}>{editAccIsSavings && <Check size={10} strokeWidth={4} />}</div>
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jadikan Kategori "Tabungan"</span>
                     </div>
 
                     {editAccIsSavings && (
                       <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Target Tabungan</label>
                         <input type="text" placeholder="Target Nominal Tabungan" className="w-full bg-white dark:bg-slate-900 p-3 text-xs border border-blue-200 dark:border-slate-700 rounded-xl outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
-                        {editAccTargetBalance && (
-                          <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">
-                            Terbaca: <span className="font-black">{formatRupiahTerbaca(editAccTargetBalance)}</span>
-                          </p>
-                        )}
+                        {editAccTargetBalance && <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="font-black">{formatRupiahTerbaca(editAccTargetBalance)}</span></p>}
                       </div>
                     )}
 
@@ -340,11 +245,7 @@ export default function AssetsTab({
                 ) : (
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      {acc.logo ? (
-                        <img src={acc.logo} className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200 dark:border-slate-700 p-1 shadow-sm" alt="logo" /> 
-                      ) : (
-                        <div className="w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400">{getCardDesign(acc.type).icon}</div>
-                      )}
+                      {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200 dark:border-slate-700 p-1 shadow-sm" alt="logo" /> ) : ( <div className="w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400">{getCardDesign(acc.type).icon}</div> )}
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
                           <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-none">{acc.name}</p>

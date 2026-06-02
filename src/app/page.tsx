@@ -19,9 +19,8 @@ import AssetsTab from "../components/tabs/AssetsTab";
 import SettingsTab from "../components/tabs/SettingsTab";
 import DebtsTab from "../components/tabs/DebtsTab";
 
-import { X, Lock } from "lucide-react"; // <--- TAMBAH IMPORT LOCK
+import { X, Lock } from "lucide-react"; 
 
-// --- PARSER MATEMATIKA AMAN (ANTI-EVAL & TAHAN EROR SINTAKS) ---
 const safeEvaluate = (expr: string): number => {
   if (!expr) return 0;
   let sanitized = expr.replace(/[^0-9+\-*/().]/g, "");
@@ -44,7 +43,6 @@ export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // --- STATE KUNCI PIN (BARU) ---
   const [appPin, setAppPin] = useState<string | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [pinChecked, setPinChecked] = useState(false);
@@ -110,12 +108,11 @@ export default function FintrackerApp() {
     return () => mediaQuery.removeEventListener("change", applyTheme);
   }, [theme]);
 
-  // MEMERIKSA STATUS PIN SAAT APLIKASI DIBUKA
   useEffect(() => {
     const storedPin = localStorage.getItem("fintracker_pin");
     if (storedPin) { setAppPin(storedPin); setIsUnlocked(false); }
     else { setIsUnlocked(true); }
-    setPinChecked(true); // Menghindari flash layar
+    setPinChecked(true); 
   }, []);
 
   const handleSetAppPin = (val: string | null) => {
@@ -418,14 +415,36 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
+  // --- LOGIKA BARU: AUDIT SALDO DOMPET ---
   const handleEditAccount = async (id: string) => {
     if (isSubmittingRef.current) return; 
     if (!user || !editAccName || !editAccBalance) return;
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
-      await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { name: editAccName, balance: Number(editAccBalance), logo: editAccLogo, isSavings: editAccIsSavings, targetBalance: editAccIsSavings && editAccTargetBalance ? safeEvaluate(editAccTargetBalance) : null, excludeFromTotal: editAccExcludeFromTotal });
-      setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false); alert("Dompet berhasil diperbarui!");
+      const oldAcc = accounts.find(a => a.id === id);
+      const newBalance = Number(editAccBalance);
+
+      // JIKA ADA SELISIH ANTARA SALDO BARU DAN SALDO LAMA, BUATKAN TRANSAKSI KOREKSI
+      if (oldAcc && newBalance !== oldAcc.balance) {
+        const diff = newBalance - oldAcc.balance;
+        const tType = diff > 0 ? "income" : "expense";
+        await addDoc(collection(db, `users/${user.uid}/transactions`), {
+          amount: Math.abs(diff),
+          type: tType,
+          accountId: id,
+          accountName: editAccName,
+          note: `Penyesuaian manual dari Rp ${oldAcc.balance.toLocaleString('id-ID')} ke Rp ${newBalance.toLocaleString('id-ID')}`,
+          category: "Penyesuaian Saldo", 
+          tDate: new Date().toISOString().split('T')[0],
+          createdAt: serverTimestamp()
+        });
+      }
+
+      await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { name: editAccName, balance: newBalance, logo: editAccLogo, isSavings: editAccIsSavings, targetBalance: editAccIsSavings && editAccTargetBalance ? safeEvaluate(editAccTargetBalance) : null, excludeFromTotal: editAccExcludeFromTotal });
+      
+      setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false); 
+      alert("Dompet berhasil diperbarui & riwayat audit otomatis dicatat!");
     } catch (e) { alert("Gagal memperbarui"); }
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
@@ -599,7 +618,6 @@ export default function FintrackerApp() {
     XLSX.writeFile(workbook, `Fintracker_Laporan_${reportMonth}.xlsx`);
   };
 
-  // --- LAYAR KUNCI APLIKASI (APP LOCK SCREEN) ---
   if (loading || !pinChecked) return <LoadingScreen />;
   if (!user) return <AuthScreen />;
 
@@ -607,51 +625,20 @@ export default function FintrackerApp() {
     return (
       <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 transition-colors duration-200">
         <div className="bg-white dark:bg-slate-900 p-8 rounded-[35px] shadow-2xl w-full max-w-sm flex flex-col items-center border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-300">
-          
-          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-6 shadow-inner">
-            <Lock size={32} strokeWidth={2.5}/>
-          </div>
+          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-6 shadow-inner"><Lock size={32} strokeWidth={2.5}/></div>
           <h2 className="text-xl font-black text-slate-800 dark:text-white mb-1">Aplikasi Terkunci</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-8 text-center font-semibold">Masukkan 6 digit PIN untuk membuka Fintracker.</p>
-          
-          {/* INDIKATOR DOTS PIN */}
           <div className="flex gap-4 mb-8">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${i < pinInput.length ? 'bg-blue-600 scale-110' : 'bg-slate-200 dark:bg-slate-800'} ${pinError ? 'bg-red-500 animate-pulse' : ''}`} />
-            ))}
+            {[...Array(6)].map((_, i) => (<div key={i} className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${i < pinInput.length ? 'bg-blue-600 scale-110' : 'bg-slate-200 dark:bg-slate-800'} ${pinError ? 'bg-red-500 animate-pulse' : ''}`} />))}
           </div>
-
-          {/* KEYPAD KUSTOM LAYAR KUNCI */}
           <div className="grid grid-cols-3 gap-3 w-full max-w-[260px]">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-              <button key={num} onClick={() => {
-                triggerHapticFeedback();
-                if(pinInput.length < 6) {
-                  const newVal = pinInput + num;
-                  setPinInput(newVal);
-                  if(newVal.length === 6) {
-                    if(newVal === appPin) { setTimeout(() => { setIsUnlocked(true); setPinInput(""); }, 200); }
-                    else { setPinError(true); triggerHapticFeedback(); setTimeout(() => { setPinInput(""); setPinError(false); }, 500); }
-                  }
-                }
-              }} className="h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl text-2xl font-black text-slate-800 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors select-none">{num}</button>
+              <button key={num} onClick={() => { triggerHapticFeedback(); if(pinInput.length < 6) { const newVal = pinInput + num; setPinInput(newVal); if(newVal.length === 6) { if(newVal === appPin) { setTimeout(() => { setIsUnlocked(true); setPinInput(""); }, 200); } else { setPinError(true); triggerHapticFeedback(); setTimeout(() => { setPinInput(""); setPinError(false); }, 500); } } } }} className="h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl text-2xl font-black text-slate-800 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors select-none">{num}</button>
             ))}
             <div />
-            <button onClick={() => {
-                triggerHapticFeedback();
-                if(pinInput.length < 6) {
-                  const newVal = pinInput + "0";
-                  setPinInput(newVal);
-                  if(newVal.length === 6) {
-                    if(newVal === appPin) { setTimeout(() => { setIsUnlocked(true); setPinInput(""); }, 200); }
-                    else { setPinError(true); triggerHapticFeedback(); setTimeout(() => { setPinInput(""); setPinError(false); }, 500); }
-                  }
-                }
-              }} className="h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl text-2xl font-black text-slate-800 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors select-none">0</button>
+            <button onClick={() => { triggerHapticFeedback(); if(pinInput.length < 6) { const newVal = pinInput + "0"; setPinInput(newVal); if(newVal.length === 6) { if(newVal === appPin) { setTimeout(() => { setIsUnlocked(true); setPinInput(""); }, 200); } else { setPinError(true); triggerHapticFeedback(); setTimeout(() => { setPinInput(""); setPinError(false); }, 500); } } } }} className="h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl text-2xl font-black text-slate-800 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors select-none">0</button>
             <button onClick={() => { triggerHapticFeedback(); setPinInput(prev => prev.slice(0, -1)); }} className="h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xl font-black text-slate-500 dark:text-slate-400 active:bg-slate-200 dark:active:bg-slate-700 transition-colors flex items-center justify-center select-none"><X size={24}/></button>
           </div>
-          
-          {/* TOMBOL LOGOUT DARURAT (Bila lupa PIN) */}
           <button onClick={() => signOut(auth)} className="mt-8 text-[10px] font-bold text-red-500 hover:underline cursor-pointer">Lupa PIN? (Logout Paksa)</button>
         </div>
       </main>
@@ -712,8 +699,6 @@ export default function FintrackerApp() {
                   addCustomCategory={addCustomCategory} categories={categories} deleteCategory={deleteCategory} updateCategory={handleEditCategory}
                   newWalletTypeName={newWalletTypeName} setNewWalletTypeName={setNewWalletTypeName} addCustomWalletType={addCustomWalletType} 
                   walletTypes={walletTypes} deleteWalletType={deleteWalletType} theme={theme} setTheme={setTheme}
-                  
-                  // MENGIRIM PROP PIN KE TAB PENGATURAN
                   appPin={appPin} setAppPin={handleSetAppPin}
                 />
               )}
