@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc } from "firebase/firestore";
-import * as XLSX from "xlsx";
 
 import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData, SplitItemData } from "../types";
 import LoadingScreen from "../components/shared/LoadingScreen";
@@ -218,8 +217,9 @@ export default function FintrackerApp() {
     return () => unsubTr();
   }, [user, txLimit]);
 
+  // OPTIMASI LAZY-QUERY: HANYA LOAD KONEKSI BULANAN SAAT USER BERADA DI TAB LAPORAN (activeTab === "reports")
   useEffect(() => {
-    if (!user) return;
+    if (!user || activeTab !== "reports") return; 
     const startOfMonth = `${reportMonth}-01`;
     const endOfMonth = `${reportMonth}-31`;
     const qReport = query(collection(db, `users/${user.uid}/transactions`), where("tDate", ">=", startOfMonth), where("tDate", "<=", endOfMonth));
@@ -229,10 +229,11 @@ export default function FintrackerApp() {
       setReportTransactions(data);
     });
     return () => unsubReport();
-  }, [user, reportMonth]);
+  }, [user, reportMonth, activeTab]);
 
+  // OPTIMASI LAZY-QUERY KOMPARASI BULAN LALU
   useEffect(() => {
-    if (!user) return;
+    if (!user || activeTab !== "reports") return; 
     const prevMonth = getPrevMonth(reportMonth);
     const startOfPrev = `${prevMonth}-01`;
     const endOfPrev = `${prevMonth}-31`;
@@ -240,10 +241,8 @@ export default function FintrackerApp() {
     const unsubPrev = onSnapshot(qPrev, (sn) => {
       setPrevMonthTransactions(sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData)));
     });
-    return () => borderTrackers();
-  }, [user, reportMonth]);
-
-  const borderTrackers = () => {};
+    return () => unsubPrev();
+  }, [user, reportMonth, activeTab]);
 
   useEffect(() => {
     if (!user || !globalSearch) {
@@ -709,7 +708,8 @@ export default function FintrackerApp() {
   const prevTotalExpense = prevCombinedExpense.reduce((a, b) => a + b.amount, 0);
   const prevTotalIncome = prevMonthTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
 
-  const handleExportToExcel = () => {
+  // BARU: DYNAMIC LAZY-LOADING UNTUK LIBRARY XLSX SHEETJS
+  const handleExportToExcel = async () => {
     if (reportTransactions.length === 0) return alert("Tidak ada data transaksi di bulan ini!");
     
     const excelData = reportTransactions.map((t, idx) => {
@@ -737,6 +737,7 @@ export default function FintrackerApp() {
       };
     });
 
+    const XLSX = await import("xlsx"); // <--- DYNAMIC IMPORT LAZY LOADING
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan");
@@ -817,7 +818,7 @@ export default function FintrackerApp() {
                   editAccTargetBalance={editAccTargetBalance} setEditAccTargetBalance={setEditAccTargetBalance} 
                   handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
                   
-                  // NEW PROPS FOR TARGET GOALS TITLE
+                  // PROPS UNTUK SAVINGS GOAL TITLE
                   accSavingsGoalTitle={accSavingsGoalTitle} setAccSavingsGoalTitle={setAccSavingsGoalTitle}
                   editAccSavingsGoalTitle={editAccSavingsGoalTitle} setEditAccSavingsGoalTitle={setEditAccSavingsGoalTitle}
                 />
@@ -999,7 +1000,7 @@ export default function FintrackerApp() {
               <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
                 <span>🏷️</span> Pilih Kategori Pecahan #{activeEditSplitIndex !== null ? activeEditSplitIndex + 1 : ""}
               </h3>
-              <button type="button" onClick={() => { setShowEditSplitCatModal(false); setActiveEditSplitIndex(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full transition-colors"><X size={14}/></button>
+              <button type="button" onClick={() => { setShowEditSplitCatModal(false); setActiveEditSplitIndex(null); }} className="p-2 bg-slate-200 hover:bg-slate-300 hover:text-slate-600 rounded-full transition-colors"><X size={14}/></button>
             </div>
             
             <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
@@ -1010,7 +1011,7 @@ export default function FintrackerApp() {
                   </div>
                   <div className="flex flex-col gap-2">
                     {categories.filter(c => c.type === editTType && c.expenseType !== "fixed").map(cat => (
-                      <button key={cat.id} type="button" onClick={() => handleSelectEditSplitCategory(cat.name)} className="w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:border-orange-200 dark:hover:border-orange-900/50">{cat.name}</button>
+                      <button key={cat.id} type="button" onClick={() => handleSelectEditSplitCategory(cat.name)} className="w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:border-orange-200 dark:hover:bg-orange-900/50">{cat.name}</button>
                     ))}
                   </div>
                 </div>
