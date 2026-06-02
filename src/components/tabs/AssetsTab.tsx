@@ -122,7 +122,7 @@ export default function AssetsTab({
   const totalEmergencyBalance = emergencyAccounts.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
   const totalDreamBalance = dreamGoals.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
 
-  // AKUMULASI TARGET SELURUH TABUNGAN YANG MEMILIKI TARGET SALDO
+  // AKUMULASI TARGET SELURUH TABUNGAN YANG MEMILIKI TARGET
   const savingsWithTargets = accounts.filter(a => a.isSavings && a.targetBalance && a.targetBalance > 0);
   const totalTargetAmount = savingsWithTargets.reduce((sum, a) => sum + (a.targetBalance || 0), 0);
   const totalSavedAmount = savingsWithTargets.reduce((sum, a) => sum + a.balance, 0);
@@ -185,7 +185,7 @@ export default function AssetsTab({
         )}
       </div>
 
-      {/* KATEGORI 2: TABUNGAN UTAMA & DANA DARURAT (DENGAN MOTIVASI TARGET JIKA AKTIF) */}
+      {/* KATEGORI 2: TABUNGAN UTAMA & DANA DARURAT */}
       {emergencyAccounts.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="flex justify-between items-end px-1">
@@ -201,9 +201,9 @@ export default function AssetsTab({
               const status = getGoalStatus(percentage);
 
               return (
-                <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[130px] md:min-h-[145px]`}>
+                <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[135px] md:min-h-[150px]`}>
                     
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-3">
                       {acc.logo ? (
                         <img src={acc.logo} alt="custom-logo" className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-contain bg-white p-1 border border-slate-100 shadow-sm" /> 
                       ) : (
@@ -218,14 +218,14 @@ export default function AssetsTab({
                       )}
                     </div>
                     
-                    <div className="space-y-1 mt-auto w-full text-left">
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5 truncate">{acc.name}</p>
-                          <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate">Rp {acc.balance.toLocaleString('id-ID')}</p>
-                        </div>
+                    <div className="space-y-1.5 mt-auto w-full text-left">
+                      <div>
+                        <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5 truncate">{acc.name}</p>
+                        <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1">Rp {acc.balance.toLocaleString('id-ID')}</p>
                         {hasTarget && (
-                          <span className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold">Target: Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold leading-none mt-1 shadow-sm">
+                            Target: <span className="font-extrabold text-slate-600 dark:text-slate-300">Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>
+                          </p>
                         )}
                       </div>
 
@@ -253,7 +253,7 @@ export default function AssetsTab({
         </div>
       )}
 
-      {/* KATEGORI 3: TARGET IMPIAN MENABUNG (DENGAN BARANG GOAL BELANJA) */}
+      {/* KATEGORI 3: TARGET IMPIAN MENABUNG */}
       {dreamGoals.length > 0 && (
         <div className="space-y-4 pt-2">
           <div className="flex justify-between items-end px-1">
@@ -288,14 +288,15 @@ export default function AssetsTab({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             {dreamGoals.map((acc: AccountData) => {
               const design = getCardDesign(acc.type);
-              const percentage = Math.min((acc.balance / acc.targetBalance!) * 100, 100);
-              const remaining = Math.max(0, acc.targetBalance! - acc.balance);
+              const hasTarget = acc.targetBalance && acc.targetBalance > 0;
+              const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
+              const remaining = hasTarget ? Math.max(0, acc.targetBalance! - acc.balance) : 0;
               const status = getGoalStatus(percentage);
 
               return (
-                <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[130px] md:min-h-[145px]`}>
+                <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[135px] md:min-h-[150px]`}>
                     
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-3">
                       {acc.logo ? (
                         <img src={acc.logo} alt="custom-logo" className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-contain bg-white p-1 border border-slate-100 shadow-sm" /> 
                       ) : (
@@ -306,30 +307,34 @@ export default function AssetsTab({
                       </div>
                     </div>
                     
-                    <div className="space-y-1 mt-auto w-full text-left">
-                      <div className="flex justify-between items-end">
-                        <div className="text-left">
-                          <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none mb-1">🎯 Impian: {acc.savingsGoalTitle}</p>
-                          <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5">{acc.name}</p>
-                          <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate">Rp {acc.balance.toLocaleString('id-ID')}</p>
-                        </div>
-                        <span className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold">Target: Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>
-                      </div>
-
-                      <div className="w-full mt-2 space-y-1.5">
-                        <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
-                          <div className={`h-full ${percentage >= 100 ? 'bg-emerald-500' : design.progressBar} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div>
-                        </div>
-                        {remaining > 0 ? (
-                          <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold text-right leading-none">
-                            Kurang Rp {remaining.toLocaleString('id-ID')} lagi
-                          </p>
-                        ) : (
-                          <p className="text-[9px] text-emerald-500 dark:text-emerald-400 font-black text-right uppercase tracking-wider leading-none">
-                            Target Terpenuhi! 🎉
+                    <div className="space-y-1.5 mt-auto w-full text-left">
+                      <div>
+                        <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none mb-1">🎯 Impian: {acc.savingsGoalTitle}</p>
+                        <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5 truncate">{acc.name}</p>
+                        <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1">Rp {acc.balance.toLocaleString('id-ID')}</p>
+                        {hasTarget && (
+                          <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold leading-none mt-1 shadow-sm">
+                            Target: <span className="font-extrabold text-slate-600 dark:text-slate-300">Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>
                           </p>
                         )}
                       </div>
+
+                      {hasTarget && (
+                        <div className="w-full mt-2 space-y-1.5">
+                          <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+                            <div className={`h-full ${percentage >= 100 ? 'bg-emerald-500' : design.progressBar} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div>
+                          </div>
+                          {remaining > 0 ? (
+                            <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold text-right leading-none">
+                              Kurang Rp {remaining.toLocaleString('id-ID')} lagi
+                            </p>
+                          ) : (
+                            <p className="text-[9px] text-emerald-500 dark:text-emerald-400 font-black text-right uppercase tracking-wider leading-none">
+                              Target Terpenuhi! 🎉
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                 </div>
               );
@@ -391,7 +396,7 @@ export default function AssetsTab({
               <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                 <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, false)} className="hidden" id="custom-logo-file" />
                 <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{accLogo ? "Logo Siap Diunggah ✅" : "Format PNG/JPG (Maks 500KB)"}</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-550 truncate">{accLogo ? "Logo Siap Diunggah ✅" : "Format PNG/JPG (Maks 500KB)"}</span>
               </div>
             </div>
             <button onClick={handleCreateAccount} className="w-full py-3.5 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg cursor-pointer transition-colors">Simpan Dompet Baru</button>
@@ -399,7 +404,7 @@ export default function AssetsTab({
 
           {/* DAFTAR EDIT DOMPET */}
           <div className="pt-4 space-y-3 text-left">
-            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest pl-1">Daftar Dompet (Ubah / Urutan / Hapus)</p>
+            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-555 uppercase tracking-widest pl-1">Daftar Dompet (Ubah / Urutan / Hapus)</p>
             {accounts.map((acc: AccountData, index: number) => (
               <div key={acc.id} className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl flex flex-col gap-3 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
                 {editingAccId === acc.id ? (
@@ -446,7 +451,7 @@ export default function AssetsTab({
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Logo Dompet</label>
                       <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                         <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, true)} className="hidden" id={`edit-logo-file-${acc.id}`} /><label htmlFor={`edit-logo-file-${acc.id}`} className="cursor-pointer bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700"><Upload size={14}/> Ganti Logo</label>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{editAccLogo ? "Logo Baru Terpasang ✅" : "Logo lama tetap aktif"}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-550 truncate">{editAccLogo ? "Logo Baru Terpasang ✅" : "Logo lama tetap aktif"}</span>
                       </div>
                     </div>
                     <div className="flex gap-2 pt-2">
@@ -465,7 +470,7 @@ export default function AssetsTab({
                           {acc.excludeFromTotal && <span className="text-[8px] bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Terpisah</span>}
                         </div>
                         <p className="text-xs font-black text-blue-600 dark:text-blue-400 leading-none mb-1">Rp {acc.balance.toLocaleString("id-ID")}</p>
-                        <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{acc.type}</p>
+                        <p className="text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest">{acc.type}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
