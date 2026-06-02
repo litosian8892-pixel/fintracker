@@ -56,6 +56,13 @@ const safeEvaluate = (expr: string): number => {
   }
 };
 
+const getGoalStatus = (percentage: number) => {
+  if (percentage >= 100) return { label: "✨ Selesai!", color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-250 dark:border-emerald-800/50" };
+  if (percentage >= 75) return { label: "🚀 Sikit Lagi!", color: "text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/50" };
+  if (percentage >= 40) return { label: "🔥 On Track", color: "text-amber-600 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/50" };
+  return { label: "🌱 Berjuang!", color: "text-slate-500 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50" };
+};
+
 interface AssetsTabProps {
   accounts: AccountData[]; walletTypes: WalletTypeData[];
   accType: string; setAccType: (val: string) => void;
@@ -107,6 +114,12 @@ export default function AssetsTab({
 
   const totalSavingsBalance = savingsAccounts.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
 
+  // KONDISI INTEGRASI BARU: AKUMULASI TARGET IMPIAN MENABUNG
+  const savingsWithTargets = savingsAccounts.filter(a => a.targetBalance && a.targetBalance > 0);
+  const totalTargetAmount = savingsWithTargets.reduce((sum, a) => sum + (a.targetBalance || 0), 0);
+  const totalSavedAmount = savingsWithTargets.reduce((sum, a) => sum + a.balance, 0);
+  const overallPercentage = totalTargetAmount > 0 ? Math.min((totalSavedAmount / totalTargetAmount) * 105, 100) : 0;
+
   const formatRupiahTerbaca = (val: string) => {
     if (!val) return "Rp 0";
     const parsed = safeEvaluate(val);
@@ -152,10 +165,10 @@ export default function AssetsTab({
                     
                     <div className="space-y-0.5 mt-auto">
                       <div className="flex items-center mb-1.5">
-                        <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none truncate">{acc.name}</p>
+                        <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1 truncate text-left">{acc.name}</p>
                         {acc.excludeFromTotal && <span className="text-[7px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-slate-200 dark:border-slate-700">Dikecualikan</span>}
                       </div>
-                      <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate">Rp {acc.balance.toLocaleString('id-ID')}</p>
+                      <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate text-left">Rp {acc.balance.toLocaleString('id-ID')}</p>
                     </div>
                 </div>
               );
@@ -164,18 +177,45 @@ export default function AssetsTab({
         )}
       </div>
 
-      {/* TABUNGAN KHUSUS DENGAN GRID DESKTOP (2 KOLOM) */}
+      {/* TABUNGAN KHUSUS DENGAN WIDGET TARGET IMPIAN MENABUNG */}
       {savingsAccounts.length > 0 && (
-        <div className="space-y-3 pt-2">
+        <div className="space-y-4 pt-2">
           <div className="flex justify-between items-end px-1">
              <h3 className="font-bold text-slate-800 dark:text-slate-100 italic text-lg transition-colors">Tabungan Saya</h3>
-             <span className="text-[10px] md:text-xs font-black text-emerald-600 dark:text-emerald-400">Total: Rp {totalSavingsBalance.toLocaleString('id-ID')}</span>
+             <span className="text-[10px] md:text-xs font-black text-emerald-600 dark:text-emerald-400">Total Saldo: Rp {totalSavingsBalance.toLocaleString('id-ID')}</span>
           </div>
+
+          {/* WIDGET AKUMULASI TARGET IMPIAN */}
+          {savingsWithTargets.length > 0 && (
+            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-[30px] text-white shadow-lg relative overflow-hidden transition-all duration-300">
+              <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
+                <CreditCard size={120} />
+              </div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-left">
+                  <p className="text-emerald-100 text-[10px] uppercase tracking-widest font-bold mb-1">Akumulasi Target Impian</p>
+                  <h3 className="text-2xl font-black">Rp {totalSavedAmount.toLocaleString('id-ID')}</h3>
+                </div>
+                <span className="bg-emerald-400/30 text-emerald-100 text-[10px] font-black px-2.5 py-1 rounded-full uppercase border border-emerald-300/20">
+                  {overallPercentage.toFixed(0)}% Terkumpul
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-emerald-700/50 rounded-full overflow-hidden border border-emerald-500/20 mb-2">
+                <div className="h-full bg-white rounded-full transition-all duration-1000 ease-out" style={{ width: `${overallPercentage}%` }}></div>
+              </div>
+              <p className="text-[10px] text-emerald-100/95 font-bold text-left leading-relaxed">
+                Telah terkumpul <span className="font-black text-white">Rp {totalSavedAmount.toLocaleString('id-ID')}</span> dari target <span className="font-black text-white">Rp {totalTargetAmount.toLocaleString('id-ID')}</span> untuk rencana masa depan Anda.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             {savingsAccounts.map((acc: AccountData) => {
               const design = getCardDesign(acc.type);
               const hasTarget = acc.targetBalance && acc.targetBalance > 0;
               const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
+              const remaining = hasTarget ? Math.max(0, acc.targetBalance! - acc.balance) : 0;
+              const status = getGoalStatus(percentage);
 
               return (
                 <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[130px] md:min-h-[145px]`}>
@@ -187,8 +227,8 @@ export default function AssetsTab({
                         <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div>
                       )}
                       {hasTarget ? (
-                        <div className={`text-[9px] md:text-[10px] px-2.5 py-1 rounded-md font-black uppercase tracking-widest ${percentage >= 100 ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : design.chip}`}>
-                          {percentage.toFixed(0)}% Terisi
+                        <div className={`text-[9px] md:text-[10px] px-2.5 py-1 rounded-md font-black uppercase tracking-widest border ${status.color}`}>
+                          {status.label} • {percentage.toFixed(0)}%
                         </div>
                       ) : (
                         <div className="text-[9px] md:text-[10px] px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">No Target</div>
@@ -197,7 +237,7 @@ export default function AssetsTab({
                     
                     <div className="space-y-1 mt-auto w-full">
                       <div className="flex justify-between items-end">
-                        <div>
+                        <div className="text-left">
                           <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5">{acc.name}</p>
                           <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate">Rp {acc.balance.toLocaleString('id-ID')}</p>
                         </div>
@@ -207,8 +247,19 @@ export default function AssetsTab({
                       </div>
 
                       {hasTarget && (
-                        <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 mt-2">
-                          <div className={`h-full ${percentage >= 100 ? 'bg-emerald-500' : design.progressBar} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div>
+                        <div className="w-full mt-2 space-y-1.5">
+                          <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+                            <div className={`h-full ${percentage >= 100 ? 'bg-emerald-500' : design.progressBar} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div>
+                          </div>
+                          {remaining > 0 ? (
+                            <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold text-right leading-none">
+                              Kurang Rp {remaining.toLocaleString('id-ID')} lagi
+                            </p>
+                          ) : (
+                            <p className="text-[9px] text-emerald-500 dark:text-emerald-400 font-black text-right uppercase tracking-wider leading-none">
+                              Target Terpenuhi! 🎉
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -231,7 +282,7 @@ export default function AssetsTab({
         <div className="mt-5 space-y-4">
           
           {/* FORM TAMBAH DOMPET BARU */}
-          <div className="space-y-2 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <div className="space-y-2 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-left">
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 mb-3">Tambah Dompet Baru</h4>
             <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
                 {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
@@ -241,12 +292,12 @@ export default function AssetsTab({
             
             <div onClick={() => setAccExcludeFromTotal(!accExcludeFromTotal)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
               <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{accExcludeFromTotal && <Check size={10} strokeWidth={4} />}</div>
-              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Sembunyikan dari \"Total Uang Bisa Dipakai\" (Pemisahan Saldo)</span>
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Sembunyikan dari "Total Uang Bisa Dipakai" (Pemisahan Saldo)</span>
             </div>
 
             <div onClick={() => setAccIsSavings(!accIsSavings)} className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none">
               <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{accIsSavings && <Check size={10} strokeWidth={4} />}</div>
-              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Jadikan Kategori \"Tabungan\" di bagian bawah</span>
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Jadikan Kategori "Tabungan" di bagian bawah</span>
             </div>
 
             {accIsSavings && (
@@ -256,7 +307,7 @@ export default function AssetsTab({
               </div>
             )}
 
-            <div className="flex flex-col gap-1 pt-1">
+            <div className="flex flex-col gap-1 pt-1 text-left">
               <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
               <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                 <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, false)} className="hidden" id="custom-logo-file" />
@@ -269,11 +320,11 @@ export default function AssetsTab({
 
           {/* DAFTAR EDIT DOMPET */}
           <div className="pt-4 space-y-3">
-            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Daftar Dompet (Ubah / Urutan / Hapus)</p>
+            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1 text-left">Daftar Dompet (Ubah / Urutan / Hapus)</p>
             {accounts.map((acc: AccountData, index: number) => (
               <div key={acc.id} className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl flex flex-col gap-3 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
                 {editingAccId === acc.id ? (
-                  <div className="space-y-3 animate-in fade-in duration-200">
+                  <div className="space-y-3 animate-in fade-in duration-200 text-left">
                     <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-900/50 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
                     
                     <div className="space-y-1 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">
@@ -291,7 +342,7 @@ export default function AssetsTab({
 
                     <div onClick={() => setEditAccIsSavings(!editAccIsSavings)} className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none">
                       <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-750 bg-white dark:bg-slate-900'}`}>{editAccIsSavings && <Check size={10} strokeWidth={4} />}</div>
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jadikan Kategori \"Tabungan\"</span>
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jadikan Kategori "Tabungan"</span>
                     </div>
 
                     {editAccIsSavings && (
@@ -316,7 +367,7 @@ export default function AssetsTab({
                   </div>
                 ) : (
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 text-left">
                       {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200 dark:border-slate-700 p-1 shadow-sm" alt="logo" /> ) : ( <div className="w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400">{getCardDesign(acc.type).icon}</div> )}
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
