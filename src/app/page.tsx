@@ -18,7 +18,8 @@ import AssetsTab from "../components/tabs/AssetsTab";
 import SettingsTab from "../components/tabs/SettingsTab";
 import DebtsTab from "../components/tabs/DebtsTab";
 
-import { X, Lock, ChevronDown, Fingerprint } from "lucide-react"; 
+// BARU: Menambahkan icon Crown (Mahkota) dan MessageCircle untuk Paywall
+import { X, Lock, ChevronDown, Fingerprint, Crown, CheckCircle2, MessageCircle } from "lucide-react"; 
 
 const safeEvaluate = (expr: string): number => {
   if (!expr) return 0;
@@ -41,6 +42,9 @@ const safeEvaluate = (expr: string): number => {
 export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // STATE BARU UNTUK PAYWALL PREMIUM (null = sedang mengecek database)
+  const [isPremium, setIsPremium] = useState<boolean | null>(null);
   
   const [appPin, setAppPin] = useState<string | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -70,7 +74,6 @@ export default function FintrackerApp() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [searchResult, setSearchResult] = useState<TransactionData[]>([]);
 
-  // STATES UNTUK EDIT TRANSAKSI
   const [editingTransaction, setEditingTransaction] = useState<TransactionData | null>(null);
   const [editTAmount, setEditTAmount] = useState("");
   const [editTType, setEditTType] = useState<"income" | "expense" | "transfer">("expense");
@@ -82,14 +85,11 @@ export default function FintrackerApp() {
   const [editTAdminFee, setEditTAdminFee] = useState(""); 
   const [activeEditKeypad, setActiveEditKeypad] = useState<"amount" | "adminFee" | null>(null);
   
-  // STATES RINCIAN PECAHAN EDIT BARU
   const [editTSplits, setEditTSplits] = useState<SplitItemData[]>([]);
   const [activeEditSplitIndex, setActiveEditSplitIndex] = useState<number | null>(null);
   const [showEditSplitCatModal, setShowEditSplitCatModal] = useState(false);
 
-  // STATE REAKTIF BARU: MELACAK STATUS BIOMETRIK
   const [isBiometricActive, setIsBiometricActive] = useState(false);
-
   const [isMobile, setIsMobile] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
 
@@ -247,8 +247,10 @@ export default function FintrackerApp() {
     return () => unsub();
   }, []);
 
+  // KUMPULAN LISTENER DATA FIREBASE (Termasuk Cek Status Premium)
   useEffect(() => {
     if (!user) return;
+    
     const unsubAcc = onSnapshot(query(collection(db, `users/${user.uid}/accounts`), orderBy("order", "asc")), (sn) => {
       setAccounts(sn.docs.map(d => ({ id: d.id, ...d.data() } as AccountData)));
     });
@@ -267,7 +269,16 @@ export default function FintrackerApp() {
       setSubscriptions(sn.docs.map(d => ({ id: d.id, ...d.data() } as SubscriptionData)));
     });
 
-    return () => { unsubAcc(); unsubCat(); unsubTypes(); unsubDebts(); unsubSubs(); };
+    // BARU: REAL-TIME LISTENER UNTUK MENGECEK STATUS PREMIUM
+    const unsubProfile = onSnapshot(doc(db, `users/${user.uid}`), (docSnap) => {
+      if (docSnap.exists()) {
+        setIsPremium(docSnap.data().isPremium === true);
+      } else {
+        setIsPremium(false);
+      }
+    });
+
+    return () => { unsubAcc(); unsubCat(); unsubTypes(); unsubDebts(); unsubSubs(); unsubProfile(); };
   }, [user]);
 
   useEffect(() => {
@@ -906,7 +917,9 @@ export default function FintrackerApp() {
     XLSX.writeFile(workbook, `Fintracker_Laporan_${reportMonth}.xlsx`);
   };
 
-  if (loading || !pinChecked) return <LoadingScreen />;
+  // --- RENDER LAYAR LOADING, AUTH, & KUNCI ---
+  
+  if (loading || !pinChecked || (user && isPremium === null)) return <LoadingScreen />;
   if (!user) return <AuthScreen />;
 
   if (appPin && !isUnlocked) {
@@ -934,6 +947,55 @@ export default function FintrackerApp() {
             <button onClick={() => { triggerHapticFeedback(); setPinInput(prev => prev.slice(0, -1)); }} className="h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xl font-black text-slate-500 dark:text-slate-400 active:bg-slate-200 dark:active:bg-slate-700 transition-colors flex items-center justify-center select-none"><X size={24}/></button>
           </div>
           <button onClick={() => signOut(auth)} className="mt-8 text-[10px] font-bold text-red-500 hover:underline cursor-pointer">Lupa PIN? (Logout Paksa)</button>
+        </div>
+      </main>
+    );
+  }
+
+  // --- BARU: LAYAR KUNCI PAYWALL PREMIUM ---
+  if (isPremium === false) {
+    // ⚠️ GANTI NOMOR INI DENGAN NOMOR WA ANDA:
+    const waNumber = "62822713132559"; 
+    const waMessage = `Halo Admin Fintracker! 🚀\nSaya ingin mengaktifkan Lisensi Premium (Lifetime).\n\n📧 Email akun saya: ${user.email}`;
+    const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(waMessage)}`;
+
+    return (
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 transition-colors duration-200">
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-[35px] shadow-2xl w-full max-w-md flex flex-col items-center border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+          
+          <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-blue-600 to-indigo-700 -z-10"></div>
+          
+          <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center mb-6 shadow-xl border-4 border-slate-50 dark:border-slate-950 mt-4">
+            <Crown size={36} className="text-amber-500" strokeWidth={2.5}/>
+          </div>
+          
+          <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2 text-center">Akses Premium Terkunci</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 text-center leading-relaxed">
+            Amankan data keuangan Anda dengan Lisensi Fintracker Premium. Nikmati seluruh fitur eksklusif seumur hidup!
+          </p>
+
+          <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 mb-6 space-y-3 border border-slate-100 dark:border-slate-800 text-left">
+            <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-500"/><span className="text-xs font-bold text-slate-700 dark:text-slate-300">Catat Tanpa Internet (Offline-First)</span></div>
+            <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-500"/><span className="text-xs font-bold text-slate-700 dark:text-slate-300">Pecah Struk Transaksi (Split Bill)</span></div>
+            <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-500"/><span className="text-xs font-bold text-slate-700 dark:text-slate-300">Pemisahan Dompet Usaha & Pribadi</span></div>
+            <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-500"/><span className="text-xs font-bold text-slate-700 dark:text-slate-300">Pengingat & 1-Click Pay Langganan</span></div>
+            <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-500"/><span className="text-xs font-bold text-slate-700 dark:text-slate-300">Keamanan Sidik Jari / Face ID</span></div>
+          </div>
+
+          <div className="text-center mb-6">
+            <span className="text-xs font-bold text-slate-400 line-through mr-2">Rp 150.000</span>
+            <span className="text-3xl font-black text-slate-800 dark:text-white">Rp 49.000</span>
+            <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mt-1">Sekali Bayar Selamanya</p>
+          </div>
+
+          <a href={waLink} target="_blank" rel="noreferrer" className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-black shadow-lg flex items-center justify-center gap-2 transition-transform transform active:scale-95">
+            <MessageCircle size={18} /> Aktivasi via WhatsApp
+          </a>
+
+          <button onClick={() => signOut(auth)} className="mt-6 text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+            Bukan {user.email}? Logout
+          </button>
+
         </div>
       </main>
     );
@@ -968,15 +1030,8 @@ export default function FintrackerApp() {
               {activeTab === "debts" && (
                 <DebtsTab 
                   debts={debts} accounts={accounts} categories={categories}
-                  handleAddDebt={handleAddDebt} 
-                  handleEditDebt={handleEditDebt} 
-                  handlePayDebt={handlePayDebt} 
-                  handleDeleteDebt={handleDeleteDebt} 
-                  subscriptions={subscriptions}
-                  handleAddSubscription={handleAddSubscription}
-                  handleEditSubscription={handleEditSubscription}
-                  handlePaySubscription={handlePaySubscription}
-                  handleDeleteSubscription={handleDeleteSubscription}
+                  handleAddDebt={handleAddDebt} handleEditDebt={handleEditDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
+                  subscriptions={subscriptions} handleAddSubscription={handleAddSubscription} handleEditSubscription={handleEditSubscription} handlePaySubscription={handlePaySubscription} handleDeleteSubscription={handleDeleteSubscription}
                 />
               )}
               {activeTab === "assets" && (
