@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, Wallet } from "lucide-react";
+import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, Wallet, Briefcase } from "lucide-react";
 import { AccountData, WalletTypeData } from "../../types";
 
 const getCardDesign = (type: string) => {
@@ -73,6 +73,11 @@ interface AssetsTabProps {
   accTargetBalance: string; setAccTargetBalance: (val: string) => void;
   accExcludeFromTotal: boolean; setAccExcludeFromTotal: (val: boolean) => void;
   editAccExcludeFromTotal: boolean; setEditAccExcludeFromTotal: (val: boolean) => void;
+  
+  // PROPS BARU UNTUK DOMPET BISNIS
+  accIsBusiness: boolean; setAccIsBusiness: (val: boolean) => void;
+  editAccIsBusiness: boolean; setEditAccIsBusiness: (val: boolean) => void;
+
   handleCreateAccount: () => void;
   editingAccId: string | null; setEditingAccId: (val: string | null) => void;
   editAccName: string; setEditAccName: (val: string) => void;
@@ -92,37 +97,45 @@ interface AssetsTabProps {
 export default function AssetsTab({
   accounts, walletTypes, accType, setAccType, accName, setAccName, accBalance, setAccBalance, accLogo, handleLogoUpload, accIsSavings, setAccIsSavings, accTargetBalance, setAccTargetBalance, 
   accExcludeFromTotal, setAccExcludeFromTotal, editAccExcludeFromTotal, setEditAccExcludeFromTotal,
+  accIsBusiness, setAccIsBusiness, editAccIsBusiness, setEditAccIsBusiness,
   handleCreateAccount, editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder,
   accSavingsGoalTitle, setAccSavingsGoalTitle, editAccSavingsGoalTitle, setEditAccSavingsGoalTitle
 }: AssetsTabProps) {
   
   const [isManageOpen, setIsManageOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"pribadi" | "bisnis">("pribadi");
 
   useEffect(() => {
     if (editingAccId) setIsManageOpen(true);
   }, [editingAccId]);
 
-  // SINKRONISASI PEMBAGIAN TIGA KATEGORI TEGAS
-  const activeAccounts = accounts.filter((a: AccountData) => !a.isSavings);
+  // SINKRONISASI PEMBAGIAN KATEGORI DENGAN LOGIKA BISNIS
+  const personalActiveAccounts = accounts.filter((a: AccountData) => !a.isSavings && !a.isBusiness);
+  const businessActiveAccounts = accounts.filter((a: AccountData) => !a.isSavings && a.isBusiness);
+  
   const emergencyAccounts = accounts.filter((a: AccountData) => a.isSavings && !a.savingsGoalTitle);
   const dreamGoals = accounts.filter((a: AccountData) => a.isSavings && a.savingsGoalTitle);
   
-  // FILTER OUT YANG EXCLUDE DARI TOTAL
-  const totalActiveBalance = activeAccounts.reduce((accVal: number, curr: AccountData) => {
+  // PENENTUAN GRID YANG TAMPIL BERDASARKAN TOGGLE TAB
+  const displayedActiveAccounts = activeTab === "pribadi" ? personalActiveAccounts : businessActiveAccounts;
+
+  // PERHITUNGAN KARTU BIRU (HANYA UANG PRIBADI)
+  const totalPersonalActiveBalance = personalActiveAccounts.reduce((accVal: number, curr: AccountData) => {
     if (curr.excludeFromTotal) return accVal;
     return accVal + curr.balance;
   }, 0);
 
-  // HITUNG TOTAL DARI SEMUA DOMPET YANG DIKECUALIKAN
-  const totalExcludedBalance = activeAccounts.reduce((accVal: number, curr: AccountData) => {
+  const totalExcludedBalance = personalActiveAccounts.reduce((accVal: number, curr: AccountData) => {
     if (curr.excludeFromTotal) return accVal + curr.balance;
     return accVal;
   }, 0);
 
+  // PERHITUNGAN TOTAL BISNIS UNTUK DITAMPILKAN SAAT TAB BISNIS AKTIF
+  const totalBusinessBalance = businessActiveAccounts.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
+
   const totalEmergencyBalance = emergencyAccounts.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
   const totalDreamBalance = dreamGoals.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
 
-  // AKUMULASI TARGET SELURUH TABUNGAN YANG MEMILIKI TARGET
   const savingsWithTargets = accounts.filter(a => a.isSavings && a.targetBalance && a.targetBalance > 0);
   const totalTargetAmount = savingsWithTargets.reduce((sum, a) => sum + (a.targetBalance || 0), 0);
   const totalSavedAmount = savingsWithTargets.reduce((sum, a) => sum + a.balance, 0);
@@ -136,12 +149,12 @@ export default function AssetsTab({
 
   return (
     <div className="space-y-6 animate-in fade-in">
-      {/* TOTAL BALANCE CARD DENGAN VISUALISASI SALDO TERPISAH */}
+      {/* TOTAL BALANCE CARD DENGAN VISUALISASI SALDO TERPISAH (HANYA PRIBADI) */}
       <div className="bg-blue-600 p-8 md:p-10 rounded-[35px] text-white shadow-xl relative overflow-hidden">
         <div className="absolute -top-4 -right-4 p-8 opacity-10"><CreditCard size={120} /></div>
         
         <p className="text-blue-100 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1 relative z-10">Total Uang Bisa Dipakai</p>
-        <h2 className="text-4xl md:text-5xl font-black italic relative z-10 text-left">Rp {totalActiveBalance.toLocaleString('id-ID')}</h2>
+        <h2 className="text-4xl md:text-5xl font-black italic relative z-10 text-left">Rp {totalPersonalActiveBalance.toLocaleString('id-ID')}</h2>
         
         {/* SUB-INFORMASI SALDO TERPISAH YANG DIKECUALIKAN */}
         {totalExcludedBalance > 0 && (
@@ -152,12 +165,36 @@ export default function AssetsTab({
         )}
       </div>
 
-      {/* KATEGORI 1: DOMPET AKTIF */}
+      {/* KATEGORI 1: DOMPET AKTIF (DENGAN TOGGLE PRIBADI / BISNIS) */}
       <div className="space-y-3">
-        <h3 className="font-bold text-slate-800 dark:text-slate-100 italic px-1 text-lg transition-colors text-left">Dompet Aktif</h3>
-        {activeAccounts.length === 0 ? <p className="text-center py-6 text-slate-400 text-sm italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">Belum ada dompet aktif</p> : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-            {activeAccounts.map((acc: AccountData) => {
+        
+        {/* TOGGLE HEADER */}
+        <div className="flex justify-between items-center px-1">
+          <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl shadow-inner border border-slate-200 dark:border-slate-700">
+            <button 
+              onClick={() => setActiveTab("pribadi")} 
+              className={`px-3 md:px-5 py-1.5 md:py-2 text-[10px] md:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${activeTab === "pribadi" ? "bg-white dark:bg-slate-900 shadow-sm text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-800" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
+            >
+              👤 Pribadi
+            </button>
+            <button 
+              onClick={() => setActiveTab("bisnis")} 
+              className={`px-3 md:px-5 py-1.5 md:py-2 text-[10px] md:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${activeTab === "bisnis" ? "bg-white dark:bg-slate-900 shadow-sm text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-800" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
+            >
+              <Briefcase size={14} /> Bisnis
+            </button>
+          </div>
+          {activeTab === "bisnis" && (
+            <span className="text-[10px] md:text-xs font-black text-amber-600 dark:text-amber-500 animate-in fade-in slide-in-from-right-2">
+              Total Bisnis: Rp {totalBusinessBalance.toLocaleString('id-ID')}
+            </span>
+          )}
+        </div>
+
+        {/* DAFTAR GRID DOMPET AKTIF */}
+        {displayedActiveAccounts.length === 0 ? <p className="text-center py-6 text-slate-400 text-sm italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">{activeTab === "pribadi" ? "Belum ada dompet aktif" : "Belum ada dompet bisnis"}</p> : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {displayedActiveAccounts.map((acc: AccountData) => {
               const design = getCardDesign(acc.type);
               return (
                 <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[120px] md:min-h-[135px]`}>
@@ -174,7 +211,8 @@ export default function AssetsTab({
                     <div className="space-y-0.5 mt-auto">
                       <div className="flex items-center mb-1.5">
                         <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1 truncate text-left">{acc.name}</p>
-                        {acc.excludeFromTotal && <span className="text-[7px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-slate-200 dark:border-slate-700">Terpisah</span>}
+                        {acc.excludeFromTotal && !acc.isBusiness && <span className="text-[7px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-slate-200 dark:border-slate-700">Terpisah</span>}
+                        {acc.isBusiness && <span className="text-[7px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-amber-200 dark:border-amber-800">Bisnis</span>}
                       </div>
                       <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate text-left">Rp {acc.balance.toLocaleString('id-ID')}</p>
                     </div>
@@ -220,7 +258,10 @@ export default function AssetsTab({
                     
                     <div className="space-y-1.5 mt-auto w-full text-left">
                       <div>
-                        <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5 truncate">{acc.name}</p>
+                        <div className="flex items-center mb-1.5 gap-1.5">
+                          <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none truncate">{acc.name}</p>
+                          {acc.isBusiness && <span className="text-[7px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded uppercase font-black shrink-0 tracking-widest border border-amber-200 dark:border-amber-800">Bisnis</span>}
+                        </div>
                         <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1">Rp {acc.balance.toLocaleString('id-ID')}</p>
                         {hasTarget && (
                           <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold leading-none mt-1 shadow-sm">
@@ -309,11 +350,14 @@ export default function AssetsTab({
                     
                     <div className="space-y-1.5 mt-auto w-full text-left">
                       <div>
-                        <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none mb-1">🎯 Impian: {acc.savingsGoalTitle}</p>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none">🎯 Impian: {acc.savingsGoalTitle}</p>
+                          {acc.isBusiness && <span className="text-[7px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded uppercase font-black shrink-0 tracking-widest border border-amber-200 dark:border-amber-800">Bisnis</span>}
+                        </div>
                         <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5 truncate">{acc.name}</p>
                         <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1">Rp {acc.balance.toLocaleString('id-ID')}</p>
                         {hasTarget && (
-                          <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold leading-none mt-1 shadow-sm">
+                          <p className="text-[10px] text-slate-400 dark:text-slate-555 font-bold leading-none mt-1 shadow-sm">
                             Target: <span className="font-extrabold text-slate-600 dark:text-slate-300">Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>
                           </p>
                         )}
@@ -363,6 +407,12 @@ export default function AssetsTab({
             <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
             <input type="number" placeholder="Saldo Awal" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
             
+            {/* CHECKBOX BARU: DOMPET BISNIS */}
+            <div onClick={() => setAccIsBusiness(!accIsBusiness)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsBusiness ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{accIsBusiness && <Check size={10} strokeWidth={4} />}</div>
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Jadikan Dompet <span className="text-amber-600 dark:text-amber-500">"Bisnis"</span></span>
+            </div>
+
             <div onClick={() => setAccExcludeFromTotal(!accExcludeFromTotal)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
               <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{accExcludeFromTotal && <Check size={10} strokeWidth={4} />}</div>
               <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Sembunyikan dari "Total Uang Bisa Dipakai" (Pemisahan Saldo)</span>
@@ -419,6 +469,12 @@ export default function AssetsTab({
                       <input type="number" className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-800 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
                     </div>
                     
+                    {/* EDIT CHECKBOX: DOMPET BISNIS */}
+                    <div onClick={() => setEditAccIsBusiness(!editAccIsBusiness)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsBusiness ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{editAccIsBusiness && <Check size={10} strokeWidth={4} />}</div>
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jadikan Dompet <span className="text-amber-600 dark:text-amber-500">"Bisnis"</span></span>
+                    </div>
+
                     <div onClick={() => setEditAccExcludeFromTotal(!editAccExcludeFromTotal)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
                       <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{editAccExcludeFromTotal && <Check size={10} strokeWidth={4} />}</div>
                       <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Sembunyikan dari Total Saldo (Pemisahan Saldo)</span>
@@ -467,7 +523,8 @@ export default function AssetsTab({
                         <div className="flex items-center gap-2 mb-0.5">
                           <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-none">{acc.name}</p>
                           {acc.isSavings && <span className="text-[8px] bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Tabungan</span>}
-                          {acc.excludeFromTotal && <span className="text-[8px] bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Terpisah</span>}
+                          {acc.excludeFromTotal && !acc.isBusiness && <span className="text-[8px] bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Terpisah</span>}
+                          {acc.isBusiness && <span className="text-[8px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Bisnis</span>}
                         </div>
                         <p className="text-xs font-black text-blue-600 dark:text-blue-400 leading-none mb-1">Rp {acc.balance.toLocaleString("id-ID")}</p>
                         <p className="text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest">{acc.type}</p>
@@ -483,6 +540,7 @@ export default function AssetsTab({
                         setEditAccBalance(acc.balance.toString()); 
                         setEditAccLogo(acc.logo || ""); 
                         setEditAccIsSavings(!!acc.isSavings); 
+                        setEditAccIsBusiness(!!acc.isBusiness); // <--- LOAD STATE BISNIS
                         setEditAccTargetBalance(acc.targetBalance?.toString() || ""); 
                         setEditAccExcludeFromTotal(!!acc.excludeFromTotal); 
                         setEditAccSavingsGoalTitle(acc.savingsGoalTitle || ""); 
