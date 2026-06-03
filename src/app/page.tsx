@@ -123,7 +123,6 @@ export default function FintrackerApp() {
       const credId = localStorage.getItem("fintracker_biometric_cred_id");
       if (!isBioEnabled || !credId || !window.PublicKeyCredential) return;
 
-      // Konversi format Credential ID dari Base64 kembali ke Uint8Array rahasia
       const rawId = Uint8Array.from(atob(credId), c => c.charCodeAt(0));
       const challenge = new Uint8Array(32);
       window.crypto.getRandomValues(challenge);
@@ -153,13 +152,12 @@ export default function FintrackerApp() {
       setAppPin(storedPin); 
       setIsUnlocked(false); 
       
-      // JIKA BIOMETRIK AKTIF, SET STATE SECARA REAKTIF & PICU PROMPT FACEID/FINGERPRINT SAAT BUKA APLIKASI
       const isBioEnabled = localStorage.getItem("fintracker_biometric_enabled") === "true";
       if (isBioEnabled) {
         setIsBiometricActive(true);
         setTimeout(() => {
           handleBiometricUnlock();
-        }, 400); // Sedikit jeda aman menunggu render DOM
+        }, 400); 
       }
     }
     else { setIsUnlocked(true); }
@@ -179,6 +177,7 @@ export default function FintrackerApp() {
   const [accIsSavings, setAccIsSavings] = useState(false); 
   const [accTargetBalance, setAccTargetBalance] = useState(""); 
   const [accExcludeFromTotal, setAccExcludeFromTotal] = useState(false); 
+  const [accIsBusiness, setAccIsBusiness] = useState(false); // <--- BARU: STATE DOMPET BISNIS
   const [accSavingsGoalTitle, setAccSavingsGoalTitle] = useState(""); 
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
@@ -188,6 +187,7 @@ export default function FintrackerApp() {
   const [editAccIsSavings, setEditAccIsSavings] = useState(false); 
   const [editAccTargetBalance, setEditAccTargetBalance] = useState(""); 
   const [editAccExcludeFromTotal, setEditAccExcludeFromTotal] = useState(false); 
+  const [editAccIsBusiness, setEditAccIsBusiness] = useState(false); // <--- BARU: STATE EDIT DOMPET BISNIS
   const [editAccSavingsGoalTitle, setEditAccSavingsGoalTitle] = useState(""); 
 
   const [tAmount, setTAmount] = useState("");
@@ -263,7 +263,6 @@ export default function FintrackerApp() {
     return () => unsubTr();
   }, [user, txLimit]);
 
-  // OPTIMASI LAZY-QUERY: HANYA LOAD KONEKSI BULANAN SAAT USER BERADA DI TAB LAPORAN (activeTab === "reports")
   useEffect(() => {
     if (!user || activeTab !== "reports") return; 
     const startOfMonth = `${reportMonth}-01`;
@@ -277,7 +276,6 @@ export default function FintrackerApp() {
     return () => unsubReport();
   }, [user, reportMonth, activeTab]);
 
-  // OPTIMASI LAZY-QUERY KOMPARASI BULAN LALU
   useEffect(() => {
     if (!user || activeTab !== "reports") return; 
     const prevMonth = getPrevMonth(reportMonth);
@@ -465,10 +463,11 @@ export default function FintrackerApp() {
         isSavings: accIsSavings, 
         targetBalance: accIsSavings && accTargetBalance ? safeEvaluate(accTargetBalance) : null, 
         excludeFromTotal: accExcludeFromTotal, 
+        isBusiness: accIsBusiness, // <--- BARU: SIMPAN STATUS BISNIS
         savingsGoalTitle: accIsSavings && accSavingsGoalTitle ? accSavingsGoalTitle : null, 
         createdAt: serverTimestamp() 
       });
-      setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); setAccExcludeFromTotal(false); setAccSavingsGoalTitle("");
+      setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); setAccExcludeFromTotal(false); setAccIsBusiness(false); setAccSavingsGoalTitle("");
     } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
@@ -512,10 +511,11 @@ export default function FintrackerApp() {
         isSavings: editAccIsSavings, 
         targetBalance: editAccIsSavings && editAccTargetBalance ? safeEvaluate(editAccTargetBalance) : null, 
         excludeFromTotal: editAccExcludeFromTotal,
+        isBusiness: editAccIsBusiness, // <--- BARU: UPDATE STATUS BISNIS
         savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle ? editAccSavingsGoalTitle : null 
       });
       
-      setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false); setEditAccSavingsGoalTitle("");
+      setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false); setEditAccIsBusiness(false); setEditAccSavingsGoalTitle("");
       alert("Dompet berhasil diperbarui & riwayat audit otomatis dicatat!");
     } catch (e) { alert("Gagal memperbarui"); }
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
@@ -615,11 +615,10 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
-  // INITIALIZE POPULASI SPLITS UNTUK MODAL EDIT KOREKSI
   const openEditModal = (t: TransactionData) => {
     setEditingTransaction(t); setEditTAmount(t.amount.toString()); setEditTType(t.type as any); setEditTAccountId(t.accountId);
     setEditTToAccountId(t.toAccountId || ""); setEditTNote(t.note || ""); setEditTCategory(t.category); setEditTDate(t.tDate); setEditTAdminFee(t.adminFee?.toString() || ""); 
-    setEditTSplits(t.splits ? t.splits.map(s => ({ ...s })) : []); // Deep copy splits
+    setEditTSplits(t.splits ? t.splits.map(s => ({ ...s })) : []); 
   };
 
   const handleUpdateTransaction = async () => {
@@ -627,7 +626,6 @@ export default function FintrackerApp() {
     if (!user || !editingTransaction) return;
     const oldT = editingTransaction;
     
-    // Auto calculate amount if splits are present, or use the input box
     const newAmount = editTSplits.length > 0 ? editTSplits.reduce((sum, s) => sum + s.amount, 0) : safeEvaluate(editTAmount);
     if (newAmount <= 0) return alert("Nominal transaksi tidak valid!");
     
@@ -754,7 +752,6 @@ export default function FintrackerApp() {
   const prevTotalExpense = prevCombinedExpense.reduce((a, b) => a + b.amount, 0);
   const prevTotalIncome = prevMonthTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
 
-  // BARU: DYNAMIC LAZY-LOADING UNTUK LIBRARY XLSX SHEETJS
   const handleExportToExcel = async () => {
     if (reportTransactions.length === 0) return alert("Tidak ada data transaksi di bulan ini!");
     
@@ -783,7 +780,7 @@ export default function FintrackerApp() {
       };
     });
 
-    const XLSX = await import("xlsx"); // <--- DYNAMIC IMPORT LAZY LOADING
+    const XLSX = await import("xlsx");
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan");
@@ -809,7 +806,6 @@ export default function FintrackerApp() {
               <button key={num} onClick={() => { triggerHapticFeedback(); if(pinInput.length < 6) { const newVal = pinInput + num; setPinInput(newVal); if(newVal.length === 6) { if(newVal === appPin) { setTimeout(() => { setIsUnlocked(true); setPinInput(""); }, 200); } else { setPinError(true); triggerHapticFeedback(); setTimeout(() => { setPinInput(""); setPinError(false); }, 500); } } } }} className="h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl text-2xl font-black text-slate-800 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors select-none">{num}</button>
             ))}
             
-            {/* TOMBOL SIDIK JARI/FACEID DI KIRI BAWAH (JIKA DIAKTIFKAN) */}
             {isBiometricActive ? (
               <button onClick={() => { triggerHapticFeedback(); handleBiometricUnlock(); }} className="h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xl font-black text-blue-500 dark:text-blue-400 active:bg-slate-200 dark:active:bg-slate-700 transition-colors flex items-center justify-center select-none cursor-pointer">
                 <Fingerprint size={24} />
@@ -854,7 +850,7 @@ export default function FintrackerApp() {
               {activeTab === "debts" && (
                 <DebtsTab 
                   debts={debts} accounts={accounts} categories={categories}
-                  handleAddDebt={handleAddDebt} handleEditDebt={handleEditDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
+                  handleAddDebt={handleEditDebt} handleEditDebt={handleEditDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
                 />
               )}
               {activeTab === "assets" && (
@@ -865,13 +861,17 @@ export default function FintrackerApp() {
                   accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} 
                   accExcludeFromTotal={accExcludeFromTotal} setAccExcludeFromTotal={setAccExcludeFromTotal}
                   editAccExcludeFromTotal={editAccExcludeFromTotal} setEditAccExcludeFromTotal={setEditAccExcludeFromTotal}
+                  
+                  // PROPS UNTUK DOMPET BISNIS
+                  accIsBusiness={accIsBusiness} setAccIsBusiness={setAccIsBusiness}
+                  editAccIsBusiness={editAccIsBusiness} setEditAccIsBusiness={setEditAccIsBusiness}
+
                   handleCreateAccount={handleCreateAccount} editingAccId={editingAccId} setEditingAccId={setEditingAccId} 
                   editAccName={editAccName} setEditAccName={setEditAccName} editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} 
                   editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} 
                   editAccTargetBalance={editAccTargetBalance} setEditAccTargetBalance={setEditAccTargetBalance} 
                   handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
                   
-                  // PROPS UNTUK SAVINGS GOAL TITLE
                   accSavingsGoalTitle={accSavingsGoalTitle} setAccSavingsGoalTitle={setAccSavingsGoalTitle}
                   editAccSavingsGoalTitle={editAccSavingsGoalTitle} setEditAccSavingsGoalTitle={setEditAccSavingsGoalTitle}
                 />
@@ -911,12 +911,11 @@ export default function FintrackerApp() {
             <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto pb-12 text-left">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipe Transaksi</label>
-                <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer disabled:opacity-50 transition-colors" value={editTType} onChange={(e) => { const newType = e.target.value as "income" | "expense" | "transfer"; setEditTType(newType); if (newType !== "transfer") { const filtered = categories.filter(c => c.type === newType); setEditTCategory(filtered.length > 0 ? filtered[0].name : (newType === "income" ? "Gaji" : "Makanan")); } else { setEditTCategory("Transfer"); } }}>
+                <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTType} onChange={(e) => { const newType = e.target.value as "income" | "expense" | "transfer"; setEditTType(newType); if (newType !== "transfer") { const filtered = categories.filter(c => c.type === newType); setEditTCategory(filtered.length > 0 ? filtered[0].name : (newType === "income" ? "Gaji" : "Makanan")); } else { setEditTCategory("Transfer"); } }}>
                   <option value="expense">🔴 Pengeluaran</option><option value="income">🟢 Pemasukan</option><option value="transfer">🔵 Transfer Dana</option>
                 </select>
               </div>
 
-              {/* JIKA BUKAN SPLIT, MENAMPILKAN NOMINAL UTAMA */}
               {editTSplits.length === 0 && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
@@ -971,7 +970,6 @@ export default function FintrackerApp() {
                 <input disabled={isSubmitting} onFocus={() => { setActiveEditKeypad(null); }} type="text" className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white disabled:opacity-50 transition-colors" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
               </div>
 
-              {/* BARU: INLINE SPLIT EDITOR DI DALAM KOREKSI TRANSAKSI */}
               {editTSplits && editTSplits.length > 0 && (
                 <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800 mt-2">
                   <div className="flex justify-between items-center">
@@ -1045,7 +1043,6 @@ export default function FintrackerApp() {
         </div>
       )}
 
-      {/* POP-UP PILIH KATEGORI UNTUK ITEM SPLIT DI MODAL EDIT KOREKSI */}
       {showEditSplitCatModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-100 dark:border-slate-800">
