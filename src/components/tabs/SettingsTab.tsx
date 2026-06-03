@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User } from "firebase/auth";
-import { LogOut, Tag, CreditCard, X, Edit2, Check, Sun, Moon, Monitor, ChevronDown, ChevronUp, Trash2, Lock } from "lucide-react"; // <--- TAMBAH LOCK IMPORT
+import { LogOut, Tag, CreditCard, X, Edit2, Check, Sun, Moon, Monitor, ChevronDown, ChevronUp, Trash2, Lock, Fingerprint } from "lucide-react";
 import { CategoryData, WalletTypeData } from "../../types";
 
 interface SettingsTabProps {
@@ -16,7 +16,7 @@ interface SettingsTabProps {
   addCustomWalletType: () => void; walletTypes: WalletTypeData[]; deleteWalletType: (id: string) => void;
   theme: "light" | "dark" | "system"; setTheme: (theme: "light" | "dark" | "system") => void;
   
-  // PROP KUNCI PIN BARU
+  // PROP KUNCI PIN
   appPin: string | null; setAppPin: (val: string | null) => void;
 }
 
@@ -39,6 +39,73 @@ export default function SettingsTab({
   const [pinModalMode, setPinModalMode] = useState<"setup" | "confirm" | "disable" | null>(null);
   const [tempPin, setTempPin] = useState("");
   const [inputPin, setInputPin] = useState("");
+
+  // STATE BIOMETRIK LOKAL BARU
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+
+  useEffect(() => {
+    const isBio = localStorage.getItem("fintracker_biometric_enabled") === "true";
+    setBiometricEnabled(isBio);
+  }, []);
+
+  // LOGIKA PENDAFTARAN BIOMETRIK MANDIRI (FIDO2/WEBAUTHN LOKAL)
+  const handleToggleBiometric = async () => {
+    if (biometricEnabled) {
+      localStorage.removeItem("fintracker_biometric_enabled");
+      localStorage.removeItem("fintracker_biometric_cred_id");
+      setBiometricEnabled(false);
+      alert("Kunci Biometrik (Face ID/Sidik Jari) dinonaktifkan.");
+    } else {
+      if (!window.PublicKeyCredential) {
+        return alert("Sensor biometrik tidak didukung atau diblokir oleh browser di perangkat ini. Pastikan Anda mengakses via HTTPS / Localhost.");
+      }
+
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      
+      const userId = new Uint8Array(16);
+      window.crypto.getRandomValues(userId);
+
+      const options = {
+        challenge: challenge,
+        rp: {
+          name: "Fintracker",
+          id: window.location.hostname
+        },
+        user: {
+          id: userId,
+          name: "fintracker-user",
+          displayName: "Fintracker User"
+        },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 },   // ES256
+          { type: "public-key", alg: -257 }  // RS256
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform", // Mengunci pemakaian sidik jari/sensor lokal perangkat
+          userVerification: "required"
+        },
+        timeout: 60000
+      };
+
+      try {
+        const credential = await navigator.credentials.create({ publicKey: options as any });
+        if (credential) {
+          // PERBAIKAN: Penegasan tipe (casting as any) agar TypeScript mengizinkan pembacaan properti rawId
+          const rawId = new Uint8Array((credential as any).rawId);
+          const base64String = btoa(String.fromCharCode(...rawId));
+          
+          localStorage.setItem("fintracker_biometric_cred_id", base64String);
+          localStorage.setItem("fintracker_biometric_enabled", "true");
+          setBiometricEnabled(true);
+          alert("Kunci Biometrik (Face ID / Sidik Jari) berhasil diaktifkan!");
+        }
+      } catch (err: any) {
+        console.error("Gagal mendaftarkan biometrik:", err);
+        alert("Gagal mengaktifkan biometrik: " + (err.message || "Mundur / Batal"));
+      }
+    }
+  };
 
   const sortedCategories = categories.slice().sort((a, b) => {
     const cleanA = a.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -115,14 +182,16 @@ export default function SettingsTab({
         <img src={user?.photoURL || ""} className="w-20 h-20 rounded-full border-4 border-blue-500 shadow-lg" alt="Profile" />
         <div>
           <h3 className="font-black text-lg text-slate-800 dark:text-slate-100">{user?.displayName}</h3>
-          <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold">{user?.email}</p>
+          <p className="text-xs text-slate-450 dark:text-slate-550 font-semibold">{user?.email}</p>
         </div>
         <button onClick={onLogout} className="px-6 py-2.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"><LogOut size={14}/> Logout</button>
       </div>
 
-      {/* KEAMANAN APLIKASI (KUNCI PIN) */}
+      {/* KEAMANAN APLIKASI (KUNCI PIN & BIOMETRIK) */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2"><Lock size={16} className="text-blue-600 dark:text-blue-500"/> Keamanan Aplikasi</h3>
+        
+        {/* ROW 1: KUNCI PIN */}
         <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
             <div className="flex flex-col text-left">
               <p className="text-xs font-bold text-slate-800 dark:text-slate-100">Kunci Aplikasi (PIN)</p>
@@ -135,6 +204,22 @@ export default function SettingsTab({
               className={`w-12 h-6 rounded-full flex items-center p-1 cursor-pointer transition-colors shadow-inner ${appPin ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
             >
               <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${appPin ? 'translate-x-6' : 'translate-x-0'}`} />
+            </div>
+        </div>
+
+        {/* ROW 2: KUNCI BIOMETRIK (FACE ID / SIDIK JARI) */}
+        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <div className="flex flex-col text-left">
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">Kunci Biometrik <Fingerprint size={14} className="text-blue-500"/></p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Buka aplikasi instan dengan sidik jari atau Face ID</p>
+            </div>
+            
+            {/* TOGGLE SWITCH KUNCI BIOMETRIK */}
+            <div 
+              onClick={handleToggleBiometric} 
+              className={`w-12 h-6 rounded-full flex items-center p-1 cursor-pointer transition-colors shadow-inner ${biometricEnabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+            >
+              <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${biometricEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
             </div>
         </div>
       </div>
@@ -276,7 +361,7 @@ export default function SettingsTab({
       {/* POPUP MODAL SETUP & DISABLE PIN */}
       {pinModalMode && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 p-8 rounded-[35px] w-full max-w-sm shadow-2xl border border-slate-100 dark:border-slate-800 text-center space-y-6">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[35px] w-full max-sm shadow-2xl border border-slate-100 dark:border-slate-800 text-center space-y-6">
             <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-2 shadow-inner"><Lock size={32}/></div>
             <h3 className="font-black text-xl text-slate-800 dark:text-white leading-tight">
               {pinModalMode === "setup" ? "Buat PIN Baru" : pinModalMode === "confirm" ? "Konfirmasi PIN Anda" : "Verifikasi PIN"}
