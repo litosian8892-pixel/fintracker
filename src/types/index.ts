@@ -7,8 +7,9 @@ export interface AccountData {
   order?: number; 
   isSavings?: boolean; 
   targetBalance?: number; 
-  excludeFromTotal?: boolean; // <--- PEMISAHAN SALDO E-WALLET/LAINNYA
-  savingsGoalTitle?: string;  // <--- BARU: TUJUAN/NAMA IMPIAN TABUNGAN (misal: Beli HP Baru, Dana Darurat)
+  excludeFromTotal?: boolean; 
+  isBusiness?: boolean;       // <--- INI YANG DICARI OLEH VERCEL (Tahap 1)
+  savingsGoalTitle?: string;  
 }
 
 export interface SplitItemData {
@@ -30,7 +31,7 @@ export interface TransactionData {
   tDate: string; 
   adminFee?: number;
   createdAt?: any; 
-  splits?: SplitItemData[]; // <--- DAFTAR PECAHAN KATEGORI & NOMINAL
+  splits?: SplitItemData[]; 
 }
 
 export interface CategoryData { 
