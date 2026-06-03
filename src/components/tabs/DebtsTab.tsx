@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil, Tag } from "lucide-react";
+import { useState, useEffect } from "react";
+import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil, Tag, X } from "lucide-react";
 import { DebtData, AccountData, CategoryData } from "../../types";
 
 interface DebtsTabProps {
@@ -55,6 +55,17 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
   const [payAccountId, setPayAccountId] = useState("");
   const [payCategory, setPayCategory] = useState(""); // <--- State Kategori Baru
 
+  // States baru untuk mendukung calculator keypad modular seluler
+  const [activeKeypad, setActiveKeypad] = useState<"add" | "edit" | "pay" | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768); 
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const formatRupiahTerbaca = (val: string) => {
     if (!val) return "Rp 0";
     const parsed = safeEvaluate(val);
@@ -64,6 +75,39 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(parsed);
+  };
+
+  const handleKeypadPress = (key: string) => {
+    if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10);
+    
+    let currentVal = "";
+    let setVal: (val: string) => void = () => {};
+
+    if (activeKeypad === "add") {
+      currentVal = amount;
+      setVal = setAmount;
+    } else if (activeKeypad === "edit") {
+      currentVal = editAmount;
+      setVal = setEditAmount;
+    } else if (activeKeypad === "pay") {
+      currentVal = payAmount;
+      setVal = setPayAmount;
+    } else {
+      return;
+    }
+
+    if (key === "⌫") {
+      setVal(currentVal.slice(0, -1));
+    } else if (key === "C") {
+      setVal("");
+    } else if (key === "=") {
+      const evaluated = safeEvaluate(currentVal);
+      setVal(evaluated > 0 ? evaluated.toString() : "");
+    } else if (key === "Ya") {
+      setActiveKeypad(null);
+    } else {
+      setVal(currentVal + key);
+    }
   };
 
   const isOverdue = (dateStr: string) => {
@@ -81,17 +125,20 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
     
     handleAddDebt(activeType, person, safeEvaluate(amount), note, dueDate, sourceAccountId);
     setShowAddForm(false); setPerson(""); setAmount(""); setNote(""); setDueDate(""); setSourceAccountId("");
+    setActiveKeypad(null);
   };
 
   const startEdit = (debt: DebtData) => {
     setEditingDebtId(debt.id); setEditPerson(debt.personName); setEditAmount(debt.amount.toString());
     setEditNote(debt.note || ""); setEditDueDate(debt.dueDate || ""); setPayingDebtId(null); 
+    setActiveKeypad(null);
   };
 
   const submitEdit = (id: string) => {
     if (!editPerson || !editAmount) return alert("Nama dan Nominal harus diisi!");
     handleEditDebt(id, editPerson, safeEvaluate(editAmount), editNote, editDueDate);
     setEditingDebtId(null);
+    setActiveKeypad(null);
   };
 
   // LOGIKA PEMBAYARAN: MEWAJIBKAN KATEGORI & MENGAMBIL CATATAN ASLI
@@ -104,6 +151,7 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
     handlePayDebt(debt.id, safeEvaluate(payAmount), payAccountId, payCategory, finalNote);
     
     setPayingDebtId(null); setPayAmount(""); setPayAccountId(""); setPayCategory("");
+    setActiveKeypad(null);
   };
 
   const filteredDebts = debts.filter(d => d.type === activeType);
@@ -115,8 +163,8 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
       {/* Header Toggle */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         <div className="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl">
-          <button onClick={() => { setActiveType("debt"); setShowAddForm(false); setEditingDebtId(null); }} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${activeType === "debt" ? "bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm border border-transparent dark:border-red-900/30" : "text-slate-400 dark:text-slate-50"}`}>UTANG SAYA</button>
-          <button onClick={() => { setActiveType("receivable"); setShowAddForm(false); setEditingDebtId(null); }} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${activeType === "receivable" ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-transparent dark:border-emerald-900/30" : "text-slate-400 dark:text-slate-50"}`}>PIUTANG ORANG</button>
+          <button onClick={() => { setActiveType("debt"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${activeType === "debt" ? "bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm border border-transparent dark:border-red-900/30" : "text-slate-400 dark:text-slate-50"}`}>UTANG SAYA</button>
+          <button onClick={() => { setActiveType("receivable"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${activeType === "receivable" ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-transparent dark:border-emerald-900/30" : "text-slate-400 dark:text-slate-50"}`}>PIUTANG ORANG</button>
         </div>
         
         <div className={`p-5 rounded-2xl transition-colors ${activeType === "debt" ? "bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30" : "bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30"}`}>
@@ -127,7 +175,7 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
         </div>
 
         {!showAddForm ? (
-          <button onClick={() => { setShowAddForm(true); setEditingDebtId(null); }} className="w-full py-3.5 bg-slate-900 dark:bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg cursor-pointer transition-colors"><Plus size={16}/> Tambah Catatan Baru</button>
+          <button onClick={() => { setShowAddForm(true); setEditingDebtId(null); setActiveKeypad(null); }} className="w-full py-3.5 bg-slate-900 dark:bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg cursor-pointer transition-colors"><Plus size={16}/> Tambah Catatan Baru</button>
         ) : (
           <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3 animate-in slide-in-from-top-2 duration-200 text-left">
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">{activeType === "debt" ? "Mencatat Utang Baru" : "Mencatat Piutang Baru"}</h4>
@@ -135,7 +183,8 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
             <input type="text" placeholder={activeType === "debt" ? "Utang ke siapa?" : "Siapa yang pinjam?"} className="w-full p-3.5 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-slate-700 dark:text-slate-100" value={person} onChange={e => setPerson(e.target.value)} />
             
             <div className="space-y-1">
-              <input type="text" placeholder="Nominal Total (Rp)" className="w-full p-3.5 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-slate-700 dark:text-slate-100" value={amount} onChange={e => setAmount(e.target.value)} />
+              {/* INPUT NOMINAL DENGAN PECAHAN KEYPAD MODULAR */}
+              <input type="text" placeholder="Nominal Total (Rp)" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("add"); }} className="w-full p-3.5 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-slate-700 dark:text-slate-100" value={amount} onChange={e => setAmount(e.target.value)} />
               {amount && <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-slate-600 dark:text-slate-200 font-black">{formatRupiahTerbaca(amount)}</span></p>}
             </div>
             
@@ -158,7 +207,7 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
             
             <div className="flex gap-2 pt-2">
               <button onClick={submitAdd} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-colors">Simpan</button>
-              <button onClick={() => setShowAddForm(false)} className="py-3 px-6 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-bold cursor-pointer transition-colors">Batal</button>
+              <button onClick={() => { setShowAddForm(false); setActiveKeypad(null); }} className="py-3 px-6 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl text-xs font-bold cursor-pointer transition-colors">Batal</button>
             </div>
           </div>
         )}
@@ -167,7 +216,7 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
       {/* List Utang/Piutang */}
       <div className="space-y-3">
         {filteredDebts.length === 0 ? (
-          <p className="text-center py-10 text-slate-400 dark:text-slate-500 text-sm italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">Belum ada catatan {activeType === "debt" ? "utang" : "piutang"}.</p>
+          <p className="text-center py-10 text-slate-400 dark:text-slate-550 text-sm italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">Belum ada catatan {activeType === "debt" ? "utang" : "piutang"}.</p>
         ) : (
           filteredDebts.map(debt => {
             const percentage = Math.min((debt.paidAmount / debt.amount) * 100, 100);
@@ -184,7 +233,8 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
                     <input type="text" placeholder={activeType === "debt" ? "Utang ke siapa?" : "Siapa yang pinjam?"} className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editPerson} onChange={e => setEditPerson(e.target.value)} />
                     
                     <div className="space-y-1">
-                      <input type="text" placeholder="Nominal Total (Rp)" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editAmount} onChange={e => setEditAmount(e.target.value)} />
+                      {/* INPUT EDIT DENGAN PECAHAN KEYPAD MODULAR */}
+                      <input type="text" placeholder="Nominal Total (Rp)" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("edit"); }} className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editAmount} onChange={e => setEditAmount(e.target.value)} />
                       {editAmount && <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(editAmount)}</span></p>}
                     </div>
 
@@ -197,7 +247,7 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
 
                     <div className="flex gap-2 pt-2">
                       <button onClick={() => submitEdit(debt.id)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-md shadow-blue-500/20">Simpan Koreksi</button>
-                      <button onClick={() => setEditingDebtId(null)} className="py-2.5 px-4 bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-350 rounded-xl text-xs font-bold border border-transparent dark:border-slate-700 cursor-pointer transition-colors">Batal</button>
+                      <button onClick={() => { setEditingDebtId(null); setActiveKeypad(null); }} className="py-2.5 px-4 bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-355 rounded-xl text-xs font-bold border border-transparent dark:border-slate-700 cursor-pointer transition-colors">Batal</button>
                     </div>
                   </div>
                 ) : (
@@ -235,7 +285,7 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
                     </div>
 
                     {!isPaid && payingDebtId !== debt.id && (
-                      <button onClick={() => { setPayingDebtId(debt.id); setPayCategory(""); setPayAccountId(""); setPayAmount(""); }} className="w-full py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer">
+                      <button onClick={() => { setPayingDebtId(debt.id); setPayCategory(""); setPayAccountId(""); setPayAmount(""); setActiveKeypad(null); }} className="w-full py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer">
                         Catat Pembayaran / Cicilan
                       </button>
                     )}
@@ -245,7 +295,8 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
                         <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest text-center">Form Pembayaran</p>
                         
                         <div className="space-y-1">
-                          <input type="text" placeholder="Nominal Bayar (Rp)" className="w-full p-3 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
+                          {/* INPUT BAYAR DENGAN PECAHAN KEYPAD MODULAR */}
+                          <input type="text" placeholder="Nominal Bayar (Rp)" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("pay"); }} className="w-full p-3 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
                           {payAmount && <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(payAmount)}</span></p>}
                         </div>
 
@@ -257,7 +308,7 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
                           </select>
                         </div>
 
-                        {/* --- KATEGORI DROPDOWN (BARU) --- */}
+                        {/* --- KATEGORI DROPDOWN --- */}
                         <div className="relative">
                           <Tag className="absolute left-3 top-3.5 text-slate-400" size={16}/>
                           <select className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 appearance-none text-slate-700 dark:text-slate-200 cursor-pointer" value={payCategory} onChange={e => setPayCategory(e.target.value)}>
@@ -276,7 +327,7 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
 
                         <div className="flex gap-2">
                           <button onClick={() => submitPay(debt)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors">Konfirmasi</button>
-                          <button onClick={() => setPayingDebtId(null)} className="py-2.5 px-4 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-350 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer">Batal</button>
+                          <button onClick={() => { setPayingDebtId(null); setActiveKeypad(null); }} className="py-2.5 px-4 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-350 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer">Batal</button>
                         </div>
                       </div>
                     )}
@@ -287,6 +338,33 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
           })
         )}
       </div>
+
+      {/* FLOATING KEYPAD DRAWER UTANG PIUTANG */}
+      {isMobile && activeKeypad !== null && (
+        <>
+          <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
+            <div className="flex justify-between items-center mb-3 px-1">
+              <span className="text-[10px] font-black text-slate-500 dark:text-blue-500 tracking-widest uppercase">
+                {activeKeypad === "add" ? "Kalkulator Nominal Baru" : activeKeypad === "edit" ? "Koreksi Nominal" : "Kalkulator Pembayaran"}
+              </span>
+              <button onClick={() => setActiveKeypad(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 text-xs font-bold flex items-center gap-1">Tutup <X size={14} /></button>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-white font-black text-base">
+              {["+", "-", "*", "/"].map((op) => (<button key={op} type="button" onClick={() => handleKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>))}
+              {["7", "8", "9"].map((num) => (<button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl transition-all select-none">{num}</button>))}
+              <button type="button" onClick={() => handleKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 active:bg-red-100 dark:active:bg-red-900/30 rounded-xl transition-all select-none">C</button>
+              {["4", "5", "6"].map((num) => (<button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl transition-all select-none">{num}</button>))}
+              <button type="button" onClick={() => handleKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-300 flex items-center justify-center transition-all select-none">⌫</button>
+              {["1", "2", "3"].map((num) => (<button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl transition-all select-none">{num}</button>))}
+              <button type="button" onClick={() => handleKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
+              {["(", "0", ")"].map((char) => (<button key={char} type="button" onClick={() => handleKeypadPress(char)} className={`${char === "0" ? "bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none`}>{char}</button>))}
+              <button type="button" onClick={() => handleKeypadPress("Ya")} className="py-3.5 bg-blue-600 active:bg-blue-700 rounded-xl text-white font-black hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition-all select-none">Ya</button>
+            </div>
+          </div>
+        </>
+      )}
+
     </div>
   );
 }
