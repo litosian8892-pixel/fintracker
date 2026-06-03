@@ -253,7 +253,7 @@ export default function ReportsTab({
             </div>
 
             <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-lg border border-slate-100 dark:border-slate-700">
-              <span>Hemat</span>
+              <span>{heatmapMode === "expense" ? "Hemat" : "Sedikit"}</span>
               <div className="flex gap-1">
                 {heatmapMode === "expense" ? (
                   <>
@@ -273,7 +273,7 @@ export default function ReportsTab({
                   </>
                 )}
               </div>
-              <span>Boros</span>
+              <span>{heatmapMode === "expense" ? "Boros" : "Banyak"}</span>
             </div>
           </div>
           
