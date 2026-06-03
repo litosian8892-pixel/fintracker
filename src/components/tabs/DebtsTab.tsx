@@ -77,8 +77,12 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
     }).format(parsed);
   };
 
-  const handleKeypadPress = (key: string) => {
+  const triggerHaptic = () => {
     if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10);
+  };
+
+  const handleKeypadPress = (key: string) => {
+    triggerHaptic();
     
     let currentVal = "";
     let setVal: (val: string) => void = () => {};
@@ -185,7 +189,7 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
             <div className="space-y-1">
               {/* INPUT NOMINAL DENGAN PECAHAN KEYPAD MODULAR */}
               <input type="text" placeholder="Nominal Total (Rp)" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("add"); }} className="w-full p-3.5 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-slate-700 dark:text-slate-100" value={amount} onChange={e => setAmount(e.target.value)} />
-              {amount && <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-slate-600 dark:text-slate-200 font-black">{formatRupiahTerbaca(amount)}</span></p>}
+              {amount && <p className="text-[10px] font-bold text-slate-455 dark:text-slate-400 pl-1 animate-in fade-in duration-150 text-left">Terbaca: <span className="text-slate-600 dark:text-slate-200 font-black">{formatRupiahTerbaca(amount)}</span></p>}
             </div>
             
             <div className="space-y-1">
@@ -216,7 +220,7 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
       {/* List Utang/Piutang */}
       <div className="space-y-3">
         {filteredDebts.length === 0 ? (
-          <p className="text-center py-10 text-slate-400 dark:text-slate-550 text-sm italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">Belum ada catatan {activeType === "debt" ? "utang" : "piutang"}.</p>
+          <p className="text-center py-10 text-slate-400 dark:text-slate-500 text-sm italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">Belum ada catatan {activeType === "debt" ? "utang" : "piutang"}.</p>
         ) : (
           filteredDebts.map(debt => {
             const percentage = Math.min((debt.paidAmount / debt.amount) * 100, 100);
@@ -297,7 +301,28 @@ export default function DebtsTab({ debts, accounts, categories, handleAddDebt, h
                         <div className="space-y-1">
                           {/* INPUT BAYAR DENGAN PECAHAN KEYPAD MODULAR */}
                           <input type="text" placeholder="Nominal Bayar (Rp)" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("pay"); }} className="w-full p-3 bg-white dark:bg-slate-900 border border-transparent dark:border-slate-700 rounded-xl text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
-                          {payAmount && <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(payAmount)}</span></p>}
+                          {payAmount && <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150 text-left">Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(payAmount)}</span></p>}
+                        </div>
+
+                        {/* TOMBOL PERSENTASE PELUNASAN CEPAT (25%, 50%, 75%, 100%) */}
+                        <div className="flex gap-1.5 pt-0.5 animate-in fade-in duration-200">
+                          {[25, 50, 75, 100].map((pct) => {
+                            const remaining = debt.amount - debt.paidAmount;
+                            const calculated = Math.round(remaining * (pct / 100));
+                            return (
+                              <button
+                                key={pct}
+                                type="button"
+                                onClick={() => {
+                                  triggerHaptic();
+                                  setPayAmount(calculated.toString());
+                                }}
+                                className="flex-1 py-1.5 bg-blue-100/50 hover:bg-blue-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-[10px] font-black text-blue-700 dark:text-blue-400 rounded-lg border border-blue-200/50 dark:border-slate-750 cursor-pointer transition-colors"
+                              >
+                                {pct}% ({pct === 100 ? "Lunas" : "Rp " + calculated.toLocaleString('id-ID')})
+                              </button>
+                            );
+                          })}
                         </div>
 
                         <div className="relative">
