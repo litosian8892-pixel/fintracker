@@ -18,7 +18,7 @@ import AssetsTab from "../components/tabs/AssetsTab";
 import SettingsTab from "../components/tabs/SettingsTab";
 import DebtsTab from "../components/tabs/DebtsTab";
 
-import { X, Lock, ChevronDown } from "lucide-react"; 
+import { X, Lock, ChevronDown, Fingerprint } from "lucide-react"; 
 
 const safeEvaluate = (expr: string): number => {
   if (!expr) return 0;
@@ -27,7 +27,7 @@ const safeEvaluate = (expr: string): number => {
   sanitized = sanitized.replace(/[+\-*/(.]*$/, "");
   if (!sanitized) return 0;
   try {
-    const result = new Function(`"use strict"; return (${sanitized});`)();
+    const result = new Function("use strict", `return (${sanitized});`)();
     if (typeof result === "number" && isFinite(result)) {
       return result;
     }
@@ -86,6 +86,9 @@ export default function FintrackerApp() {
   const [activeEditSplitIndex, setActiveEditSplitIndex] = useState<number | null>(null);
   const [showEditSplitCatModal, setShowEditSplitCatModal] = useState(false);
 
+  // STATE REAKTIF BARU: MELACAK STATUS BIOMETRIK (MENYELESAIKAN HYDRATION BUG)
+  const [isBiometricActive, setIsBiometricActive] = useState(false);
+
   const [isMobile, setIsMobile] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
 
@@ -113,9 +116,52 @@ export default function FintrackerApp() {
     return () => mediaQuery.removeEventListener("change", applyTheme);
   }, [theme]);
 
+  // LOGIKA UTAMA: VERIFIKASI PEMINDAIAN BIOMETRIK LOKAL (FACE ID / SIDIK JARI)
+  const handleBiometricUnlock = async () => {
+    try {
+      const isBioEnabled = localStorage.getItem("fintracker_biometric_enabled") === "true";
+      const credId = localStorage.getItem("fintracker_biometric_cred_id");
+      if (!isBioEnabled || !credId || !window.PublicKeyCredential) return;
+
+      // Konversi format Credential ID dari Base64 kembali ke Uint8Array rahasia
+      const rawId = Uint8Array.from(atob(credId), c => c.charCodeAt(0));
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+
+      const options = {
+        publicKey: {
+          challenge: challenge,
+          allowCredentials: [{ id: rawId, type: "public-key" }],
+          userVerification: "required",
+          timeout: 60000,
+        }
+      };
+
+      const assertion = await navigator.credentials.get(options as any);
+      if (assertion) {
+        triggerHapticFeedback();
+        setIsUnlocked(true);
+      }
+    } catch (err) {
+      console.error("Gagal melakukan verifikasi sidik jari/FaceID:", err);
+    }
+  };
+
   useEffect(() => {
     const storedPin = localStorage.getItem("fintracker_pin");
-    if (storedPin) { setAppPin(storedPin); setIsUnlocked(false); }
+    if (storedPin) { 
+      setAppPin(storedPin); 
+      setIsUnlocked(false); 
+      
+      // JIKA BIOMETRIK AKTIF, SET STATE SECARA REAKTIF & PICU PROMPT FACEID/FINGERPRINT SAAT BUKA APLIKASI
+      const isBioEnabled = localStorage.getItem("fintracker_biometric_enabled") === "true";
+      if (isBioEnabled) {
+        setIsBiometricActive(true);
+        setTimeout(() => {
+          handleBiometricUnlock();
+        }, 400); // Sedikit jeda aman menunggu render DOM
+      }
+    }
     else { setIsUnlocked(true); }
     setPinChecked(true); 
   }, []);
@@ -762,7 +808,14 @@ export default function FintrackerApp() {
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <button key={num} onClick={() => { triggerHapticFeedback(); if(pinInput.length < 6) { const newVal = pinInput + num; setPinInput(newVal); if(newVal.length === 6) { if(newVal === appPin) { setTimeout(() => { setIsUnlocked(true); setPinInput(""); }, 200); } else { setPinError(true); triggerHapticFeedback(); setTimeout(() => { setPinInput(""); setPinError(false); }, 500); } } } }} className="h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl text-2xl font-black text-slate-800 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors select-none">{num}</button>
             ))}
-            <div />
+            
+            {/* TOMBOL SIDIK JARI/FACEID DI KIRI BAWAH (JIKA DIAKTIFKAN) */}
+            {isBiometricActive ? (
+              <button onClick={() => { triggerHapticFeedback(); handleBiometricUnlock(); }} className="h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xl font-black text-blue-500 dark:text-blue-400 active:bg-slate-200 dark:active:bg-slate-700 transition-colors flex items-center justify-center select-none cursor-pointer">
+                <Fingerprint size={24} />
+              </button>
+            ) : <div />}
+            
             <button onClick={() => { triggerHapticFeedback(); if(pinInput.length < 6) { const newVal = pinInput + "0"; setPinInput(newVal); if(newVal.length === 6) { if(newVal === appPin) { setTimeout(() => { setIsUnlocked(true); setPinInput(""); }, 200); } else { setPinError(true); triggerHapticFeedback(); setTimeout(() => { setPinInput(""); setPinError(false); }, 500); } } } }} className="h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl text-2xl font-black text-slate-800 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors select-none">0</button>
             <button onClick={() => { triggerHapticFeedback(); setPinInput(prev => prev.slice(0, -1)); }} className="h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xl font-black text-slate-500 dark:text-slate-400 active:bg-slate-200 dark:active:bg-slate-700 transition-colors flex items-center justify-center select-none"><X size={24}/></button>
           </div>
@@ -779,7 +832,7 @@ export default function FintrackerApp() {
         <MobileHeader user={user} onLogout={() => signOut(auth)} />
         <div className="max-w-5xl w-full mx-auto p-4 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-            <div className={`space-y-6 ${(activeTab === "home" || activeTab === "reports") ? "md:col-span-2" : "md:col-span-3"}`}>
+            <div className={`space-y-6 ${(activeTab === "home" || activeTab === "reports" ? "md:col-span-2" : "md:col-span-3")}`}>
               {activeTab === "home" && (
                 <HomeTab 
                   tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
@@ -868,7 +921,7 @@ export default function FintrackerApp() {
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
                   <input disabled={isSubmitting} type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveEditKeypad("amount"); }} className={`w-full p-3.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white disabled:opacity-50 transition-all ${activeEditKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-100 dark:border-slate-700'}`} value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
-                  {editTAmount && <p className="text-[10px] font-bold text-slate-450 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-slate-600 dark:text-slate-200 font-black">{formatRupiahTerbaca(editTAmount)}</span></p>}
+                  {editTAmount && <p className="text-[10px] font-bold text-slate-455 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-slate-600 dark:text-slate-200 font-black">{formatRupiahTerbaca(editTAmount)}</span></p>}
                 </div>
               )}
 
@@ -961,7 +1014,7 @@ export default function FintrackerApp() {
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Catatan Khusus Pecahan</label>
-                        <input type="text" placeholder="Keterangan..." className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.note || ""} onChange={(e) => {
+                        <input type="text" placeholder="Keterangan..." className="w-full p-3 bg-white border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.note || ""} onChange={(e) => {
                           const updated = [...editTSplits];
                           updated[i].note = e.target.value;
                           setEditTSplits(updated);
@@ -1000,7 +1053,7 @@ export default function FintrackerApp() {
               <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
                 <span>🏷️</span> Pilih Kategori Pecahan #{activeEditSplitIndex !== null ? activeEditSplitIndex + 1 : ""}
               </h3>
-              <button type="button" onClick={() => { setShowEditSplitCatModal(false); setActiveEditSplitIndex(null); }} className="p-2 bg-slate-200 hover:bg-slate-300 hover:text-slate-600 rounded-full transition-colors"><X size={14}/></button>
+              <button type="button" onClick={() => { setShowEditSplitCatModal(false); setActiveEditSplitIndex(null); }} className="p-2 bg-slate-200 hover:bg-slate-350 hover:text-slate-600 rounded-full transition-colors"><X size={14}/></button>
             </div>
             
             <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
