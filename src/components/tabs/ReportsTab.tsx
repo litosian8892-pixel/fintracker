@@ -41,7 +41,7 @@ export default function ReportsTab({
   const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({}); 
   const [selectedHeatmapDate, setSelectedHeatmapDate] = useState<string | null>(null);
 
-  // STATE BARU: MENGATUR MODE KALENDER HEATMAP (PENGELUARAN / PEMASUKAN)
+  // STATE: MENGATUR MODE KALENDER HEATMAP (PENGELUARAN / PEMASUKAN)
   const [heatmapMode, setHeatmapMode] = useState<"expense" | "income">("expense");
 
   // FUNGSI PEMBANTU: Memecah transaksi split menjadi transaksi virtual demi pelaporan kategori yang akurat
@@ -238,16 +238,16 @@ export default function ReportsTab({
                 <button 
                   type="button" 
                   onClick={() => { if(typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); setHeatmapMode("expense"); }} 
-                  className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase transition-all cursor-pointer ${heatmapMode === "expense" ? "bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm" : "text-slate-450 dark:text-slate-405"}`}
+                  className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase transition-all cursor-pointer ${heatmapMode === "expense" ? "bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
                 >
-                  🔴 Pengeluaran
+                  PENGELUARAN
                 </button>
                 <button 
                   type="button" 
                   onClick={() => { if(typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); setHeatmapMode("income"); }} 
-                  className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase transition-all cursor-pointer ${heatmapMode === "income" ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm" : "text-slate-450 dark:text-slate-405"}`}
+                  className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase transition-all cursor-pointer ${heatmapMode === "income" ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
                 >
-                  🟢 Pemasukan
+                  PEMASUKAN
                 </button>
               </div>
             </div>
@@ -300,7 +300,7 @@ export default function ReportsTab({
             <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900 space-y-3">
               {(() => {
                 const dayTxs = activeHeatmapTxs.filter(t => t.tDate === selectedHeatmapDate);
-                if (dayTxs.length === 0) return <p className="text-xs text-slate-400 dark:text-slate-500 italic text-center py-4">Tidak ada {heatmapMode === "expense" ? "pengeluaran" : "pemasukan"} di hari ini.</p>;
+                if (dayTxs.length === 0) return <p className="text-xs text-slate-400 dark:text-slate-550 italic text-center py-4">Tidak ada {heatmapMode === "expense" ? "pengeluaran" : "pemasukan"} di hari ini.</p>;
                 
                 // URUTKAN BERDASARKAN KATEGORI SECARA ALFABETIS MURNI (KEBAL INTERUPSI EMOJI) & NOMINAL TERBESAR KE TERKECIL
                 dayTxs.sort((a, b) => {
@@ -317,7 +317,7 @@ export default function ReportsTab({
                     {dayTxs.map(t => (
                       <div key={t.id} className="flex justify-between items-center text-xs p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 transition-colors">
                         <div className="flex flex-col text-left overflow-hidden pr-2">
-                          <span className="text-[9px] font-black text-slate-400 dark:text-slate-550 uppercase tracking-widest">{t.category} • {t.accountName}</span>
+                          <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t.category} • {t.accountName}</span>
                           <span className="font-bold text-slate-700 dark:text-slate-200 truncate">{t.note || t.category}</span>
                         </div>
                         <span className={`font-black shrink-0 ${heatmapMode === "expense" ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
@@ -372,7 +372,7 @@ export default function ReportsTab({
                 const isExpanded = !!expandedCategories[key];
                 return (
                   <div key={key} className="border-b border-slate-50 dark:border-slate-800/40 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
-                    <div onClick={() => toggleExpand(key)} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all"><span className="text-slate-600 dark:text-slate-355 font-bold flex items-center gap-1">{key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span></span><span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">Rp {data.total.toLocaleString('id-ID')} <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} /></span></div>
+                    <div onClick={() => toggleExpand(key)} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all"><span className="text-slate-600 dark:text-slate-355 font-bold flex items-center gap-1">{key} <span className="text-[9px] text-slate-400 dark:text-slate-550 font-medium">({data.items.length}x)</span></span><span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">Rp {data.total.toLocaleString('id-ID')} <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} /></span></div>
                     {isExpanded && <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl space-y-1.5 border border-slate-100 dark:border-slate-700/60 animate-in slide-in-from-top-2 duration-200">{data.items.map((item) => (<div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none"><div className="flex flex-col text-left"><span className="text-slate-400 dark:text-slate-550 font-semibold text-[9px]">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span><span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span></div><span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span></div>))}</div>}
                   </div>
                 );
@@ -383,15 +383,15 @@ export default function ReportsTab({
         </div>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
           <p className="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest mb-1">Pengeluaran Variabel (Jajan)</p>
-          {sortedVarKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-550 italic">Kosong</p> : (
+          {sortedVarKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-555 italic">Kosong</p> : (
             <div className="space-y-2">
               {sortedVarKeys.map((key) => {
                 const data = varGrouped[key];
                 const isExpanded = !!expandedCategories[key];
                 return (
                   <div key={key} className="border-b border-slate-50 dark:border-slate-800/40 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
-                    <div onClick={() => toggleExpand(key)} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all"><span className="text-slate-600 dark:text-slate-355 font-bold flex items-center gap-1">{key} <span className="text-[9px] text-slate-400 dark:text-slate-550 font-medium">({data.items.length}x)</span></span><span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">Rp {data.total.toLocaleString('id-ID')} <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} /></span></div>
-                    {isExpanded && <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl space-y-1.5 border border-slate-100 dark:border-slate-700/60 animate-in slide-in-from-top-2 duration-200">{data.items.map((item) => (<div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none"><div className="flex flex-col text-left"><span className="text-slate-400 dark:text-slate-550 font-semibold text-[9px]">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span><span className="text-slate-600 dark:text-slate-355 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span></div><span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span></div>))}</div>}
+                    <div onClick={() => toggleExpand(key)} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all"><span className="text-slate-600 dark:text-slate-355 font-bold flex items-center gap-1">{key} <span className="text-[9px] text-slate-400 dark:text-slate-555 font-medium">({data.items.length}x)</span></span><span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">Rp {data.total.toLocaleString('id-ID')} <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} /></span></div>
+                    {isExpanded && <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl space-y-1.5 border border-slate-100 dark:border-slate-700/60 animate-in slide-in-from-top-2 duration-200">{data.items.map((item) => (<div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none"><div className="flex flex-col text-left"><span className="text-slate-400 dark:text-slate-555 font-semibold text-[9px]">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span><span className="text-slate-600 dark:text-slate-355 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span></div><span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span></div>))}</div>}
                   </div>
                 );
               })}
@@ -405,15 +405,15 @@ export default function ReportsTab({
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm px-1">Rincian Pemasukan</h3>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
           <p className="text-[10px] font-black text-green-500 dark:text-green-455 uppercase tracking-widest mb-1">Detail Pemasukan</p>
-          {Object.keys(incomeGrouped).length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-550 italic">Kosong</p> : (
+          {Object.keys(incomeGrouped).length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-555 italic">Kosong</p> : (
             <div className="space-y-2">
               {sortedIncomeKeys.map((key) => {
                 const data = incomeGrouped[key];
                 const isExpanded = !!expandedCategories[key];
                 return (
                   <div key={key} className="border-b border-slate-50 dark:border-slate-800/40 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
-                    <div onClick={() => toggleExpand(key)} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all"><span className="text-slate-600 dark:text-slate-355 font-bold flex items-center gap-1">{key} <span className="text-[9px] text-slate-400 dark:text-slate-550 font-medium">({data.items.length}x)</span></span><span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">Rp {data.total.toLocaleString('id-ID')} <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} /></span></div>
-                    {isExpanded && <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl space-y-1.5 border border-slate-100 dark:border-slate-700/60 animate-in slide-in-from-top-2 duration-200">{data.items.map((item) => (<div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none"><div className="flex flex-col text-left"><span className="text-slate-400 dark:text-slate-550 font-semibold text-[9px]">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span><span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span></div><span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span></div>))}</div>}
+                    <div onClick={() => toggleExpand(key)} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1 rounded-lg transition-all"><span className="text-slate-600 dark:text-slate-355 font-bold flex items-center gap-1">{key} <span className="text-[9px] text-slate-400 dark:text-slate-555 font-medium">({data.items.length}x)</span></span><span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">Rp {data.total.toLocaleString('id-ID')} <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} /></span></div>
+                    {isExpanded && <div className="mt-2 pl-4 pr-2 py-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl space-y-1.5 border border-slate-100 dark:border-slate-700/60 animate-in slide-in-from-top-2 duration-200">{data.items.map((item) => (<div key={item.id} className="flex justify-between items-center text-[10px] pb-1.5 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none"><div className="flex flex-col text-left"><span className="text-slate-400 dark:text-slate-555 font-semibold text-[9px]">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span><span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span></div><span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span></div>))}</div>}
                   </div>
                 );
               })}
@@ -441,7 +441,7 @@ export default function ReportsTab({
               const percentage = totalExpense > 0 ? ((data.value / totalExpense) * 100).toFixed(1) : "0";
               return (
                 <div key={idx} className="flex justify-between items-center text-xs font-bold animate-in fade-in">
-                  <div className="flex items-center gap-2.5"><div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div><span className="text-slate-600 dark:text-slate-300">{data.name}</span><span className="text-slate-400 dark:text-slate-550 text-[10px] font-bold">({percentage}%)</span></div>
+                  <div className="flex items-center gap-2.5"><div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div><span className="text-slate-600 dark:text-slate-350">{data.name}</span><span className="text-slate-400 dark:text-slate-500 text-[10px] font-bold">({percentage}%)</span></div>
                   <span className="text-slate-800 dark:text-slate-100 font-black">Rp {data.value.toLocaleString('id-ID')}</span>
                 </div>
               );
