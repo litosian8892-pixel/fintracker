@@ -154,7 +154,8 @@ export default function HomeTab({
     const targetAmount = safeEvaluate(tAmount);
     const currentSum = tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0);
     const remaining = Math.max(0, targetAmount - currentSum);
-    setTempSplits([...tempSplits, { category: "", amountStr: remaining > 0 ? remaining.toString() : "", note: "" }]);
+    // AUTO-FILL KATEGORI BERDASARKAN KATEGORI INDUK TRANSAKSI
+    setTempSplits([...tempSplits, { category: tCategory || "", amountStr: remaining > 0 ? remaining.toString() : "", note: "" }]);
   };
 
   const handleSelectSplitCategory = (catName: string) => {
@@ -247,7 +248,8 @@ export default function HomeTab({
                   {safeEvaluate(tAmount) > 0 && (
                     <button type="button" onClick={() => {
                       const initialAmount = safeEvaluate(tAmount);
-                      setTempSplits([{ category: "", amountStr: initialAmount.toString(), note: "" }]);
+                      // AUTO-FILL KATEGORI SAAT KLIK TOMBOL PECAH PERTAMA KALI
+                      setTempSplits([{ category: tCategory || "", amountStr: initialAmount.toString(), note: "" }]);
                       setShowSplitModal(true);
                       setActiveSplitKeypadIndex(null);
                       setActiveKeypad(null);
@@ -401,7 +403,7 @@ export default function HomeTab({
                           setActiveSplitIndex(i);
                           setShowSplitCatModal(true);
                           setSearchQuery("");
-                          setActiveSplitKeypadIndex(null); // Tutup keypad nominal saat buka modal kategori
+                          setActiveSplitKeypadIndex(null); 
                         }} className="p-3 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 truncate">
                           <span className="truncate">{item.category || "Pilih Kategori..."}</span>
                           <ChevronDown size={14} className="text-slate-400 shrink-0" />
@@ -410,7 +412,6 @@ export default function HomeTab({
 
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Nominal (Rp)</label>
-                        {/* INPUT NOMINAL DENGAN PENCEGAHAN KEYBOARD BAWAAN SISTEM DI MOBILE */}
                         <input type="text" placeholder="Contoh: 15000" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveSplitKeypadIndex(i); setActiveKeypad(null); } }} className={`w-full p-3 bg-white dark:bg-slate-900 border rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500 transition-all ${activeSplitKeypadIndex === i && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-slate-50 dark:bg-slate-900' : 'border-slate-200 dark:border-slate-700'}`} value={item.amountStr} onChange={(e) => {
                           const updated = [...tempSplits];
                           updated[i].amountStr = e.target.value;
