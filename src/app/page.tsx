@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react"; 
 import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc, setDoc } from "firebase/firestore";
 
 import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData, SplitItemData, SubscriptionData } from "../types";
 import LoadingScreen from "../components/shared/LoadingScreen";
@@ -52,7 +52,7 @@ export default function FintrackerApp() {
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [walletTypes, setWalletTypes] = useState<WalletTypeData[]>([]);
   const [debts, setDebts] = useState<DebtData[]>([]);
-  const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]); // <--- STATE LANGGANAN
+  const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]);
   
   const [activeTab, setActiveTab] = useState<"home" | "reports" | "assets" | "settings" | "debts">("home");
   
@@ -219,7 +219,31 @@ export default function FintrackerApp() {
   const triggerHapticFeedback = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => { setUser(u); setLoading(false); });
+    const unsub = onAuthStateChanged(auth, async (u) => { 
+      setUser(u); 
+      
+      if (u) {
+        try {
+          const userRef = doc(db, "users", u.uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (!userSnap.exists()) {
+            await setDoc(userRef, {
+              uid: u.uid,
+              name: u.displayName || "Pengguna Fintracker",
+              email: u.email || "",
+              photoURL: u.photoURL || "",
+              isPremium: false, 
+              createdAt: serverTimestamp()
+            }, { merge: true });
+          }
+        } catch (error) {
+          console.error("Gagal memeriksa profil pengguna:", error);
+        }
+      }
+      
+      setLoading(false); 
+    });
     return () => unsub();
   }, []);
 
@@ -239,7 +263,6 @@ export default function FintrackerApp() {
     const unsubDebts = onSnapshot(query(collection(db, `users/${user.uid}/debts`), orderBy("createdAt", "desc")), (sn) => {
       setDebts(sn.docs.map(d => ({ id: d.id, ...d.data() } as DebtData)));
     });
-    // --- LISTENER FIREBASE UNTUK SUBSCRIPTIONS ---
     const unsubSubs = onSnapshot(query(collection(db, `users/${user.uid}/subscriptions`), orderBy("createdAt", "desc")), (sn) => {
       setSubscriptions(sn.docs.map(d => ({ id: d.id, ...d.data() } as SubscriptionData)));
     });
@@ -425,7 +448,6 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
-  // --- FUNGSI CRUD LANGGANAN (SUBSCRIPTIONS) ---
   const handleAddSubscription = async (name: string, amount: number, cycle: "monthly" | "yearly", nextDueDate: string, accountId: string, category: string) => {
     if (isSubmittingRef.current) return;
     if (!user) return;
@@ -477,10 +499,8 @@ export default function FintrackerApp() {
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
-      // 1. Potong Saldo
       await updateDoc(doc(db, `users/${user.uid}/accounts/${sub.accountId}`), { balance: acc.balance - sub.amount });
 
-      // 2. Catat Transaksi Pengeluaran
       await addDoc(collection(db, `users/${user.uid}/transactions`), { 
         amount: sub.amount, 
         type: "expense", 
@@ -492,7 +512,6 @@ export default function FintrackerApp() {
         createdAt: serverTimestamp() 
       });
 
-      // 3. Kalkulasi Tanggal Jatuh Tempo Berikutnya (Secara Aman)
       const parts = sub.nextDueDate.split("-");
       let year = parseInt(parts[0], 10);
       let month = parseInt(parts[1], 10) - 1; 
@@ -510,7 +529,6 @@ export default function FintrackerApp() {
       const d = String(oldDate.getDate()).padStart(2, '0');
       const newDueDate = `${y}-${m}-${d}`;
 
-      // 4. Update Dokumen Langganan
       await updateDoc(doc(db, `users/${user.uid}/subscriptions/${sub.id}`), { nextDueDate: newDueDate });
 
       alert(`Pembayaran ${sub.name} berhasil! Jatuh tempo diperpanjang secara otomatis ke ${newDueDate}.`);
@@ -950,9 +968,10 @@ export default function FintrackerApp() {
               {activeTab === "debts" && (
                 <DebtsTab 
                   debts={debts} accounts={accounts} categories={categories}
-                  handleAddDebt={handleAddDebt} handleEditDebt={handleEditDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
-                  
-                  // --- PROPS LANGGANAN BARU ---
+                  handleAddDebt={handleAddDebt} 
+                  handleEditDebt={handleEditDebt} 
+                  handlePayDebt={handlePayDebt} 
+                  handleDeleteDebt={handleDeleteDebt} 
                   subscriptions={subscriptions}
                   handleAddSubscription={handleAddSubscription}
                   handleEditSubscription={handleEditSubscription}
