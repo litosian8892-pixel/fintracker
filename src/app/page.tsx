@@ -5,7 +5,7 @@ import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc } from "firebase/firestore";
 
-import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData, SplitItemData } from "../types";
+import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData, SplitItemData, SubscriptionData } from "../types";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import AuthScreen from "../components/shared/AuthScreen";
 import HistoryList from "../components/shared/HistoryList";
@@ -52,6 +52,7 @@ export default function FintrackerApp() {
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [walletTypes, setWalletTypes] = useState<WalletTypeData[]>([]);
   const [debts, setDebts] = useState<DebtData[]>([]);
+  const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]); // <--- STATE LANGGANAN
   
   const [activeTab, setActiveTab] = useState<"home" | "reports" | "assets" | "settings" | "debts">("home");
   
@@ -86,7 +87,7 @@ export default function FintrackerApp() {
   const [activeEditSplitIndex, setActiveEditSplitIndex] = useState<number | null>(null);
   const [showEditSplitCatModal, setShowEditSplitCatModal] = useState(false);
 
-  // STATE REAKTIF BARU: MELACAK STATUS BIOMETRIK (MENYELESAIKAN HYDRATION BUG)
+  // STATE REAKTIF BARU: MELACAK STATUS BIOMETRIK
   const [isBiometricActive, setIsBiometricActive] = useState(false);
 
   const [isMobile, setIsMobile] = useState(false);
@@ -116,7 +117,6 @@ export default function FintrackerApp() {
     return () => mediaQuery.removeEventListener("change", applyTheme);
   }, [theme]);
 
-  // LOGIKA UTAMA: VERIFIKASI PEMINDAIAN BIOMETRIK LOKAL (FACE ID / SIDIK JARI)
   const handleBiometricUnlock = async () => {
     try {
       const isBioEnabled = localStorage.getItem("fintracker_biometric_enabled") === "true";
@@ -177,7 +177,7 @@ export default function FintrackerApp() {
   const [accIsSavings, setAccIsSavings] = useState(false); 
   const [accTargetBalance, setAccTargetBalance] = useState(""); 
   const [accExcludeFromTotal, setAccExcludeFromTotal] = useState(false); 
-  const [accIsBusiness, setAccIsBusiness] = useState(false); // <--- BARU: STATE DOMPET BISNIS
+  const [accIsBusiness, setAccIsBusiness] = useState(false); 
   const [accSavingsGoalTitle, setAccSavingsGoalTitle] = useState(""); 
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
@@ -187,7 +187,7 @@ export default function FintrackerApp() {
   const [editAccIsSavings, setEditAccIsSavings] = useState(false); 
   const [editAccTargetBalance, setEditAccTargetBalance] = useState(""); 
   const [editAccExcludeFromTotal, setEditAccExcludeFromTotal] = useState(false); 
-  const [editAccIsBusiness, setEditAccIsBusiness] = useState(false); // <--- BARU: STATE EDIT DOMPET BISNIS
+  const [editAccIsBusiness, setEditAccIsBusiness] = useState(false); 
   const [editAccSavingsGoalTitle, setEditAccSavingsGoalTitle] = useState(""); 
 
   const [tAmount, setTAmount] = useState("");
@@ -239,7 +239,12 @@ export default function FintrackerApp() {
     const unsubDebts = onSnapshot(query(collection(db, `users/${user.uid}/debts`), orderBy("createdAt", "desc")), (sn) => {
       setDebts(sn.docs.map(d => ({ id: d.id, ...d.data() } as DebtData)));
     });
-    return () => { unsubAcc(); unsubCat(); unsubTypes(); unsubDebts(); };
+    // --- LISTENER FIREBASE UNTUK SUBSCRIPTIONS ---
+    const unsubSubs = onSnapshot(query(collection(db, `users/${user.uid}/subscriptions`), orderBy("createdAt", "desc")), (sn) => {
+      setSubscriptions(sn.docs.map(d => ({ id: d.id, ...d.data() } as SubscriptionData)));
+    });
+
+    return () => { unsubAcc(); unsubCat(); unsubTypes(); unsubDebts(); unsubSubs(); };
   }, [user]);
 
   useEffect(() => {
@@ -420,6 +425,101 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
+  // --- FUNGSI CRUD LANGGANAN (SUBSCRIPTIONS) ---
+  const handleAddSubscription = async (name: string, amount: number, cycle: "monthly" | "yearly", nextDueDate: string, accountId: string, category: string) => {
+    if (isSubmittingRef.current) return;
+    if (!user) return;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    try {
+      const acc = accounts.find(a => a.id === accountId);
+      await addDoc(collection(db, `users/${user.uid}/subscriptions`), {
+        name, amount, cycle, nextDueDate, accountId, accountName: acc?.name || "", category, createdAt: new Date().toISOString()
+      });
+      alert("Langganan berhasil ditambahkan!");
+    } catch(e) { alert("Gagal menambah langganan"); }
+    finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+  };
+
+  const handleEditSubscription = async (id: string, name: string, amount: number, cycle: "monthly" | "yearly", nextDueDate: string, accountId: string, category: string) => {
+    if (isSubmittingRef.current) return;
+    if (!user) return;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    try {
+      const acc = accounts.find(a => a.id === accountId);
+      await updateDoc(doc(db, `users/${user.uid}/subscriptions/${id}`), {
+        name, amount, cycle, nextDueDate, accountId, accountName: acc?.name || "", category
+      });
+      alert("Langganan berhasil diperbarui!");
+    } catch(e) { alert("Gagal memperbarui langganan"); }
+    finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+  };
+
+  const handleDeleteSubscription = async (id: string) => {
+    if (isSubmittingRef.current) return;
+    if (!user || !confirm("Hapus langganan tetap ini?")) return;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    try {
+      await deleteDoc(doc(db, `users/${user.uid}/subscriptions/${id}`));
+    } catch(e) { alert("Gagal menghapus langganan"); }
+    finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+  };
+
+  const handlePaySubscription = async (sub: SubscriptionData) => {
+    if (isSubmittingRef.current) return;
+    if (!user) return;
+    
+    const acc = accounts.find(a => a.id === sub.accountId);
+    if (!acc) return alert("Dompet sumber dana tidak ditemukan! Silakan edit langganan ini dan pilih dompet yang aktif.");
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    try {
+      // 1. Potong Saldo
+      await updateDoc(doc(db, `users/${user.uid}/accounts/${sub.accountId}`), { balance: acc.balance - sub.amount });
+
+      // 2. Catat Transaksi Pengeluaran
+      await addDoc(collection(db, `users/${user.uid}/transactions`), { 
+        amount: sub.amount, 
+        type: "expense", 
+        accountId: sub.accountId, 
+        accountName: acc.name, 
+        category: sub.category, 
+        note: `Pembayaran Langganan: ${sub.name}`, 
+        tDate: new Date().toISOString().split('T')[0], 
+        createdAt: serverTimestamp() 
+      });
+
+      // 3. Kalkulasi Tanggal Jatuh Tempo Berikutnya (Secara Aman)
+      const parts = sub.nextDueDate.split("-");
+      let year = parseInt(parts[0], 10);
+      let month = parseInt(parts[1], 10) - 1; 
+      let day = parseInt(parts[2], 10);
+      
+      const oldDate = new Date(year, month, day);
+      if (sub.cycle === "monthly") {
+        oldDate.setMonth(oldDate.getMonth() + 1);
+      } else {
+        oldDate.setFullYear(oldDate.getFullYear() + 1);
+      }
+      
+      const y = oldDate.getFullYear();
+      const m = String(oldDate.getMonth() + 1).padStart(2, '0');
+      const d = String(oldDate.getDate()).padStart(2, '0');
+      const newDueDate = `${y}-${m}-${d}`;
+
+      // 4. Update Dokumen Langganan
+      await updateDoc(doc(db, `users/${user.uid}/subscriptions/${sub.id}`), { nextDueDate: newDueDate });
+
+      alert(`Pembayaran ${sub.name} berhasil! Jatuh tempo diperpanjang secara otomatis ke ${newDueDate}.`);
+    } catch (e) { 
+      alert("Gagal memproses pembayaran langganan."); 
+    }
+    finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+  };
+
   const addCustomWalletType = async () => {
     if (isSubmittingRef.current) return; 
     if (!newWalletTypeName || !user) return;
@@ -463,7 +563,7 @@ export default function FintrackerApp() {
         isSavings: accIsSavings, 
         targetBalance: accIsSavings && accTargetBalance ? safeEvaluate(accTargetBalance) : null, 
         excludeFromTotal: accExcludeFromTotal, 
-        isBusiness: accIsBusiness, // <--- BARU: SIMPAN STATUS BISNIS
+        isBusiness: accIsBusiness, 
         savingsGoalTitle: accIsSavings && accSavingsGoalTitle ? accSavingsGoalTitle : null, 
         createdAt: serverTimestamp() 
       });
@@ -511,7 +611,7 @@ export default function FintrackerApp() {
         isSavings: editAccIsSavings, 
         targetBalance: editAccIsSavings && editAccTargetBalance ? safeEvaluate(editAccTargetBalance) : null, 
         excludeFromTotal: editAccExcludeFromTotal,
-        isBusiness: editAccIsBusiness, // <--- BARU: UPDATE STATUS BISNIS
+        isBusiness: editAccIsBusiness, 
         savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle ? editAccSavingsGoalTitle : null 
       });
       
@@ -850,7 +950,14 @@ export default function FintrackerApp() {
               {activeTab === "debts" && (
                 <DebtsTab 
                   debts={debts} accounts={accounts} categories={categories}
-                  handleAddDebt={handleEditDebt} handleEditDebt={handleEditDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
+                  handleAddDebt={handleAddDebt} handleEditDebt={handleEditDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
+                  
+                  // --- PROPS LANGGANAN BARU ---
+                  subscriptions={subscriptions}
+                  handleAddSubscription={handleAddSubscription}
+                  handleEditSubscription={handleEditSubscription}
+                  handlePaySubscription={handlePaySubscription}
+                  handleDeleteSubscription={handleDeleteSubscription}
                 />
               )}
               {activeTab === "assets" && (
@@ -862,7 +969,6 @@ export default function FintrackerApp() {
                   accExcludeFromTotal={accExcludeFromTotal} setAccExcludeFromTotal={setAccExcludeFromTotal}
                   editAccExcludeFromTotal={editAccExcludeFromTotal} setEditAccExcludeFromTotal={setEditAccExcludeFromTotal}
                   
-                  // PROPS UNTUK DOMPET BISNIS
                   accIsBusiness={accIsBusiness} setAccIsBusiness={setAccIsBusiness}
                   editAccIsBusiness={editAccIsBusiness} setEditAccIsBusiness={setEditAccIsBusiness}
 
