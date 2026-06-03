@@ -955,7 +955,7 @@ export default function FintrackerApp() {
   // --- BARU: LAYAR KUNCI PAYWALL PREMIUM ---
   if (isPremium === false) {
     // ⚠️ GANTI NOMOR INI DENGAN NOMOR WA ANDA:
-    const waNumber = "62822713132559"; 
+    const waNumber = "6282271312559"; 
     const waMessage = `Halo Admin Fintracker! 🚀\nSaya ingin mengaktifkan Lisensi Premium (Lifetime).\n\n📧 Email akun saya: ${user.email}`;
     const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(waMessage)}`;
 
