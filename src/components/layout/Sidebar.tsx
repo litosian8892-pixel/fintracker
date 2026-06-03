@@ -49,7 +49,8 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }: Sid
             }`}
           >
             <BookUser size={18} />
-            <span>Utang Piutang</span>
+            {/* --- BERUBAH: DARI "Utang Piutang" MENJADI "Utang & Tagihan" --- */}
+            <span>Utang & Tagihan</span>
           </button>
           
           <button 

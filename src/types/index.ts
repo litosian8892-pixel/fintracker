@@ -8,7 +8,7 @@ export interface AccountData {
   isSavings?: boolean; 
   targetBalance?: number; 
   excludeFromTotal?: boolean; 
-  isBusiness?: boolean;       // <--- INI YANG DICARI OLEH VERCEL (Tahap 1)
+  isBusiness?: boolean;
   savingsGoalTitle?: string;  
 }
 
@@ -57,5 +57,18 @@ export interface DebtData {
   status: "active" | "paid"; 
   note: string; 
   dueDate?: string; 
+  createdAt?: string;
+}
+
+// --- BARU: STRUKTUR DATA UNTUK LANGGANAN (SUBSCRIPTIONS) ---
+export interface SubscriptionData {
+  id: string;
+  name: string;             // Nama layanan (Netflix, Spotify, Kosan)
+  amount: number;           // Nominal tagihan
+  cycle: "monthly" | "yearly"; // Siklus penagihan
+  nextDueDate: string;      // Tanggal jatuh tempo berikutnya (YYYY-MM-DD)
+  accountId: string;        // ID Dompet yang akan dipotong
+  accountName: string;      // Nama dompet (untuk UI)
+  category: string;         // Kategori pengeluaran (misal: Tagihan Bulanan)
   createdAt?: string;
 }

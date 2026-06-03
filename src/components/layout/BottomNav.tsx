@@ -19,7 +19,8 @@ export default function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
       </button>
       <button onClick={() => setActiveTab("debts")} className={`flex flex-col items-center gap-1 transition-colors cursor-pointer ${activeTab === "debts" ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}`}>
         <BookUser size={20} className={activeTab === "debts" ? "fill-blue-100 dark:fill-blue-950/40" : ""} />
-        <span className="text-[9px] font-bold">Utang</span>
+        {/* --- BERUBAH: DARI "Utang" MENJADI "Utang/Tagihan" --- */}
+        <span className="text-[9px] font-bold">Utang/Tagihan</span>
       </button>
       <button onClick={() => setActiveTab("assets")} className={`flex flex-col items-center gap-1 transition-colors cursor-pointer ${activeTab === "assets" ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}`}>
         <Wallet size={20} className={activeTab === "assets" ? "fill-blue-100 dark:fill-blue-950/40" : ""} />
