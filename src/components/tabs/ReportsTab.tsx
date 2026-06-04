@@ -30,11 +30,12 @@ interface ReportsTabProps {
   searchResult: TransactionData[];
   prevTotalIncome: number; 
   prevTotalExpense: number; 
+  isPrivacyMode?: boolean; // Ditambahkan agar tidak error di page.tsx, namun tidak dipakai untuk nge-blur
 }
 
 export default function ReportsTab({
   reportMonth, setReportMonth, handleExportToExcel, totalIncome, totalExpense, pieData, incomeCategoryList, barData, categories, reportTransactions,
-  globalSearch, setGlobalSearch, searchResult, prevTotalIncome, prevTotalExpense
+  globalSearch, setGlobalSearch, searchResult, prevTotalIncome, prevTotalExpense, isPrivacyMode
 }: ReportsTabProps) {
   
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});

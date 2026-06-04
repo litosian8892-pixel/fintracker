@@ -8,9 +8,10 @@ interface HistoryListProps {
   onEdit: (t: TransactionData) => void;
   onLoadMore: () => void;
   hasMore: boolean;
+  isPrivacyMode?: boolean; // Ditambahkan agar tidak error di page.tsx, namun tidak dipakai untuk nge-blur
 }
 
-export default function HistoryList({ transactions, onDelete, onEdit, onLoadMore, hasMore }: HistoryListProps) {
+export default function HistoryList({ transactions, onDelete, onEdit, onLoadMore, hasMore, isPrivacyMode }: HistoryListProps) {
   return (
     <div className="space-y-4 md:col-span-1">
       <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 italic text-lg px-1">
