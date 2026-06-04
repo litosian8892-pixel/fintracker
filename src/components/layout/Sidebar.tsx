@@ -21,8 +21,9 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }: Sid
             alt="Fintracker Logo" 
             className="w-8 h-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800" 
           />
-          <div className="text-2xl font-black text-blue-600 dark:text-blue-500 tracking-tighter italic mt-0.5">
-            FINTRACKER
+          <div className="text-2xl font-black tracking-tighter italic mt-0.5">
+            <span className="text-slate-800 dark:text-white">FIN</span>
+            <span className="text-blue-600 dark:text-blue-500">TRACKER</span>
           </div>
         </div>
 

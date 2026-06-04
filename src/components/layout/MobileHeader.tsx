@@ -18,8 +18,9 @@ export default function MobileHeader({ user, onLogout }: MobileHeaderProps) {
           alt="Fintracker Logo" 
           className="w-8 h-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800" 
         />
-        <div className="text-xl font-black text-blue-600 dark:text-blue-500 tracking-tighter italic mt-0.5">
-          FINTRACKER
+        <div className="text-xl font-black tracking-tighter italic mt-0.5">
+          <span className="text-slate-800 dark:text-white">FIN</span>
+          <span className="text-blue-600 dark:text-blue-500">TRACKER</span>
         </div>
       </div>
 
