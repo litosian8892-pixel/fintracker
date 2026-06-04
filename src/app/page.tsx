@@ -251,7 +251,6 @@ export default function FintrackerApp() {
 
   useEffect(() => {
     if (!user) return;
-    
     const unsubAcc = onSnapshot(query(collection(db, `users/${user.uid}/accounts`), orderBy("order", "asc")), (sn) => {
       setAccounts(sn.docs.map(d => ({ id: d.id, ...d.data() } as AccountData)));
     });
@@ -954,30 +953,29 @@ export default function FintrackerApp() {
 
   // --- BARU: LAYAR KUNCI PAYWALL PREMIUM (ULTRA-PREMIUM AMBIENT LOOK) ---
   if (isPremium === false) {
-    // ⚠️ GANTI NOMOR INI DENGAN NOMOR WA ANDA:
     const waNumber = "6281234567890"; 
     const waMessage = `Halo Admin Fintracker! 🚀\nSaya ingin mengaktifkan Lisensi Premium (Lifetime).\n\n📧 Email akun saya: ${user.email}`;
     const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(waMessage)}`;
 
     return (
-      <main className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-200">
+      <main className="min-h-screen bg-[#090d16] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-200">
         
         {/* Efek Pendaran Cahaya Ambient Di Latar Belakang */}
-        <div className="absolute w-[350px] h-[350px] bg-blue-600/10 blur-[120px] rounded-full -top-10 left-1/2 -translate-x-1/2 pointer-events-none"></div>
-        <div className="absolute w-[250px] h-[250px] bg-amber-500/5 blur-[100px] rounded-full top-20 left-1/2 -translate-x-1/2 pointer-events-none"></div>
+        <div className="absolute w-[450px] h-[450px] bg-blue-600/15 blur-[140px] rounded-full top-[-50px] left-1/2 -translate-x-1/2 pointer-events-none"></div>
+        <div className="absolute w-[300px] h-[300px] bg-indigo-500/10 blur-[100px] rounded-full bottom-[-50px] left-1/2 -translate-x-1/2 pointer-events-none"></div>
 
         <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-8 md:p-10 rounded-[35px] shadow-2xl w-full max-w-md flex flex-col items-center relative overflow-hidden animate-in zoom-in-95 duration-300">
           
           {/* Efek Ambient Top Border Glow */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/20 via-amber-500/30 to-blue-500/20"></div>
           
-          <div className="w-20 h-20 bg-gradient-to-br from-slate-900 to-slate-950 rounded-full flex items-center justify-center mb-6 shadow-xl border border-amber-500/30 relative">
-            <div className="absolute inset-0 rounded-full border-2 border-amber-500/20 blur-[3px]"></div>
-            <Crown size={36} className="text-amber-400 drop-shadow-[0_2px_10px_rgba(245,158,11,0.5)] animate-pulse" strokeWidth={2}/>
+          <div className="w-20 h-20 bg-gradient-to-br from-slate-900 to-slate-950 rounded-full flex items-center justify-center mb-6 shadow-xl border border-blue-500/30 relative">
+            <div className="absolute inset-0 rounded-full border border-blue-500/20 blur-[4px]"></div>
+            <Crown size={32} className="text-blue-400 drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" strokeWidth={1.5}/>
           </div>
           
           <h2 className="text-2xl font-black mb-2 text-center tracking-tight text-white leading-none">
-            Akses <span className="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 bg-clip-text text-transparent">Premium</span> Terkunci
+            Akses <span className="bg-gradient-to-r from-blue-400 via-indigo-200 to-blue-500 bg-clip-text text-transparent">Premium</span> Terkunci
           </h2>
           <p className="text-xs text-slate-400 mb-6 text-center leading-relaxed">
             Amankan data keuangan Anda dengan Lisensi Fintracker Premium. Nikmati seluruh fitur eksklusif seumur hidup!
@@ -985,39 +983,39 @@ export default function FintrackerApp() {
 
           <div className="w-full bg-slate-950/40 backdrop-blur-md rounded-2xl p-5 mb-6 space-y-3.5 border border-slate-800 shadow-inner text-left">
             <div className="flex items-start gap-3">
-              <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0"/>
+              <CheckCircle2 size={16} className="text-blue-400 mt-0.5 shrink-0 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]"/>
               <span className="text-xs font-bold text-slate-300 leading-tight">Catat Tanpa Internet (Offline-First)</span>
             </div>
             <div className="flex items-start gap-3">
-              <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0"/>
+              <CheckCircle2 size={16} className="text-blue-400 mt-0.5 shrink-0 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]"/>
               <span className="text-xs font-bold text-slate-300 leading-tight">Pecah Struk Transaksi (Split Bill)</span>
             </div>
             <div className="flex items-start gap-3">
-              <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0"/>
+              <CheckCircle2 size={16} className="text-blue-400 mt-0.5 shrink-0 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]"/>
               <span className="text-xs font-bold text-slate-300 leading-tight">Pemisahan Dompet Usaha & Pribadi</span>
             </div>
             <div className="flex items-start gap-3">
-              <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0"/>
+              <CheckCircle2 size={16} className="text-blue-400 mt-0.5 shrink-0 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]"/>
               <span className="text-xs font-bold text-slate-300 leading-tight">Pengingat & 1-Click Pay Langganan</span>
             </div>
             <div className="flex items-start gap-3">
-              <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0"/>
+              <CheckCircle2 size={16} className="text-blue-400 mt-0.5 shrink-0 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]"/>
               <span className="text-xs font-bold text-slate-300 leading-tight">Keamanan Sidik Jari / Face ID</span>
             </div>
           </div>
 
           <div className="text-center mb-6">
-            <span className="inline-block bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[8px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-widest mb-2.5">
-              🔥 PROMO LIFETIME (Terbatas)
+            <span className="inline-block bg-blue-500/10 text-blue-300 border border-blue-500/20 text-[8px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-widest mb-2.5">
+              💎 LIFETIME LICENSE PROMO
             </span>
             <div className="flex items-baseline justify-center gap-2">
               <span className="text-xs font-bold text-slate-500 line-through">Rp 150.000</span>
-              <span className="text-4xl font-black text-white drop-shadow-[0_2px_15px_rgba(255,255,255,0.1)]">Rp 49.000</span>
+              <span className="text-4xl font-black text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]">Rp 49.000</span>
             </div>
-            <p className="text-[9px] font-extrabold text-amber-500/90 uppercase tracking-widest mt-1.5 leading-none">Sekali Bayar Selamanya</p>
+            <p className="text-[9px] font-extrabold text-blue-400/90 uppercase tracking-widest mt-1.5 leading-none">Sekali Bayar Selamanya</p>
           </div>
 
-          <a href={waLink} target="_blank" rel="noreferrer" className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl text-xs font-black shadow-[0_4px_20px_rgba(16,185,129,0.35)] flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] duration-100 cursor-pointer">
+          <a href={waLink} target="_blank" rel="noreferrer" className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-700 shadow-[0_0_20px_rgba(16,185,129,0.2)] text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] duration-100 cursor-pointer">
             <MessageCircle size={18} /> Aktivasi via WhatsApp
           </a>
 
@@ -1266,7 +1264,7 @@ export default function FintrackerApp() {
               <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
                 <span>🏷️</span> Pilih Kategori Pecahan #{activeEditSplitIndex !== null ? activeEditSplitIndex + 1 : ""}
               </h3>
-              <button type="button" onClick={() => { setShowEditSplitCatModal(false); setActiveEditSplitIndex(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full transition-colors"><X size={14}/></button>
+              <button type="button" onClick={() => { setShowEditSplitCatModal(false); setActiveEditSplitIndex(null); }} className="p-2 bg-slate-200 hover:bg-slate-350 hover:text-slate-600 rounded-full transition-colors"><X size={14}/></button>
             </div>
             
             <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
