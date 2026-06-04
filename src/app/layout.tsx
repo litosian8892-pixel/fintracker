@@ -9,9 +9,10 @@ export const metadata: Metadata = {
   description: "Aplikasi pencatatan keuangan pribadi yang akurat dan aman.",
   manifest: "/manifest.json",
   icons: {
-    icon: "https://img.icons8.com/color/48/wallet--v1.png",       // <--- BARU: PENGGANTI BUMI BULAT DI TAB BROWSER
-    shortcut: "https://img.icons8.com/color/48/wallet--v1.png",   // <--- BARU: SHORTCUT ICON
-    apple: "https://img.icons8.com/color/192/wallet--v1.png",     // <--- KHUSUS UNTUK IPHONE (iOS)
+    // KITA ARAHKAN KE FILE LOKAL BARU ANDA DENGAN CACHE BUSTER
+    icon: "/favicon.ico?v=3",       
+    shortcut: "/favicon.ico?v=3",   
+    apple: "/apple-icon.png?v=3", // (Pastikan Anda sudah me-rename apple-touch-icon.png jadi apple-icon.png di src/app ya)
   }
 };
 
