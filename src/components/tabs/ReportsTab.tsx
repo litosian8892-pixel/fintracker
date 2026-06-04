@@ -154,7 +154,7 @@ export default function ReportsTab({
             <button onClick={handleExportToExcel} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-md shadow-emerald-600/20 active:scale-95"><Download size={14}/> Export Excel</button>
            <button onClick={() => {
           if (typeof window !== "undefined") {
-            window.print(); // Panggilan langsung murni tanpa penghalang asinkronus & tanpa blokir PWA!
+            window.print(); // Cetak murni tanpa blokir & tanpa delay asinkronus!
           }
         }} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-md shadow-red-600/20 active:scale-95 touch-manipulation"><Printer size={14}/> Save as PDF / Cetak</button>
           </div>
