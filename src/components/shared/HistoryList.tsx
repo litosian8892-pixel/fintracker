@@ -13,7 +13,7 @@ interface HistoryListProps {
 
 export default function HistoryList({ transactions, onDelete, onEdit, onLoadMore, hasMore, isPrivacyMode }: HistoryListProps) {
   return (
-    <div className="space-y-4 md:col-span-1">
+    <div className="space-y-4 md:col-span-1 print:hidden">
       <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 italic text-lg px-1">
         <History size={20} className="text-blue-600 dark:text-blue-500"/> Riwayat Terakhir
       </h3>

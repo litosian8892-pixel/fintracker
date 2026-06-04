@@ -8,7 +8,7 @@ interface BottomNavProps {
 
 export default function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-3 flex justify-between items-center z-50 pb-safe shadow-lg transition-colors duration-200">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-3 flex justify-between items-center z-50 pb-safe shadow-lg transition-colors duration-200 print:hidden">
       <button onClick={() => setActiveTab("home")} className={`flex flex-col items-center gap-1 transition-colors cursor-pointer ${activeTab === "home" ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}`}>
         <Home size={20} className={activeTab === "home" ? "fill-blue-100 dark:fill-blue-950/40" : ""} />
         <span className="text-[9px] font-bold">Beranda</span>

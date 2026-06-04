@@ -13,7 +13,7 @@ interface SidebarProps {
 
 export default function Sidebar({ user, activeTab, setActiveTab, onLogout, isPrivacyMode, togglePrivacyMode }: SidebarProps) {
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 fixed h-full z-30 justify-between p-6 shadow-sm transition-colors duration-200">
+    <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 fixed h-full z-30 justify-between p-6 shadow-sm transition-colors duration-200 print:hidden">
       <div className="space-y-8">
         
         {/* --- BARU: LOGO & TEKS BERDAMPINGAN --- */}

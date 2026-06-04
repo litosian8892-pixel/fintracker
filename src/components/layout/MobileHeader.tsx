@@ -11,7 +11,7 @@ interface MobileHeaderProps {
 
 export default function MobileHeader({ user, onLogout, isPrivacyMode, togglePrivacyMode }: MobileHeaderProps) {
   return (
-    <div className="md:hidden bg-white dark:bg-slate-900 px-5 py-4 flex justify-between items-center shadow-sm border-b border-slate-100 dark:border-slate-800 sticky top-0 z-20 transition-colors duration-200">
+    <div className="md:hidden bg-white dark:bg-slate-900 px-5 py-4 flex justify-between items-center shadow-sm border-b border-slate-100 dark:border-slate-800 sticky top-0 z-20 transition-colors duration-200 print:hidden">
       
       {/* SISI KIRI: BRANDING LOGO & NAMA APLIKASI */}
       <div className="flex items-center gap-2.5 select-none">
