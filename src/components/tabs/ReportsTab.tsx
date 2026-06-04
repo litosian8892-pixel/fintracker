@@ -152,7 +152,7 @@ export default function ReportsTab({
           {/* TOMBOL EXPORT BARU */}
           <div className="flex flex-col md:flex-row gap-2">
             <button onClick={handleExportToExcel} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-md shadow-emerald-600/20 active:scale-95"><Download size={14}/> Export Excel</button>
-            <button onClick={() => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(15); setTimeout(() => { window.print(); }, 200); }} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-md shadow-red-600/20 active:scale-95"><Printer size={14}/> Save as PDF / Cetak</button>
+            <button onClick={() => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(15); setTimeout(() => { window.print(); }, 10); }} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-md shadow-red-600/20 active:scale-95"><Printer size={14}/> Save as PDF / Cetak</button>
           </div>
         </div>
 
@@ -436,11 +436,21 @@ export default function ReportsTab({
                    </td>
                  </tr>
                ))}
-            </tbody>
-         </table>
-         
-         <p className="text-[10px] text-slate-400 text-center italic mt-10">Dicetak dari Aplikasi Fintracker pada {new Date().toLocaleString('id-ID')}</p>
-      </div>
-    </>
-  );
+           </tbody>
+      </table>
+      
+      <p className="text-[10px] text-slate-400 text-center italic mt-10">Dicetak dari Aplikasi Fintracker pada {new Date().toLocaleString('id-ID')}</p>
+    </div>
+
+    {/* CSS Penolong Cetak iOS */}
+    <style>{`
+      @media print {
+        html, body, main {
+          overflow: visible !important;
+          height: auto !important;
+        }
+      }
+    `}</style>
+  </>
+);
 }
