@@ -6,12 +6,13 @@ import { CategoryData, TransactionData } from "../../types";
 
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b'];
 
+// --- PERBAIKAN: Kontras Warna Tooltip Diperjelas ---
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white dark:bg-slate-850 p-2 rounded-lg shadow-md border border-slate-100 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100">
-        <span className="text-slate-500 dark:text-slate-400">{payload[0].name || payload[0].payload.date}: </span>
-        <span>Rp {Number(payload[0].value).toLocaleString('id-ID')}</span>
+      <div className="bg-white dark:bg-slate-800 p-2.5 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
+        <span className="text-slate-600 dark:text-slate-400 text-xs font-bold">{payload[0].name || payload[0].payload.date}:</span>
+        <span className="text-slate-900 dark:text-white text-xs font-black">Rp {Number(payload[0].value).toLocaleString('id-ID')}</span>
       </div>
     );
   }
@@ -30,7 +31,7 @@ interface ReportsTabProps {
   searchResult: TransactionData[];
   prevTotalIncome: number; 
   prevTotalExpense: number; 
-  isPrivacyMode?: boolean; // Ditambahkan agar tidak error di page.tsx, namun tidak dipakai untuk nge-blur
+  isPrivacyMode?: boolean; 
 }
 
 export default function ReportsTab({
@@ -42,10 +43,8 @@ export default function ReportsTab({
   const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({}); 
   const [selectedHeatmapDate, setSelectedHeatmapDate] = useState<string | null>(null);
 
-  // STATE: MENGATUR MODE KALENDER HEATMAP (PENGELUARAN / PEMASUKAN)
   const [heatmapMode, setHeatmapMode] = useState<"expense" | "income">("expense");
 
-  // FUNGSI PEMBANTU: Memecah transaksi split menjadi transaksi virtual demi pelaporan kategori yang akurat
   const unrollSplits = (txs: TransactionData[]): TransactionData[] => {
     return txs.flatMap(t => {
       if (t.splits && t.splits.length > 0) {
@@ -67,11 +66,9 @@ export default function ReportsTab({
   
   const adminFeeTxs = reportTransactions.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ id: `fee-${t.id}`, amount: t.adminFee!, type: "expense", accountId: t.accountId, accountName: t.accountName, category: "Biaya Admin", note: `Biaya admin transfer ke ${t.toAccountName}`, tDate: t.tDate } as TransactionData));
   
-  // Memisahkan transaksi belanja (dengan unroll split) untuk pelaporan pengeluaran
   const rawExpenseTxs = [...reportTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
   const expenseTxs = unrollSplits(rawExpenseTxs);
   
-  // Memisahkan transaksi pemasukan (dengan unroll split jika ada) untuk pelaporan pemasukan
   const rawIncomeTxs = reportTransactions.filter(t => t.type === 'income');
   const incomeTxs = unrollSplits(rawIncomeTxs);
 
@@ -97,11 +94,6 @@ export default function ReportsTab({
   const sortedVarKeys = Object.keys(varGrouped).sort((a, b) => varGrouped[b].total - varGrouped[a].total);
   const sortedIncomeKeys = Object.keys(incomeGrouped).sort((a, b) => incomeGrouped[b].total - incomeGrouped[a].total);
 
-  const getTxsForDay = (tglStr: string) => {
-    const dayNum = tglStr.replace("Tgl ", "");
-    return expenseTxs.filter(t => { if (!t.tDate) return false; return Number(t.tDate.split('-')[2]) === Number(dayNum); });
-  };
-
   const budgetCategories = categories.filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0);
   const sortedPieData = [...pieData].sort((a, b) => b.value - a.value);
 
@@ -120,7 +112,6 @@ export default function ReportsTab({
   const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
   const firstDayOfWeek = new Date(yearNum, monthNum - 1, 1).getDay(); 
 
-  // LOGIKA DINAMIS: MEMILIH DAFTAR TRANSAKSI BERDASARKAN MODE TOGGLE HEATMAP
   const activeHeatmapTxs = heatmapMode === "expense" ? expenseTxs : incomeTxs;
 
   const dailyExpenseMap: Record<number, number> = {};
@@ -133,7 +124,6 @@ export default function ReportsTab({
 
   const maxDaily = Math.max(...Object.values(dailyExpenseMap), 1); 
 
-  // PETA WARNA DINAMIS: RED-GRADIENT UNTUK EXPENSE, GREEN-GRADIENT UNTUK INCOME
   const getHeatmapColor = (amount: number) => {
     if (!amount || amount === 0) return "bg-slate-50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-800";
     const ratio = amount / maxDaily;
@@ -225,7 +215,6 @@ export default function ReportsTab({
         </div>
       )}
 
-      {/* KALENDER HEATMAP DENGAN WARNA BARU & TOGGLE PERALIHAN */}
       {expenseTxs.length > 0 && (
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-200">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-4">
@@ -234,7 +223,6 @@ export default function ReportsTab({
                 {heatmapMode === "expense" ? "Kalender Pengeluaran" : "Kalender Pemasukan"}
               </h3>
               
-              {/* TOMBOL TOGGLE PERALIHAN INTERAKTIF */}
               <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-700">
                 <button 
                   type="button" 
@@ -287,7 +275,6 @@ export default function ReportsTab({
         </div>
       )}
 
-      {/* MODAL DETAIL TRANSAKSI HARIAN DARI KALENDER (MENYESUAIKAN MODE TOGGLE) */}
       {selectedHeatmapDate && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedHeatmapDate(null)}>
           <div className="bg-white rounded-[30px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh] border border-slate-100 dark:bg-slate-900 dark:border-slate-800" onClick={e => e.stopPropagation()}>
@@ -303,7 +290,6 @@ export default function ReportsTab({
                 const dayTxs = activeHeatmapTxs.filter(t => t.tDate === selectedHeatmapDate);
                 if (dayTxs.length === 0) return <p className="text-xs text-slate-400 dark:text-slate-550 italic text-center py-4">Tidak ada {heatmapMode === "expense" ? "pengeluaran" : "pemasukan"} di hari ini.</p>;
                 
-                // URUTKAN BERDASARKAN KATEGORI SECARA ALFABETIS MURNI (KEBAL INTERUPSI EMOJI) & NOMINAL TERBESAR KE TERKECIL
                 dayTxs.sort((a, b) => {
                   const cleanA = a.category.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
                   const cleanB = b.category.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -340,7 +326,6 @@ export default function ReportsTab({
         </div>
       )}
 
-      {/* STATUS ANGGARAN (BUDGET) */}
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Status Anggaran (Budget)</h3>
         {budgetCategories.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-550 italic bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">Belum ada budget yang diatur. Silakan ke menu Setting.</p> : (
