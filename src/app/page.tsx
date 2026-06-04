@@ -92,6 +92,9 @@ export default function FintrackerApp() {
   // STATE REAKTIF BARU: MELACAK STATUS BIOMETRIK
   const [isBiometricActive, setIsBiometricActive] = useState(false);
 
+  // STATE PRIVACY MODE (FITUR PREMIUM FASE 7)
+  const [isPrivacyMode, setIsPrivacyMode] = useState(false);
+
   const [isMobile, setIsMobile] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
 
@@ -105,6 +108,10 @@ export default function FintrackerApp() {
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme") as "light" | "dark" | "system" | null;
     if (storedTheme) setTheme(storedTheme);
+
+    // Load Privacy Mode Status
+    const storedPrivacy = localStorage.getItem("fintracker_privacy_mode");
+    if (storedPrivacy === "true") setIsPrivacyMode(true);
   }, []);
 
   useEffect(() => {
@@ -118,6 +125,15 @@ export default function FintrackerApp() {
     mediaQuery.addEventListener("change", applyTheme);
     return () => mediaQuery.removeEventListener("change", applyTheme);
   }, [theme]);
+
+  const triggerHapticFeedback = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
+
+  const togglePrivacyMode = () => {
+    triggerHapticFeedback();
+    const newVal = !isPrivacyMode;
+    setIsPrivacyMode(newVal);
+    localStorage.setItem("fintracker_privacy_mode", newVal.toString());
+  };
 
   const handleBiometricUnlock = async () => {
     try {
@@ -217,8 +233,6 @@ export default function FintrackerApp() {
     const parsed = safeEvaluate(val);
     return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(parsed);
   };
-
-  const triggerHapticFeedback = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => { 
@@ -951,7 +965,6 @@ export default function FintrackerApp() {
     );
   }
 
-  // --- BARU: LAYAR KUNCI PAYWALL PREMIUM (ULTRA-PREMIUM AMBIENT LOOK) ---
   if (isPremium === false) {
     const waNumber = "6281234567890"; 
     const waMessage = `Halo Admin Fintracker! 🚀\nSaya ingin mengaktifkan Lisensi Premium (Lifetime).\n\n📧 Email akun saya: ${user.email}`;
@@ -960,13 +973,11 @@ export default function FintrackerApp() {
     return (
       <main className="min-h-screen bg-[#090d16] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-200">
         
-        {/* Efek Pendaran Cahaya Ambient Di Latar Belakang */}
         <div className="absolute w-[450px] h-[450px] bg-blue-600/15 blur-[140px] rounded-full top-[-50px] left-1/2 -translate-x-1/2 pointer-events-none"></div>
         <div className="absolute w-[300px] h-[300px] bg-indigo-500/10 blur-[100px] rounded-full bottom-[-50px] left-1/2 -translate-x-1/2 pointer-events-none"></div>
 
         <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-8 md:p-10 rounded-[35px] shadow-2xl w-full max-w-md flex flex-col items-center relative overflow-hidden animate-in zoom-in-95 duration-300">
           
-          {/* Efek Ambient Top Border Glow */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/20 via-amber-500/30 to-blue-500/20"></div>
           
           <div className="w-20 h-20 bg-gradient-to-br from-slate-900 to-slate-950 rounded-full flex items-center justify-center mb-6 shadow-xl border border-blue-500/30 relative">
@@ -1030,9 +1041,15 @@ export default function FintrackerApp() {
 
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 md:flex transition-colors duration-200">
-      <Sidebar user={user} activeTab={activeTab as any} setActiveTab={setActiveTab as any} onLogout={() => signOut(auth)} />
+      <Sidebar 
+        user={user} activeTab={activeTab as any} setActiveTab={setActiveTab as any} onLogout={() => signOut(auth)} 
+        isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode} 
+      />
       <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
-        <MobileHeader user={user} onLogout={() => signOut(auth)} />
+        <MobileHeader 
+          user={user} onLogout={() => signOut(auth)} 
+          isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode} 
+        />
         <div className="max-w-5xl w-full mx-auto p-4 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
             <div className={`space-y-6 ${(activeTab === "home" || activeTab === "reports" ? "md:col-span-2" : "md:col-span-3")}`}>
@@ -1043,6 +1060,7 @@ export default function FintrackerApp() {
                   tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
                   tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} 
                   tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
+                  isPrivacyMode={isPrivacyMode}
                 />
               )}
               {activeTab === "reports" && (
@@ -1052,6 +1070,7 @@ export default function FintrackerApp() {
                   categories={categories} reportTransactions={reportTransactions}
                   globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult} 
                   prevTotalIncome={prevTotalIncome} prevTotalExpense={prevTotalExpense} 
+                  isPrivacyMode={isPrivacyMode}
                 />
               )}
               {activeTab === "debts" && (
@@ -1066,6 +1085,7 @@ export default function FintrackerApp() {
                   handleEditSubscription={handleEditSubscription}
                   handlePaySubscription={handlePaySubscription}
                   handleDeleteSubscription={handleDeleteSubscription}
+                  isPrivacyMode={isPrivacyMode}
                 />
               )}
               {activeTab === "assets" && (
@@ -1088,6 +1108,7 @@ export default function FintrackerApp() {
                   
                   accSavingsGoalTitle={accSavingsGoalTitle} setAccSavingsGoalTitle={setAccSavingsGoalTitle}
                   editAccSavingsGoalTitle={editAccSavingsGoalTitle} setEditAccSavingsGoalTitle={setEditAccSavingsGoalTitle}
+                  isPrivacyMode={isPrivacyMode}
                 />
               )}
               {activeTab === "settings" && (
@@ -1106,6 +1127,7 @@ export default function FintrackerApp() {
               <HistoryList 
                 transactions={transactions} onDelete={handleDeleteTransaction} onEdit={openEditModal} 
                 onLoadMore={() => setTxLimit(prev => prev + 10)} hasMore={transactions.length >= txLimit}
+                isPrivacyMode={isPrivacyMode}
               />
             )}
           </div>
@@ -1134,7 +1156,7 @@ export default function FintrackerApp() {
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
                   <input disabled={isSubmitting} type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveEditKeypad("amount"); }} className={`w-full p-3.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white disabled:opacity-50 transition-all ${activeEditKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-100 dark:border-slate-700'}`} value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
-                  {editTAmount && <p className="text-[10px] font-bold text-slate-455 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-slate-600 dark:text-slate-200 font-black">{formatRupiahTerbaca(editTAmount)}</span></p>}
+                  {editTAmount && <p className="text-[10px] font-bold text-slate-455 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className={`text-slate-600 dark:text-slate-200 font-black ${isPrivacyMode ? 'blur-sm select-none transition-all duration-300' : ''}`}>{formatRupiahTerbaca(editTAmount)}</span></p>}
                 </div>
               )}
 
@@ -1142,7 +1164,7 @@ export default function FintrackerApp() {
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Biaya Admin (Opsional)</label>
                   <input disabled={isSubmitting} type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveEditKeypad("adminFee"); } }} className={`w-full p-3.5 bg-blue-50/20 dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-blue-900 dark:text-white disabled:opacity-50 transition-all ${activeEditKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-blue-100'}`} value={editTAdminFee} onChange={(e) => setEditTAdminFee(e.target.value)} />
-                  {editTAdminFee && <p className="text-[10px] font-bold text-blue-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="text-blue-600 dark:text-blue-200 font-black">{formatRupiahTerbaca(editTAdminFee)}</span></p>}
+                  {editTAdminFee && <p className="text-[10px] font-bold text-blue-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className={`text-blue-600 dark:text-blue-200 font-black ${isPrivacyMode ? 'blur-sm select-none transition-all duration-300' : ''}`}>{formatRupiahTerbaca(editTAdminFee)}</span></p>}
                 </div>
               )}
 
@@ -1188,7 +1210,7 @@ export default function FintrackerApp() {
                 <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800 mt-2">
                   <div className="flex justify-between items-center">
                     <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">✂️ Koreksi Rincian Pecahan</p>
-                    <span className="text-[10px] font-black text-emerald-600">Total: Rp {editTSplits.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}</span>
+                    <span className={`text-[10px] font-black text-emerald-600 ${isPrivacyMode ? 'blur-sm select-none transition-all duration-300' : ''}`}>Total: Rp {editTSplits.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}</span>
                   </div>
                   {editTSplits.map((item, i) => (
                     <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-150 dark:border-slate-800 space-y-3 relative text-left">
@@ -1216,7 +1238,7 @@ export default function FintrackerApp() {
                         </div>
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Nominal (Rp)</label>
-                          <input type="text" placeholder="Contoh: 15000" className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.amount === 0 ? "" : item.amount} onChange={(e) => {
+                          <input type="text" placeholder="Contoh: 15000" className={`w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500 ${isPrivacyMode ? 'blur-sm select-none transition-all duration-300' : ''}`} value={item.amount === 0 ? "" : item.amount} onChange={(e) => {
                             const val = e.target.value.replace(/[^0-9]/g, "");
                             const updated = [...editTSplits];
                             updated[i].amount = val ? Number(val) : 0;
