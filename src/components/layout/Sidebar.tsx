@@ -1,15 +1,17 @@
 "use client";
 import { User } from "firebase/auth";
-import { Home, PieChart, Wallet, Settings, LogOut, BookUser } from "lucide-react";
+import { Home, PieChart, Wallet, Settings, LogOut, BookUser, Eye, EyeOff } from "lucide-react";
 
 interface SidebarProps {
   user: User | null;
   activeTab: string;
   setActiveTab: (tab: "home" | "reports" | "assets" | "settings" | "debts") => void;
   onLogout: () => void;
+  isPrivacyMode?: boolean;
+  togglePrivacyMode?: () => void;
 }
 
-export default function Sidebar({ user, activeTab, setActiveTab, onLogout }: SidebarProps) {
+export default function Sidebar({ user, activeTab, setActiveTab, onLogout, isPrivacyMode, togglePrivacyMode }: SidebarProps) {
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 fixed h-full z-30 justify-between p-6 shadow-sm transition-colors duration-200">
       <div className="space-y-8">
@@ -92,9 +94,23 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }: Sid
       <div className="border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img src={user?.photoURL || ""} className="w-8 h-8 rounded-full border border-blue-500 shadow-sm" alt="Avatar"/>
-          <p className="text-xs font-black text-slate-800 dark:text-slate-200 truncate max-w-[110px]">{user?.displayName?.split(" ")[0]}</p>
+          <p className="text-xs font-black text-slate-800 dark:text-slate-200 truncate max-w-[90px]">{user?.displayName?.split(" ")[0]}</p>
         </div>
-        <button onClick={onLogout} className="text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/35 transition-colors cursor-pointer"><LogOut size={16} /></button>
+        
+        {/* TOMBOL PRIVACY TOGGLE & LOGOUT */}
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={togglePrivacyMode} 
+            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isPrivacyMode ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300'}`}
+            title="Sembunyikan Saldo"
+          >
+            {isPrivacyMode ? <EyeOff size={16}/> : <Eye size={16}/>}
+          </button>
+
+          <button onClick={onLogout} className="text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/35 transition-colors cursor-pointer">
+            <LogOut size={16} />
+          </button>
+        </div>
       </div>
     </aside>
   );

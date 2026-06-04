@@ -1,13 +1,15 @@
 "use client";
 import { User } from "firebase/auth";
-import { LogOut } from "lucide-react";
+import { LogOut, Eye, EyeOff } from "lucide-react";
 
 interface MobileHeaderProps {
   user: User | null;
   onLogout: () => void;
+  isPrivacyMode?: boolean;
+  togglePrivacyMode?: () => void;
 }
 
-export default function MobileHeader({ user, onLogout }: MobileHeaderProps) {
+export default function MobileHeader({ user, onLogout, isPrivacyMode, togglePrivacyMode }: MobileHeaderProps) {
   return (
     <div className="md:hidden bg-white dark:bg-slate-900 px-5 py-4 flex justify-between items-center shadow-sm border-b border-slate-100 dark:border-slate-800 sticky top-0 z-20 transition-colors duration-200">
       
@@ -24,8 +26,18 @@ export default function MobileHeader({ user, onLogout }: MobileHeaderProps) {
         </div>
       </div>
 
-      {/* SISI KANAN: FOTO PROFIL & TOMBOL LOGOUT */}
+      {/* SISI KANAN: FOTO PROFIL, PRIVACY TOGGLE & TOMBOL LOGOUT */}
       <div className="flex items-center gap-3">
+        
+        {/* TOMBOL TOGGLE PRIVACY MODE */}
+        <button 
+          onClick={togglePrivacyMode} 
+          className={`p-1.5 rounded-full transition-colors cursor-pointer ${isPrivacyMode ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+          title="Sembunyikan Saldo"
+        >
+          {isPrivacyMode ? <EyeOff size={18}/> : <Eye size={18}/>}
+        </button>
+
         <img 
           src={user?.photoURL || ""} 
           className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm object-cover" 

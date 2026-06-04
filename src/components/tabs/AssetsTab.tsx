@@ -92,6 +92,8 @@ interface AssetsTabProps {
   // PROPS UNTUK SAVINGS GOAL TITLE
   accSavingsGoalTitle: string; setAccSavingsGoalTitle: (val: string) => void;
   editAccSavingsGoalTitle: string; setEditAccSavingsGoalTitle: (val: string) => void;
+
+  isPrivacyMode?: boolean;
 }
 
 export default function AssetsTab({
@@ -99,7 +101,8 @@ export default function AssetsTab({
   accExcludeFromTotal, setAccExcludeFromTotal, editAccExcludeFromTotal, setEditAccExcludeFromTotal,
   accIsBusiness, setAccIsBusiness, editAccIsBusiness, setEditAccIsBusiness,
   handleCreateAccount, editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder,
-  accSavingsGoalTitle, setAccSavingsGoalTitle, editAccSavingsGoalTitle, setEditAccSavingsGoalTitle
+  accSavingsGoalTitle, setAccSavingsGoalTitle, editAccSavingsGoalTitle, setEditAccSavingsGoalTitle,
+  isPrivacyMode = false
 }: AssetsTabProps) {
   
   const [isManageOpen, setIsManageOpen] = useState(false);
@@ -154,13 +157,17 @@ export default function AssetsTab({
         <div className="absolute -top-4 -right-4 p-8 opacity-10"><CreditCard size={120} /></div>
         
         <p className="text-blue-100 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1 relative z-10">Total Uang Bisa Dipakai</p>
-        <h2 className="text-4xl md:text-5xl font-black italic relative z-10 text-left">Rp {totalPersonalActiveBalance.toLocaleString('id-ID')}</h2>
+        <h2 className={`text-4xl md:text-5xl font-black italic relative z-10 text-left transition-all duration-300 ${isPrivacyMode ? 'blur-md opacity-80 select-none' : ''}`}>
+          Rp {totalPersonalActiveBalance.toLocaleString('id-ID')}
+        </h2>
         
         {/* SUB-INFORMASI SALDO TERPISAH YANG DIKECUALIKAN */}
         {totalExcludedBalance > 0 && (
           <div className="mt-5 pt-4 border-t border-blue-500/40 flex justify-between items-center text-xs text-blue-100 font-bold z-10 relative animate-in fade-in duration-200">
             <span className="opacity-85">Total Saldo Terpisah (Dikecualikan):</span>
-            <span className="text-sm font-black">Rp {totalExcludedBalance.toLocaleString('id-ID')}</span>
+            <span className={`text-sm font-black transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>
+              Rp {totalExcludedBalance.toLocaleString('id-ID')}
+            </span>
           </div>
         )}
       </div>
@@ -186,7 +193,7 @@ export default function AssetsTab({
           </div>
           {activeTab === "bisnis" && (
             <span className="text-[10px] md:text-xs font-black text-amber-600 dark:text-amber-500 animate-in fade-in slide-in-from-right-2">
-              Total Bisnis: Rp {totalBusinessBalance.toLocaleString('id-ID')}
+              Total Bisnis: <span className={`transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>Rp {totalBusinessBalance.toLocaleString('id-ID')}</span>
             </span>
           )}
         </div>
@@ -214,7 +221,9 @@ export default function AssetsTab({
                         {acc.excludeFromTotal && !acc.isBusiness && <span className="text-[7px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-slate-200 dark:border-slate-700">Terpisah</span>}
                         {acc.isBusiness && <span className="text-[7px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-amber-200 dark:border-amber-800">Bisnis</span>}
                       </div>
-                      <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate text-left">Rp {acc.balance.toLocaleString('id-ID')}</p>
+                      <p className={`text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate text-left transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>
+                        Rp {acc.balance.toLocaleString('id-ID')}
+                      </p>
                     </div>
                 </div>
               );
@@ -228,7 +237,9 @@ export default function AssetsTab({
         <div className="space-y-3 pt-2">
           <div className="flex justify-between items-end px-1">
              <h3 className="font-bold text-slate-800 dark:text-slate-100 italic text-lg transition-colors">Tabungan & Dana Darurat</h3>
-             <span className="text-[10px] md:text-xs font-black text-blue-600 dark:text-blue-400">Total Saldo: Rp {totalEmergencyBalance.toLocaleString('id-ID')}</span>
+             <span className="text-[10px] md:text-xs font-black text-blue-600 dark:text-blue-400">
+               Total Saldo: <span className={`transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>Rp {totalEmergencyBalance.toLocaleString('id-ID')}</span>
+             </span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {emergencyAccounts.map((acc: AccountData) => {
@@ -262,10 +273,12 @@ export default function AssetsTab({
                           <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none truncate">{acc.name}</p>
                           {acc.isBusiness && <span className="text-[7px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded uppercase font-black shrink-0 tracking-widest border border-amber-200 dark:border-amber-800">Bisnis</span>}
                         </div>
-                        <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1">Rp {acc.balance.toLocaleString('id-ID')}</p>
+                        <p className={`text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1 transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>
+                          Rp {acc.balance.toLocaleString('id-ID')}
+                        </p>
                         {hasTarget && (
                           <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold leading-none mt-1 shadow-sm">
-                            Target: <span className="font-extrabold text-slate-600 dark:text-slate-300">Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>
+                            Target: <span className={`font-extrabold text-slate-600 dark:text-slate-300 transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>
                           </p>
                         )}
                       </div>
@@ -277,7 +290,7 @@ export default function AssetsTab({
                           </div>
                           {remaining > 0 ? (
                             <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold text-right leading-none">
-                              Kurang Rp {remaining.toLocaleString('id-ID')} lagi
+                              Kurang <span className={`transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>Rp {remaining.toLocaleString('id-ID')}</span> lagi
                             </p>
                           ) : (
                             <p className="text-[9px] text-emerald-500 dark:text-emerald-400 font-black text-right uppercase tracking-wider leading-none">
@@ -299,7 +312,9 @@ export default function AssetsTab({
         <div className="space-y-4 pt-2">
           <div className="flex justify-between items-end px-1">
              <h3 className="font-bold text-slate-800 dark:text-slate-100 italic text-lg transition-colors">Target Impian Menabung</h3>
-             <span className="text-[10px] md:text-xs font-black text-emerald-600 dark:text-emerald-400">Total Impian: Rp {totalDreamBalance.toLocaleString('id-ID')}</span>
+             <span className="text-[10px] md:text-xs font-black text-emerald-600 dark:text-emerald-400">
+               Total Impian: <span className={`transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>Rp {totalDreamBalance.toLocaleString('id-ID')}</span>
+             </span>
           </div>
 
           {/* WIDGET AKUMULASI TARGET SELURUH TABUNGAN YANG MEMILIKI TARGET */}
@@ -311,7 +326,9 @@ export default function AssetsTab({
               <div className="flex justify-between items-center mb-4">
                 <div className="text-left">
                   <p className="text-emerald-100 text-[10px] uppercase tracking-widest font-bold mb-1">Akumulasi Target Impian</p>
-                  <h3 className="text-2xl font-black">Rp {totalSavedAmount.toLocaleString('id-ID')}</h3>
+                  <h3 className={`text-2xl font-black transition-all duration-300 ${isPrivacyMode ? 'blur-md select-none' : ''}`}>
+                    Rp {totalSavedAmount.toLocaleString('id-ID')}
+                  </h3>
                 </div>
                 <span className="bg-emerald-400/30 text-emerald-100 text-[10px] font-black px-2.5 py-1 rounded-full uppercase border border-emerald-300/20">
                   {overallPercentage.toFixed(0)}% Terkumpul
@@ -321,7 +338,7 @@ export default function AssetsTab({
                 <div className="h-full bg-white rounded-full transition-all duration-1000 ease-out" style={{ width: `${overallPercentage}%` }}></div>
               </div>
               <p className="text-[10px] text-emerald-100/95 font-bold text-left leading-relaxed">
-                Telah terkumpul <span className="font-black text-white">Rp {totalSavedAmount.toLocaleString('id-ID')}</span> dari target <span className="font-black text-white">Rp {totalTargetAmount.toLocaleString('id-ID')}</span> untuk seluruh impian masa depan Anda.
+                Telah terkumpul <span className={`font-black text-white transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>Rp {totalSavedAmount.toLocaleString('id-ID')}</span> dari target <span className={`font-black text-white transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>Rp {totalTargetAmount.toLocaleString('id-ID')}</span> untuk seluruh impian masa depan Anda.
               </p>
             </div>
           )}
@@ -355,10 +372,12 @@ export default function AssetsTab({
                           {acc.isBusiness && <span className="text-[7px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded uppercase font-black shrink-0 tracking-widest border border-amber-200 dark:border-amber-800">Bisnis</span>}
                         </div>
                         <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5 truncate">{acc.name}</p>
-                        <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1">Rp {acc.balance.toLocaleString('id-ID')}</p>
+                        <p className={`text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1 transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>
+                          Rp {acc.balance.toLocaleString('id-ID')}
+                        </p>
                         {hasTarget && (
                           <p className="text-[10px] text-slate-400 dark:text-slate-555 font-bold leading-none mt-1 shadow-sm">
-                            Target: <span className="font-extrabold text-slate-600 dark:text-slate-300">Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>
+                            Target: <span className={`font-extrabold text-slate-600 dark:text-slate-300 transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>Rp {acc.targetBalance!.toLocaleString('id-ID')}</span>
                           </p>
                         )}
                       </div>
@@ -370,7 +389,7 @@ export default function AssetsTab({
                           </div>
                           {remaining > 0 ? (
                             <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold text-right leading-none">
-                              Kurang Rp {remaining.toLocaleString('id-ID')} lagi
+                              Kurang <span className={`transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>Rp {remaining.toLocaleString('id-ID')}</span> lagi
                             </p>
                           ) : (
                             <p className="text-[9px] text-emerald-500 dark:text-emerald-400 font-black text-right uppercase tracking-wider leading-none">
@@ -436,7 +455,7 @@ export default function AssetsTab({
                 <div className="space-y-1 text-left">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Target Nominal Tabungan (Opsional)</label>
                   <input type="text" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
-                  {accTargetBalance && <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="font-black">{formatRupiahTerbaca(accTargetBalance)}</span></p>}
+                  {accTargetBalance && <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className={`font-black transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>{formatRupiahTerbaca(accTargetBalance)}</span></p>}
                 </div>
               </div>
             )}
@@ -498,7 +517,7 @@ export default function AssetsTab({
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Target Tabungan</label>
                           <input type="text" placeholder="Target Nominal Tabungan" className="w-full bg-white dark:bg-slate-900 p-3 text-xs border border-blue-200 dark:border-slate-700 rounded-xl outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
-                          {editAccTargetBalance && <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className="font-black">{formatRupiahTerbaca(editAccTargetBalance)}</span></p>}
+                          {editAccTargetBalance && <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className={`font-black transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>{formatRupiahTerbaca(editAccTargetBalance)}</span></p>}
                         </div>
                       </div>
                     )}
@@ -526,7 +545,9 @@ export default function AssetsTab({
                           {acc.excludeFromTotal && !acc.isBusiness && <span className="text-[8px] bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Terpisah</span>}
                           {acc.isBusiness && <span className="text-[8px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Bisnis</span>}
                         </div>
-                        <p className="text-xs font-black text-blue-600 dark:text-blue-400 leading-none mb-1">Rp {acc.balance.toLocaleString("id-ID")}</p>
+                        <p className={`text-xs font-black text-blue-600 dark:text-blue-400 leading-none mb-1 transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>
+                          Rp {acc.balance.toLocaleString("id-ID")}
+                        </p>
                         <p className="text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest">{acc.type}</p>
                       </div>
                     </div>

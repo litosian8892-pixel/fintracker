@@ -24,6 +24,7 @@ interface HomeTabProps {
   categories: CategoryData[];
   accounts: AccountData[];
   handleTransaction: (customSplits?: SplitItemData[]) => void;
+  isPrivacyMode?: boolean; // Ditambahkan agar tidak error di page.tsx, namun tidak dipakai untuk nge-blur
 }
 
 const safeEvaluate = (expr: string): number => {
@@ -45,7 +46,7 @@ const safeEvaluate = (expr: string): number => {
 };
 
 export default function HomeTab({
-  tType, setTType, tDate, setTDate, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction,
+  tType, setTType, tDate, setTDate, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, isPrivacyMode
 }: HomeTabProps) {
   
   const [showCatModal, setShowCatModal] = useState(false);
