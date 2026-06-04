@@ -315,11 +315,24 @@ export default function FintrackerApp() {
     return () => unsubTr();
   }, [user, txLimit]);
 
+  // --- MODIFIKASI: Menarik Data Transaksi 6 Bulan ke Belakang demi Analitik Tren ---
   useEffect(() => {
     if (!user || activeTab !== "reports") return; 
-    const startOfMonth = `${reportMonth}-01`;
-    const endOfMonth = `${reportMonth}-31`;
-    const qReport = query(collection(db, `users/${user.uid}/transactions`), where("tDate", ">=", startOfMonth), where("tDate", "<=", endOfMonth));
+    
+    const [y, m] = reportMonth.split("-").map(Number);
+    // JS Date Month 0-indexed: June (6) minus 6 adalah 0 (Januari)
+    const startOfRangeDate = new Date(y, m - 6, 1);
+    const startYear = startOfRangeDate.getFullYear();
+    const startMonth = String(startOfRangeDate.getMonth() + 1).padStart(2, "0");
+    const startOfRange = `${startYear}-${startMonth}-01`;
+    const endOfRange = `${reportMonth}-31`;
+
+    const qReport = query(
+      collection(db, `users/${user.uid}/transactions`), 
+      where("tDate", ">=", startOfRange), 
+      where("tDate", "<=", endOfRange)
+    );
+    
     const unsubReport = onSnapshot(qReport, (sn) => {
       const data = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
       data.sort((a, b) => b.tDate.localeCompare(a.tDate)); 
@@ -857,9 +870,12 @@ export default function FintrackerApp() {
     setActiveEditSplitIndex(null);
   };
 
-  const adminFeeTxs = reportTransactions.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ id: `fee-${t.id}`, amount: t.adminFee!, type: "expense", accountId: t.accountId, accountName: t.accountName, category: "Biaya Admin", note: `Biaya admin transfer ke ${t.toAccountName}`, tDate: t.tDate } as TransactionData));
-  const combinedExpenseTxs = [...reportTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
-  const totalIncome = reportTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
+  // --- LOGIKA FILTER ULANG: Memastikan Laporan Bulanan Tetap Menggunakan Bulan Aktif ---
+  const monthlyTransactions = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
+
+  const adminFeeTxs = monthlyTransactions.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ id: `fee-${t.id}`, amount: t.adminFee!, type: "expense", accountId: t.accountId, accountName: t.accountName, category: "Biaya Admin", note: `Biaya admin transfer ke ${t.toAccountName}`, tDate: t.tDate } as TransactionData));
+  const combinedExpenseTxs = [...monthlyTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
+  const totalIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
   const totalExpense = combinedExpenseTxs.reduce((a, b) => a + b.amount, 0); 
   
   const expenseByCategory = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => {
@@ -875,7 +891,7 @@ export default function FintrackerApp() {
 
   const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
   
-  const incomeByCategory = reportTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => {
+  const incomeByCategory = monthlyTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => {
     if (curr.splits && curr.splits.length > 0) {
       curr.splits.forEach(s => {
         acc[s.category] = (acc[s.category] || 0) + s.amount;
@@ -895,9 +911,9 @@ export default function FintrackerApp() {
   const prevTotalIncome = prevMonthTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
 
   const handleExportToExcel = async () => {
-    if (reportTransactions.length === 0) return alert("Tidak ada data transaksi di bulan ini!");
+    if (monthlyTransactions.length === 0) return alert("Tidak ada data transaksi di bulan ini!");
     
-    const excelData = reportTransactions.map((t, idx) => {
+    const excelData = monthlyTransactions.map((t, idx) => {
       let categoryStr = t.category;
       if (t.splits && t.splits.length > 0) {
         categoryStr = "Split: " + t.splits.map(s => `${s.category} (Rp ${s.amount.toLocaleString('id-ID')})`).join(', ');
@@ -1164,7 +1180,7 @@ export default function FintrackerApp() {
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Biaya Admin (Opsional)</label>
                   <input disabled={isSubmitting} type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveEditKeypad("adminFee"); } }} className={`w-full p-3.5 bg-blue-50/20 dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-blue-900 dark:text-white disabled:opacity-50 transition-all ${activeEditKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-blue-100'}`} value={editTAdminFee} onChange={(e) => setEditTAdminFee(e.target.value)} />
-                  {editTAdminFee && <p className="text-[10px] font-bold text-blue-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className={`text-blue-600 dark:text-blue-200 font-black ${isPrivacyMode ? 'blur-sm select-none transition-all duration-300' : ''}`}>{formatRupiahTerbaca(editTAdminFee)}</span></p>}
+                  {editTAdminFee && <p className="text-[10px] font-bold text-blue-450 pl-1 animate-in fade-in duration-150">Terbaca: <span className={`text-blue-600 dark:text-blue-200 font-black ${isPrivacyMode ? 'blur-sm select-none transition-all duration-300' : ''}`}>{formatRupiahTerbaca(editTAdminFee)}</span></p>}
                 </div>
               )}
 
@@ -1286,7 +1302,7 @@ export default function FintrackerApp() {
               <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
                 <span>🏷️</span> Pilih Kategori Pecahan #{activeEditSplitIndex !== null ? activeEditSplitIndex + 1 : ""}
               </h3>
-              <button type="button" onClick={() => { setShowEditSplitCatModal(false); setActiveEditSplitIndex(null); }} className="p-2 bg-slate-200 hover:bg-slate-350 hover:text-slate-600 rounded-full transition-colors"><X size={14}/></button>
+              <button type="button" onClick={() => { setShowEditSplitCatModal(false); setActiveEditSplitIndex(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full transition-colors"><X size={14}/></button>
             </div>
             
             <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
