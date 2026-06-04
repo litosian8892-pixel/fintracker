@@ -8,20 +8,18 @@ interface DebtsTabProps {
   accounts: AccountData[];
   categories: CategoryData[];
   
-  // Props Utang
   handleAddDebt: (type: "debt" | "receivable", person: string, amount: number, note: string, dueDate: string, accountId?: string) => void;
   handleEditDebt: (id: string, person: string, amount: number, note: string, dueDate: string) => void; 
   handlePayDebt: (debtId: string, payAmount: number, accountId: string, category: string, note: string) => void; 
   handleDeleteDebt: (debtId: string) => void;
 
-  // Props Langganan Baru
   subscriptions: SubscriptionData[];
   handleAddSubscription: (name: string, amount: number, cycle: "monthly" | "yearly", nextDueDate: string, accountId: string, category: string) => void;
   handleEditSubscription: (id: string, name: string, amount: number, cycle: "monthly" | "yearly", nextDueDate: string, accountId: string, category: string) => void;
   handlePaySubscription: (sub: SubscriptionData) => void;
   handleDeleteSubscription: (id: string) => void;
 
-  isPrivacyMode?: boolean; // Prop Privacy Mode
+  isPrivacyMode?: boolean;
 }
 
 const safeEvaluate = (expr: string): number => {
@@ -48,10 +46,8 @@ export default function DebtsTab({
   isPrivacyMode = false
 }: DebtsTabProps) {
   
-  // State Utama: Toggle Tab
   const [mainTab, setMainTab] = useState<"debts" | "subscriptions">("debts");
   
-  // State Utang
   const [activeType, setActiveType] = useState<"debt" | "receivable">("debt");
   const [showAddForm, setShowAddForm] = useState(false);
   const [person, setPerson] = useState("");
@@ -71,7 +67,6 @@ export default function DebtsTab({
   const [payAccountId, setPayAccountId] = useState("");
   const [payCategory, setPayCategory] = useState(""); 
 
-  // State Langganan
   const [showAddSubForm, setShowAddSubForm] = useState(false);
   const [subName, setSubName] = useState("");
   const [subAmount, setSubAmount] = useState("");
@@ -88,7 +83,6 @@ export default function DebtsTab({
   const [editSubAccountId, setEditSubAccountId] = useState("");
   const [editSubCategory, setEditSubCategory] = useState("");
 
-  // Keypad & Mobile
   const [activeKeypad, setActiveKeypad] = useState<"add" | "edit" | "pay" | "add-sub" | "edit-sub" | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -134,7 +128,6 @@ export default function DebtsTab({
     else setVal(currentVal + key);
   };
 
-  // --- LOGIKA UTANG ---
   const isOverdue = (dateStr: string) => {
     if (!dateStr) return false;
     const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -170,7 +163,6 @@ export default function DebtsTab({
   const filteredDebts = debts.filter(d => d.type === activeType);
   const totalActive = filteredDebts.filter(d => d.status === "active").reduce((a, b) => a + (b.amount - b.paidAmount), 0);
 
-  // --- LOGIKA LANGGANAN ---
   const getDaysLeft = (dueDateStr: string) => {
     if (!dueDateStr) return 0;
     const due = new Date(dueDateStr); due.setHours(0, 0, 0, 0);
@@ -201,7 +193,6 @@ export default function DebtsTab({
   return (
     <div className="space-y-6 animate-in fade-in">
       
-      {/* GLOBAL TAB TOGGLE */}
       <div className="bg-white dark:bg-slate-900 p-2 rounded-[20px] border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-1 transition-colors duration-200">
         <button onClick={() => setMainTab("debts")} className={`flex-1 py-3 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${mainTab === "debts" ? "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm border border-slate-200 dark:border-slate-700" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`}>
           <BookUser size={16} /> Utang Piutang
@@ -213,7 +204,6 @@ export default function DebtsTab({
 
       {mainTab === "debts" ? (
         <div className="space-y-6 animate-in fade-in">
-          {/* Header Toggle Utang/Piutang */}
           <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-200">
             <div className="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl">
               <button onClick={() => { setActiveType("debt"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${activeType === "debt" ? "bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm border border-transparent dark:border-red-900/30" : "text-slate-400 dark:text-slate-50"}`}>UTANG SAYA</button>
@@ -224,8 +214,8 @@ export default function DebtsTab({
               <p className={`text-[10px] font-black uppercase tracking-widest ${activeType === "debt" ? "text-red-500 dark:text-red-400" : "text-emerald-500 dark:text-emerald-400"}`}>
                 Sisa {activeType === "debt" ? "Utang Saya" : "Uang Saya di Orang"}
               </p>
-              <h2 className={`text-2xl font-black italic mt-1 transition-all duration-300 ${activeType === "debt" ? "text-red-700 dark:text-red-300" : "text-emerald-700 dark:text-emerald-300"} ${isPrivacyMode ? 'blur-md select-none' : ''}`}>
-                Rp {totalActive.toLocaleString('id-ID')}
+              <h2 className={`text-2xl font-black italic mt-1 ${activeType === "debt" ? "text-red-700 dark:text-red-300" : "text-emerald-700 dark:text-emerald-300"}`}>
+                {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalActive.toLocaleString('id-ID')}`}
               </h2>
             </div>
 
@@ -261,7 +251,6 @@ export default function DebtsTab({
             )}
           </div>
 
-          {/* List Utang/Piutang */}
           <div className="space-y-3">
             {filteredDebts.length === 0 ? (
               <p className="text-center py-10 text-slate-400 dark:text-slate-500 text-sm italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">Belum ada catatan {activeType === "debt" ? "utang" : "piutang"}.</p>
@@ -317,10 +306,10 @@ export default function DebtsTab({
                         <div className="space-y-1.5 mb-4">
                           <div className="flex justify-between text-xs font-black">
                             <span className="text-slate-500 dark:text-slate-400">
-                              Terkumpul: <span className={`transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>Rp {debt.paidAmount.toLocaleString('id-ID')}</span>
+                              Terkumpul: {isPrivacyMode ? 'Rp •••••••' : `Rp ${debt.paidAmount.toLocaleString('id-ID')}`}
                             </span>
                             <span className="text-slate-800 dark:text-slate-200">
-                              Total: <span className={`transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>Rp {debt.amount.toLocaleString('id-ID')}</span>
+                              Total: {isPrivacyMode ? 'Rp •••••••' : `Rp ${debt.amount.toLocaleString('id-ID')}`}
                             </span>
                           </div>
                           <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -382,14 +371,13 @@ export default function DebtsTab({
         </div>
       ) : (
 
-        // --- TAB LANGGANAN (SUBSCRIPTIONS) ---
         <div className="space-y-6 animate-in fade-in">
           
           <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 md:p-8 rounded-[30px] shadow-xl text-left relative overflow-hidden transition-all">
             <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none"><CalendarClock size={120} /></div>
             <p className="text-blue-100 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1 relative z-10">Beban Tagihan Tetap Bulan Ini</p>
-            <h2 className={`text-3xl md:text-4xl font-black italic text-white relative z-10 mb-2 transition-all duration-300 ${isPrivacyMode ? 'blur-md select-none' : ''}`}>
-              Rp {totalMonthlySubscriptions.toLocaleString('id-ID')}
+            <h2 className="text-3xl md:text-4xl font-black italic text-white relative z-10 mb-2">
+              {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalMonthlySubscriptions.toLocaleString('id-ID')}`}
             </h2>
             <p className="text-[10px] text-blue-200 font-medium max-w-[80%] relative z-10 leading-tight">Jangan biarkan tagihan menunggak. Pantau dan bayar kewajiban bulanan Anda dengan sistem konfirmasi 1-Klik yang aman.</p>
           </div>
@@ -503,7 +491,7 @@ export default function DebtsTab({
                             <div>
                               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight">{sub.name}</h4>
                               <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 mt-0.5">
-                                <span className={`transition-all duration-300 ${isPrivacyMode ? 'blur-sm select-none' : ''}`}>Rp {sub.amount.toLocaleString('id-ID')}</span> <span className="text-slate-400 dark:text-slate-500 font-medium text-[9px] uppercase tracking-wider">/ {sub.cycle === 'monthly' ? 'Bulan' : 'Tahun'}</span>
+                                {isPrivacyMode ? 'Rp •••••••' : `Rp ${sub.amount.toLocaleString('id-ID')}`} <span className="text-slate-400 dark:text-slate-500 font-medium text-[9px] uppercase tracking-wider">/ {sub.cycle === 'monthly' ? 'Bulan' : 'Tahun'}</span>
                               </p>
                             </div>
                           </div>
@@ -538,7 +526,6 @@ export default function DebtsTab({
         </div>
       )}
 
-      {/* FLOATING KEYPAD DRAWER UTANG PIUTANG & LANGGANAN */}
       {isMobile && activeKeypad !== null && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
