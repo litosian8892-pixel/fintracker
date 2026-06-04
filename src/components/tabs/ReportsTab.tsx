@@ -456,7 +456,7 @@ export default function ReportsTab({
                       <span className="text-slate-400 dark:text-slate-550 text-[10px] shrink-0 font-medium">({percentage.toFixed(1)}%)</span>
                     </div>
                     <span className="text-slate-800 dark:text-slate-200 font-black shrink-0 pl-2">
-                      {isPrivacyMode ? "Rp •••••••" : `Rp ${data.value.toLocaleString('id-ID')}`}
+                      Rp {data.value.toLocaleString('id-ID')}
                     </span>
                   </div>
                   {/* Progress Bar Horizontal */}
@@ -495,7 +495,7 @@ export default function ReportsTab({
                 <p className="text-[10px] text-slate-400 dark:text-slate-550 font-medium">Perkembangan total uang sisa yang berhasil Anda simpan dari waktu ke waktu.</p>
               </div>
 
-              <div className={`h-64 w-full transition-all duration-300 ${isPrivacyMode ? 'blur-md select-none pointer-events-none' : ''}`}>
+              <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <ReLineChart data={netWorthTrendData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-800" />
@@ -518,7 +518,7 @@ export default function ReportsTab({
                 <p className="text-[10px] text-slate-400 dark:text-slate-550 font-medium">Analisis perbandingan total uang masuk dan keluar Anda selama 6 bulan terakhir.</p>
               </div>
 
-              <div className={`h-64 w-full transition-all duration-300 ${isPrivacyMode ? 'blur-md select-none pointer-events-none' : ''}`}>
+              <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <ReBarChart data={trendData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-slate-100 dark:stroke-slate-800" />
@@ -542,7 +542,7 @@ export default function ReportsTab({
                     <span className="font-black text-slate-600 dark:text-slate-355">{data.month === reportMonth ? `${data.name} (Bulan Aktif)` : data.name}</span>
                     <div className="text-right">
                       <span className={`font-black ${data.Net >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
-                        {data.Net >= 0 ? "+" : ""} {isPrivacyMode ? "Rp •••••••" : `Rp ${data.Net.toLocaleString('id-ID')}`}
+                        {data.Net >= 0 ? "+" : ""} Rp {data.Net.toLocaleString('id-ID')}
                       </span>
                     </div>
                   </div>
