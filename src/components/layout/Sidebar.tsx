@@ -13,9 +13,20 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }: Sid
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 fixed h-full z-30 justify-between p-6 shadow-sm transition-colors duration-200">
       <div className="space-y-8">
-        <div className="text-2xl font-black text-blue-600 dark:text-blue-500 tracking-tighter italic select-none">FINTRACKER</div>
+        
+        {/* --- BARU: LOGO & TEKS BERDAMPINGAN --- */}
+        <div className="flex items-center gap-3 select-none px-1">
+          <img 
+            src="/android-chrome-192x192.png?v=4" 
+            alt="Fintracker Logo" 
+            className="w-8 h-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800" 
+          />
+          <div className="text-2xl font-black text-blue-600 dark:text-blue-500 tracking-tighter italic mt-0.5">
+            FINTRACKER
+          </div>
+        </div>
+
         <nav className="flex flex-col gap-2">
-          {/* SINKRONISASI KELAS HOVER BEBAS DARI ERROR KUSTOM WEIGHTS 850 */}
           <button 
             onClick={() => setActiveTab("home")} 
             className={`flex items-center gap-3 p-3.5 rounded-2xl text-xs font-black tracking-wide transition-all cursor-pointer ${
@@ -49,7 +60,6 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout }: Sid
             }`}
           >
             <BookUser size={18} />
-            {/* --- BERUBAH: DARI "Utang Piutang" MENJADI "Utang & Tagihan" --- */}
             <span>Utang & Tagihan</span>
           </button>
           
