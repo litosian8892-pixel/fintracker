@@ -20,7 +20,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     const label = payload[0].payload.name || payload[0].payload.date || payload[0].name || payload[0].payload.dayName;
     return (
       <div className="bg-white dark:bg-slate-800 p-3 rounded-[18px] shadow-xl border border-slate-200 dark:border-slate-700 space-y-1.5 min-w-[150px] text-left">
-        <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-wider leading-none">{label}</p>
+        <p className="text-slate-400 dark:text-slate-555 text-[10px] font-black uppercase tracking-wider leading-none">{label}</p>
         <div className="space-y-1.5 pt-1">
           {payload.map((item: any, idx: number) => (
             <div key={idx} className="flex items-center justify-between gap-4 text-xs font-bold">
@@ -139,7 +139,6 @@ export default function ReportsTab({
   const prevAdmin = prevMonthTxs.filter(t => t.type === 'transfer' && t.adminFee).reduce((s,t) => s + t.adminFee!, 0);
   const localPrevTotalExpense = unrollSplits(prevMonthTxs.filter(t => t.type === 'expense')).reduce((s, t) => s + t.amount, 0) + prevAdmin;
   
-  // LOGIKA BARU: Kalkulasi Pemasukan Bulan Lalu untuk Kartu Tren Pemasukan
   const localPrevTotalIncome = unrollSplits(prevMonthTxs.filter(t => t.type === 'income')).reduce((s, t) => s + t.amount, 0);
 
   const getSixMonthsList = (ym: string) => {
@@ -341,11 +340,11 @@ export default function ReportsTab({
             </button>
             <button onClick={() => {
               if (typeof window !== "undefined") {
-                // 1. Deteksi iOS/iPadOS yang presisi
+                // Deteksi iOS/iPadOS
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                               (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
                 
-                // 2. Deteksi Standalone PWA secara universal (Safari PWA & display-mode media query)
+                // Deteksi PWA Layar Utama (Standalone Mode)
                 const isStandalone = (window.navigator as any).standalone || 
                                      window.matchMedia('(display-mode: standalone)').matches;
                 
@@ -358,8 +357,7 @@ export default function ReportsTab({
                   try { navigator.vibrate(15); } catch (e) {}
                 }
                 
-                // 3. WAJIB SINKRONUS: Memanggil print secara instan tanpa setTimeout 
-                // agar Safari mendeteksi User Gesture yang sah dan memunculkan AirPrint
+                // Eksekusi murni sinkronus instan agar WebKit mendeteksi ketukan sah pengguna
                 try {
                   window.print();
                 } catch (err) {
@@ -541,7 +539,7 @@ export default function ReportsTab({
                               {data.items.sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime()).map((item) => (
                                 <div key={item.id} className="flex justify-between items-center text-[10px] pb-2 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none">
                                   <div className="flex flex-col text-left">
-                                    <span className="text-slate-400 dark:text-slate-500 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
+                                    <span className="text-slate-400 dark:text-slate-550 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
                                     <span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
                                   </div>
                                   <span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
@@ -735,7 +733,6 @@ export default function ReportsTab({
                   <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'long', year: 'numeric'})}</h3>
                   <p className="text-[10px] font-bold text-slate-500">{trackedDays} hari terlacak bulan ini</p>
                 </div>
-                {/* IN & OUT K TOP-RIGHT DIHAPUS SESUAI PERMINTAAN */}
               </div>
 
               <div className="grid grid-cols-7 mb-2">{['M', 'S', 'S', 'R', 'K', 'J', 'S'].map((day, i) => (<div key={i} className="text-center text-[10px] font-black text-slate-400 uppercase py-2">{day}</div>))}</div>
@@ -864,7 +861,7 @@ export default function ReportsTab({
                     .filter(t => t.category === selectedCategoryDetail.name)
                     .sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime());
                   
-                  if(catTxs.length === 0) return <p className="text-center text-xs text-slate-400 dark:text-slate-500 italic py-4">Tidak ada riwayat untuk kategori ini.</p>;
+                  if(catTxs.length === 0) return <p className="text-center text-xs text-slate-400 dark:text-slate-550 italic py-4">Tidak ada riwayat untuk kategori ini.</p>;
 
                   return catTxs.map(t => (
                     <div key={t.id} className="flex justify-between items-center text-xs p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
@@ -885,8 +882,8 @@ export default function ReportsTab({
 
       </div>
 
-      {/* --- TEMPLATE PDF TERSEMBUNYI --- */}
-      <div className="hidden print:block print:absolute print:top-0 print:left-0 print:w-full print:bg-white print:text-black print:p-6 print:z-[9999]">
+      {/* --- TEMPLATE PDF TERSEMBUNYI (TIDAK MENGGUNAKAN '.hidden' UNTUK MENCEGAH SILENT-BLOCK WEBKIT SAFARI) --- */}
+      <div className="absolute top-0 left-0 w-0 h-0 overflow-hidden opacity-0 pointer-events-none print:relative print:w-full print:h-auto print:opacity-100 print:pointer-events-auto print:bg-white print:text-black print:p-6 print:z-[9999]">
          <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
             <div><div className="flex items-center gap-2.5 mb-1.5"><img src="/android-chrome-192x192.png?v=4" alt="Logo" className="w-8 h-8 rounded-xl border border-slate-200 shadow-sm" /><div className="text-2xl font-black tracking-tighter italic"><span className="text-slate-800">FIN</span><span className="text-blue-600">TRACKER</span></div></div><p className="text-xs font-bold text-slate-400 pl-1 leading-none">Laporan Mutasi Keuangan {selectedAccount !== "All" && `(${selectedAccount})`}</p></div>
             <div className="text-right"><p className="text-sm font-bold uppercase">Periode</p><p className="text-lg font-black">{new Date(reportMonth + '-01').toLocaleDateString('id-ID', {month: 'long', year: 'numeric'})}</p></div>
