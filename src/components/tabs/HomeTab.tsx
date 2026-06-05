@@ -453,7 +453,7 @@ export default function HomeTab({
       .map(dateStr => {
         const list = groups[dateStr];
 
-        // Urutkan transaksi secara berurutan (kronologis) berdasarkan waktu input
+        // Urutkan transaksi secara menurun (terbaru di atas) berdasarkan waktu input
         const sortedList = [...list].sort((a, b) => {
           const getMs = (val: any) => {
             if (!val) return 0;
@@ -461,7 +461,7 @@ export default function HomeTab({
             if (typeof val === "object" && "_seconds" in val) return (val as any)._seconds * 1000;
             return new Date(val).getTime();
           };
-          return getMs(a.createdAt) - getMs(b.createdAt);
+          return getMs(b.createdAt) - getMs(a.createdAt);
         });
 
         let dailyNet = 0;
