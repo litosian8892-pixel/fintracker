@@ -426,7 +426,7 @@ export default function ReportsTab({
             </button>
           </div>
 
-          <div ref={monthScrollRef} className="flex overflow-x-auto hide-scrollbar gap-2 px-2 pb-2 -mx-2 snap-x">
+          <div ref={monthScrollRef} className="flex overflow-x-auto gap-2 px-2 pb-2 -mx-2 snap-x scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark] scroll-smooth">
             {monthNavPills.map(month => {
               const isActive = month === reportMonth;
               const dateObj = new Date(month + "-01");
