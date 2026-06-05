@@ -111,11 +111,13 @@ interface AssetsTabProps {
 
   isPrivacyMode?: boolean;
 
-  // --- BARU: PROPS UNTUK MULTI-CURRENCY ---
+  // --- BINDING PROPS UNTUK MULTI-CURRENCY ---
   accCurrency?: string; setAccCurrency?: (val: string) => void;
-  accExchangeRate?: string; setAccExchangeRate?: (val: string) => void;
   editAccCurrency?: string; setEditAccCurrency?: (val: string) => void;
-  editAccExchangeRate?: string; setEditAccExchangeRate?: (val: string) => void;
+  
+  // --- BARU: PROPS UNTUK KURS GLOBAL ---
+  exchangeRates?: Record<string, number>;
+  handleUpdateGlobalRates?: (rates: Record<string, number>) => void;
 }
 
 export default function AssetsTab({
@@ -128,31 +130,39 @@ export default function AssetsTab({
   
   // Destrukturisasi Props Baru
   accCurrency, setAccCurrency,
-  accExchangeRate, setAccExchangeRate,
   editAccCurrency, setEditAccCurrency,
-  editAccExchangeRate, setEditAccExchangeRate
+  
+  // Destrukturisasi Props Kurs Global
+  exchangeRates,
+  handleUpdateGlobalRates
 }: AssetsTabProps) {
   
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"pribadi" | "bisnis">("pribadi");
 
-  // Fallback State Internal (Mencegah Compile Error jika Props belum dipasang di page.tsx)
+  // Fallback State Internal (Mencegah Compile Error)
   const [localAccCurrency, setLocalAccCurrency] = useState("IDR");
-  const [localAccExchangeRate, setLocalAccExchangeRate] = useState("1");
   const [localEditAccCurrency, setLocalEditAccCurrency] = useState("IDR");
-  const [localEditAccExchangeRate, setLocalEditAccExchangeRate] = useState("1");
+  
+  // State lokal khusus untuk form input kelola kurs global
+  const [localRates, setLocalRates] = useState<Record<string, string>>({});
 
   const currency = accCurrency !== undefined ? accCurrency : localAccCurrency;
   const setCurrency = setAccCurrency !== undefined ? setAccCurrency : setLocalAccCurrency;
 
-  const exchangeRate = accExchangeRate !== undefined ? accExchangeRate : localAccExchangeRate;
-  const setExchangeRate = setAccExchangeRate !== undefined ? setAccExchangeRate : setLocalAccExchangeRate;
-
   const editCurrency = editAccCurrency !== undefined ? editAccCurrency : localEditAccCurrency;
   const setEditCurrency = setEditAccCurrency !== undefined ? setEditAccCurrency : setLocalEditAccCurrency;
 
-  const editExchangeRate = editAccExchangeRate !== undefined ? editAccExchangeRate : localEditAccExchangeRate;
-  const setEditExchangeRate = setEditAccExchangeRate !== undefined ? setEditAccExchangeRate : setLocalEditAccExchangeRate;
+  // Sinkronisasikan input kurs global setiap kali data di server berubah
+  useEffect(() => {
+    if (exchangeRates) {
+      const temp: Record<string, string> = {};
+      Object.keys(exchangeRates).forEach(k => {
+        temp[k] = exchangeRates[k].toString();
+      });
+      setLocalRates(temp);
+    }
+  }, [exchangeRates]);
 
   useEffect(() => {
     if (editingAccId) setIsManageOpen(true);
@@ -166,33 +176,42 @@ export default function AssetsTab({
   
   const displayedActiveAccounts = activeTab === "pribadi" ? personalActiveAccounts : businessActiveAccounts;
 
-  // MODIFIKASI: Perhitungan saldo terakumulasi mengalikan nominal asing dengan kurs terdaftar
+  // Pendeteksi nilai konversi dari objek kurs global (Kompatibel mundur)
+  const getRate = (curCode?: string, historicalRate?: number) => {
+    if (!curCode || curCode === "IDR") return 1;
+    if (exchangeRates && exchangeRates[curCode] !== undefined) {
+      return exchangeRates[curCode];
+    }
+    return historicalRate || 1;
+  };
+
+  // MODIFIKASI: Perhitungan saldo terakumulasi mengalikan nominal asing dengan kurs global terpusat
   const totalPersonalActiveBalance = personalActiveAccounts.reduce((accVal: number, curr: AccountData) => {
     if (curr.excludeFromTotal) return accVal;
-    const rate = curr.lastExchangeRate || 1;
+    const rate = getRate(curr.currency, curr.lastExchangeRate);
     return accVal + (curr.balance * rate);
   }, 0);
 
   const totalExcludedBalance = personalActiveAccounts.reduce((accVal: number, curr: AccountData) => {
     if (curr.excludeFromTotal) {
-      const rate = curr.lastExchangeRate || 1;
+      const rate = getRate(curr.currency, curr.lastExchangeRate);
       return accVal + (curr.balance * rate);
     }
     return accVal;
   }, 0);
 
   const totalBusinessBalance = businessActiveAccounts.reduce((accVal: number, curr: AccountData) => {
-    const rate = curr.lastExchangeRate || 1;
+    const rate = getRate(curr.currency, curr.lastExchangeRate);
     return accVal + (curr.balance * rate);
   }, 0);
 
   const totalEmergencyBalance = emergencyAccounts.reduce((accVal: number, curr: AccountData) => {
-    const rate = curr.lastExchangeRate || 1;
+    const rate = getRate(curr.currency, curr.lastExchangeRate);
     return accVal + (curr.balance * rate);
   }, 0);
 
   const totalDreamBalance = dreamGoals.reduce((accVal: number, curr: AccountData) => {
-    const rate = curr.lastExchangeRate || 1;
+    const rate = getRate(curr.currency, curr.lastExchangeRate);
     return accVal + (curr.balance * rate);
   }, 0);
 
@@ -200,12 +219,12 @@ export default function AssetsTab({
   
   // MODIFIKASI: Target saldo dikonversikan ke IDR demi agregasi persentase akumulatif yang adil
   const totalTargetAmount = savingsWithTargets.reduce((sum, a) => {
-    const rate = a.lastExchangeRate || 1;
+    const rate = getRate(a.currency, a.lastExchangeRate);
     return sum + ((a.targetBalance || 0) * rate);
   }, 0);
 
   const totalSavedAmount = savingsWithTargets.reduce((sum, a) => {
-    const rate = a.lastExchangeRate || 1;
+    const rate = getRate(a.currency, a.lastExchangeRate);
     return sum + (a.balance * rate);
   }, 0);
 
@@ -266,6 +285,7 @@ export default function AssetsTab({
               const design = getCardDesign(acc.type);
               const symbol = getCurrencySymbol(acc.currency);
               const isForeign = acc.currency && acc.currency !== "IDR";
+              const currentRate = getRate(acc.currency, acc.lastExchangeRate);
               return (
                 <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[120px] md:min-h-[135px]`}>
                     <div className="flex justify-between items-start mb-4">
@@ -286,9 +306,9 @@ export default function AssetsTab({
                       <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate text-left">
                         {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
                       </p>
-                      {isForeign && acc.lastExchangeRate && (
+                      {isForeign && (
                         <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold mt-1 text-left">
-                          Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * acc.lastExchangeRate).toLocaleString('id-ID')}`}
+                          Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * currentRate).toLocaleString('id-ID')}`}
                         </p>
                       )}
                     </div>
@@ -312,6 +332,7 @@ export default function AssetsTab({
               const design = getCardDesign(acc.type);
               const symbol = getCurrencySymbol(acc.currency);
               const isForeign = acc.currency && acc.currency !== "IDR";
+              const currentRate = getRate(acc.currency, acc.lastExchangeRate);
               const hasTarget = acc.targetBalance && acc.targetBalance > 0;
               const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
               const remaining = hasTarget ? Math.max(0, acc.targetBalance! - acc.balance) : 0;
@@ -343,9 +364,9 @@ export default function AssetsTab({
                         <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1">
                           {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
                         </p>
-                        {isForeign && acc.lastExchangeRate && (
-                          <p className="text-[10px] text-slate-400 dark:text-slate-505 font-bold mb-1 leading-none">
-                            Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * acc.lastExchangeRate).toLocaleString('id-ID')}`}
+                        {isForeign && (
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mb-1 leading-none">
+                            Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * currentRate).toLocaleString('id-ID')}`}
                           </p>
                         )}
                         {hasTarget && (
@@ -420,6 +441,7 @@ export default function AssetsTab({
               const design = getCardDesign(acc.type);
               const symbol = getCurrencySymbol(acc.currency);
               const isForeign = acc.currency && acc.currency !== "IDR";
+              const currentRate = getRate(acc.currency, acc.lastExchangeRate);
               const hasTarget = acc.targetBalance && acc.targetBalance > 0;
               const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
               const remaining = hasTarget ? Math.max(0, acc.targetBalance! - acc.balance) : 0;
@@ -448,9 +470,9 @@ export default function AssetsTab({
                         <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1">
                           {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
                         </p>
-                        {isForeign && acc.lastExchangeRate && (
+                        {isForeign && (
                           <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold mb-1 leading-none">
-                            Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * acc.lastExchangeRate).toLocaleString('id-ID')}`}
+                            Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * currentRate).toLocaleString('id-ID')}`}
                           </p>
                         )}
                         {hasTarget && (
@@ -489,19 +511,19 @@ export default function AssetsTab({
       <details 
         open={isManageOpen} 
         onToggle={(e) => setIsManageOpen(e.currentTarget.open)}
-        className="bg-white dark:bg-slate-900 rounded-[25px] p-5 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-200"
+        className="bg-white dark:bg-slate-900 rounded-[25px] p-5 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-200 animate-none"
       >
         <summary className="text-[10px] font-black text-slate-500 dark:text-slate-400 cursor-pointer uppercase tracking-widest outline-none select-none flex items-center gap-2">
           <span>⚙️ Kelola Akun & Dompet</span>
         </summary>
-        <div className="mt-5 space-y-4">
+        <div className="mt-5 space-y-4 animate-none">
           <div className="space-y-2 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-left">
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 mb-3">Tambah Dompet Baru</h4>
             <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer animate-none" value={accType} onChange={(e) => setAccType(e.target.value)}>
                 {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
             </select>
             
-            {/* BARU: Input Pilihan Mata Uang Akun Baru */}
+            {/* BINDING: Dropdown Mata Uang tanpa form input kurs manual lagi */}
             <div className="space-y-1 text-left">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Mata Uang Dompet</label>
               <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={currency} onChange={(e) => setCurrency(e.target.value)}>
@@ -517,17 +539,6 @@ export default function AssetsTab({
                 <option value="CNY">🇨🇳 Yuan China (CNY)</option>
               </select>
             </div>
-
-            {/* BARU: Input Kurs Manual jika bukan IDR */}
-            {currency !== "IDR" && (
-              <div className="space-y-1 text-left bg-blue-50/40 dark:bg-slate-900/50 p-3 rounded-xl border border-blue-100 dark:border-slate-800 animate-in fade-in duration-200">
-                <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest pl-1">Nilai Tukar Manual (1 {currency} = ... IDR)</label>
-                <input type="text" placeholder="Contoh: 16000" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-750 outline-none font-bold text-slate-700 dark:text-slate-200" value={exchangeRate} onChange={(e) => setExchangeRate(e.target.value)} />
-                {exchangeRate && (
-                  <p className="text-[9px] font-bold text-blue-500 pl-1 mt-1">Terbaca: 1 {currency} = {formatRupiahTerbaca(exchangeRate)}</p>
-                )}
-              </div>
-            )}
 
             <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
             <input type="number" placeholder={currency !== "IDR" ? `Saldo Awal (${currency})` : "Saldo Awal"} className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
@@ -577,13 +588,14 @@ export default function AssetsTab({
             {accounts.map((acc: AccountData, index: number) => {
               const symbol = getCurrencySymbol(acc.currency);
               const isForeign = acc.currency && acc.currency !== "IDR";
+              const currentRate = getRate(acc.currency, acc.lastExchangeRate);
               return (
                 <div key={acc.id} className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl flex flex-col gap-3 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
                   {editingAccId === acc.id ? (
                     <div className="space-y-3 animate-in fade-in duration-200">
                       <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-900/50 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
                       
-                      {/* BARU: Input Pilihan Mata Uang Dompet Edit */}
+                      {/* BINDING: Dropdown Mata Uang Edit */}
                       <div className="space-y-1 text-left">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Mata Uang Dompet</label>
                         <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-blue-100 dark:border-blue-900/30 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
@@ -599,17 +611,6 @@ export default function AssetsTab({
                           <option value="CNY">🇨🇳 Yuan China (CNY)</option>
                         </select>
                       </div>
-
-                      {/* BARU: Input Kurs Manual Edit */}
-                      {editCurrency !== "IDR" && (
-                        <div className="space-y-1 text-left bg-blue-50/40 dark:bg-slate-900/50 p-3 rounded-xl border border-blue-100 dark:border-slate-800 animate-in fade-in duration-200">
-                          <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest pl-1">Nilai Tukar Manual (1 {editCurrency} = ... IDR)</label>
-                          <input type="text" placeholder="Contoh: 16000" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-750 outline-none font-bold text-slate-700 dark:text-slate-200" value={editExchangeRate} onChange={(e) => setEditExchangeRate(e.target.value)} />
-                          {editExchangeRate && (
-                            <p className="text-[9px] font-bold text-blue-500 pl-1 mt-1">Terbaca: 1 {editCurrency} = {formatRupiahTerbaca(editExchangeRate)}</p>
-                          )}
-                        </div>
-                      )}
 
                       <div className="space-y-1 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">
                         <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Audit Saldo Nyata (Real - {editCurrency})</label>
@@ -648,15 +649,15 @@ export default function AssetsTab({
                           <p className="text-xs font-black text-blue-600 dark:text-blue-400 leading-none mb-1">
                             {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString("id-ID")}`}
                           </p>
-                          {isForeign && acc.lastExchangeRate && (
+                          {isForeign && (
                             <p className="text-[9px] text-slate-400 dark:text-slate-555 font-bold mt-1 leading-none text-left">
-                              Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * acc.lastExchangeRate).toLocaleString('id-ID')}`}
+                              Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * currentRate).toLocaleString('id-ID')}`}
                             </p>
                           )}
                         </div>
                       </div>
                       
-                      {/* BARU: Render Tombol Urutan (Naik/Turun), Edit, dan Hapus */}
+                      {/* Render Tombol Urutan (Naik/Turun), Edit, dan Hapus */}
                       <div className="flex items-center gap-1.5 shrink-0">
                         {/* Tombol Urutan Naik */}
                         <button 
@@ -689,9 +690,7 @@ export default function AssetsTab({
                           setEditAccSavingsGoalTitle(acc.savingsGoalTitle || ""); 
                           
                           setEditCurrency(acc.currency || "IDR");
-                          setEditExchangeRate(acc.lastExchangeRate?.toString() || "1");
                           if (setEditAccCurrency) setEditAccCurrency(acc.currency || "IDR");
-                          if (setEditAccExchangeRate) setEditAccExchangeRate(acc.lastExchangeRate?.toString() || "1");
                         }} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 cursor-pointer transition-colors">
                           <Edit2 size={14}/>
                         </button>
@@ -710,6 +709,57 @@ export default function AssetsTab({
               );
             })}
           </div>
+        </div>
+      </details>
+
+      {/* ============================================================== */}
+      {/* BARU: AKORDEON PENGATURAN KURS GLOBAL TERPUSAT (UX COHESION)    */}
+      {/* ============================================================== */}
+      <details className="bg-white dark:bg-slate-900 rounded-[25px] p-5 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-200 mt-4 text-left">
+        <summary className="text-[10px] font-black text-slate-500 dark:text-slate-400 cursor-pointer uppercase tracking-widest outline-none select-none flex items-center gap-2">
+          <span>🪙 Pengaturan Kurs Global</span>
+        </summary>
+        <div className="mt-5 space-y-4">
+          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-555 uppercase tracking-widest pl-1 leading-relaxed">
+            Tentukan Nilai Tukar Manual (Kurs Terhadap Rupiah / IDR)
+          </p>
+          
+          <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+            {exchangeRates && Object.keys(exchangeRates).filter(k => k !== "IDR").map((cur) => (
+              <div key={cur} className="space-y-1">
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-350 uppercase tracking-wider pl-1">
+                  1 {cur} (Rupiah)
+                </label>
+                <input 
+                  type="text" 
+                  className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl text-xs border border-slate-100 dark:border-slate-700 outline-none font-bold text-slate-750 dark:text-slate-200"
+                  value={localRates[cur] || ""}
+                  onChange={(e) => {
+                    setLocalRates({
+                      ...localRates,
+                      [cur]: e.target.value
+                    });
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          
+          <button 
+            type="button"
+            onClick={() => {
+              const parsedRates: Record<string, number> = {};
+              Object.keys(localRates).forEach(k => {
+                parsedRates[k] = safeEvaluate(localRates[k]) || 1;
+              });
+              if (handleUpdateGlobalRates) {
+                handleUpdateGlobalRates(parsedRates);
+              }
+            }} 
+            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg cursor-pointer transition-colors"
+          >
+            Simpan Nilai Kurs Baru
+          </button>
         </div>
       </details>
     </div>
