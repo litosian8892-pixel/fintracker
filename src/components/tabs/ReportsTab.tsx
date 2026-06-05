@@ -158,7 +158,7 @@ export default function ReportsTab({
   const monthNavPills = useMemo(() => {
     const [year, month] = reportMonth.split("-").map(Number);
     const pills = [];
-    for (let i = 10; i >= -1; i--) { 
+    for (let i = 11; i >= 0; i--) { 
       const d = new Date(year, month - 1 - i, 1);
       pills.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
     }
