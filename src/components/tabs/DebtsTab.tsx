@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil, Tag, X, Calendar, CalendarClock, CreditCard, AlertCircle, BookUser, ArrowLeft, ArrowDownLeft, ArrowUpRight, Link as LinkIcon } from "lucide-react";
+import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil, Tag, X, Calendar, CalendarClock, CreditCard, AlertCircle, BookUser, ArrowLeft, ArrowDownLeft, ArrowUpRight, Link as LinkIcon, LayoutGrid, List } from "lucide-react";
 import { DebtData, AccountData, CategoryData, SubscriptionData } from "../../types";
 
 interface DebtsTabProps {
@@ -48,6 +48,9 @@ export default function DebtsTab({
   
   const [mainTab, setMainTab] = useState<"debts" | "subscriptions">("debts");
   const [activeType, setActiveType] = useState<"debt" | "receivable">("debt");
+  
+  // Layout toggle: Grid (kotak) vs List (baris)
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   
   // Navigation State for Detail Page
   const [selectedDebtId, setSelectedDebtId] = useState<string | null>(null);
@@ -304,8 +307,8 @@ export default function DebtsTab({
             {/* Dynamic Status Notification Card (Matches Photo 2) */}
             <div className={`p-4 rounded-2xl border flex items-center justify-between ${
               selectedDebt.type === "debt" 
-                ? "bg-red-50/50 dark:bg-red-950/10 border-red-100/50 dark:border-red-900/20 text-red-700 dark:text-red-400" 
-                : "bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-100/50 dark:border-emerald-900/20 text-emerald-700 dark:text-emerald-400"
+                ? "bg-red-50/50 dark:bg-red-955/10 border-red-100/50 dark:border-red-900/20 text-red-700 dark:text-red-400" 
+                : "bg-emerald-50/50 dark:bg-emerald-955/10 border-emerald-100/50 dark:border-emerald-900/20 text-emerald-700 dark:text-emerald-400"
             }`}>
               <div className="flex items-center gap-2.5">
                 <div className={`p-1.5 rounded-lg ${selectedDebt.type === "debt" ? "bg-red-100/60 dark:bg-red-900/30" : "bg-emerald-100/60 dark:bg-emerald-900/30"}`}>
@@ -318,8 +321,8 @@ export default function DebtsTab({
               </div>
               <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border ${
                 selectedDebt.type === "debt" 
-                  ? "bg-red-100/40 dark:bg-red-950/20 border-red-200/50 dark:border-red-900/30" 
-                  : "bg-emerald-100/40 dark:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-900/30"
+                  ? "bg-red-100/40 dark:bg-red-955/20 border-red-200/50 dark:border-red-900/30" 
+                  : "bg-emerald-100/40 dark:bg-emerald-955/20 border-emerald-200/50 dark:border-emerald-900/30"
               }`}>
                 {selectedDebt.type === "debt" ? "↓ DIPINJAM" : "↑ DIPINJAMKAN"}
               </span>
@@ -346,7 +349,7 @@ export default function DebtsTab({
                     </div>
                     <div>
                       <h6 className="font-black text-xs text-emerald-600 dark:text-emerald-400">-Rp {selectedDebt.paidAmount.toLocaleString('id-ID')}</h6>
-                      <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold mt-0.5">
+                      <p className="text-[9px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">
                         {(() => {
                           const dateVal = selectedDebt.createdAt as any;
                           const d = dateVal?.seconds 
@@ -446,10 +449,9 @@ export default function DebtsTab({
           )}
         </div>
       ) : (
-        /* Classic List View with beautiful Photo 3 styled Cards */
+        /* Standard / Old style listing with visually upgraded layout switcher */
         <div className="space-y-6 animate-in fade-in duration-200">
           
-          {/* Main Sub Tab Swapper (UTANG SAYA / PIUTANG ORANG) */}
           <div className="bg-slate-100/60 dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm flex items-center gap-1.5 transition-all">
             <button 
               onClick={() => setMainTab("debts")} 
@@ -476,8 +478,8 @@ export default function DebtsTab({
           {mainTab === "debts" ? (
             <div className="space-y-6 animate-in fade-in duration-200">
               
-              {/* Classic Selection Tab Swapper */}
-              <div className="bg-white dark:bg-slate-900/65 p-5 rounded-[26px] border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
+              {/* Refined Tab Swapper inside Utang (UTANG SAYA / PIUTANG ORANG) */}
+              <div className="bg-white dark:bg-slate-900/65 p-5 rounded-[26px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
                 <div className="flex gap-1.5 bg-slate-100/70 dark:bg-slate-950 p-1 rounded-xl">
                   <button 
                     onClick={() => { setActiveType("debt"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
@@ -514,14 +516,7 @@ export default function DebtsTab({
                   </h2>
                 </div>
 
-                {!showAddForm ? (
-                  <button 
-                    onClick={() => { setShowAddForm(true); setEditingDebtId(null); setActiveKeypad(null); }} 
-                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all active:scale-[0.99]"
-                  >
-                    <Plus size={16}/> Tambah Catatan Baru
-                  </button>
-                ) : (
+                {showAddForm && (
                   <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-left">
                     <div className="flex justify-between items-center px-1">
                       <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">
@@ -544,7 +539,7 @@ export default function DebtsTab({
                         placeholder="Nominal Total (Rp)" 
                         inputMode={isMobile ? "none" : undefined} 
                         onFocus={() => { if(isMobile) setActiveKeypad("add"); }} 
-                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-white placeholder-slate-400" 
+                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-755 dark:text-white placeholder-slate-400" 
                         value={amount} 
                         onChange={e => setAmount(e.target.value)} 
                       />
@@ -596,17 +591,36 @@ export default function DebtsTab({
               </div>
 
               {/* Grid of Photo 3 styled Premium Cards (UTANG & PIUTANG) */}
-              <div className="space-y-3.5 text-left">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400 px-1">
-                  <span className={`w-[3px] h-3.5 rounded-full ${activeType === 'debt' ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
-                  {activeType === 'debt' ? `DIPINJAM (${filteredDebts.length})` : `DIPINJAMKAN (${filteredDebts.length})`}
+              <div className="space-y-4 text-left">
+                <div className="flex justify-between items-center px-1">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    <span className={`w-[3px] h-3.5 rounded-full ${activeType === 'debt' ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
+                    {activeType === 'debt' ? `DIPINJAM (${filteredDebts.length})` : `DIPINJAMKAN (${filteredDebts.length})`}
+                  </div>
+                  
+                  {/* Grid vs List View Selector Toggle (Matches Photo 3) */}
+                  <div className="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/40 dark:border-slate-800/80">
+                    <button 
+                      onClick={() => setViewMode("grid")}
+                      className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === "grid" ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-400 dark:text-slate-500 hover:text-slate-700"}`}
+                    >
+                      <LayoutGrid size={14} />
+                    </button>
+                    <button 
+                      onClick={() => setViewMode("list")}
+                      className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === "list" ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-400 dark:text-slate-500 hover:text-slate-700"}`}
+                    >
+                      <List size={14} />
+                    </button>
+                  </div>
                 </div>
 
                 {filteredDebts.length === 0 ? (
                   <p className="text-center py-12 text-slate-450 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150 dark:border-slate-850">
                     Belum ada catatan {activeType === "debt" ? "utang" : "piutang"}.
                   </p>
-                ) : (
+                ) : viewMode === "grid" ? (
+                  /* GRID BOX VIEW MODE (Matches Photo 3) */
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredDebts.map(debt => {
                       const percentage = Math.min((debt.paidAmount / debt.amount) * 100, 100);
@@ -661,6 +675,44 @@ export default function DebtsTab({
                             <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
                               {debt.dueDate ? `Tempo: ${new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : "Tidak Ada Jatuh Tempo"}
                               {overdue && " • Overdue! ⚠️"}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* LINEAR LIST VIEW MODE */
+                  <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[24px] overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredDebts.map(debt => {
+                      const percentage = Math.min((debt.paidAmount / debt.amount) * 100, 100);
+                      const isPaid = debt.status === "paid";
+                      const overdue = !isPaid && isOverdue(debt.dueDate || "");
+
+                      return (
+                        <div 
+                          key={debt.id} 
+                          onClick={() => setSelectedDebtId(debt.id)}
+                          className="p-4 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-850/30 transition-all cursor-pointer text-left pl-5 relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-slate-200"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-slate-100 dark:bg-slate-800 text-orange-600 dark:text-orange-400 rounded-lg flex items-center justify-center font-black text-xs">
+                              {debt.personName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs tracking-tight">{debt.personName}</h4>
+                              <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mt-0.5">
+                                {debt.dueDate ? `Tempo: ${new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : "Tidak Ada Jatuh Tempo"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="text-xs font-black text-slate-800 dark:text-white">
+                              {isPrivacyMode ? 'Rp •••••' : `Rp ${(debt.amount - debt.paidAmount).toLocaleString('id-ID')}`}
+                            </span>
+                            <p className={`text-[9px] font-black mt-0.5 ${isPaid ? "text-emerald-500" : "text-blue-500"}`}>
+                              {Math.round(percentage)}% lunas
                             </p>
                           </div>
                         </div>
@@ -908,6 +960,22 @@ export default function DebtsTab({
               </div>
             </div>
           )}
+
+          {/* Floating Action Button (FAB) at Bottom Right (List screen) */}
+          {mainTab === "debts" && (
+            <button 
+              onClick={() => {
+                setShowAddForm(!showAddForm);
+                setEditingDebtId(null);
+                setActiveKeypad(null);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="fixed bottom-6 right-6 z-50 p-4 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white rounded-full shadow-2xl transition-all cursor-pointer border border-blue-500/10"
+            >
+              {showAddForm ? <X size={24} /> : <Plus size={24} />}
+            </button>
+          )}
+
         </div>
       )}
 
@@ -942,7 +1010,7 @@ export default function DebtsTab({
                   key={num} 
                   type="button" 
                   onClick={() => handleKeypadPress(num)} 
-                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-850/10"
+                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
                 >
                   {num}
                 </button>
