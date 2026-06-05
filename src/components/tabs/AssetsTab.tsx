@@ -28,7 +28,7 @@ const getCardDesign = (type: string) => {
     return { 
       bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
       icon: <Banknote size={18} className="text-emerald-600" />, 
-      iconBg: "bg-emerald-50 dark:bg-emerald-955", 
+      iconBg: "bg-emerald-50 dark:bg-emerald-950/50", 
       chip: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
       progressBar: "bg-emerald-500" 
     };
@@ -64,9 +64,9 @@ const safeEvaluate = (expr: string): number => {
 };
 
 const getGoalStatus = (percentage: number) => {
-  if (percentage >= 100) return { label: "✨ Selesai!", color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-95.0/40 border-emerald-200 dark:border-emerald-800/50" };
-  if (percentage >= 75) return { label: "🚀 Sikit Lagi!", color: "text-blue-600 bg-blue-50 dark:bg-blue-95.0/40 border-amber-200 dark:border-amber-800/50" };
-  if (percentage >= 40) return { label: "🔥 On Track", color: "text-amber-600 bg-amber-50 dark:bg-amber-95.0/40 border-amber-200 dark:border-amber-800/50" };
+  if (percentage >= 100) return { label: "✨ Selesai!", color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50" };
+  if (percentage >= 75) return { label: "🚀 Sikit Lagi!", color: "text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-amber-200 dark:border-amber-800/50" };
+  if (percentage >= 40) return { label: "🔥 On Track", color: "text-amber-600 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/50" };
   return { label: "🌱 Berjuang!", color: "text-slate-500 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50" };
 };
 
@@ -408,7 +408,6 @@ export default function AssetsTab({
                   <ResponsiveContainer width="100%" height="100%">
                     <RePieChart>
                       <Pie data={detailPieData} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={2} dataKey="value" stroke="none">
-                        {/* PERBAIKAN: Menambahkan strict typing (e: any, i: number) untuk mencegah implicit any error */}
                         {detailPieData.map((e: any, i: number) => <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />)}
                       </Pie>
                       <Tooltip contentStyle={{borderRadius:'12px', fontSize:'10px', fontWeight:'bold'}} formatter={(v: any) => `Rp ${Number(v).toLocaleString('id-ID')}`} />
@@ -416,7 +415,6 @@ export default function AssetsTab({
                   </ResponsiveContainer>
                 </div>
                 <div className="w-full space-y-1">
-                  {/* PERBAIKAN: Menambahkan strict typing (item: any, idx: number) */}
                   {detailPieData.slice(0, 5).map((item: any, idx: number) => (
                     <div key={idx} className="flex justify-between items-center text-xs w-full p-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl">
                       <div className="flex items-center gap-2 min-w-0"><div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }} /><span className="font-bold text-slate-700 dark:text-slate-300 truncate">{item.name}</span></div>
@@ -482,7 +480,7 @@ export default function AssetsTab({
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dompet</span>
                   
                   {/* TOGGLE LAYOUT MODE */}
-                  <div className="flex bg-slate-200/50 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-850">
+                  <div className="flex bg-slate-200/50 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800">
                     <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("grid"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "grid" ? "bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-slate-600"}`}>
                       <LayoutGrid size={14} />
                     </button>
@@ -536,7 +534,7 @@ export default function AssetsTab({
                               <>
                                 <div className="w-5 h-5 rounded-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-[10px] font-black">{latestTx.category.charAt(0)}</div>
                                 <div className="min-w-0">
-                                  <p className="text-[9px] font-bold text-slate-755 dark:text-slate-300 truncate leading-tight">{latestTx.note}</p>
+                                  <p className="text-[9px] font-bold text-slate-700 dark:text-slate-300 truncate leading-tight">{latestTx.note}</p>
                                   <p className="text-[8px] font-semibold text-slate-400 mt-0.5 leading-none">
                                     {latestTx.isIncome ? '+' : '-'}Rp {latestTx.amount.toLocaleString('id-ID')} • {latestTx.dayLabel}
                                   </p>
@@ -556,7 +554,7 @@ export default function AssetsTab({
                       const design = getCardDesign(acc.type);
                       const symbol = getCurrencySymbol(acc.currency);
                       return (
-                        <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-855 transition-colors group">
+                        <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
                           <div className="flex items-center gap-3">
                             {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-cover" alt="logo" /> ) : ( <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
                             <div className="text-left">
@@ -587,7 +585,7 @@ export default function AssetsTab({
 
               {(emergencyAccounts.length === 0 && dreamGoals.length === 0) ? (
                 <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm p-10 flex flex-col items-center justify-center text-center">
-                  <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-955 rounded-full flex items-center justify-center mb-4"><Activity size={32} className="text-emerald-500"/></div>
+                  <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-950/50 rounded-full flex items-center justify-center mb-4"><Activity size={32} className="text-emerald-500"/></div>
                   <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-1">Belum Ada Aset</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">Lacak investasi dan tabungan Anda dengan menekan tombol + di bawah.</p>
                 </div>
@@ -648,7 +646,7 @@ export default function AssetsTab({
             <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
             <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{editingAccId ? "Edit Dompet" : "Kelola Akun & Dompet"}</h3>
-              <button onClick={() => { setIsManageOpen(false); setEditingAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-755 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={16} className="text-slate-700 dark:text-slate-200"/></button>
+              <button onClick={() => { setIsManageOpen(false); setEditingAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={16} className="text-slate-700 dark:text-slate-200"/></button>
             </div>
             
             <div className="p-6 overflow-y-auto space-y-6">
@@ -656,18 +654,21 @@ export default function AssetsTab({
               {/* JIKA SEDANG MENGEDIT: HANYA TAMPILKAN FORM EDIT (FOCUS VIEW) */}
               {editingAccId ? (
                 <div className="space-y-3 bg-slate-50 dark:bg-slate-800/40 p-5 rounded-[24px] border border-slate-100 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
-                  <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label>
+                    <input className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-950 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} />
+                  </div>
                   
                   <div className="space-y-1 text-left">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Mata Uang Dompet</label>
-                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
+                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-950 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
                       <option value="IDR">🇮🇩 Rupiah (IDR)</option><option value="USD">🇺🇸 Dollar (USD)</option><option value="SGD">🇸🇬 Dollar (SGD)</option><option value="EUR">🇪🇺 Euro (EUR)</option><option value="JPY">🇯🇵 Yen (JPY)</option><option value="CNY">🇨🇳 Yuan (CNY)</option><option value="GBP">🇬🇧 Pound (GBP)</option><option value="AUD">🇦🇺 Dollar (AUD)</option><option value="MYR">🇲🇾 Ringgit (MYR)</option><option value="SAR">🇸🇦 Riyal (SAR)</option>
                     </select>
                   </div>
 
                   <div className="space-y-1 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">
                     <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Audit Saldo Nyata (Real - {editCurrency})</label>
-                    <input type="number" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
+                    <input type="number" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-950 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
                   </div>
                   
                   <div className="flex flex-col gap-2 pt-2">
@@ -688,14 +689,14 @@ export default function AssetsTab({
                   {editAccIsSavings && (
                     <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                       <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
-                      <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+                      <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-950 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
                     </div>
                   )}
 
                   {/* UNIVERSAL LOGO UPLOADER */}
                   <div className="flex flex-col gap-1 pt-1 text-left">
                     <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Ubah Logo Dompet (Opsional)</label>
-                    <div className="flex items-center gap-3 bg-slate-100/50 dark:bg-slate-955 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                    <div className="flex items-center gap-3 bg-slate-100/50 dark:bg-slate-950 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                       <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, true)} className="hidden" id="custom-logo-file" />
                       <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{editAccLogo ? "Logo Baru Siap Diunggah ✅" : "Pilih logo baru (Maks 500KB)"}</span>
@@ -714,14 +715,14 @@ export default function AssetsTab({
                   <div className="space-y-3 bg-slate-50 dark:bg-slate-800/40 p-5 rounded-[24px] border border-slate-100 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
                     <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 mb-2">Tambah Dompet Baru</h4>
                     
-                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-850 outline-none font-bold text-slate-800 dark:text-slate-200 cursor-pointer" value={accCurrency || localAccCurrency} onChange={(e) => setAccCurrency ? setAccCurrency(e.target.value) : setLocalAccCurrency(e.target.value)}>
+                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-950 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={accCurrency || localAccCurrency} onChange={(e) => setAccCurrency ? setAccCurrency(e.target.value) : setLocalAccCurrency(e.target.value)}>
                       <option value="IDR">🇮🇩 Rupiah (IDR)</option><option value="USD">🇺🇸 Dollar (USD)</option><option value="SGD">🇸🇬 Dollar (SGD)</option><option value="EUR">🇪🇺 Euro (EUR)</option><option value="JPY">🇯🇵 Yen (JPY)</option><option value="CNY">🇨🇳 Yuan (CNY)</option><option value="GBP">🇬🇧 Pound (GBP)</option><option value="AUD">🇦🇺 Dollar (AUD)</option><option value="MYR">🇲🇾 Ringgit (MYR)</option><option value="SAR">🇸🇦 Riyal (SAR)</option>
                     </select>
 
-                    <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-850 outline-none font-bold text-slate-800 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
-                    <input type="number" placeholder="Saldo Aktual" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-850 outline-none font-bold text-slate-800 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
+                    <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
+                    <input type="number" placeholder="Saldo Aktual" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
                     
-                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-850 outline-none font-bold text-slate-800 dark:text-slate-200 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
+                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
                         {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
 
@@ -733,14 +734,14 @@ export default function AssetsTab({
 
                     {accIsSavings && (
                       <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                        <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-850 outline-none font-bold text-slate-800 dark:text-slate-200" value={accSavingsGoalTitle} onChange={(e) => setAccSavingsGoalTitle(e.target.value)} />
-                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-850 outline-none font-bold text-slate-800 dark:text-slate-200" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
+                        <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={accSavingsGoalTitle} onChange={(e) => setAccSavingsGoalTitle(e.target.value)} />
+                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
                       </div>
                     )}
 
                     <div className="flex flex-col gap-1 pt-1 text-left">
                       <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
-                      <div className="flex items-center gap-3 bg-slate-100/50 dark:bg-slate-955 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                      <div className="flex items-center gap-3 bg-slate-100/50 dark:bg-slate-950 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                         <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, false)} className="hidden" id="custom-logo-file" />
                         <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
                         <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{accLogo ? "Logo Siap Diunggah ✅" : "Format PNG/JPG (Maks 500KB)"}</span>
@@ -754,7 +755,7 @@ export default function AssetsTab({
                   <div className="space-y-2">
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest pl-1">Daftar Dompet Anda</p>
                     {accounts.map((acc, index) => (
-                      <div key={acc.id} className="flex justify-between items-center p-3 bg-slate-100/50 dark:bg-slate-955 border border-slate-200/50 dark:border-slate-850 rounded-xl transition-colors duration-200">
+                      <div key={acc.id} className="flex justify-between items-center p-3 bg-slate-100/50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 rounded-xl transition-colors duration-200">
                         <div className="text-left">
                           <p className="text-xs font-bold text-slate-800 dark:text-slate-100">{acc.name} {acc.isBusiness && <span className="text-[8px] text-amber-600 bg-amber-100 px-1 rounded font-black">Bisnis</span>}</p>
                           <p className="text-[10px] text-slate-500 dark:text-slate-400">{acc.currency || "IDR"} • {acc.balance.toLocaleString('id-ID')}</p>
@@ -783,11 +784,11 @@ export default function AssetsTab({
             <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
             <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">🪙 Pengaturan Kurs Global</h3>
-              <button onClick={() => setShowRatesModal(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={16} className="text-slate-700 dark:text-slate-200"/></button>
+              <button onClick={() => setShowRatesModal(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={16} className="text-slate-700 dark:text-slate-200"/></button>
             </div>
             
             <div className="p-6 overflow-y-auto space-y-4">
-              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-555 uppercase tracking-widest pl-1 leading-relaxed">
+              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-widest pl-1 leading-relaxed">
                 Tentukan Nilai Tukar Manual (Kurs Terhadap Rupiah / IDR)
               </p>
               
