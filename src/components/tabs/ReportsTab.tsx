@@ -20,7 +20,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     const label = payload[0].payload.name || payload[0].payload.date || payload[0].name || payload[0].payload.dayName;
     return (
       <div className="bg-white dark:bg-slate-800 p-3 rounded-[18px] shadow-xl border border-slate-200 dark:border-slate-700 space-y-1.5 min-w-[150px] text-left">
-        <p className="text-slate-400 dark:text-slate-555 text-[10px] font-black uppercase tracking-wider leading-none">{label}</p>
+        <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-wider leading-none">{label}</p>
         <div className="space-y-1.5 pt-1">
           {payload.map((item: any, idx: number) => (
             <div key={idx} className="flex items-center justify-between gap-4 text-xs font-bold">
@@ -307,7 +307,6 @@ export default function ReportsTab({
         <p class="footer">Dicetak dari Aplikasi Fintracker pada ${new Date().toLocaleString('id-ID')}</p>
 
         <script>
-          // Picu dialog cetak otomatis saat halaman baru yang bersih ini selesai dimuat
           window.onload = function() {
             setTimeout(function() {
               window.print();
@@ -441,7 +440,7 @@ export default function ReportsTab({
                 { id: "laporan", label: "Laporan", icon: Activity },
                 { id: "kalender", label: "Kalender", icon: CalendarDays }
               ].map(tab => (
-                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveView(tab.id as any); }} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${activeView === tab.id ? "bg-blue-900 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}>
+                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveView(tab.id as any); }} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${activeView === tab.id ? "bg-blue-900 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}>
                   <tab.icon size={14} /> {tab.label}
                 </button>
               ))}
@@ -453,19 +452,16 @@ export default function ReportsTab({
               <Download size={14}/> Export Excel
             </button>
             
-            {/* TOMBOL CETAK PDF (ISOLATED DOCUMENT STREAM BYPASS) */}
             <button 
               onClick={() => {
                 triggerHaptic();
                 try {
                   const htmlContent = generatePrintHTML();
-                  // Buka jendela baru secara murni sinkronus
                   const printWindow = window.open("", "_blank");
                   if (printWindow) {
                     printWindow.document.write(htmlContent);
                     printWindow.document.close();
                   } else {
-                    // Fallback jika diblokir oleh pop-up blocker browser
                     window.print();
                   }
                 } catch (e) {
@@ -510,7 +506,7 @@ export default function ReportsTab({
                 <ResponsiveContainer width="100%" height="100%">
                   <ReBarChart data={trendData.slice(-6)} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barGap={0} barCategoryGap="20%">
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} dy={10} />
-                    <Tooltip cursor={{ fill: 'transparent' }} content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip />} />
                     <Bar dataKey="Net" radius={[4, 4, 4, 4]}>{trendData.slice(-6).map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.month === reportMonth ? (entry.Net >= 0 ? '#10b981' : '#ef4444') : '#64748b'} />))}</Bar>
                   </ReBarChart>
                 </ResponsiveContainer>
@@ -532,7 +528,7 @@ export default function ReportsTab({
                 <ResponsiveContainer width="100%" height="100%">
                   <ReBarChart data={trendData.slice(-6)} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barCategoryGap="20%">
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} dy={10} />
-                    <Tooltip cursor={{ fill: 'transparent' }} content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip />} />
                     <Bar dataKey="Pengeluaran" radius={[4, 4, 4, 4]}>{trendData.slice(-6).map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.month === reportMonth ? '#ef4444' : '#64748b'} />))}</Bar>
                   </ReBarChart>
                 </ResponsiveContainer>
@@ -545,7 +541,6 @@ export default function ReportsTab({
               </div>
             </div>
 
-            {/* KARTU BARU: TREN PEMASUKAN */}
             <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Tren Pemasukan</h3>
@@ -556,7 +551,7 @@ export default function ReportsTab({
                 <ResponsiveContainer width="100%" height="100%">
                   <ReBarChart data={trendData.slice(-6)} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barCategoryGap="20%">
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} dy={10} />
-                    <Tooltip cursor={{ fill: 'transparent' }} content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip />} />
                     <Bar dataKey="Pemasukan" radius={[4, 4, 4, 4]}>{trendData.slice(-6).map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.month === reportMonth ? '#10b981' : '#64748b'} />))}</Bar>
                   </ReBarChart>
                 </ResponsiveContainer>
@@ -569,7 +564,6 @@ export default function ReportsTab({
               </div>
             </div>
 
-            {/* Grafik Donut & Progress */}
             <RenderDonutList data={localPieData} colors={COLORS} total={localTotalExpense} title="Pengeluaran" type="expense" showAll={showAllExpCategories} setShowAll={setShowAllExpCategories} />
             <RenderDonutList data={localIncomePieData} colors={INCOME_COLORS} total={localTotalIncome} title="Pemasukan" type="income" showAll={showAllIncCategories} setShowAll={setShowAllIncCategories} />
 
@@ -580,7 +574,7 @@ export default function ReportsTab({
               {/* FIXED */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
                 <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-2">Pengeluaran Tetap (Fixed)</p>
-                {sortedFixedKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-550 italic">Kosong</p> : (
+                {sortedFixedKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-500 italic">Kosong</p> : (
                   <div className="space-y-2">
                     {sortedFixedKeys.map((key) => {
                       const data = fixedGroupedList[key];
@@ -602,7 +596,7 @@ export default function ReportsTab({
                               {data.items.sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime()).map((item) => (
                                 <div key={item.id} className="flex justify-between items-center text-[10px] pb-2 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none">
                                   <div className="flex flex-col text-left">
-                                    <span className="text-slate-400 dark:text-slate-550 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
+                                    <span className="text-slate-400 dark:text-slate-500 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
                                     <span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
                                   </div>
                                   <span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
@@ -624,7 +618,7 @@ export default function ReportsTab({
               {/* VARIABLE */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
                 <p className="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest mb-2">Pengeluaran Variabel (Jajan)</p>
-                {sortedVarKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-550 italic">Kosong</p> : (
+                {sortedVarKeys.length === 0 ? <p className="text-xs text-slate-455 dark:text-slate-500 italic">Kosong</p> : (
                   <div className="space-y-2">
                     {displayedVarKeys.map((key) => {
                       const data = varGroupedList[key];
@@ -634,7 +628,7 @@ export default function ReportsTab({
                           <div onClick={() => { triggerHaptic(); toggleExpand(key); }} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1.5 -mx-1.5 rounded-xl transition-all">
                             <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1.5">
                               <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black">{data.items[0]?.category?.charAt(0).toUpperCase()}</span>
-                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-550 font-medium">({data.items.length}x)</span>
+                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span>
                             </span>
                             <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">
                               Rp {data.total.toLocaleString('id-ID')} 
@@ -646,7 +640,7 @@ export default function ReportsTab({
                               {data.items.sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime()).map((item) => (
                                 <div key={item.id} className="flex justify-between items-center text-[10px] pb-2 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none">
                                   <div className="flex flex-col text-left">
-                                    <span className="text-slate-400 dark:text-slate-555 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
+                                    <span className="text-slate-400 dark:text-slate-500 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
                                     <span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
                                   </div>
                                   <span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
@@ -676,7 +670,7 @@ export default function ReportsTab({
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg px-2">Rincian Pemasukan</h3>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
                 <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-2">Detail Pemasukan</p>
-                {sortedIncomeKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-550 italic">Kosong</p> : (
+                {sortedIncomeKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-505 italic">Kosong</p> : (
                   <div className="space-y-2">
                     {sortedIncomeKeys.map((key) => {
                       const data = incomeGroupedList[key];
@@ -686,7 +680,7 @@ export default function ReportsTab({
                           <div onClick={() => { triggerHaptic(); toggleExpand(`inc-${key}`); }} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1.5 -mx-1.5 rounded-xl transition-all">
                             <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1.5">
                               <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black">{data.items[0]?.category?.charAt(0).toUpperCase()}</span>
-                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-550 font-medium">({data.items.length}x)</span>
+                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span>
                             </span>
                             <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">
                               Rp {data.total.toLocaleString('id-ID')} 
@@ -767,10 +761,13 @@ export default function ReportsTab({
 
             <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
               <div className="flex justify-between items-center mb-2"><h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Income vs Expense</h3><span className="text-[10px] font-bold text-slate-500">Cumulative</span></div>
-              <div className="flex gap-4 text-[10px] font-bold mb-4">
-                <div className="flex items-center gap-1.5"><div className="w-4 h-1 rounded bg-emerald-500"/> Pemasukan <span className="text-emerald-600">Rp {localTotalIncome >= 1000 ? (localTotalIncome/1000).toFixed(0)+'K' : localTotalIncome}</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-4 h-1 rounded bg-red-500"/> Pengeluaran <span className="text-red-500">Rp {localTotalExpense >= 1000 ? (localTotalExpense/1000).toFixed(0)+'K' : localTotalExpense}</span></div>
+              
+              {/* PERBAIKAN KONTRAS TEKS LEGENDA (Pemasukan & Pengeluaran menyala di mode malam) */}
+              <div className="flex gap-4 text-[10px] font-bold mb-4 text-slate-600 dark:text-slate-300">
+                <div className="flex items-center gap-1.5"><div className="w-4 h-1 rounded bg-emerald-500"/> Pemasukan <span className="text-emerald-650 dark:text-emerald-400 ml-1">Rp {localTotalIncome >= 1000 ? (localTotalIncome/1000).toFixed(0)+'K' : localTotalIncome}</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-4 h-1 rounded bg-red-500"/> Pengeluaran <span className="text-red-500 dark:text-red-400 ml-1">Rp {localTotalExpense >= 1000 ? (localTotalExpense/1000).toFixed(0)+'K' : localTotalExpense}</span></div>
               </div>
+              
               <div className="h-56 w-full -ml-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <ReLineChart data={dailyCumulativeData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
@@ -863,7 +860,6 @@ export default function ReportsTab({
                 })}
               </div>
 
-              {/* SUMMARY FULL-NUMBER BARU DI BAWAH KALENDER */}
               <div className="mt-6 space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-slate-500 dark:text-slate-400 font-bold">Pendapatan</span>
@@ -968,7 +964,7 @@ export default function ReportsTab({
                     .filter(t => t.category === selectedCategoryDetail.name)
                     .sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime());
                   
-                  if(catTxs.length === 0) return <p className="text-center text-xs text-slate-400 dark:text-slate-550 italic py-4">Tidak ada riwayat untuk kategori ini.</p>;
+                  if(catTxs.length === 0) return <p className="text-center text-xs text-slate-400 dark:text-slate-500 italic py-4">Tidak ada riwayat untuk kategori ini.</p>;
 
                   return catTxs.map(t => (
                     <div key={t.id} className="flex justify-between items-center text-xs p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
