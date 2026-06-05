@@ -159,6 +159,18 @@ export default function HomeTab({
   // State pemilih akun/dompet aktif untuk pop-up card
   const [activeAccSelector, setActiveAccSelector] = useState<"source" | "dest" | null>(null);
 
+  // Pendeteksi tema gelap aktif untuk memaksa skema warna input tanggal Safari iOS
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const checkDark = () => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    };
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
   // States pecahan transaksi (splits) baru
   const [splits, setSplits] = useState<SplitItemData[]>([]);
   const [showSplitModal, setShowSplitModal] = useState(false);
@@ -543,7 +555,7 @@ export default function HomeTab({
               />
               <button 
                 type="button" 
-                onClick={() => { setSearchQueryInput(""); setIsSearchExpanded(false); }} 
+                onClick={() => { setSearchQueryInput(""); setIsSearchExpanded(false); }}
                 className="p-1 hover:bg-slate-100 dark:hover:bg-slate-855 rounded-full text-slate-400"
               >
                 <X size={14} />
@@ -949,7 +961,8 @@ export default function HomeTab({
                 </label>
                 <input 
                   type="date" 
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" 
+                  style={{ colorScheme: isDark ? "dark" : "light" }}
+                  className="w-full m-0 box-border p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" 
                   value={editingTransaction ? editTDate : tDate} 
                   onChange={(e) => editingTransaction ? setEditTDate(e.target.value) : setTDate(e.target.value)} 
                 />
@@ -1016,7 +1029,7 @@ export default function HomeTab({
               {/* INPUT CATATAN / MEMO */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan</label>
-                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
+                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-850 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
               </div>
 
               {/* EDITING SPLITS SECTION (Untuk Koreksi Splits Langsung di Form Laci) */}
@@ -1080,7 +1093,7 @@ export default function HomeTab({
       {/* POP-UP CATEGORY MODAL FOR NEW CREATION */}
       {showCatModal && activeType !== "transfer" && (
         <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[30px] w-full max-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-md md:max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-150 dark:border-slate-800">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
               <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
                 <span>🏷️</span> Pilih Kategori {activeType === 'expense' ? 'Pengeluaran' : 'Pemasukan'}
@@ -1220,7 +1233,7 @@ export default function HomeTab({
             </div>
 
             <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex gap-3 shrink-0">
-              <button type="button" onClick={handleConfirmSplits} className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-lg transition-all">Konfirmasi</button>
+              <button type="button" onClick={handleConfirmSplits} className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer">Konfirmasi</button>
               <button type="button" onClick={() => { setShowSplitModal(false); setActiveSplitKeypadIndex(null); }} className="py-3.5 px-6 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-600 rounded-xl text-xs font-bold">Batal</button>
             </div>
           </div>
@@ -1314,7 +1327,7 @@ export default function HomeTab({
                       className={`p-4 rounded-2xl border text-left flex flex-col justify-between relative transition-all active:scale-95 cursor-pointer h-28 ${
                         isSelected 
                           ? "border-blue-600 bg-blue-50/50 dark:bg-blue-950/20 shadow-md shadow-blue-500/5" 
-                          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850"
+                          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-855"
                       }`}
                     >
                       {/* Logo / Icon */}
