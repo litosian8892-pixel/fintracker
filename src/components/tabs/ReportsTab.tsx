@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { 
   Download, ChevronDown, ArrowUp, ArrowDown, X, Printer, 
   BarChart3, PieChart as PieIcon, CalendarDays, Activity, Filter, 
@@ -66,46 +66,7 @@ export default function ReportsTab({
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [showAllVarList, setShowAllVarList] = useState(false);
 
-  // Deklarasi referensi DOM tombol Cetak untuk bypass Synthetic Event
-  const printBtnRef = useRef<HTMLButtonElement>(null);
-
   const triggerHaptic = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
-
-  // IMPLEMENTASI NATIVE EVENT LISTENER UNTUK KEBAL PROTEKSI WEBKIT SAFARI iOS
-  useEffect(() => {
-    const btn = printBtnRef.current;
-    if (!btn) return;
-
-    const handleNativeClick = (e: MouseEvent) => {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                    (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
-      
-      const isStandalone = (window.navigator as any).standalone || 
-                           window.matchMedia('(display-mode: standalone)').matches;
-
-      if (isIOS) {
-        if (isStandalone) {
-          e.preventDefault();
-          e.stopPropagation();
-          alert("Apple membatasi cetak PDF langsung di dalam Aplikasi Layar Utama.\n\nSilakan buka Fintracker via browser Safari biasa untuk mengunduh PDF Laporan ini!");
-        } else {
-          // Panggil fungsi print secara sinkron murni lewat interaksi fisik asli
-          try {
-            window.print();
-          } catch (err) {
-            try {
-              document.execCommand('print', false, undefined);
-            } catch (e) {}
-          }
-        }
-      }
-    };
-
-    btn.addEventListener("click", handleNativeClick);
-    return () => {
-      btn.removeEventListener("click", handleNativeClick);
-    };
-  }, []);
 
   const uniqueAccounts = useMemo(() => {
     const accs = new Set<string>();
@@ -237,12 +198,112 @@ export default function ReportsTab({
 
   const savingsRate = localTotalIncome > 0 ? ((localTotalIncome - localTotalExpense) / localTotalIncome) * 100 : 0;
   const consistencyScore = (trackedDays / daysInMonth) * 100;
-  const expenseControlScore = localTotalExpense <= localTotalIncome ? 100 : (localTotalIncome === 0 ? 0 : Math.max(0, 100 - ((localTotalExpense - localTotalIncome) / localTotalIncome * 105)));
+  const expenseControlScore = localTotalExpense <= localTotalIncome ? 100 : (localTotalIncome === 0 ? 0 : Math.max(0, 100 - ((localTotalExpense - localTotalIncome) / localTotalIncome * 100)));
   const healthScore = Math.min(Math.max(Math.round((savingsRate > 0 ? 40 : 10) + (consistencyScore * 0.3) + (expenseControlScore * 0.3)), 0), 100);
   
   let healthStatus = { text: "Needs Attention", color: "text-red-500", bg: "bg-red-100 dark:bg-red-900/30", stroke: "#ef4444" };
   if (healthScore >= 80) healthStatus = { text: "Excellent", color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/30", stroke: "#10b981" };
   else if (healthScore >= 50) healthStatus = { text: "Good", color: "text-amber-500", bg: "bg-amber-100 dark:bg-amber-900/30", stroke: "#f59e0b" };
+
+  // FUNGSI UTAMA: MEMBUAT KONTEN LAPORAN INDEPENDEN BERSIH (E-STATEMENT GENERATOR)
+  const generatePrintHTML = () => {
+    const tableRows = currentMonthTxs.map(t => `
+      <tr style="border-bottom: 1px solid #e2e8f0;">
+        <td style="padding: 10px; font-weight: 500;">${new Date(t.tDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'short'})}</td>
+        <td style="padding: 10px; font-weight: bold;">${t.note || t.category}</td>
+        <td style="padding: 10px;">${t.category}</td>
+        <td style="padding: 10px;">${t.type === 'transfer' ? `${t.accountName} -> ${t.toAccountName}` : t.accountName}</td>
+        <td style="padding: 10px; text-align: right; font-weight: 900; color: ${t.type === 'income' ? '#10b981' : t.type === 'expense' ? '#ef4444' : '#3b82f6'};">
+          ${t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''} ${t.amount.toLocaleString('id-ID')}
+        </td>
+      </tr>
+    `).join('');
+
+    return `
+      <!DOCTYPE html>
+      <html lang="id">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Laporan Keuangan - FINTRACKER</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 24px; color: #1e293b; background-color: #ffffff; }
+          .no-print-btn { display: inline-flex; align-items: center; justify-content: center; background-color: #1e3a8a; color: white; border: none; padding: 12px 24px; font-size: 14px; font-weight: bold; border-radius: 12px; cursor: pointer; margin-bottom: 24px; transition: background 0.2s; -webkit-tap-highlight-color: transparent; }
+          .no-print-btn:active { background-color: #1e40af; }
+          .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #1e293b; padding-bottom: 16px; margin-bottom: 24px; }
+          .logo-title { font-size: 24px; font-weight: 900; font-style: italic; letter-spacing: -0.05em; }
+          .logo-title span:first-child { color: #1e293b; }
+          .logo-title span:last-child { color: #2563eb; }
+          .summary-box { display: flex; gap: 32px; border: 1px solid #cbd5e1; padding: 16px; border-radius: 12px; margin-bottom: 24px; }
+          .summary-item { flex: 1; }
+          .summary-item p { margin: 0; font-size: 12px; font-weight: bold; color: #64748b; text-transform: uppercase; }
+          .summary-item h2 { margin: 4px 0 0 0; font-size: 18px; font-weight: 900; }
+          .income { color: #10b981; }
+          .expense { color: #ef4444; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+          th { border-bottom: 1px solid #94a3b8; padding: 10px; color: #475569; font-weight: bold; }
+          td { padding: 10px; }
+          .footer { text-align: center; font-size: 10px; color: #94a3b8; font-style: italic; margin-top: 40px; }
+          @media print {
+            .no-print-btn { display: none !important; }
+            body { padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <button class="no-print-btn" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+        
+        <div class="header">
+          <div>
+            <div class="logo-title"><span>FIN</span><span>TRACKER</span></div>
+            <p style="margin: 4px 0 0 0; font-size: 12px; font-weight: bold; color: #94a3b8;">Laporan Mutasi Keuangan ${selectedAccount !== "All" ? `(${selectedAccount})` : ''}</p>
+          </div>
+          <div style="text-align: right;">
+            <p style="margin: 0; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #64748b;">Periode</p>
+            <p style="margin: 4px 0 0 0; font-size: 18px; font-weight: 900;">${new Date(reportMonth + '-01').toLocaleDateString('id-ID', {month: 'long', year: 'numeric'})}</p>
+          </div>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-item">
+            <p>Total Pemasukan</p>
+            <h2 class="income">Rp ${localTotalIncome.toLocaleString('id-ID')}</h2>
+          </div>
+          <div class="summary-item" style="border-left: 1px solid #cbd5e1; padding-left: 32px;">
+            <p>Total Pengeluaran</p>
+            <h2 class="expense">Rp ${localTotalExpense.toLocaleString('id-ID')}</h2>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Keterangan</th>
+              <th>Kategori</th>
+              <th>Dompet</th>
+              <th style="text-align: right;">Nominal (Rp)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+
+        <p class="footer">Dicetak dari Aplikasi Fintracker pada ${new Date().toLocaleString('id-ID')}</p>
+
+        <script>
+          // Picu dialog cetak otomatis saat halaman baru yang bersih ini selesai dimuat
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 300);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+  };
 
   // ================= KOMPONEN RENDER =================
   const RenderDonutList = ({ data, colors, total, title, type, showAll, setShowAll }: { data: any[], colors: string[], total: number, title: string, type: 'income' | 'expense', showAll: boolean, setShowAll: (val: boolean) => void }) => {
@@ -378,14 +439,22 @@ export default function ReportsTab({
               <Download size={14}/> Export Excel
             </button>
             
-            {/* TOMBOL CETAK PDF (NATIVE BINDING BYPASS SYNTHETIC EVENTS) */}
+            {/* TOMBOL CETAK PDF (ISOLATED DOCUMENT STREAM BYPASS) */}
             <button 
-              ref={printBtnRef}
-              onClick={(e) => {
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                              (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
-                if (!isIOS) {
-                  triggerHaptic();
+              onClick={() => {
+                triggerHaptic();
+                try {
+                  const htmlContent = generatePrintHTML();
+                  // Buka jendela baru yang bersih secara murni sinkronus
+                  const printWindow = window.open("", "_blank");
+                  if (printWindow) {
+                    printWindow.document.write(htmlContent);
+                    printWindow.document.close();
+                  } else {
+                    // Fallback jika diblokir oleh pop-up blocker browser
+                    window.print();
+                  }
+                } catch (e) {
                   window.print();
                 }
               }} 
@@ -563,7 +632,7 @@ export default function ReportsTab({
                               {data.items.sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime()).map((item) => (
                                 <div key={item.id} className="flex justify-between items-center text-[10px] pb-2 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none">
                                   <div className="flex flex-col text-left">
-                                    <span className="text-slate-400 dark:text-slate-550 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
+                                    <span className="text-slate-400 dark:text-slate-555 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
                                     <span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
                                   </div>
                                   <span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
@@ -603,7 +672,7 @@ export default function ReportsTab({
                           <div onClick={() => { triggerHaptic(); toggleExpand(`inc-${key}`); }} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1.5 -mx-1.5 rounded-xl transition-all">
                             <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1.5">
                               <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black">{data.items[0]?.category?.charAt(0).toUpperCase()}</span>
-                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-550 font-medium">({data.items.length}x)</span>
+                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span>
                             </span>
                             <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">
                               Rp {data.total.toLocaleString('id-ID')} 
@@ -905,31 +974,6 @@ export default function ReportsTab({
         )}
 
       </div>
-
-      {/* --- TEMPLATE PDF TERSEMBUNYI (TIDAK MENGGUNAKAN '.hidden' UNTUK MENCEGAH SILENT-BLOCK WEBKIT SAFARI) --- */}
-      <div className="absolute top-0 left-0 w-0 h-0 overflow-hidden opacity-0 pointer-events-none print:relative print:w-full print:h-auto print:opacity-100 print:pointer-events-auto print:bg-white print:text-black print:p-6 print:z-[9999]">
-         <div className="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
-            <div><div className="flex items-center gap-2.5 mb-1.5"><img src="/android-chrome-192x192.png?v=4" alt="Logo" className="w-8 h-8 rounded-xl border border-slate-200 shadow-sm" /><div className="text-2xl font-black tracking-tighter italic"><span className="text-slate-800">FIN</span><span className="text-blue-600">TRACKER</span></div></div><p className="text-xs font-bold text-slate-400 pl-1 leading-none">Laporan Mutasi Keuangan {selectedAccount !== "All" && `(${selectedAccount})`}</p></div>
-            <div className="text-right"><p className="text-sm font-bold uppercase">Periode</p><p className="text-lg font-black">{new Date(reportMonth + '-01').toLocaleDateString('id-ID', {month: 'long', year: 'numeric'})}</p></div>
-         </div>
-         <div className="flex gap-8 mb-8 border border-slate-200 p-4 rounded-xl">
-            <div className="flex-1"><p className="text-xs font-bold text-slate-500 uppercase">Total Pemasukan</p><p className="text-lg font-black text-emerald-600">Rp {localTotalIncome.toLocaleString('id-ID')}</p></div>
-            <div className="flex-1 border-l border-slate-200 pl-8"><p className="text-xs font-bold text-slate-500 uppercase">Total Pengeluaran</p><p className="text-lg font-black text-red-600">Rp {localTotalExpense.toLocaleString('id-ID')}</p></div>
-         </div>
-         <table className="w-full text-left text-xs mb-8">
-            <thead><tr className="border-b border-slate-300 text-slate-600"><th className="py-2">Tanggal</th><th className="py-2">Keterangan</th><th className="py-2">Kategori</th><th className="py-2">Dompet</th><th className="py-2 text-right">Nominal (Rp)</th></tr></thead>
-            <tbody>
-               {currentMonthTxs.map(t => (
-                 <tr key={t.id} className="border-b border-slate-100">
-                   <td className="py-2 font-medium">{new Date(t.tDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'short'})}</td><td className="py-2 font-bold">{t.note || t.category}</td><td className="py-2">{t.category}</td><td className="py-2">{t.type === 'transfer' ? `${t.accountName} -> ${t.toAccountName}` : t.accountName}</td>
-                   <td className={`py-2 text-right font-black ${t.type === 'income' ? 'text-emerald-600' : t.type === 'expense' ? 'text-red-600' : 'text-blue-600'}`}>{t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''} {t.amount.toLocaleString('id-ID')}</td>
-                 </tr>
-               ))}
-           </tbody>
-         </table>
-      <p className="text-[10px] text-slate-400 text-center italic mt-10">Dicetak dari Aplikasi Fintracker pada {new Date().toLocaleString('id-ID')}</p>
-    </div>
-    <style>{`@media print { html, body, main { overflow: visible !important; height: auto !important; } }`}</style>
-  </>
-);
+    </>
+  );
 }
