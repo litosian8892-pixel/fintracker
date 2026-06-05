@@ -256,11 +256,11 @@ export default function DebtsTab({
                   {selectedDebt.personName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h4 className="font-black text-base text-slate-850 dark:text-slate-100 leading-tight">{selectedDebt.personName}</h4>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold mt-1 uppercase tracking-wider">
-                    {selectedDebt.dueDate ? `Jatuh Tempo: ${new Date(selectedDebt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : "Tidak Ada Jatuh Tempo"}
-                  </p>
-                </div>
+  <h4 className="font-black text-base text-slate-800 dark:text-slate-100 leading-tight">{selectedDebt.personName}</h4>
+  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-wider">
+    {selectedDebt.dueDate ? `Jatuh Tempo: ${new Date(selectedDebt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : "Tidak Ada Jatuh Tempo"}
+  </p>
+</div>
               </div>
               <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-100/50 dark:border-amber-900/30 rounded-full text-[9px] font-black text-amber-600 dark:text-amber-400 tracking-wider">
                 {Math.round((selectedDebt.paidAmount / selectedDebt.amount) * 100)}% lunas
@@ -286,20 +286,20 @@ export default function DebtsTab({
             </div>
 
             {/* Statistics Table List */}
-            <div className="space-y-3.5 pt-4 border-t border-slate-100 dark:border-slate-800/60 text-xs font-bold">
-              <div className="flex justify-between text-slate-450">
-                <span>Total Pinjaman Utama</span>
-                <span className="text-slate-750 dark:text-slate-200">Rp {selectedDebt.amount.toLocaleString('id-ID')}</span>
-              </div>
-              <div className="flex justify-between text-slate-455">
-                <span>Sisa Tagihan Berjalan</span>
-                <span className="text-orange-600 dark:text-orange-400 font-black">Rp {(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}</span>
-              </div>
-              <div className="flex justify-between text-slate-455">
-                <span>Total Dana Terbayar</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-black">Rp {selectedDebt.paidAmount.toLocaleString('id-ID')}</span>
-              </div>
-            </div>
+<div className="space-y-3.5 pt-4 border-t border-slate-100 dark:border-slate-800/60 text-xs font-bold">
+  <div className="flex justify-between text-slate-500 dark:text-slate-400">
+    <span>Total Pinjaman Utama</span>
+    <span className="text-slate-800 dark:text-slate-200">Rp {selectedDebt.amount.toLocaleString('id-ID')}</span>
+  </div>
+  <div className="flex justify-between text-slate-500 dark:text-slate-400">
+    <span>Sisa Tagihan Berjalan</span>
+    <span className="text-orange-600 dark:text-orange-400 font-black">Rp {(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}</span>
+  </div>
+  <div className="flex justify-between text-slate-500 dark:text-slate-400">
+    <span>Total Dana Terbayar</span>
+    <span className="text-emerald-600 dark:text-emerald-400 font-black">Rp {selectedDebt.paidAmount.toLocaleString('id-ID')}</span>
+  </div>
+</div>
 
             {/* Dynamic Status Notification Card */}
             <div className={`p-4 rounded-2xl border flex items-center justify-between ${
@@ -388,7 +388,7 @@ export default function DebtsTab({
                   placeholder="Nominal Pembayaran (Rp)" 
                   inputMode={isMobile ? "none" : undefined} 
                   onFocus={() => { if(isMobile) setActiveKeypad("pay"); }} 
-                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none text-slate-750" 
+                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-xl text-xs font-bold outline-none text-slate-800 dark:text-white"
                   value={payAmount} 
                   onChange={e => setPayAmount(e.target.value)} 
                 />
