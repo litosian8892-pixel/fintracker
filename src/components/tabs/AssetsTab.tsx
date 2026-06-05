@@ -474,6 +474,33 @@ export default function AssetsTab({
             </div>
           </div>
 
+          {/* SELEKTOR BULAN HISTORIS (Baru - Memungkinkan pelacakan menabung bulan-bulan lalu) */}
+          {activeSubTab === "aset" && setReportMonth && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 animate-in fade-in duration-200">
+              {[5, 4, 3, 2, 1, 0].map((i) => {
+                const d = new Date();
+                d.setMonth(d.getMonth() - i);
+                const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" });
+                const isActive = reportMonth === value;
+                return (
+                  <button 
+                    key={value}
+                    type="button" 
+                    onClick={() => { triggerHaptic(); setReportMonth(value); }}
+                    className={`px-4 py-1.5 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shrink-0 border ${
+                      isActive 
+                        ? "bg-blue-600 border-blue-600 text-white shadow-sm" 
+                        : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {activeSubTab === "net_worth" && (
             <div className="space-y-4 animate-in slide-in-from-left-4 duration-300">
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -652,25 +679,48 @@ export default function AssetsTab({
               </div>
 
               {/* KARTU ALIRAN MUTASI TABUNGAN BULANAN (Menjawab Kebutuhan Deteksi Setor & Tarik) */}
-              <div className="bg-white dark:bg-slate-900 p-5 rounded-[24px] border border-slate-150 dark:border-slate-800 shadow-sm grid grid-cols-2 gap-4 text-left">
-                <div className="border-r border-slate-100 dark:border-slate-800/60 pr-2">
-                  <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Menabung ({reportMonth?.split("-")[1]})
-                  </p>
-                  <p className="text-sm font-black text-slate-800 dark:text-white mt-1">
-                    Rp {monthlySavingsSummary.totalDeposit.toLocaleString('id-ID')}
-                  </p>
-                  <span className="text-[8px] text-slate-400 font-bold block mt-0.5">Disimpan ke Aset</span>
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-[24px] border border-slate-150 dark:border-slate-800 shadow-sm space-y-4 text-left">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="border-r border-slate-100 dark:border-slate-800/60 pr-2">
+                    <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Menabung ({reportMonth?.split("-")[1]})
+                    </p>
+                    <p className="text-sm font-black text-slate-800 dark:text-white mt-1">
+                      Rp {monthlySavingsSummary.totalDeposit.toLocaleString('id-ID')}
+                    </p>
+                    <span className="text-[8px] text-slate-400 font-bold block mt-0.5">Disimpan ke Aset</span>
+                  </div>
+
+                  <div className="pl-2">
+                    <p className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Penarikan ({reportMonth?.split("-")[1]})
+                    </p>
+                    <p className="text-sm font-black text-slate-800 dark:text-white mt-1">
+                      Rp {monthlySavingsSummary.totalWithdraw.toLocaleString('id-ID')}
+                    </p>
+                    <span className="text-[8px] text-slate-400 font-bold block mt-0.5">Ditarik ke Dompet</span>
+                  </div>
                 </div>
 
-                <div className="pl-2">
-                  <p className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Penarikan ({reportMonth?.split("-")[1]})
-                  </p>
-                  <p className="text-sm font-black text-slate-800 dark:text-white mt-1">
-                    Rp {monthlySavingsSummary.totalWithdraw.toLocaleString('id-ID')}
-                  </p>
-                  <span className="text-[8px] text-slate-400 font-bold block mt-0.5">Ditarik ke Dompet</span>
+                {/* BARIS BARU: TOTAL MENABUNG BERSIH (TABUNGAN DIKURANGI PENARIKAN) */}
+                <div className="pt-3.5 border-t border-slate-100 dark:border-slate-800/60 flex justify-between items-center">
+                  <div>
+                    <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                      Total Menabung Bersih
+                    </p>
+                    <span className="text-[8px] text-slate-400 dark:text-slate-505 font-bold">
+                      (Menabung dikurangi Penarikan)
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-base font-black ${
+                      monthlySavingsSummary.totalDeposit - monthlySavingsSummary.totalWithdraw >= 0 
+                        ? "text-emerald-600 dark:text-emerald-400" 
+                        : "text-red-500 dark:text-red-400"
+                    }`}>
+                      Rp {(monthlySavingsSummary.totalDeposit - monthlySavingsSummary.totalWithdraw).toLocaleString('id-ID')}
+                    </p>
+                  </div>
                 </div>
               </div>
 
