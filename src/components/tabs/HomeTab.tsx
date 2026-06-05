@@ -709,8 +709,8 @@ export default function HomeTab({
           {/* Backdrop click to close */}
           <div className="absolute inset-0 z-0" onClick={closeMainDrawer}></div>
           
-          <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 z-10 flex flex-col max-h-[92vh] border-t border-slate-200 dark:border-slate-800">
-            
+          {/* Diubah menjadi h-full (Full Screen) & rounded-none di HP, serta tetap melengkung di desktop */}
+          <div className="bg-white dark:bg-slate-950 w-full h-full rounded-none sm:max-w-md sm:h-[95vh] sm:rounded-t-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 z-10 flex flex-col border-t border-slate-200 dark:border-slate-800">
             {/* Header Laci Dinamis Berdasarkan Tipe Transaksi - MERAH PEKAT, BUKAN PINK (Gambar 4 Style) */}
             {editingTransaction ? (
               <div className={`p-6 ${editTType === 'income' ? 'bg-emerald-500' : editTType === 'expense' ? 'bg-red-600' : 'bg-blue-600'} text-white shrink-0 transition-colors duration-300 relative`}>
