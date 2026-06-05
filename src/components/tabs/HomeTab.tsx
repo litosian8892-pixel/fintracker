@@ -129,6 +129,20 @@ const getCategoryIcon = (catName: string) => {
   return "🏷️";
 };
 
+const formatTime = (createdAt: any) => {
+  if (!createdAt) return "";
+  let d: Date;
+  if (typeof createdAt === "object" && createdAt !== null && "seconds" in createdAt) {
+    d = new Date(createdAt.seconds * 1000);
+  } else if (typeof createdAt === "object" && createdAt !== null && "_seconds" in createdAt) {
+    d = new Date((createdAt as any)._seconds * 1000);
+  } else {
+    d = new Date(createdAt);
+  }
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+};
+
 export default function HomeTab({
   tType, setTType, tDate, setTDate, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction,
   transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode,
@@ -438,12 +452,24 @@ export default function HomeTab({
       .sort((a, b) => b.localeCompare(a))
       .map(dateStr => {
         const list = groups[dateStr];
+
+        // Urutkan transaksi secara berurutan (kronologis) berdasarkan waktu input
+        const sortedList = [...list].sort((a, b) => {
+          const getMs = (val: any) => {
+            if (!val) return 0;
+            if (typeof val === "object" && "seconds" in val) return val.seconds * 1000;
+            if (typeof val === "object" && "_seconds" in val) return (val as any)._seconds * 1000;
+            return new Date(val).getTime();
+          };
+          return getMs(a.createdAt) - getMs(b.createdAt);
+        });
+
         let dailyNet = 0;
-        list.forEach(t => {
+        sortedList.forEach(t => {
           if (t.type === "income") dailyNet += t.amount;
           else if (t.type === "expense") dailyNet -= t.amount;
         });
-        return { dateStr, list, dailyNet };
+        return { dateStr, list: sortedList, dailyNet };
       });
   }, [monthlyTransactions]);
 
@@ -594,7 +620,7 @@ export default function HomeTab({
           {/* Tombol Cari Transaksi */}
           <button 
             type="button" 
-            onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+            onClick={() => { triggerHaptic(); setIsSearchExpanded(!isSearchExpanded); }}
             className={`p-2 rounded-xl transition-colors cursor-pointer ${isSearchExpanded ? 'text-blue-600 bg-blue-50 dark:bg-blue-955/30' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
           >
             <Search size={18} />
@@ -680,7 +706,7 @@ export default function HomeTab({
         </div>
 
         <div className="text-3xl font-black tracking-tight mb-6 relative z-10">
-          {isPrivacyMode ? "Rp ••••••" : `Rp ${totalBalanceCalculated.toLocaleString("id-ID")}`}
+          {isPrivacyMode ? "Rp •••••••" : `Rp ${totalBalanceCalculated.toLocaleString("id-ID")}`}
         </div>
 
         <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-4 relative z-10">
@@ -751,9 +777,23 @@ export default function HomeTab({
                               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate mt-0.5">
                                 {t.note || (isTransfer ? "Transfer Dana" : "-")}
                               </p>
-                              <p className="text-[9px] font-extrabold text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded-md border border-blue-100/20 w-fit mt-1 uppercase flex items-center gap-0.5">
-                                <Wallet size={8} /> {isTransfer ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName}
-                              </p>
+                              
+                              {/* Badge Dompet & Jam Berdampingan */}
+                              <div className="flex flex-wrap gap-1.5 mt-1">
+                                <span className="text-[9px] font-extrabold text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-955/40 px-1.5 py-0.5 rounded-md border border-blue-100/20 flex items-center gap-0.5 uppercase">
+                                  <Wallet size={8} /> {isTransfer ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName}
+                                </span>
+                                {(() => {
+                                  const formattedTime = formatTime(t.createdAt);
+                                  if (!formattedTime) return null;
+                                  return (
+                                    <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-200/30 dark:border-slate-700/30 flex items-center gap-0.5">
+                                      🕒 {formattedTime}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+
                             </div>
                           </div>
 
@@ -769,19 +809,19 @@ export default function HomeTab({
                               ) : null}
                             </div>
 
-                            {/* Tombol edit/delete cepat - Dibuat selalu muncul penuh */}
+                            {/* Tombol edit/delete cepat */}
                             <div className="flex items-center gap-1.5 shrink-0 opacity-100">
                               <button 
                                 type="button" 
                                 onClick={() => { triggerHaptic(); onEditTransaction(t); }} 
-                                className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-955/40 rounded-lg transition-colors cursor-pointer"
                               >
                                 <Edit3 size={13} />
                               </button>
                               <button 
                                 type="button" 
                                 onClick={() => { triggerHaptic(); onDeleteTransaction(t); }} 
-                                className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-955/40 rounded-lg transition-colors cursor-pointer"
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -799,7 +839,7 @@ export default function HomeTab({
                               {t.splits.map((s, idx) => (
                                 <div key={idx} className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400">
                                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
-                                  <span className="font-extrabold text-slate-800 dark:text-slate-350">{s.category}:</span>
+                                  <span className="font-extrabold text-slate-800 dark:text-slate-355">{s.category}:</span>
                                   <span className="text-slate-750 dark:text-slate-500 font-extrabold">Rp {s.amount.toLocaleString('id-ID')}</span>
                                   {s.note && (
                                     <span className="text-[9px] font-medium italic text-slate-450 dark:text-slate-500 leading-none">
@@ -926,7 +966,7 @@ export default function HomeTab({
                 <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl mb-2">
                   <button type="button" onClick={() => handleEditTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "expense" ? "bg-red-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-855 dark:hover:text-slate-100"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
                   <button type="button" onClick={() => handleEditTypeChange("income")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "income" ? "bg-emerald-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-855 dark:hover:text-slate-100"}`}><ArrowUpRight size={12} /> Pemasukan</button>
-                  <button type="button" onClick={() => handleEditTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "transfer" ? "bg-blue-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-855 dark:hover:text-slate-100"}`}><ArrowRightLeft size={12} /> Transfer</button>
+                  <button type="button" onClick={() => handleEditTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "transfer" ? "bg-blue-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-855 dark:hover:text-slate-100"}`}><ArrowRightLeft size={12} strokeWidth={2.5} /> Transfer</button>
                 </div>
               )}
 
@@ -1134,7 +1174,7 @@ export default function HomeTab({
               ) : (
                 <button type="button" onClick={() => { triggerHaptic(); if(splits.length > 0) handleTransaction(splits); else handleTransaction(); closeMainDrawer(); }} className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer">Simpan Transaksi</button>
               )}
-              <button type="button" onClick={closeMainDrawer} className="py-3.5 px-6 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-bold transition-all">Batal</button>
+              <button type="button" onClick={closeMainDrawer} className="py-3.5 px-6 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-400 rounded-xl text-xs font-bold transition-all">Batal</button>
             </div>
           </div>
         </div>
@@ -1249,7 +1289,7 @@ export default function HomeTab({
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] font-black text-slate-400">Pecahan #{i + 1}</span>
                       {tempSplits.length > 1 && (
-                        <button type="button" onClick={() => setTempSplits(tempSplits.filter((_, idx) => idx !== i))} className="text-rose-500 hover:text-rose-700 text-xs font-bold flex items-center gap-0.5"><X size={14} /> Hapus</button>
+                        <button type="button" onClick={() => setTempSplits(tempSplits.filter((_, idx) => idx !== i))} className="text-rose-500 hover:text-rose-755 text-xs font-bold flex items-center gap-0.5"><X size={14} /> Hapus</button>
                       )}
                     </div>
                     
@@ -1294,21 +1334,97 @@ export default function HomeTab({
       {isMobile && activeKeypad && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
-          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-955 border-t border-slate-200 dark:border-slate-800 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
             <div className="flex justify-between items-center mb-3 px-1 text-left">
-              <span className="text-[10px] font-black text-slate-500 dark:text-blue-500 tracking-widest uppercase">{activeKeypad === "amount" ? "Kalkulator Nominal" : "Kalkulator Biaya Admin"}</span>
-              <button onClick={() => setActiveKeypad(null)} className="text-slate-450 hover:text-slate-600 p-1 text-xs font-bold flex items-center gap-1">Tutup <X size={14} /></button>
+              <span className="text-[10px] font-black text-slate-400 dark:text-blue-500 tracking-widest uppercase">{activeKeypad === "amount" ? "Kalkulator Nominal" : "Kalkulator Biaya Admin"}</span>
+              <button onClick={() => setActiveKeypad(null)} className="text-slate-400 hover:text-slate-655 p-1 text-xs font-bold flex items-center gap-1.5">Selesai <X size={14} /></button>
             </div>
-            <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-white font-black text-base">
-              {["+", "-", "*", "/"].map((op) => (<button key={op} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(op) : handleKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl select-none">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>))}
-              {["7", "8", "9"].map((num) => (<button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
-              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("C") : handleEditKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-955/20 text-red-600 rounded-xl select-none">C</button>
-              {["4", "5", "6"].map((num) => (<button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
-              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("⌫") : handleKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl text-slate-500 flex items-center justify-center select-none">⌫</button>
-              {["1", "2", "3"].map((num) => (<button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
-              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress(".") : handleKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl select-none">.</button>
-              {["(", "0", ")"].map((char) => (<button key={char} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(char) : handleKeypadPress(char)} className="bg-slate-50 dark:bg-slate-800 py-3.5 rounded-xl select-none">{char}</button>))}
-              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("Ya") : handleKeypadPress("Ya")} className="py-3.5 bg-blue-600 active:bg-blue-700 rounded-xl text-white font-black shadow-lg select-none">Ya</button>
+            <div className="grid grid-cols-4 gap-2 text-slate-855 dark:text-slate-100 font-black text-sm">
+              {["+", "-", "*", "/"].map((op) => (
+                <button 
+                  key={op} 
+                  type="button" 
+                  onClick={() => editingTransaction ? handleEditKeypadPress(op) : handleKeypadPress(op)} 
+                  className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/20"
+                >
+                  {op === "*" ? "×" : op === "/" ? "÷" : op}
+                </button>
+              ))}
+              
+              {["7", "8", "9"].map((num) => (
+                <button 
+                  key={num} 
+                  type="button" 
+                  onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} 
+                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
+                >
+                  {num}
+                </button>
+              ))}
+              
+              <button 
+                type="button" 
+                onClick={() => editingTransaction ? handleEditKeypadPress("C") : handleKeypadPress("C")} 
+                className="py-3.5 bg-red-50 dark:bg-red-955/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold"
+              >
+                C
+              </button>
+              
+              {["4", "5", "6"].map((num) => (
+                <button 
+                  key={num} 
+                  type="button" 
+                  onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} 
+                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
+                >
+                  {num}
+                </button>
+              ))}
+              
+              <button 
+                type="button" 
+                onClick={() => editingTransaction ? handleEditKeypadPress("⌫") : handleKeypadPress("⌫")} 
+                className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-400 flex items-center justify-center transition-all select-none"
+              >
+                ⌫
+              </button>
+              
+              {["1", "2", "3"].map((num) => (
+                <button 
+                  key={num} 
+                  type="button" 
+                  onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} 
+                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
+                >
+                  {num}
+                </button>
+              ))}
+              
+              <button 
+                type="button" 
+                onClick={() => editingTransaction ? handleEditKeypadPress(".") : handleKeypadPress(".")} 
+                className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none"
+              >
+                .
+              </button>
+              
+              {["(", "0", ")"].map((char) => (
+                <button 
+                  key={char} 
+                  type="button" 
+                  onClick={() => editingTransaction ? handleEditKeypadPress(char) : handleKeypadPress(char)} 
+                  className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-150/30 dark:border-slate-855/10`}
+                >
+                  {char}
+                </button>
+              ))}
+              <button 
+                type="button" 
+                onClick={() => editingTransaction ? handleEditKeypadPress("Ya") : handleKeypadPress("Ya")} 
+                className="py-3.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-xl text-white font-black shadow-md shadow-blue-950/20 transition-all select-none cursor-pointer"
+              >
+                Ya
+              </button>
             </div>
           </div>
         </>
@@ -1318,21 +1434,97 @@ export default function HomeTab({
       {isMobile && activeSplitKeypadIndex !== null && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveSplitKeypadIndex(null)}></div>
-          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-955 border-t border-slate-200 dark:border-slate-800 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
             <div className="flex justify-between items-center mb-3 text-left">
-              <span className="text-[10px] font-black text-slate-500 dark:text-blue-500 tracking-widest uppercase">Kalkulator Pecahan #{activeSplitKeypadIndex + 1}</span>
-              <button onClick={() => setActiveSplitKeypadIndex(null)} className="text-slate-400 hover:text-slate-600 p-1 text-xs font-bold flex items-center gap-1">Tutup <X size={14} /></button>
+              <span className="text-[10px] font-black text-slate-400 dark:text-blue-500 tracking-widest uppercase">Kalkulator Pecahan #{activeSplitKeypadIndex + 1}</span>
+              <button onClick={() => setActiveSplitKeypadIndex(null)} className="text-slate-400 hover:text-slate-655 dark:hover:text-white p-1 text-xs font-bold flex items-center gap-1.5">Selesai <X size={14} /></button>
             </div>
-            <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-white font-black text-base">
-              {["+", "-", "*", "/"].map((op) => (<button key={op} type="button" onClick={() => handleSplitKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl select-none">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>))}
-              {["7", "8", "9"].map((num) => (<button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
-              <button type="button" onClick={() => handleSplitKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-955/20 text-red-600 rounded-xl select-none">C</button>
-              {["4", "5", "6"].map((num) => (<button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
-              <button type="button" onClick={() => handleSplitKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl text-slate-500 flex items-center justify-center select-none">⌫</button>
-              {["1", "2", "3"].map((num) => (<button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
-              <button type="button" onClick={() => handleSplitKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl select-none">.</button>
-              {["(", "0", ")"].map((char) => (<button key={char} type="button" onClick={() => handleSplitKeypadPress(char)} className="bg-slate-50 dark:bg-slate-800 py-3.5 rounded-xl select-none">{char}</button>))}
-              <button type="button" onClick={() => handleSplitKeypadPress("Ya")} className="py-3.5 bg-blue-600 active:bg-blue-700 rounded-xl text-white font-black shadow-lg select-none">Ya</button>
+            <div className="grid grid-cols-4 gap-2 text-slate-855 dark:text-slate-100 font-black text-sm">
+              {["+", "-", "*", "/"].map((op) => (
+                <button 
+                  key={op} 
+                  type="button" 
+                  onClick={() => handleSplitKeypadPress(op)} 
+                  className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-850 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/20"
+                >
+                  {op === "*" ? "×" : op === "/" ? "÷" : op}
+                </button>
+              ))}
+              
+              {["7", "8", "9"].map((num) => (
+                <button 
+                  key={num} 
+                  type="button" 
+                  onClick={() => handleSplitKeypadPress(num)} 
+                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-850 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
+                >
+                  {num}
+                </button>
+              ))}
+              
+              <button 
+                type="button" 
+                onClick={() => handleSplitKeypadPress("C")} 
+                className="py-3.5 bg-red-50 dark:bg-red-955/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold"
+              >
+                C
+              </button>
+              
+              {["4", "5", "6"].map((num) => (
+                <button 
+                  key={num} 
+                  type="button" 
+                  onClick={() => handleSplitKeypadPress(num)} 
+                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-850 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
+                >
+                  {num}
+                </button>
+              ))}
+              
+              <button 
+                type="button" 
+                onClick={() => handleSplitKeypadPress("⌫")} 
+                className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-400 flex items-center justify-center transition-all select-none"
+              >
+                ⌫
+              </button>
+              
+              {["1", "2", "3"].map((num) => (
+                <button 
+                  key={num} 
+                  type="button" 
+                  onClick={() => handleSplitKeypadPress(num)} 
+                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-855 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
+                >
+                  {num}
+                </button>
+              ))}
+              
+              <button 
+                type="button" 
+                onClick={() => handleSplitKeypadPress(".")} 
+                className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none"
+              >
+                .
+              </button>
+              
+              {["(", "0", ")"].map((char) => (
+                <button 
+                  key={char} 
+                  type="button" 
+                  onClick={() => handleSplitKeypadPress(char)} 
+                  className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-150/30 dark:border-slate-855/10`}
+                >
+                  {char}
+                </button>
+              ))}
+              <button 
+                type="button" 
+                onClick={() => handleSplitKeypadPress("Ya")} 
+                className="py-3.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-xl text-white font-black shadow-md shadow-blue-950/20 transition-all select-none cursor-pointer"
+              >
+                Ya
+              </button>
             </div>
           </div>
         </>
