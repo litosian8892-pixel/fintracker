@@ -63,6 +63,24 @@ const getGoalStatus = (percentage: number) => {
   return { label: "🌱 Berjuang!", color: "text-slate-500 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50" };
 };
 
+// Asisten Pembaca Simbol Mata Uang
+const getCurrencySymbol = (currency?: string) => {
+  if (!currency) return "Rp";
+  switch (currency.toUpperCase()) {
+    case "IDR": return "Rp";
+    case "USD": return "$";
+    case "SGD": return "S$";
+    case "EUR": return "€";
+    case "JPY": return "¥";
+    case "CNY": return "¥";
+    case "GBP": return "£";
+    case "AUD": return "A$";
+    case "MYR": return "RM";
+    case "SAR": return "SR";
+    default: return currency;
+  }
+};
+
 interface AssetsTabProps {
   accounts: AccountData[]; walletTypes: WalletTypeData[];
   accType: string; setAccType: (val: string) => void;
@@ -92,6 +110,12 @@ interface AssetsTabProps {
   editAccSavingsGoalTitle: string; setEditAccSavingsGoalTitle: (val: string) => void;
 
   isPrivacyMode?: boolean;
+
+  // --- BARU: PROPS UNTUK MULTI-CURRENCY ---
+  accCurrency?: string; setAccCurrency?: (val: string) => void;
+  accExchangeRate?: string; setAccExchangeRate?: (val: string) => void;
+  editAccCurrency?: string; setEditAccCurrency?: (val: string) => void;
+  editAccExchangeRate?: string; setEditAccExchangeRate?: (val: string) => void;
 }
 
 export default function AssetsTab({
@@ -100,11 +124,35 @@ export default function AssetsTab({
   accIsBusiness, setAccIsBusiness, editAccIsBusiness, setEditAccIsBusiness,
   handleCreateAccount, editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder,
   accSavingsGoalTitle, setAccSavingsGoalTitle, editAccSavingsGoalTitle, setEditAccSavingsGoalTitle,
-  isPrivacyMode = false
+  isPrivacyMode = false,
+  
+  // Destrukturisasi Props Baru
+  accCurrency, setAccCurrency,
+  accExchangeRate, setAccExchangeRate,
+  editAccCurrency, setEditAccCurrency,
+  editAccExchangeRate, setEditAccExchangeRate
 }: AssetsTabProps) {
   
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"pribadi" | "bisnis">("pribadi");
+
+  // Fallback State Internal (Mencegah Compile Error jika Props belum dipasang di page.tsx)
+  const [localAccCurrency, setLocalAccCurrency] = useState("IDR");
+  const [localAccExchangeRate, setLocalAccExchangeRate] = useState("1");
+  const [localEditAccCurrency, setLocalEditAccCurrency] = useState("IDR");
+  const [localEditAccExchangeRate, setLocalEditAccExchangeRate] = useState("1");
+
+  const currency = accCurrency !== undefined ? accCurrency : localAccCurrency;
+  const setCurrency = setAccCurrency !== undefined ? setAccCurrency : setLocalAccCurrency;
+
+  const exchangeRate = accExchangeRate !== undefined ? accExchangeRate : localAccExchangeRate;
+  const setExchangeRate = setAccExchangeRate !== undefined ? setAccExchangeRate : setLocalAccExchangeRate;
+
+  const editCurrency = editAccCurrency !== undefined ? editAccCurrency : localEditAccCurrency;
+  const setEditCurrency = setEditAccCurrency !== undefined ? setEditAccCurrency : setLocalEditAccCurrency;
+
+  const editExchangeRate = editAccExchangeRate !== undefined ? editAccExchangeRate : localEditAccExchangeRate;
+  const setEditExchangeRate = setEditAccExchangeRate !== undefined ? setEditAccExchangeRate : setLocalEditAccExchangeRate;
 
   useEffect(() => {
     if (editingAccId) setIsManageOpen(true);
@@ -118,24 +166,49 @@ export default function AssetsTab({
   
   const displayedActiveAccounts = activeTab === "pribadi" ? personalActiveAccounts : businessActiveAccounts;
 
+  // MODIFIKASI: Perhitungan saldo terakumulasi mengalikan nominal asing dengan kurs terdaftar
   const totalPersonalActiveBalance = personalActiveAccounts.reduce((accVal: number, curr: AccountData) => {
     if (curr.excludeFromTotal) return accVal;
-    return accVal + curr.balance;
+    const rate = curr.lastExchangeRate || 1;
+    return accVal + (curr.balance * rate);
   }, 0);
 
   const totalExcludedBalance = personalActiveAccounts.reduce((accVal: number, curr: AccountData) => {
-    if (curr.excludeFromTotal) return accVal + curr.balance;
+    if (curr.excludeFromTotal) {
+      const rate = curr.lastExchangeRate || 1;
+      return accVal + (curr.balance * rate);
+    }
     return accVal;
   }, 0);
 
-  const totalBusinessBalance = businessActiveAccounts.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
+  const totalBusinessBalance = businessActiveAccounts.reduce((accVal: number, curr: AccountData) => {
+    const rate = curr.lastExchangeRate || 1;
+    return accVal + (curr.balance * rate);
+  }, 0);
 
-  const totalEmergencyBalance = emergencyAccounts.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
-  const totalDreamBalance = dreamGoals.reduce((accVal: number, curr: AccountData) => accVal + curr.balance, 0);
+  const totalEmergencyBalance = emergencyAccounts.reduce((accVal: number, curr: AccountData) => {
+    const rate = curr.lastExchangeRate || 1;
+    return accVal + (curr.balance * rate);
+  }, 0);
+
+  const totalDreamBalance = dreamGoals.reduce((accVal: number, curr: AccountData) => {
+    const rate = curr.lastExchangeRate || 1;
+    return accVal + (curr.balance * rate);
+  }, 0);
 
   const savingsWithTargets = accounts.filter(a => a.isSavings && a.targetBalance && a.targetBalance > 0);
-  const totalTargetAmount = savingsWithTargets.reduce((sum, a) => sum + (a.targetBalance || 0), 0);
-  const totalSavedAmount = savingsWithTargets.reduce((sum, a) => sum + a.balance, 0);
+  
+  // MODIFIKASI: Target saldo dikonversikan ke IDR demi agregasi persentase akumulatif yang adil
+  const totalTargetAmount = savingsWithTargets.reduce((sum, a) => {
+    const rate = a.lastExchangeRate || 1;
+    return sum + ((a.targetBalance || 0) * rate);
+  }, 0);
+
+  const totalSavedAmount = savingsWithTargets.reduce((sum, a) => {
+    const rate = a.lastExchangeRate || 1;
+    return sum + (a.balance * rate);
+  }, 0);
+
   const overallPercentage = totalTargetAmount > 0 ? Math.min((totalSavedAmount / totalTargetAmount) * 100, 100) : 0;
 
   const formatRupiahTerbaca = (val: string) => {
@@ -191,6 +264,8 @@ export default function AssetsTab({
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {displayedActiveAccounts.map((acc: AccountData) => {
               const design = getCardDesign(acc.type);
+              const symbol = getCurrencySymbol(acc.currency);
+              const isForeign = acc.currency && acc.currency !== "IDR";
               return (
                 <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[120px] md:min-h-[135px]`}>
                     <div className="flex justify-between items-start mb-4">
@@ -202,15 +277,20 @@ export default function AssetsTab({
                       <div className={`px-2 py-1 rounded-md text-[8px] md:text-[10px] font-black uppercase tracking-widest ${design.chip}`}>{acc.type}</div>
                     </div>
                     
-                    <div className="space-y-0.5 mt-auto">
+                    <div className="space-y-0.5 mt-auto text-left">
                       <div className="flex items-center mb-1.5">
                         <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1 truncate text-left">{acc.name}</p>
                         {acc.excludeFromTotal && !acc.isBusiness && <span className="text-[7px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-slate-200 dark:border-slate-700">Terpisah</span>}
                         {acc.isBusiness && <span className="text-[7px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-amber-200 dark:border-amber-800">Bisnis</span>}
                       </div>
                       <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate text-left">
-                        {isPrivacyMode ? 'Rp •••••••' : `Rp ${acc.balance.toLocaleString('id-ID')}`}
+                        {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
                       </p>
+                      {isForeign && acc.lastExchangeRate && (
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1 text-left">
+                          Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * acc.lastExchangeRate).toLocaleString('id-ID')}`}
+                        </p>
+                      )}
                     </div>
                 </div>
               );
@@ -230,6 +310,8 @@ export default function AssetsTab({
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {emergencyAccounts.map((acc: AccountData) => {
               const design = getCardDesign(acc.type);
+              const symbol = getCurrencySymbol(acc.currency);
+              const isForeign = acc.currency && acc.currency !== "IDR";
               const hasTarget = acc.targetBalance && acc.targetBalance > 0;
               const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
               const remaining = hasTarget ? Math.max(0, acc.targetBalance! - acc.balance) : 0;
@@ -259,12 +341,17 @@ export default function AssetsTab({
                           {acc.isBusiness && <span className="text-[7px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded uppercase font-black shrink-0 tracking-widest border border-amber-200 dark:border-amber-800">Bisnis</span>}
                         </div>
                         <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1">
-                          {isPrivacyMode ? 'Rp •••••••' : `Rp ${acc.balance.toLocaleString('id-ID')}`}
+                          {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
                         </p>
+                        {isForeign && acc.lastExchangeRate && (
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mb-1 leading-none">
+                            Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * acc.lastExchangeRate).toLocaleString('id-ID')}`}
+                          </p>
+                        )}
                         {hasTarget && (
                           <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold leading-none mt-1 shadow-sm">
                             Target: <span className="font-extrabold text-slate-600 dark:text-slate-300">
-                              {isPrivacyMode ? 'Rp •••••••' : `Rp ${acc.targetBalance!.toLocaleString('id-ID')}`}
+                              {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.targetBalance!.toLocaleString('id-ID')}`}
                             </span>
                           </p>
                         )}
@@ -276,8 +363,8 @@ export default function AssetsTab({
                             <div className={`h-full ${percentage >= 100 ? 'bg-emerald-500' : design.progressBar} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div>
                           </div>
                           {remaining > 0 ? (
-                            <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold text-right leading-none">
-                              Kurang {isPrivacyMode ? 'Rp •••••••' : `Rp ${remaining.toLocaleString('id-ID')}`} lagi
+                            <p className="text-[9px] text-slate-400 dark:text-slate-550 font-bold text-right leading-none">
+                              Kurang {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${remaining.toLocaleString('id-ID')}`} lagi
                             </p>
                           ) : (
                             <p className="text-[9px] text-emerald-500 dark:text-emerald-400 font-black text-right uppercase tracking-wider leading-none">
@@ -331,6 +418,8 @@ export default function AssetsTab({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             {dreamGoals.map((acc: AccountData) => {
               const design = getCardDesign(acc.type);
+              const symbol = getCurrencySymbol(acc.currency);
+              const isForeign = acc.currency && acc.currency !== "IDR";
               const hasTarget = acc.targetBalance && acc.targetBalance > 0;
               const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
               const remaining = hasTarget ? Math.max(0, acc.targetBalance! - acc.balance) : 0;
@@ -357,12 +446,17 @@ export default function AssetsTab({
                         </div>
                         <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5 truncate">{acc.name}</p>
                         <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1">
-                          {isPrivacyMode ? 'Rp •••••••' : `Rp ${acc.balance.toLocaleString('id-ID')}`}
+                          {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
                         </p>
+                        {isForeign && acc.lastExchangeRate && (
+                          <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold mb-1 leading-none">
+                            Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * acc.lastExchangeRate).toLocaleString('id-ID')}`}
+                          </p>
+                        )}
                         {hasTarget && (
                           <p className="text-[10px] text-slate-400 dark:text-slate-555 font-bold leading-none mt-1 shadow-sm">
                             Target: <span className="font-extrabold text-slate-600 dark:text-slate-300">
-                              {isPrivacyMode ? 'Rp •••••••' : `Rp ${acc.targetBalance!.toLocaleString('id-ID')}`}
+                              {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.targetBalance!.toLocaleString('id-ID')}`}
                             </span>
                           </p>
                         )}
@@ -374,8 +468,8 @@ export default function AssetsTab({
                             <div className={`h-full ${percentage >= 100 ? 'bg-emerald-500' : design.progressBar} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div>
                           </div>
                           {remaining > 0 ? (
-                            <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold text-right leading-none">
-                              Kurang {isPrivacyMode ? 'Rp •••••••' : `Rp ${remaining.toLocaleString('id-ID')}`} lagi
+                            <p className="text-[9px] text-slate-400 dark:text-slate-550 font-bold text-right leading-none">
+                              Kurang {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${remaining.toLocaleString('id-ID')}`} lagi
                             </p>
                           ) : (
                             <p className="text-[9px] text-emerald-500 dark:text-emerald-400 font-black text-right uppercase tracking-wider leading-none">
@@ -403,11 +497,40 @@ export default function AssetsTab({
         <div className="mt-5 space-y-4">
           <div className="space-y-2 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-left">
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 mb-3">Tambah Dompet Baru</h4>
-            <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
+            <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer animate-none" value={accType} onChange={(e) => setAccType(e.target.value)}>
                 {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
             </select>
+            
+            {/* BARU: Input Pilihan Mata Uang Akun Baru */}
+            <div className="space-y-1 text-left">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Mata Uang Dompet</label>
+              <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                <option value="IDR">🇮🇩 Rupiah (IDR)</option>
+                <option value="USD">🇺🇸 Dollar Amerika (USD)</option>
+                <option value="CNY">🇨🇳 Yuan China (CNY)</option>
+                <option value="SGD">🇸🇬 Dollar Singapura (SGD)</option>
+                <option value="EUR">🇪🇺 Euro (EUR)</option>
+                <option value="JPY">🇯🇵 Yen Jepang (JPY)</option>
+                <option value="GBP">🇬🇧 Pound Inggris (GBP)</option>
+                <option value="AUD">🇦🇺 Dollar Australia (AUD)</option>
+                <option value="MYR">🇲🇾 Ringgit Malaysia (MYR)</option>
+                <option value="SAR">🇸🇦 Riyal Arab Saudi (SAR)</option>
+              </select>
+            </div>
+
+            {/* BARU: Input Kurs Manual jika bukan IDR */}
+            {currency !== "IDR" && (
+              <div className="space-y-1 text-left bg-blue-50/40 dark:bg-slate-900/50 p-3 rounded-xl border border-blue-100 dark:border-slate-800 animate-in fade-in duration-200">
+                <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest pl-1">Nilai Tukar Manual (1 {currency} = ... IDR)</label>
+                <input type="text" placeholder="Contoh: 16000" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-750 outline-none font-bold text-slate-700 dark:text-slate-200" value={exchangeRate} onChange={(e) => setExchangeRate(e.target.value)} />
+                {exchangeRate && (
+                  <p className="text-[9px] font-bold text-blue-500 pl-1 mt-1">Terbaca: 1 {currency} = {formatRupiahTerbaca(exchangeRate)}</p>
+                )}
+              </div>
+            )}
+
             <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
-            <input type="number" placeholder="Saldo Awal" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
+            <input type="number" placeholder={currency !== "IDR" ? `Saldo Awal (${currency})` : "Saldo Awal"} className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
             
             <div onClick={() => setAccIsBusiness(!accIsBusiness)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
               <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsBusiness ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{accIsBusiness && <Check size={10} strokeWidth={4} />}</div>
@@ -432,8 +555,8 @@ export default function AssetsTab({
                 </div>
 
                 <div className="space-y-1 text-left">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Target Nominal Tabungan (Opsional)</label>
-                  <input type="text" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Target Nominal Tabungan (Opsional - {currency})</label>
+                  <input type="text" placeholder={`Target Nominal Tabungan (${currency})`} className="w-full p-3.5 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
                 </div>
               </div>
             )}
@@ -451,68 +574,111 @@ export default function AssetsTab({
 
           <div className="pt-4 space-y-3 text-left">
             <p className="text-[9px] font-bold text-slate-400 dark:text-slate-555 uppercase tracking-widest pl-1">Daftar Dompet (Ubah / Urutan / Hapus)</p>
-            {accounts.map((acc: AccountData, index: number) => (
-              <div key={acc.id} className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl flex flex-col gap-3 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
-                {editingAccId === acc.id ? (
-                  <div className="space-y-3 animate-in fade-in duration-200">
-                    <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-900/50 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
-                    
-                    <div className="space-y-1 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">
-                      <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Audit Saldo Nyata (Real)</label>
-                      <input type="number" className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-800 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
-                    </div>
-                    
-                    <div onClick={() => setEditAccIsBusiness(!editAccIsBusiness)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsBusiness ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{editAccIsBusiness && <Check size={10} strokeWidth={4} />}</div>
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jadikan Dompet <span className="text-amber-600 dark:text-amber-500">"Bisnis"</span></span>
-                    </div>
+            {accounts.map((acc: AccountData, index: number) => {
+              const symbol = getCurrencySymbol(acc.currency);
+              const isForeign = acc.currency && acc.currency !== "IDR";
+              return (
+                <div key={acc.id} className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl flex flex-col gap-3 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
+                  {editingAccId === acc.id ? (
+                    <div className="space-y-3 animate-in fade-in duration-200">
+                      <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-900/50 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
+                      
+                      {/* BARU: Input Pilihan Mata Uang Dompet Edit */}
+                      <div className="space-y-1 text-left">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Mata Uang Dompet</label>
+                        <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-blue-100 dark:border-blue-900/30 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
+                          <option value="IDR">🇮🇩 Rupiah (IDR)</option>
+                          <option value="USD">🇺🇸 Dollar Amerika (USD)</option>
+                          <option value="CNY">🇨🇳 Yuan China (CNY)</option>
+                          <option value="SGD">🇸🇬 Dollar Singapura (SGD)</option>
+                          <option value="EUR">🇪🇺 Euro (EUR)</option>
+                          <option value="JPY">🇯🇵 Yen Jepang (JPY)</option>
+                          <option value="GBP">🇬🇧 Pound Inggris (GBP)</option>
+                          <option value="AUD">🇦🇺 Dollar Australia (AUD)</option>
+                          <option value="MYR">🇲🇾 Ringgit Malaysia (MYR)</option>
+                          <option value="SAR">🇸🇦 Riyal Arab Saudi (SAR)</option>
+                        </select>
+                      </div>
 
-                    <div onClick={() => setEditAccExcludeFromTotal(!editAccExcludeFromTotal)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{editAccExcludeFromTotal && <Check size={10} strokeWidth={4} />}</div>
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Sembunyikan dari Total Saldo (Pemisahan Saldo)</span>
-                    </div>
-
-                    <div onClick={() => setEditAccIsSavings(!editAccIsSavings)} className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none">
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-750 bg-white dark:bg-slate-900'}`}>{editAccIsSavings && <Check size={10} strokeWidth={4} />}</div>
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jadikan Kategori "Tabungan"</span>
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <button onClick={() => handleEditAccount(acc.id)} className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"><Check size={14}/> Simpan</button>
-                      <button onClick={() => setEditingAccId(null)} className="py-3 px-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer"><X size={14}/> Batal</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200 dark:border-slate-700 p-1 shadow-sm" alt="logo" /> ) : ( <div className="w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400">{getCardDesign(acc.type).icon}</div> )}
-                      <div className="text-left">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-none">{acc.name}</p>
-                          {acc.isBusiness && <span className="text-[8px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Bisnis</span>}
+                      {/* BARU: Input Kurs Manual Edit */}
+                      {editCurrency !== "IDR" && (
+                        <div className="space-y-1 text-left bg-blue-50/40 dark:bg-slate-900/50 p-3 rounded-xl border border-blue-100 dark:border-slate-800 animate-in fade-in duration-200">
+                          <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest pl-1">Nilai Tukar Manual (1 {editCurrency} = ... IDR)</label>
+                          <input type="text" placeholder="Contoh: 16000" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-750 outline-none font-bold text-slate-700 dark:text-slate-200" value={editExchangeRate} onChange={(e) => setEditExchangeRate(e.target.value)} />
+                          {editExchangeRate && (
+                            <p className="text-[9px] font-bold text-blue-500 pl-1 mt-1">Terbaca: 1 {editCurrency} = {formatRupiahTerbaca(editExchangeRate)}</p>
+                          )}
                         </div>
-                        <p className="text-xs font-black text-blue-600 dark:text-blue-400 leading-none mb-1">
-                          {isPrivacyMode ? 'Rp •••••••' : `Rp ${acc.balance.toLocaleString("id-ID")}`}
-                        </p>
+                      )}
+
+                      <div className="space-y-1 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                        <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Audit Saldo Nyata (Real - {editCurrency})</label>
+                        <input type="number" className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-800 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
+                      </div>
+                      
+                      <div onClick={() => setEditAccIsBusiness(!editAccIsBusiness)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsBusiness ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{editAccIsBusiness && <Check size={10} strokeWidth={4} />}</div>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jadikan Dompet <span className="text-amber-600 dark:text-amber-500">"Bisnis"</span></span>
+                      </div>
+
+                      <div onClick={() => setEditAccExcludeFromTotal(!editAccExcludeFromTotal)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{editAccExcludeFromTotal && <Check size={10} strokeWidth={4} />}</div>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Sembunyikan dari Total Saldo (Pemisahan Saldo)</span>
+                      </div>
+
+                      <div onClick={() => setEditAccIsSavings(!editAccIsSavings)} className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none">
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-750 bg-white dark:bg-slate-900'}`}>{editAccIsSavings && <Check size={10} strokeWidth={4} />}</div>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jadikan Kategori "Tabungan"</span>
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        <button onClick={() => handleEditAccount(acc.id)} className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"><Check size={14}/> Simpan</button>
+                        <button onClick={() => setEditingAccId(null)} className="py-3 px-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer"><X size={14}/> Batal</button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => { 
-                        setEditingAccId(acc.id); 
-                        setEditAccName(acc.name); 
-                        setEditAccBalance(acc.balance.toString()); 
-                        setEditAccLogo(acc.logo || ""); 
-                        setEditAccIsSavings(!!acc.isSavings); 
-                        setEditAccIsBusiness(!!acc.isBusiness); 
-                        setEditAccTargetBalance(acc.targetBalance?.toString() || ""); 
-                        setEditAccExcludeFromTotal(!!acc.excludeFromTotal); 
-                        setEditAccSavingsGoalTitle(acc.savingsGoalTitle || ""); 
-                      }} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 cursor-pointer transition-colors"><Edit2 size={14}/></button>
+                  ) : (
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200 dark:border-slate-700 p-1 shadow-sm" alt="logo" /> ) : ( <div className="w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400">{getCardDesign(acc.type).icon}</div> )}
+                        <div className="text-left">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-none">{acc.name}</p>
+                            {acc.isBusiness && <span className="text-[8px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Bisnis</span>}
+                          </div>
+                          <p className="text-xs font-black text-blue-600 dark:text-blue-400 leading-none mb-1">
+                            {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString("id-ID")}`}
+                          </p>
+                          {isForeign && acc.lastExchangeRate && (
+                            <p className="text-[9px] text-slate-400 dark:text-slate-550 font-bold mt-1 leading-none text-left">
+                              Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * acc.lastExchangeRate).toLocaleString('id-ID')}`}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => { 
+                          setEditingAccId(acc.id); 
+                          setEditAccName(acc.name); 
+                          setEditAccBalance(acc.balance.toString()); 
+                          setEditAccLogo(acc.logo || ""); 
+                          setEditAccIsSavings(!!acc.isSavings); 
+                          setEditAccIsBusiness(!!acc.isBusiness); 
+                          setEditAccTargetBalance(acc.targetBalance?.toString() || ""); 
+                          setEditAccExcludeFromTotal(!!acc.excludeFromTotal); 
+                          setEditAccSavingsGoalTitle(acc.savingsGoalTitle || ""); 
+                          
+                          // Sinkronkan state mata uang & kurs saat modal edit dibuka
+                          setEditCurrency(acc.currency || "IDR");
+                          setEditExchangeRate(acc.lastExchangeRate?.toString() || "1");
+                          if (setEditAccCurrency) setEditAccCurrency(acc.currency || "IDR");
+                          if (setEditAccExchangeRate) setEditAccExchangeRate(acc.lastExchangeRate?.toString() || "1");
+                        }} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 cursor-pointer transition-colors"><Edit2 size={14}/></button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </details>

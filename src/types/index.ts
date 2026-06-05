@@ -10,6 +10,9 @@ export interface AccountData {
   excludeFromTotal?: boolean; 
   isBusiness?: boolean;
   savingsGoalTitle?: string;  
+  // --- BARU: MULTI-CURRENCY UNTUK AKUN/DOMPET ---
+  currency?: string;          // Kode mata uang dompet (misal: "IDR", "USD", "SGD")
+  lastExchangeRate?: number;  // Nilai tukar manual terakhir terhadap IDR (misal: 16000)
 }
 
 export interface SplitItemData {
@@ -32,6 +35,10 @@ export interface TransactionData {
   adminFee?: number;
   createdAt?: any; 
   splits?: SplitItemData[]; 
+  // --- BARU: MULTI-CURRENCY UNTUK AUDIT TRANSAKSI ---
+  originalAmount?: number;    // Nominal asli dalam mata uang asing (misal: 10)
+  originalCurrency?: string;  // Simbol/kode mata uang asing (misal: "USD")
+  exchangeRate?: number;      // Nilai tukar yang digunakan saat transaksi (misal: 16000)
 }
 
 export interface CategoryData { 

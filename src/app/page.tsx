@@ -204,6 +204,9 @@ export default function FintrackerApp() {
   const [accExcludeFromTotal, setAccExcludeFromTotal] = useState(false); 
   const [accIsBusiness, setAccIsBusiness] = useState(false); 
   const [accSavingsGoalTitle, setAccSavingsGoalTitle] = useState(""); 
+  // --- BARU: MULTI-CURRENCY AKUN BARU ---
+  const [accCurrency, setAccCurrency] = useState("IDR");
+  const [accExchangeRate, setAccExchangeRate] = useState("1");
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [editAccName, setEditAccName] = useState("");
@@ -214,6 +217,9 @@ export default function FintrackerApp() {
   const [editAccExcludeFromTotal, setEditAccExcludeFromTotal] = useState(false); 
   const [editAccIsBusiness, setEditAccIsBusiness] = useState(false); 
   const [editAccSavingsGoalTitle, setEditAccSavingsGoalTitle] = useState(""); 
+  // --- BARU: MULTI-CURRENCY AKUN EDIT ---
+  const [editAccCurrency, setEditAccCurrency] = useState("IDR");
+  const [editAccExchangeRate, setEditAccExchangeRate] = useState("1");
 
   const [tAmount, setTAmount] = useState("");
   const [tAdminFee, setTAdminFee] = useState(""); 
@@ -622,6 +628,7 @@ export default function FintrackerApp() {
     }
   };
 
+  // MODIFIKASI: Menyimpan mata uang dan kurs manual dompet baru
   const handleCreateAccount = async () => {
     if (isSubmittingRef.current) return; 
     if (!user || !accName || !accBalance) return;
@@ -639,9 +646,13 @@ export default function FintrackerApp() {
         excludeFromTotal: accExcludeFromTotal, 
         isBusiness: accIsBusiness, 
         savingsGoalTitle: accIsSavings && accSavingsGoalTitle ? accSavingsGoalTitle : null, 
+        // --- MULTI-CURRENCY ---
+        currency: accCurrency,
+        lastExchangeRate: accCurrency === "IDR" ? 1 : safeEvaluate(accExchangeRate) || 1,
         createdAt: serverTimestamp() 
       });
       setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); setAccExcludeFromTotal(false); setAccIsBusiness(false); setAccSavingsGoalTitle("");
+      setAccCurrency("IDR"); setAccExchangeRate("1");
     } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
@@ -654,6 +665,7 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
+  // MODIFIKASI: Menyimpan mata uang & kurs manual serta merekam audit saldo yang dikonversikan ke IDR
   const handleEditAccount = async (id: string) => {
     if (isSubmittingRef.current) return; 
     if (!user || !editAccName || !editAccBalance) return;
@@ -662,18 +674,26 @@ export default function FintrackerApp() {
     try {
       const oldAcc = accounts.find(a => a.id === id);
       const newBalance = Number(editAccBalance);
+      const targetCurrency = editAccCurrency;
+      const targetRate = targetCurrency === "IDR" ? 1 : safeEvaluate(editAccExchangeRate) || 1;
 
       if (oldAcc && newBalance !== oldAcc.balance) {
         const diff = newBalance - oldAcc.balance;
         const tType = diff > 0 ? "income" : "expense";
+        const convertedDiff = Math.abs(diff) * targetRate;
+        const currencySymbol = targetCurrency !== "IDR" ? `${targetCurrency} ` : "";
+
         await addDoc(collection(db, `users/${user.uid}/transactions`), {
-          amount: Math.abs(diff),
+          amount: convertedDiff,
           type: tType,
           accountId: id,
           accountName: editAccName,
-          note: `Penyesuaian manual dari Rp ${oldAcc.balance.toLocaleString('id-ID')} ke Rp ${newBalance.toLocaleString('id-ID')}`,
+          note: `Penyesuaian manual dari ${currencySymbol}${oldAcc.balance.toLocaleString('id-ID')} ke ${currencySymbol}${newBalance.toLocaleString('id-ID')}`,
           category: "Penyesuaian Saldo", 
           tDate: new Date().toISOString().split('T')[0],
+          originalAmount: Math.abs(diff),
+          originalCurrency: targetCurrency,
+          exchangeRate: targetRate,
           createdAt: serverTimestamp()
         });
       }
@@ -686,10 +706,14 @@ export default function FintrackerApp() {
         targetBalance: editAccIsSavings && editAccTargetBalance ? safeEvaluate(editAccTargetBalance) : null, 
         excludeFromTotal: editAccExcludeFromTotal,
         isBusiness: editAccIsBusiness, 
-        savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle ? editAccSavingsGoalTitle : null 
+        savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle ? editAccSavingsGoalTitle : null,
+        // --- MULTI-CURRENCY ---
+        currency: targetCurrency,
+        lastExchangeRate: targetRate
       });
       
       setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false); setEditAccIsBusiness(false); setEditAccSavingsGoalTitle("");
+      setEditAccCurrency("IDR"); setEditAccExchangeRate("1");
       alert("Dompet berhasil diperbarui & riwayat audit otomatis dicatat!");
     } catch (e) { alert("Gagal memperbarui"); }
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
@@ -712,25 +736,32 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
+  // MODIFIKASI: Logika pencatatan transaksi yang secara otomatis mengonversi nominal asing ke IDR demi kestabilan database
   const handleTransaction = async (customSplits?: SplitItemData[]) => {
     if (isSubmittingRef.current) return; 
     if (!user || !tAmount || !tAccountId) return alert("Isi data dompet dan nominal dengan lengkap!");
     if (tType === "transfer" && (!tToAccountId || tAccountId === tToAccountId)) return alert("Pilih dompet tujuan yang berbeda!");
     if (tType !== "transfer" && !tCategory && (!customSplits || customSplits.length === 0)) return alert("Kategori transaksi wajib dipilih terlebih dahulu!");
     
-    const amount = safeEvaluate(tAmount);
-    if (amount <= 0) return alert("Nominal transaksi tidak valid!");
+    const rawAmount = safeEvaluate(tAmount);
+    if (rawAmount <= 0) return alert("Nominal transaksi tidak valid!");
+
+    const sourceAcc = accounts.find(a => a.id === tAccountId);
+    if (!sourceAcc) return alert("Dompet asal tidak ditemukan!");
+
+    const rateSource = sourceAcc.lastExchangeRate || 1;
+    // Nilai transaksi terkonversi ke IDR
+    const idrAmount = rawAmount * rateSource;
 
     if (customSplits && customSplits.length > 0) {
       const splitsTotal = customSplits.reduce((acc, curr) => acc + curr.amount, 0);
-      if (splitsTotal !== amount) {
-        return alert(`Total pecahan (Rp ${splitsTotal.toLocaleString('id-ID')}) harus sama dengan total nominal transaksi (Rp ${amount.toLocaleString('id-ID')})!`);
+      if (splitsTotal !== rawAmount) {
+        return alert(`Total pecahan (${sourceAcc.currency || "Rp"} ${splitsTotal.toLocaleString('id-ID')}) harus sama dengan total nominal transaksi (${sourceAcc.currency || "Rp"} ${rawAmount.toLocaleString('id-ID')})!`);
       }
     }
 
-    const adminFee = tType === "transfer" && tAdminFee ? safeEvaluate(tAdminFee) : 0; 
-    const sourceAcc = accounts.find(a => a.id === tAccountId);
-    if (!sourceAcc) return alert("Dompet asal tidak ditemukan!");
+    const rawAdminFee = tType === "transfer" && tAdminFee ? safeEvaluate(tAdminFee) : 0; 
+    const idrAdminFee = rawAdminFee * rateSource;
 
     isSubmittingRef.current = true;
     setIsSubmitting(true);
@@ -738,25 +769,54 @@ export default function FintrackerApp() {
       if (tType === "transfer") {
         const destAcc = accounts.find(a => a.id === tToAccountId);
         if (!destAcc) return alert("Dompet tujuan tidak ditemukan!");
-        await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: sourceAcc.balance - (amount + adminFee) });
-        await updateDoc(doc(db, `users/${user.uid}/accounts/${tToAccountId}`), { balance: destAcc.balance + amount });
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount, type: "transfer", accountId: tAccountId, toAccountId: tToAccountId, accountName: sourceAcc.name, toAccountName: destAcc.name, note: tNote || "Transfer Dana", category: "Transfer", tDate, adminFee, createdAt: serverTimestamp() });
+        
+        const rateDest = destAcc.lastExchangeRate || 1;
+        // Konversi nominal transfer dari IDR ke mata uang tujuan
+        const destAmount = idrAmount / rateDest;
+
+        await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: sourceAcc.balance - (rawAmount + rawAdminFee) });
+        await updateDoc(doc(db, `users/${user.uid}/accounts/${tToAccountId}`), { balance: destAcc.balance + destAmount });
+        
+        await addDoc(collection(db, `users/${user.uid}/transactions`), { 
+          amount: idrAmount, 
+          type: "transfer", 
+          accountId: tAccountId, 
+          toAccountId: tToAccountId, 
+          accountName: sourceAcc.name, 
+          toAccountName: destAcc.name, 
+          note: tNote || "Transfer Dana", 
+          category: "Transfer", 
+          tDate, 
+          adminFee: idrAdminFee, 
+          // Menyimpan rincian multi-currency
+          originalAmount: rawAmount,
+          originalCurrency: sourceAcc.currency || "IDR",
+          exchangeRate: rateSource,
+          createdAt: serverTimestamp() 
+        });
       } else {
-        const newBal = tType === "income" ? sourceAcc.balance + amount : sourceAcc.balance - amount;
+        const newBal = tType === "income" ? sourceAcc.balance + rawAmount : sourceAcc.balance - rawAmount;
         await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: newBal });
         
         const docData: any = { 
-          amount, 
+          amount: idrAmount, // Selalu simpan IDR ke 'amount' demi laporan dan grafik
           type: tType, 
           accountId: tAccountId, 
           accountName: sourceAcc.name, 
           note: tNote, 
           category: (customSplits && customSplits.length > 0) ? "Split Transaksi" : tCategory, 
           tDate, 
+          originalAmount: rawAmount,
+          originalCurrency: sourceAcc.currency || "IDR",
+          exchangeRate: rateSource,
           createdAt: serverTimestamp() 
         };
         if (customSplits && customSplits.length > 0) {
-          docData.splits = customSplits;
+          // Konversikan rincian pecahan splits ke IDR agar visual laporan splits sinkron
+          docData.splits = customSplits.map(s => ({
+            ...s,
+            amount: s.amount * rateSource
+          }));
         }
         await addDoc(collection(db, `users/${user.uid}/transactions`), docData);
       }
@@ -766,6 +826,7 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
+  // MODIFIKASI: Mengembalikan saldo dompet menggunakan originalAmount jika ada (kompatibel mundur)
   const handleDeleteTransaction = async (t: TransactionData) => {
     if (isSubmittingRef.current) return; 
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
@@ -774,13 +835,23 @@ export default function FintrackerApp() {
       if (t.type === "transfer") {
         const sourceAcc = accounts.find(a => a.id === t.accountId);
         const destAcc = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
-        const adminFee = t.adminFee || 0; 
-        if (sourceAcc) await updateDoc(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: sourceAcc.balance + (t.amount + adminFee) });
-        if (destAcc) await updateDoc(doc(db, `users/${user.uid}/accounts/${t.toAccountId}`), { balance: destAcc.balance - t.amount });
+        
+        const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount;
+        const rawAdminFee = t.originalAmount !== undefined ? ((t.adminFee || 0) / (t.exchangeRate || 1)) : (t.adminFee || 0);
+
+        if (sourceAcc) {
+          await updateDoc(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: sourceAcc.balance + (rawAmount + rawAdminFee) });
+        }
+        if (destAcc) {
+          const rateDest = destAcc.lastExchangeRate || 1;
+          const destAmount = t.originalAmount !== undefined ? (t.amount / rateDest) : t.amount;
+          await updateDoc(doc(db, `users/${user.uid}/accounts/${t.toAccountId}`), { balance: destAcc.balance - destAmount });
+        }
       } else {
         const acc = accounts.find(a => a.id === t.accountId);
         if (acc) {
-          const restoredBal = t.type === "income" ? acc.balance - t.amount : acc.balance + t.amount;
+          const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount;
+          const restoredBal = t.type === "income" ? acc.balance - rawAmount : acc.balance + rawAmount;
           await updateDoc(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: restoredBal });
         }
       }
@@ -795,68 +866,97 @@ export default function FintrackerApp() {
     setEditTSplits(t.splits ? t.splits.map(s => ({ ...s })) : []); 
   };
 
+  // MODIFIKASI: Logika koreksi transaksi yang ramah multi-currency & kompatibel mundur
   const handleUpdateTransaction = async () => {
     if (isSubmittingRef.current) return; 
     if (!user || !editingTransaction) return;
     const oldT = editingTransaction;
     
-    const newAmount = editTSplits.length > 0 ? editTSplits.reduce((sum, s) => sum + s.amount, 0) : safeEvaluate(editTAmount);
-    if (newAmount <= 0) return alert("Nominal transaksi tidak valid!");
+    const newRawAmount = editTSplits.length > 0 ? editTSplits.reduce((sum, s) => sum + s.amount, 0) : safeEvaluate(editTAmount);
+    if (newRawAmount <= 0) return alert("Nominal transaksi tidak valid!");
     
-    const newAdminFee = editTType === "transfer" && editTAdminFee ? safeEvaluate(editTAdminFee) : 0; 
+    const newRawAdminFee = editTType === "transfer" && editTAdminFee ? safeEvaluate(editTAdminFee) : 0; 
 
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
+      // 1. Pulihkan saldo dompet lama menggunakan data transaksi lama
       if (oldT.type === "transfer") {
-        const oldAdminFee = oldT.adminFee || 0;
+        const oldRawAmount = oldT.originalAmount !== undefined ? oldT.originalAmount : oldT.amount;
+        const oldRawAdminFee = oldT.originalAmount !== undefined ? ((oldT.adminFee || 0) / (oldT.exchangeRate || 1)) : (oldT.adminFee || 0);
+        
         const oldSrc = accounts.find(a => a.id === oldT.accountId);
         const oldDest = oldT.toAccountId ? accounts.find(a => a.id === oldT.toAccountId) : null;
-        if (oldSrc) await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.accountId}`), { balance: oldSrc.balance + (oldT.amount + oldAdminFee) });
-        if (oldDest) await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.toAccountId}`), { balance: oldDest.balance - oldT.amount });
+        
+        if (oldSrc) await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.accountId}`), { balance: oldSrc.balance + (oldRawAmount + oldRawAdminFee) });
+        if (oldDest) {
+          const rateOldDest = oldDest.lastExchangeRate || 1;
+          const oldDestAmount = oldT.originalAmount !== undefined ? (oldT.amount / rateOldDest) : oldT.amount;
+          await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.toAccountId}`), { balance: oldDest.balance - oldDestAmount });
+        }
       } else {
         const oldAcc = accounts.find(a => a.id === oldT.accountId);
         if (oldAcc) {
-          const restoredBal = oldT.type === "income" ? oldAcc.balance - oldT.amount : oldAcc.balance + oldT.amount;
+          const oldRawAmount = oldT.originalAmount !== undefined ? oldT.originalAmount : oldT.amount;
+          const restoredBal = oldT.type === "income" ? oldAcc.balance - oldRawAmount : oldAcc.balance + oldRawAmount;
           await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.accountId}`), { balance: restoredBal });
         }
       }
 
+      // 2. Baca informasi dompet baru untuk menerapkan saldo baru
       const srcAccRef = doc(db, `users/${user.uid}/accounts/${editTAccountId}`);
       const srcSnap = await getDoc(srcAccRef);
       if (!srcSnap.exists()) throw "Dompet asal tidak ditemukan";
       const freshSrcBal = srcSnap.data().balance;
+      const srcCurrency = srcSnap.data().currency || "IDR";
+      const rateSource = srcSnap.data().lastExchangeRate || 1;
+
+      const newIdrAmount = newRawAmount * rateSource;
+      const newIdrAdminFee = newRawAdminFee * rateSource;
 
       if (editTType === "transfer") {
         const destAccRef = doc(db, `users/${user.uid}/accounts/${editTToAccountId}`);
         const destSnap = await getDoc(destAccRef);
         if (!destSnap.exists()) throw "Dompet tujuan tidak ditemukan";
         const freshDestBal = destSnap.data().balance;
-        await updateDoc(srcAccRef, { balance: freshSrcBal - (newAmount + newAdminFee) });
-        await updateDoc(destAccRef, { balance: freshDestBal + newAmount });
+        const rateDest = destSnap.data().lastExchangeRate || 1;
+        
+        const destAmount = newIdrAmount / rateDest;
+
+        await updateDoc(srcAccRef, { balance: freshSrcBal - (newRawAmount + newRawAdminFee) });
+        await updateDoc(destAccRef, { balance: freshDestBal + destAmount });
       } else {
-        const newBal = editTType === "income" ? freshSrcBal + newAmount : freshSrcBal - newAmount;
+        const newBal = editTType === "income" ? freshSrcBal + newRawAmount : freshSrcBal - newRawAmount;
         await updateDoc(srcAccRef, { balance: newBal });
       }
 
+      // 3. Update dokumen transaksi di Firestore
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
       const updateData: any = { 
-        amount: newAmount, 
+        amount: newIdrAmount, // Tetap konversikan ke IDR
         type: editTType, 
         accountId: editTAccountId, 
         accountName: accounts.find(a => a.id === editTAccountId)?.name || "", 
         note: editTNote, 
         category: editTSplits.length > 0 ? "Split Transaksi" : (editTType === "transfer" ? "Transfer" : editTCategory), 
-        tDate: editTDate 
+        tDate: editTDate,
+        originalAmount: newRawAmount,
+        originalCurrency: srcCurrency,
+        exchangeRate: rateSource
       };
       
       if (editTType === "transfer") {
-        updateData.toAccountId = editTToAccountId; updateData.toAccountName = accounts.find(a => a.id === editTToAccountId)?.name || ""; updateData.adminFee = newAdminFee; 
+        updateData.toAccountId = editTToAccountId; 
+        updateData.toAccountName = accounts.find(a => a.id === editTToAccountId)?.name || ""; 
+        updateData.adminFee = newIdrAdminFee; 
         updateData.splits = null;
       } else {
         updateData.toAccountId = null; updateData.toAccountName = null; updateData.adminFee = null;
         if (editTSplits.length > 0) {
-          updateData.splits = editTSplits;
+          updateData.splits = editTSplits.map(s => ({
+            ...s,
+            amount: s.amount * rateSource
+          }));
         } else {
           updateData.splits = null;
         }
@@ -1144,6 +1244,12 @@ export default function FintrackerApp() {
                   accSavingsGoalTitle={accSavingsGoalTitle} setAccSavingsGoalTitle={setAccSavingsGoalTitle}
                   editAccSavingsGoalTitle={editAccSavingsGoalTitle} setEditAccSavingsGoalTitle={setEditAccSavingsGoalTitle}
                   isPrivacyMode={isPrivacyMode}
+
+                  // --- BARU: PROPS UNTUK MULTI-CURRENCY BINDINGS ---
+                  accCurrency={accCurrency} setAccCurrency={setAccCurrency}
+                  accExchangeRate={accExchangeRate} setAccExchangeRate={setAccExchangeRate}
+                  editAccCurrency={editAccCurrency} setEditAccCurrency={setEditAccCurrency}
+                  editAccExchangeRate={editAccExchangeRate} setEditAccExchangeRate={setEditAccExchangeRate}
                 />
               )}
               {activeTab === "settings" && (
