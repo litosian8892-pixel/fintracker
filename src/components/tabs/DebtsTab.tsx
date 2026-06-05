@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil, Tag, X, Calendar, CalendarClock, CreditCard, AlertCircle, BookUser, ArrowLeft, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil, Tag, X, Calendar, CalendarClock, CreditCard, AlertCircle, BookUser, ArrowLeft, ArrowDownLeft, ArrowUpRight, Link as LinkIcon } from "lucide-react";
 import { DebtData, AccountData, CategoryData, SubscriptionData } from "../../types";
 
 interface DebtsTabProps {
@@ -191,22 +191,22 @@ export default function DebtsTab({
   const selectedDebt = debts.find(d => d.id === selectedDebtId);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-6 animate-in fade-in duration-200 text-slate-800 dark:text-slate-100">
       
-      {/* Detail screen rendering when a debt row is clicked */}
+      {/* Detail Screen Rendering (Matches Photo 2) */}
       {selectedDebt ? (
         <div className="space-y-5 animate-in slide-in-from-right duration-250 text-left pb-12">
           {/* Header Navigation Bar */}
-          <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
             <button 
               onClick={() => { setSelectedDebtId(null); setShowPayModal(false); }} 
               className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all text-slate-500 dark:text-slate-400 cursor-pointer"
             >
               <ArrowLeft size={18} />
             </button>
-            <h3 className="font-black text-sm text-slate-850 dark:text-slate-100">Detail Utang</h3>
+            <h3 className="font-black text-sm text-slate-900 dark:text-slate-100">Detail Utang</h3>
             
-            <div className="flex gap-1">
+            <div className="flex gap-2">
               <button 
                 onClick={() => {
                   setEditPerson(selectedDebt.personName);
@@ -215,9 +215,9 @@ export default function DebtsTab({
                   setEditDueDate(selectedDebt.dueDate || "");
                   setEditingDebtId(selectedDebt.id);
                 }}
-                className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all text-blue-600 cursor-pointer"
+                className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 rounded-xl transition-all text-blue-600 cursor-pointer border border-slate-200/40 dark:border-slate-700/40"
               >
-                <Pencil size={16} />
+                <Pencil size={15} />
               </button>
               <button 
                 onClick={() => {
@@ -226,21 +226,21 @@ export default function DebtsTab({
                     setSelectedDebtId(null);
                   }
                 }}
-                className="p-2 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-all text-red-500 cursor-pointer"
+                className="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-900/40 rounded-xl transition-all text-red-500 cursor-pointer border border-red-100/40 dark:border-red-900/40"
               >
-                <Trash2 size={16} />
+                <Trash2 size={15} />
               </button>
             </div>
           </div>
 
-          {/* Edit Inline Box on Detail Page */}
+          {/* Edit Box */}
           {editingDebtId === selectedDebt.id && (
             <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3.5">
               <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Koreksi Data Transaksi</p>
-              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold" value={editPerson} onChange={e => setEditPerson(e.target.value)} />
-              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold" value={editAmount} onChange={e => setEditAmount(e.target.value)} />
-              <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} />
-              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold" value={editNote} onChange={e => setEditNote(e.target.value)} />
+              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editPerson} onChange={e => setEditPerson(e.target.value)} />
+              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editAmount} onChange={e => setEditAmount(e.target.value)} />
+              <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} />
+              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editNote} onChange={e => setEditNote(e.target.value)} />
               <div className="flex gap-2">
                 <button onClick={() => submitEdit(selectedDebt.id)} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer">Simpan Perubahan</button>
                 <button onClick={() => setEditingDebtId(null)} className="py-2.5 px-4 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold">Batal</button>
@@ -248,19 +248,19 @@ export default function DebtsTab({
             </div>
           )}
 
-          {/* Premium Overview Card */}
+          {/* Premium Detail Summary Card (Matches Photo 2) */}
           <div className="bg-white dark:bg-slate-900 p-6 rounded-[28px] border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
             <div className="flex justify-between items-start">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-xl flex items-center justify-center font-black text-lg">
+                <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-orange-600 dark:text-orange-400 rounded-xl flex items-center justify-center font-black text-lg">
                   {selectedDebt.personName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-  <h4 className="font-black text-base text-slate-800 dark:text-slate-100 leading-tight">{selectedDebt.personName}</h4>
-  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-wider">
-    {selectedDebt.dueDate ? `Jatuh Tempo: ${new Date(selectedDebt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : "Tidak Ada Jatuh Tempo"}
-  </p>
-</div>
+                  <h4 className="font-black text-base text-slate-900 dark:text-slate-100 leading-tight">{selectedDebt.personName}</h4>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-wider">
+                    {selectedDebt.dueDate ? `Tanggal Jatuh Tempo: ${new Date(selectedDebt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : "Tidak Ada Jatuh Tempo"}
+                  </p>
+                </div>
               </div>
               <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-100/50 dark:border-amber-900/30 rounded-full text-[9px] font-black text-amber-600 dark:text-amber-400 tracking-wider">
                 {Math.round((selectedDebt.paidAmount / selectedDebt.amount) * 100)}% lunas
@@ -268,40 +268,40 @@ export default function DebtsTab({
             </div>
 
             <div className="space-y-1">
-              <h2 className="text-3xl font-black text-slate-850 dark:text-white">
+              <h2 className="text-3xl font-black text-slate-900 dark:text-white">
                 {isPrivacyMode ? 'Rp •••••••' : `Rp ${(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}`}
               </h2>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Sisa Utang Berjalan</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Remaining Debt</span>
             </div>
 
-            {/* Progress Bar Progress Indicator */}
+            {/* Progress Slider (Matches Photo 2) */}
             <div className="space-y-2">
               <div className="flex justify-between text-[11px] font-black">
-                <span className="text-slate-500">Rp {selectedDebt.paidAmount.toLocaleString('id-ID')} / Rp {selectedDebt.amount.toLocaleString('id-ID')}</span>
+                <span className="text-slate-600 dark:text-slate-400">Rp {selectedDebt.paidAmount.toLocaleString('id-ID')} / Rp {selectedDebt.amount.toLocaleString('id-ID')}</span>
                 <span className="text-blue-500">{Math.round((selectedDebt.paidAmount / selectedDebt.amount) * 100)}%</span>
               </div>
-              <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${Math.min((selectedDebt.paidAmount / selectedDebt.amount) * 100, 100)}%` }}></div>
+              <div className="w-full h-2.5 bg-slate-150 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-full bg-orange-500 rounded-full transition-all duration-300" style={{ width: `${Math.min((selectedDebt.paidAmount / selectedDebt.amount) * 100, 100)}%` }}></div>
               </div>
             </div>
 
-            {/* Statistics Table List */}
-<div className="space-y-3.5 pt-4 border-t border-slate-100 dark:border-slate-800/60 text-xs font-bold">
-  <div className="flex justify-between text-slate-500 dark:text-slate-400">
-    <span>Total Pinjaman Utama</span>
-    <span className="text-slate-800 dark:text-slate-200">Rp {selectedDebt.amount.toLocaleString('id-ID')}</span>
-  </div>
-  <div className="flex justify-between text-slate-500 dark:text-slate-400">
-    <span>Sisa Tagihan Berjalan</span>
-    <span className="text-orange-600 dark:text-orange-400 font-black">Rp {(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}</span>
-  </div>
-  <div className="flex justify-between text-slate-500 dark:text-slate-400">
-    <span>Total Dana Terbayar</span>
-    <span className="text-emerald-600 dark:text-emerald-400 font-black">Rp {selectedDebt.paidAmount.toLocaleString('id-ID')}</span>
-  </div>
-</div>
+            {/* Clean Statistics Table List (Matches Photo 2 with fixed contrast) */}
+            <div className="space-y-3.5 pt-4 border-t border-slate-100 dark:border-slate-800/60 text-xs font-bold">
+              <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                <span>Total Debt</span>
+                <span className="text-slate-800 dark:text-slate-200">Rp {selectedDebt.amount.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                <span>Remaining Debt</span>
+                <span className="text-orange-600 dark:text-orange-400 font-black">Rp {(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                <span>Dibayar</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-black">Rp {selectedDebt.paidAmount.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
 
-            {/* Dynamic Status Notification Card */}
+            {/* Dynamic Status Notification Card (Matches Photo 2) */}
             <div className={`p-4 rounded-2xl border flex items-center justify-between ${
               selectedDebt.type === "debt" 
                 ? "bg-red-50/50 dark:bg-red-950/10 border-red-100/50 dark:border-red-900/20 text-red-700 dark:text-red-400" 
@@ -311,20 +311,26 @@ export default function DebtsTab({
                 <div className={`p-1.5 rounded-lg ${selectedDebt.type === "debt" ? "bg-red-100/60 dark:bg-red-900/30" : "bg-emerald-100/60 dark:bg-emerald-900/30"}`}>
                   {selectedDebt.type === "debt" ? <ArrowDownLeft size={16}/> : <ArrowUpRight size={16}/>}
                 </div>
-                <div className="text-[10px] font-black tracking-wide leading-tight">
+                <div className="text-[10px] font-black tracking-wide leading-tight text-left">
                   <p className="uppercase">{selectedDebt.type === "debt" ? "DIPINJAM" : "DIPINJAMKAN"}</p>
-                  <p className="font-bold opacity-80">{selectedDebt.type === "debt" ? `Anda berkewajiban melunasi sisa Rp ${(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}` : `Pihak luar meminjam dana Rp ${(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}`}</p>
+                  <p className="font-bold opacity-80">{selectedDebt.type === "debt" ? `You owe Rp ${(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}` : `Owed Rp ${(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}`}</p>
                 </div>
               </div>
-              <span className="text-[9px] font-black uppercase tracking-wider opacity-80">{selectedDebt.type === "debt" ? "Dipinjam" : "Dipinjamkan"}</span>
+              <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border ${
+                selectedDebt.type === "debt" 
+                  ? "bg-red-100/40 dark:bg-red-950/20 border-red-200/50 dark:border-red-900/30" 
+                  : "bg-emerald-100/40 dark:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-900/30"
+              }`}>
+                {selectedDebt.type === "debt" ? "↓ DIPINJAM" : "↑ DIPINJAMKAN"}
+              </span>
             </div>
           </div>
 
-          {/* Sub-Section payment history: Debt Records */}
+          {/* Sub-Section payment history: Debt Records (Matches Photo 2) */}
           <div className="bg-white dark:bg-slate-900 p-5 rounded-[26px] border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
             <div className="flex justify-between items-center px-1">
               <h5 className="font-black text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">Debt Records</h5>
-              <span className="px-2 py-0.5 bg-blue-100/60 dark:bg-slate-800 text-[9px] font-black rounded-full text-blue-600 dark:text-blue-300">
+              <span className="px-2 py-0.5 bg-blue-100/60 dark:bg-slate-800 text-[9px] font-black rounded-full text-blue-600 dark:text-blue-350 border border-transparent dark:border-slate-700/60">
                 {selectedDebt.paidAmount > 0 ? "1 entries" : "0 entries"}
               </span>
             </div>
@@ -340,20 +346,23 @@ export default function DebtsTab({
                     </div>
                     <div>
                       <h6 className="font-black text-xs text-emerald-600 dark:text-emerald-400">-Rp {selectedDebt.paidAmount.toLocaleString('id-ID')}</h6>
-                      <p className="text-[9px] text-slate-400 font-bold mt-0.5">
-  {(() => {
-    const dateVal = selectedDebt.createdAt as any;
-    const d = dateVal?.seconds 
-      ? new Date(dateVal.seconds * 1000) 
-      : new Date(selectedDebt.createdAt || Date.now());
-    return isNaN(d.getTime()) ? "-" : d.toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'});
-  })()}
-</p>
+                      <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold mt-0.5">
+                        {(() => {
+                          const dateVal = selectedDebt.createdAt as any;
+                          const d = dateVal?.seconds 
+                            ? new Date(dateVal.seconds * 1000) 
+                            : new Date(selectedDebt.createdAt || Date.now());
+                          return isNaN(d.getTime()) ? "-" : d.toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'});
+                        })()}
+                      </p>
                     </div>
                   </div>
-                  <span className="px-1.5 py-0.5 bg-slate-150 dark:bg-slate-800 text-[8.5px] font-mono text-slate-500 dark:text-slate-450 rounded select-all">
-                    59df7b...
-                  </span>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-150 dark:bg-slate-800 text-[8.5px] font-mono text-slate-500 dark:text-slate-400 rounded cursor-pointer border border-transparent dark:border-slate-700/60">
+                      <LinkIcon size={8} /> 59df7b...
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
@@ -374,7 +383,7 @@ export default function DebtsTab({
             </button>
           )}
 
-          {/* Inline Payment Modal Panel overlay */}
+          {/* Inline Payment Drawer Overlay */}
           {showPayModal && (
             <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 mt-3 animate-in fade-in duration-200">
               <div className="flex justify-between items-center">
@@ -388,11 +397,11 @@ export default function DebtsTab({
                   placeholder="Nominal Pembayaran (Rp)" 
                   inputMode={isMobile ? "none" : undefined} 
                   onFocus={() => { if(isMobile) setActiveKeypad("pay"); }} 
-                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-xl text-xs font-bold outline-none text-slate-800 dark:text-white"
+                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-xl text-xs font-bold outline-none text-slate-800 dark:text-white" 
                   value={payAmount} 
                   onChange={e => setPayAmount(e.target.value)} 
                 />
-                {payAmount && <p className="text-[10px] font-bold text-slate-450 pl-1">Terbaca: <span className="font-black text-blue-600">{formatRupiahTerbaca(payAmount)}</span></p>}
+                {payAmount && <p className="text-[10px] font-bold text-slate-500 pl-1">Terbaca: <span className="font-black text-blue-600">{formatRupiahTerbaca(payAmount)}</span></p>}
               </div>
 
               <div className="flex gap-1.5 flex-wrap">
@@ -405,10 +414,10 @@ export default function DebtsTab({
                 </button>
               </div>
 
-              <div className="relative">
+              <div className="relative text-left">
                 <Wallet className="absolute left-3 top-3 text-slate-400" size={15}/>
                 <select 
-                  className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer" 
+                  className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white" 
                   value={payAccountId} 
                   onChange={e => setPayAccountId(e.target.value)}
                 >
@@ -417,10 +426,10 @@ export default function DebtsTab({
                 </select>
               </div>
 
-              <div className="relative">
+              <div className="relative text-left">
                 <Tag className="absolute left-3 top-3 text-slate-400" size={15}/>
                 <select 
-                  className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer" 
+                  className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white" 
                   value={payCategory} 
                   onChange={e => setPayCategory(e.target.value)}
                 >
@@ -437,16 +446,17 @@ export default function DebtsTab({
           )}
         </div>
       ) : (
-        /* Standard / Old style listing with visually upgraded layout switcher */
+        /* Classic List View with beautiful Photo 3 styled Cards */
         <div className="space-y-6 animate-in fade-in duration-200">
           
+          {/* Main Sub Tab Swapper (UTANG SAYA / PIUTANG ORANG) */}
           <div className="bg-slate-100/60 dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm flex items-center gap-1.5 transition-all">
             <button 
               onClick={() => setMainTab("debts")} 
               className={`flex-1 py-3 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
                 mainTab === "debts" 
                   ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" 
-                  : "text-slate-400 dark:text-slate-500 hover:text-slate-655"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
               }`}
             >
               <BookUser size={15} /> Utang Piutang
@@ -456,7 +466,7 @@ export default function DebtsTab({
               className={`flex-1 py-3 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
                 mainTab === "subscriptions" 
                   ? "bg-blue-50/80 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shadow-sm" 
-                  : "text-slate-400 dark:text-slate-500 hover:text-blue-600"
+                  : "text-slate-500 dark:text-slate-400 hover:text-blue-600"
               }`}
             >
               <CalendarClock size={15} /> Langganan
@@ -466,15 +476,15 @@ export default function DebtsTab({
           {mainTab === "debts" ? (
             <div className="space-y-6 animate-in fade-in duration-200">
               
-              {/* Refined Tab Swapper inside Utang (UTANG SAYA / PIUTANG ORANG) */}
-              <div className="bg-white dark:bg-slate-900/65 p-5 rounded-[26px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              {/* Classic Selection Tab Swapper */}
+              <div className="bg-white dark:bg-slate-900/65 p-5 rounded-[26px] border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-4">
                 <div className="flex gap-1.5 bg-slate-100/70 dark:bg-slate-950 p-1 rounded-xl">
                   <button 
                     onClick={() => { setActiveType("debt"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
                     className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                       activeType === "debt" 
-                        ? "bg-white dark:bg-slate-800 text-red-650 dark:text-red-400 shadow-sm border border-slate-150" 
-                        : "text-slate-455 hover:text-slate-650 dark:text-slate-500"
+                        ? "bg-white dark:bg-slate-800 text-red-650 dark:text-red-400 shadow-sm border border-slate-150 dark:border-slate-700" 
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
                     }`}
                   >
                     UTANG SAYA
@@ -483,8 +493,8 @@ export default function DebtsTab({
                     onClick={() => { setActiveType("receivable"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
                     className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                       activeType === "receivable" 
-                        ? "bg-white dark:bg-slate-800 text-emerald-650 dark:text-emerald-400 shadow-sm border border-slate-150" 
-                        : "text-slate-455 hover:text-slate-650 dark:text-slate-500"
+                        ? "bg-white dark:bg-slate-800 text-emerald-650 dark:text-emerald-400 shadow-sm border border-slate-150 dark:border-slate-700" 
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
                     }`}
                   >
                     PIUTANG ORANG
@@ -496,7 +506,7 @@ export default function DebtsTab({
                     ? "bg-red-50/40 dark:bg-red-950/10 border-red-100/80 dark:border-red-900/20" 
                     : "bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-100/80 dark:border-emerald-900/20"
                 }`}>
-                  <p className={`text-[10px] font-black uppercase tracking-wider ${activeType === "debt" ? "text-red-550" : "text-emerald-550"}`}>
+                  <p className={`text-[10px] font-black uppercase tracking-wider ${activeType === "debt" ? "text-red-500" : "text-emerald-500"}`}>
                     Sisa {activeType === "debt" ? "Utang Saya" : "Uang Saya di Orang"}
                   </p>
                   <h2 className={`text-2xl font-black tracking-tight mt-1 ${activeType === "debt" ? "text-red-650 dark:text-red-300" : "text-emerald-650 dark:text-emerald-300"}`}>
@@ -523,7 +533,7 @@ export default function DebtsTab({
                     <input 
                       type="text" 
                       placeholder={activeType === "debt" ? "Utang ke siapa?" : "Siapa yang pinjam?"} 
-                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 placeholder-slate-400" 
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-white placeholder-slate-400" 
                       value={person} 
                       onChange={e => setPerson(e.target.value)} 
                     />
@@ -534,7 +544,7 @@ export default function DebtsTab({
                         placeholder="Nominal Total (Rp)" 
                         inputMode={isMobile ? "none" : undefined} 
                         onFocus={() => { if(isMobile) setActiveKeypad("add"); }} 
-                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 placeholder-slate-400" 
+                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-white placeholder-slate-400" 
                         value={amount} 
                         onChange={e => setAmount(e.target.value)} 
                       />
@@ -549,7 +559,7 @@ export default function DebtsTab({
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 px-1">📅 Jatuh Tempo (Opsional)</label>
                       <input 
                         type="date" 
-                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 cursor-pointer" 
+                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-750 dark:text-white" 
                         value={dueDate} 
                         onChange={e => setDueDate(e.target.value)} 
                       />
@@ -559,7 +569,7 @@ export default function DebtsTab({
                       <div className="relative">
                         <Wallet className="absolute left-3 top-3.5 text-slate-400" size={15}/>
                         <select 
-                          className="w-full pl-9 pr-3 py-3 bg-white dark:bg-slate-900 rounded-xl text-xs font-bold outline-none text-slate-755 cursor-pointer border border-slate-200 dark:border-slate-800" 
+                          className="w-full pl-9 pr-3 py-3 bg-white dark:bg-slate-900 rounded-xl text-xs font-bold outline-none cursor-pointer border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white" 
                           value={sourceAccountId} 
                           onChange={e => setSourceAccountId(e.target.value)}
                         >
@@ -572,7 +582,7 @@ export default function DebtsTab({
                     <input 
                       type="text" 
                       placeholder="Catatan / Tujuan pinjam" 
-                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 placeholder-slate-400" 
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-white placeholder-slate-400" 
                       value={note} 
                       onChange={e => setNote(e.target.value)} 
                     />
@@ -585,62 +595,84 @@ export default function DebtsTab({
                 )}
               </div>
 
-              {/* Grid listing of active category */}
-              <div className="space-y-3.5">
+              {/* Grid of Photo 3 styled Premium Cards (UTANG & PIUTANG) */}
+              <div className="space-y-3.5 text-left">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400 px-1">
+                  <span className={`w-[3px] h-3.5 rounded-full ${activeType === 'debt' ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
+                  {activeType === 'debt' ? `DIPINJAM (${filteredDebts.length})` : `DIPINJAMKAN (${filteredDebts.length})`}
+                </div>
+
                 {filteredDebts.length === 0 ? (
-                  <p className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150">
+                  <p className="text-center py-12 text-slate-450 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150 dark:border-slate-850">
                     Belum ada catatan {activeType === "debt" ? "utang" : "piutang"}.
                   </p>
                 ) : (
-                  filteredDebts.map(debt => {
-                    const percentage = Math.min((debt.paidAmount / debt.amount) * 100, 100);
-                    const isPaid = debt.status === "paid";
-                    const overdue = !isPaid && isOverdue(debt.dueDate || "");
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredDebts.map(debt => {
+                      const percentage = Math.min((debt.paidAmount / debt.amount) * 100, 100);
+                      const isPaid = debt.status === "paid";
+                      const overdue = !isPaid && isOverdue(debt.dueDate || "");
 
-                    return (
-                      <div 
-                        key={debt.id} 
-                        onClick={() => setSelectedDebtId(debt.id)}
-                        className={`relative overflow-hidden bg-white dark:bg-slate-900 p-5 rounded-[24px] border shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md cursor-pointer text-left ${
-                          isPaid 
-                            ? "border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/20 dark:bg-emerald-950/10 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-emerald-500" 
-                            : "border-slate-200 dark:border-slate-800/80 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] " + (activeType === "debt" ? "before:bg-red-500" : "before:bg-emerald-500")
-                        }`}
-                      >
-                        <div className="flex justify-between items-start pl-2">
-                          <div>
-                            <h4 className="font-bold text-slate-850 dark:text-slate-100 text-sm tracking-tight">{debt.personName}</h4>
-                            {debt.note && <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5 leading-normal">{debt.note}</p>}
-                            {debt.dueDate && (
-                              <p className={`text-[9px] font-black uppercase tracking-wider mt-1.5 ${overdue ? "text-red-500 animate-pulse" : "text-slate-400 dark:text-slate-500"}`}>
-                                Tempo: {new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}
-                                {overdue && " • Overdue! ⚠️"}
-                              </p>
-                            )}
+                      return (
+                        <div 
+                          key={debt.id} 
+                          onClick={() => setSelectedDebtId(debt.id)}
+                          className={`relative overflow-hidden bg-white dark:bg-slate-900 p-5 rounded-[24px] border shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md cursor-pointer flex flex-col justify-between ${
+                            isPaid 
+                              ? "border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/10 dark:bg-emerald-950/10 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-emerald-500" 
+                              : "border-slate-100 dark:border-slate-800/80 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] " + (activeType === "debt" ? "before:bg-red-500" : "before:bg-emerald-500")
+                          }`}
+                        >
+                          <div className="flex justify-between items-start pl-2">
+                            <div className="flex items-center gap-3">
+                              {/* Soft rounded box logo (Matches Photo 3) */}
+                              <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-orange-600 dark:text-orange-400 rounded-xl flex items-center justify-center font-black text-sm">
+                                {debt.personName.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">{debt.personName}</h4>
+                                
+                                {/* 4-Segment signal/battery visual representation of payoff percentage (Matches Photo 3) */}
+                                <div className="flex gap-0.5 items-center mt-1">
+                                  {[1, 2, 3, 4].map((seg) => {
+                                    const filled = percentage >= seg * 25;
+                                    return (
+                                      <span key={seg} className={`w-1.5 h-3 rounded-[2px] ${
+                                        filled 
+                                          ? (activeType === 'debt' ? 'bg-orange-500' : 'bg-emerald-500') 
+                                          : 'bg-slate-200 dark:bg-slate-800'
+                                      }`} />
+                                    );
+                                  })}
+                                  <span className={`text-[10px] font-black ml-1.5 ${
+                                    activeType === 'debt' ? 'text-orange-500 dark:text-orange-400' : 'text-emerald-500 dark:text-emerald-400'
+                                  }`}>
+                                    {Math.round(percentage)}% lunas
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          
-                          <div className="text-right">
-                            <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+
+                          <div className="mt-4 pl-2 space-y-1">
+                            <h3 className="text-xl font-black text-slate-800 dark:text-white leading-tight">
                               {isPrivacyMode ? 'Rp •••••' : `Rp ${(debt.amount - debt.paidAmount).toLocaleString('id-ID')}`}
-                            </span>
-                            <p className="text-[9px] font-bold text-slate-400 mt-0.5">{Math.round(percentage)}% lunas</p>
+                            </h3>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
+                              {debt.dueDate ? `Tempo: ${new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : "Tidak Ada Jatuh Tempo"}
+                              {overdue && " • Overdue! ⚠️"}
+                            </p>
                           </div>
                         </div>
-
-                        <div className="mt-3 pl-2">
-                          <div className="w-full h-1 bg-slate-100 dark:bg-slate-800/80 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${isPaid ? "bg-emerald-500" : "bg-blue-500"}`} style={{ width: `${percentage}%` }}></div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>
           ) : (
             /* Subscriptions Tab rendering */
-            <div className="space-y-6 animate-in fade-in duration-200">
+            <div className="space-y-6 text-left animate-in fade-in duration-200">
               
               <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-[26px] shadow-sm text-left relative overflow-hidden border border-blue-500/10">
                 <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none text-white"><CalendarClock size={110} /></div>
@@ -672,7 +704,7 @@ export default function DebtsTab({
                     <input 
                       type="text" 
                       placeholder="Netflix, Wi-Fi, Kosan..." 
-                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white" 
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" 
                       value={subName} 
                       onChange={e => setSubName(e.target.value)} 
                     />
@@ -685,7 +717,7 @@ export default function DebtsTab({
                       placeholder="Contoh: 186000" 
                       inputMode={isMobile ? "none" : undefined} 
                       onFocus={() => { if(isMobile) setActiveKeypad("add-sub"); }} 
-                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white" 
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" 
                       value={subAmount} 
                       onChange={e => setSubAmount(e.target.value)} 
                     />
@@ -712,7 +744,7 @@ export default function DebtsTab({
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Jatuh Tempo Awal</label>
                       <input 
                         type="date" 
-                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
+                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white" 
                         value={subDueDate} 
                         onChange={e => setSubDueDate(e.target.value)} 
                       />
@@ -722,7 +754,7 @@ export default function DebtsTab({
                   <div className="space-y-1">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Sumber Dana (Dompet)</label>
                     <select 
-                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white" 
                       value={subAccountId} 
                       onChange={e => setSubAccountId(e.target.value)}
                     >
@@ -734,7 +766,7 @@ export default function DebtsTab({
                   <div className="space-y-1">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Kategori Pengeluaran</label>
                     <select 
-                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white" 
                       value={subCategory} 
                       onChange={e => setSubCategory(e.target.value)}
                     >
@@ -753,7 +785,7 @@ export default function DebtsTab({
               {/* Subscriptions Grid List */}
               <div className="space-y-3.5">
                 {subscriptions.length === 0 ? (
-                  <p className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150">
+                  <p className="text-center py-12 text-slate-400 dark:text-slate-550 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150">
                     Belum ada daftar langganan tetap.
                   </p>
                 ) : (
@@ -776,7 +808,7 @@ export default function DebtsTab({
                         {editingSubId === sub.id ? (
                           <div className="space-y-3 pb-1">
                             <div className="flex justify-between items-center px-1 mb-1">
-                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Koreksi Langganan</p>
+                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-450 uppercase tracking-widest">Koreksi Langganan</p>
                               <button onClick={() => { setEditingSubId(null); setActiveKeypad(null); }} className="text-slate-400"><X size={15}/></button>
                             </div>
                             
@@ -784,19 +816,19 @@ export default function DebtsTab({
                             <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editSubAmount} onChange={e => setEditSubAmount(e.target.value)} />
                             
                             <div className="grid grid-cols-2 gap-3">
-                              <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold" value={editSubCycle} onChange={e => setEditSubCycle(e.target.value as any)}>
+                              <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editSubCycle} onChange={e => setEditSubCycle(e.target.value as any)}>
                                 <option value="monthly">Bulanan</option>
                                 <option value="yearly">Tahunan</option>
                               </select>
-                              <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer" value={editSubDueDate} onChange={e => setEditSubDueDate(e.target.value)} />
+                              <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-800 dark:text-white" value={editSubDueDate} onChange={e => setEditSubDueDate(e.target.value)} />
                             </div>
 
-                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer" value={editSubAccountId} onChange={e => setEditSubAccountId(e.target.value)}>
+                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-850 dark:text-white" value={editSubAccountId} onChange={e => setEditSubAccountId(e.target.value)}>
                               <option value="" disabled>Pilih dompet...</option>
                               {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                             </select>
 
-                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer" value={editSubCategory} onChange={e => setEditSubCategory(e.target.value)}>
+                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-850 dark:text-white" value={editSubCategory} onChange={e => setEditSubCategory(e.target.value)}>
                               <option value="" disabled>Pilih kategori...</option>
                               {categories.filter(c => c.type === "expense").sort((a,b)=>a.name.localeCompare(b.name)).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
                             </select>
@@ -849,7 +881,7 @@ export default function DebtsTab({
                                   ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 animate-pulse' 
                                   : isToday 
                                     ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' 
-                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-650 dark:text-slate-300'
+                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-655 dark:text-slate-300'
                               }`}>
                                 {isOverdue ? `Lewat ${Math.abs(daysLeft)} Hari` : isToday ? 'HARI INI' : `${daysLeft} Hari Lagi`}
                               </span>
@@ -919,7 +951,7 @@ export default function DebtsTab({
               <button 
                 type="button" 
                 onClick={() => handleKeypadPress("C")} 
-                className="py-3.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold"
+                className="py-3.5 bg-red-50 dark:bg-red-955/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold"
               >
                 C
               </button>
