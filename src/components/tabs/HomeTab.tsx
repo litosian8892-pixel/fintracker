@@ -589,7 +589,7 @@ export default function HomeTab({
                       key={acc.id}
                       type="button"
                       onClick={() => { setSelectedAccountIdFilter(acc.id); setShowAccountFilterDropdown(false); }}
-                      className={`w-full text-left px-4 py-2 text-xs font-bold ${selectedAccountIdFilter === acc.id ? "text-blue-600 bg-blue-50 dark:bg-blue-950/30" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
+                      className={`w-full text-left px-4 py-2 text-xs font-bold ${selectedAccountIdFilter === acc.id ? "text-blue-600 bg-blue-50 dark:bg-blue-950/30" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850"}`}
                     >
                       {acc.name}
                     </button>
@@ -889,7 +889,7 @@ export default function HomeTab({
               {((editingTransaction ? editTType : tType) === "transfer") && (
                 <div className="space-y-1 animate-in fade-in duration-200">
                   <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest block pl-1">Biaya Admin ({selectedSourceAcc?.currency || "IDR"}) (Opsional)</label>
-                  <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("adminFee"); setActiveSplitKeypadIndex(null); } }} className="w-full p-3.5 bg-blue-50/30 border border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/30 rounded-2xl text-xs font-bold outline-blue-500 text-slate-855 dark:text-slate-100" placeholder="0" value={editingTransaction ? editTAdminFee : tAdminFee} onChange={(e) => editingTransaction ? setEditTAdminFee(e.target.value) : setTAdminFee(e.target.value)} />
+                  <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("adminFee"); setActiveSplitKeypadIndex(null); } }} className="w-full p-3.5 bg-blue-50/30 border border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/30 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100" placeholder="0" value={editingTransaction ? editTAdminFee : tAdminFee} onChange={(e) => editingTransaction ? setEditTAdminFee(e.target.value) : setTAdminFee(e.target.value)} />
                   {(editingTransaction ? editTAdminFee : tAdminFee) && <p className="text-[10px] font-bold text-blue-400 pl-1">Terbaca: <span className="text-blue-600 dark:text-blue-300 font-black">{formatCurrencyTerbaca(editingTransaction ? editTAdminFee : tAdminFee, selectedSourceAcc?.currency)}</span></p>}
                 </div>
               )}
@@ -1016,7 +1016,7 @@ export default function HomeTab({
               {/* INPUT CATATAN / MEMO */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan</label>
-                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-850 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
+                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
               </div>
 
               {/* EDITING SPLITS SECTION (Untuk Koreksi Splits Langsung di Form Laci) */}
@@ -1035,7 +1035,7 @@ export default function HomeTab({
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-400 uppercase">Kategori</label>
                           <div onClick={() => { setActiveEditSplitIndex(i); setShowEditSplitCatModal(true); }} className="p-3 bg-white border border-slate-200 dark:bg-slate-955 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between hover:bg-slate-50 truncate">
-                            <span className="truncate">{item.category || "Pilih..."}</span><ChevronDown size={14} className="text-slate-400 shrink-0" />
+                            <span className="truncate">{item.category || "Pilih..."}</span><ChevronDown size={14} className="text-slate-400" />
                           </div>
                         </div>
                         <div className="space-y-1">
@@ -1080,7 +1080,7 @@ export default function HomeTab({
       {/* POP-UP CATEGORY MODAL FOR NEW CREATION */}
       {showCatModal && activeType !== "transfer" && (
         <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-100 dark:border-slate-800">
+          <div className="bg-white rounded-[30px] w-full max-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-100 dark:border-slate-800">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
               <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
                 <span>🏷️</span> Pilih Kategori {activeType === 'expense' ? 'Pengeluaran' : 'Pemasukan'}
@@ -1101,13 +1101,10 @@ export default function HomeTab({
                     <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-orange-100 dark:border-orange-950/30 z-10"><p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel</p></div>
                     <div className="flex flex-col gap-1.5">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").map(cat => (
-                        <div key={cat.id} className="flex gap-1.5 items-center w-full">
-                          <button type="button" onClick={() => handleSelectCategory(cat.name)} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-red-600 text-white border-red-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-755"}`}>
-                            <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
-                            <span className="truncate">{cat.name}</span>
-                          </button>
-                          <button type="button" onClick={() => { triggerHaptic(); setEditingCat(cat); setEditCatName(cat.name); setEditCatIcon(cat.icon || ""); }} className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 cursor-pointer transition-all active:scale-90"><Edit3 size={12} /></button>
-                        </div>
+                        <button key={cat.id} type="button" onClick={() => handleSelectCategory(cat.name)} className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-red-600 text-white border-red-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-755"}`}>
+                          <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
+                          <span className="truncate">{cat.name}</span>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -1115,13 +1112,10 @@ export default function HomeTab({
                     <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-purple-100 dark:border-purple-950/30 z-10"><p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">🟣 Tetap</p></div>
                     <div className="flex flex-col gap-1.5">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType === "fixed").map(cat => (
-                        <div key={cat.id} className="flex gap-1.5 items-center w-full">
-                          <button type="button" onClick={() => handleSelectCategory(cat.name)} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-purple-600 text-white border-purple-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-755"}`}>
-                            <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
-                            <span className="truncate">{cat.name}</span>
-                          </button>
-                          <button type="button" onClick={() => { triggerHaptic(); setEditingCat(cat); setEditCatName(cat.name); setEditCatIcon(cat.icon || ""); }} className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 cursor-pointer transition-all active:scale-90"><Edit3 size={12} /></button>
-                        </div>
+                        <button key={cat.id} type="button" onClick={() => handleSelectCategory(cat.name)} className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-purple-600 text-white border-purple-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-755"}`}>
+                          <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
+                          <span className="truncate">{cat.name}</span>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -1129,13 +1123,10 @@ export default function HomeTab({
               ) : (
                 <div className="grid grid-cols-1 gap-2 animate-in fade-in duration-150">
                   {filteredCategories.filter(c => c.type === "income").map(cat => (
-                    <div key={cat.id} className="flex gap-1.5 items-center w-full">
-                      <button type="button" onClick={() => handleSelectCategory(cat.name)} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-green-600 text-white border-green-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-755"}`}>
-                        <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
-                        <span className="truncate">{cat.name}</span>
-                      </button>
-                      <button type="button" onClick={() => { triggerHaptic(); setEditingCat(cat); setEditCatName(cat.name); setEditCatIcon(cat.icon || ""); }} className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 cursor-pointer transition-all active:scale-90"><Edit3 size={12} /></button>
-                    </div>
+                    <button key={cat.id} type="button" onClick={() => handleSelectCategory(cat.name)} className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-green-600 text-white border-green-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-755"}`}>
+                      <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
+                      <span className="truncate">{cat.name}</span>
+                    </button>
                   ))}
                 </div>
               )}
@@ -1248,7 +1239,7 @@ export default function HomeTab({
             <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-white font-black text-base">
               {["+", "-", "*", "/"].map((op) => (<button key={op} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(op) : handleKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl select-none">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>))}
               {["7", "8", "9"].map((num) => (<button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
-              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("C") : handleKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-950/40 text-red-600 rounded-xl select-none">C</button>
+              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("C") : handleEditKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-950/40 text-red-600 rounded-xl select-none">C</button>
               {["4", "5", "6"].map((num) => (<button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
               <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("⌫") : handleKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl text-slate-500 flex items-center justify-center select-none">⌫</button>
               {["1", "2", "3"].map((num) => (<button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
