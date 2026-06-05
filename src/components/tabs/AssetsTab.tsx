@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, Wallet, Briefcase, Plus, ChevronLeft, TrendingDown, TrendingUp, ChevronRight, Activity, LayoutGrid, List } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart as RePieChart, Pie, Cell } from "recharts";
 import { AccountData, WalletTypeData, TransactionData } from "../../types";
@@ -133,7 +133,31 @@ export default function AssetsTab({
 
   const [localBalanceOverride, setLocalBalanceOverride] = useState<Record<string, number>>({});
   const [localNameOverride, setLocalNameOverride] = useState<Record<string, string>>({});
+// Perbaikan Fase 12: Ref reaktif untuk auto-scroll navigasi bulan
+  const detailMonthScrollRef = useRef<HTMLDivElement>(null);
+  const monthScrollRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (detailAccId) {
+      const timer = setTimeout(() => {
+        if (detailMonthScrollRef.current) {
+          detailMonthScrollRef.current.scrollLeft = detailMonthScrollRef.current.scrollWidth;
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [detailAccId]);
+
+  useEffect(() => {
+    if (activeSubTab === "aset") {
+      const timer = setTimeout(() => {
+        if (monthScrollRef.current) {
+          monthScrollRef.current.scrollLeft = monthScrollRef.current.scrollWidth;
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [activeSubTab]);
   const triggerHaptic = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
 
   const currency = accCurrency !== undefined ? accCurrency : localAccCurrency;
@@ -394,8 +418,8 @@ export default function AssetsTab({
             </button>
           </div>
 
-          {/* Month Navigation Pills */}
-          <div className="flex overflow-x-auto hide-scrollbar gap-2 px-2 pb-2 -mx-2 snap-x">
+         {/* Month Navigation Pills */}
+          <div ref={detailMonthScrollRef} className="flex overflow-x-auto hide-scrollbar gap-2 px-2 pb-2 -mx-2 snap-x">
             {[4,3,2,1,0,-1].map(i => {
               const d = new Date(); d.setMonth(d.getMonth() - i);
               const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -474,9 +498,9 @@ export default function AssetsTab({
             </div>
           </div>
 
-          {/* SELEKTOR BULAN HISTORIS (Baru - Memungkinkan pelacakan menabung bulan-bulan lalu) */}
+         {/* SELEKTOR BULAN HISTORIS (Baru - Memungkinkan pelacakan menabung bulan-bulan lalu) */}
           {activeSubTab === "aset" && setReportMonth && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 animate-in fade-in duration-200">
+            <div ref={monthScrollRef} className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 animate-in fade-in duration-200">
               {[11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((i) => {
                 const d = new Date();
                 d.setMonth(d.getMonth() - i);
