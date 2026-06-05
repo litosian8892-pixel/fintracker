@@ -72,7 +72,7 @@ const getCurrencySymbol = (currency?: string) => {
     case "SGD": return "S$";
     case "EUR": return "€";
     case "JPY": return "¥";
-    case "CNY": return "¥";
+    case "CNY": return "¥"; // Integrasi Yuan China (CNY)
     case "GBP": return "£";
     case "AUD": return "A$";
     case "MYR": return "RM";
@@ -287,7 +287,7 @@ export default function AssetsTab({
                         {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
                       </p>
                       {isForeign && acc.lastExchangeRate && (
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1 text-left">
+                        <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold mt-1 text-left">
                           Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * acc.lastExchangeRate).toLocaleString('id-ID')}`}
                         </p>
                       )}
@@ -344,7 +344,7 @@ export default function AssetsTab({
                           {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
                         </p>
                         {isForeign && acc.lastExchangeRate && (
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mb-1 leading-none">
+                          <p className="text-[10px] text-slate-400 dark:text-slate-505 font-bold mb-1 leading-none">
                             Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * acc.lastExchangeRate).toLocaleString('id-ID')}`}
                           </p>
                         )}
@@ -507,7 +507,6 @@ export default function AssetsTab({
               <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={currency} onChange={(e) => setCurrency(e.target.value)}>
                 <option value="IDR">🇮🇩 Rupiah (IDR)</option>
                 <option value="USD">🇺🇸 Dollar Amerika (USD)</option>
-                <option value="CNY">🇨🇳 Yuan China (CNY)</option>
                 <option value="SGD">🇸🇬 Dollar Singapura (SGD)</option>
                 <option value="EUR">🇪🇺 Euro (EUR)</option>
                 <option value="JPY">🇯🇵 Yen Jepang (JPY)</option>
@@ -515,6 +514,7 @@ export default function AssetsTab({
                 <option value="AUD">🇦🇺 Dollar Australia (AUD)</option>
                 <option value="MYR">🇲🇾 Ringgit Malaysia (MYR)</option>
                 <option value="SAR">🇸🇦 Riyal Arab Saudi (SAR)</option>
+                <option value="CNY">🇨🇳 Yuan China (CNY)</option>
               </select>
             </div>
 
@@ -566,7 +566,7 @@ export default function AssetsTab({
               <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                 <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, false)} className="hidden" id="custom-logo-file" />
                 <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
-                <span className="text-[10px] text-slate-400 dark:text-slate-550 truncate">{accLogo ? "Logo Siap Diunggah ✅" : "Format PNG/JPG (Maks 500KB)"}</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-555 truncate">{accLogo ? "Logo Siap Diunggah ✅" : "Format PNG/JPG (Maks 500KB)"}</span>
               </div>
             </div>
             <button onClick={handleCreateAccount} className="w-full py-3.5 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg cursor-pointer transition-colors">Simpan Dompet Baru</button>
@@ -589,7 +589,6 @@ export default function AssetsTab({
                         <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-blue-100 dark:border-blue-900/30 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
                           <option value="IDR">🇮🇩 Rupiah (IDR)</option>
                           <option value="USD">🇺🇸 Dollar Amerika (USD)</option>
-                          <option value="CNY">🇨🇳 Yuan China (CNY)</option>
                           <option value="SGD">🇸🇬 Dollar Singapura (SGD)</option>
                           <option value="EUR">🇪🇺 Euro (EUR)</option>
                           <option value="JPY">🇯🇵 Yen Jepang (JPY)</option>
@@ -597,6 +596,7 @@ export default function AssetsTab({
                           <option value="AUD">🇦🇺 Dollar Australia (AUD)</option>
                           <option value="MYR">🇲🇾 Ringgit Malaysia (MYR)</option>
                           <option value="SAR">🇸🇦 Riyal Arab Saudi (SAR)</option>
+                          <option value="CNY">🇨🇳 Yuan China (CNY)</option>
                         </select>
                       </div>
 
@@ -649,13 +649,34 @@ export default function AssetsTab({
                             {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString("id-ID")}`}
                           </p>
                           {isForeign && acc.lastExchangeRate && (
-                            <p className="text-[9px] text-slate-400 dark:text-slate-550 font-bold mt-1 leading-none text-left">
+                            <p className="text-[9px] text-slate-400 dark:text-slate-555 font-bold mt-1 leading-none text-left">
                               Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * acc.lastExchangeRate).toLocaleString('id-ID')}`}
                             </p>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1">
+                      
+                      {/* BARU: Render Tombol Urutan (Naik/Turun), Edit, dan Hapus */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Tombol Urutan Naik */}
+                        <button 
+                          disabled={index === 0} 
+                          onClick={() => moveAccountOrder(index, "up")} 
+                          className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 disabled:opacity-30 cursor-pointer transition-colors"
+                        >
+                          <ArrowUp size={14}/>
+                        </button>
+                        
+                        {/* Tombol Urutan Turun */}
+                        <button 
+                          disabled={index === accounts.length - 1} 
+                          onClick={() => moveAccountOrder(index, "down")} 
+                          className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 disabled:opacity-30 cursor-pointer transition-colors"
+                        >
+                          <ArrowDown size={14}/>
+                        </button>
+
+                        {/* Tombol Edit */}
                         <button onClick={() => { 
                           setEditingAccId(acc.id); 
                           setEditAccName(acc.name); 
@@ -667,12 +688,21 @@ export default function AssetsTab({
                           setEditAccExcludeFromTotal(!!acc.excludeFromTotal); 
                           setEditAccSavingsGoalTitle(acc.savingsGoalTitle || ""); 
                           
-                          // Sinkronkan state mata uang & kurs saat modal edit dibuka
                           setEditCurrency(acc.currency || "IDR");
                           setEditExchangeRate(acc.lastExchangeRate?.toString() || "1");
                           if (setEditAccCurrency) setEditAccCurrency(acc.currency || "IDR");
                           if (setEditAccExchangeRate) setEditAccExchangeRate(acc.lastExchangeRate?.toString() || "1");
-                        }} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 cursor-pointer transition-colors"><Edit2 size={14}/></button>
+                        }} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 cursor-pointer transition-colors">
+                          <Edit2 size={14}/>
+                        </button>
+
+                        {/* Tombol Hapus */}
+                        <button 
+                          onClick={() => deleteAccount(acc.id, acc.name)} 
+                          className="p-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/30 text-red-500 hover:text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={14}/>
+                        </button>
                       </div>
                     </div>
                   )}
