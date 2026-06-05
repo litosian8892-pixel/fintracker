@@ -1106,68 +1106,75 @@ export default function FintrackerApp() {
     const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(waMessage)}`;
 
     return (
-      <main className="min-h-screen bg-[#090d16] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-200">
+      <main className="min-h-screen bg-[#070a13] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-200">
         
-        <div className="absolute w-[450px] h-[450px] bg-blue-600/15 blur-[140px] rounded-full top-[-50px] left-1/2 -translate-x-1/2 pointer-events-none"></div>
-        <div className="absolute w-[300px] h-[300px] bg-indigo-500/10 blur-[100px] rounded-full bottom-[-50px] left-1/2 -translate-x-1/2 pointer-events-none"></div>
+        {/* Soft, rich ambient glows in the background (Match the new AuthScreen tone) */}
+        <div className="absolute w-[500px] h-[500px] bg-blue-600/10 blur-[150px] rounded-full -top-40 -left-40 pointer-events-none"></div>
+        <div className="absolute w-[500px] h-[500px] bg-indigo-500/10 blur-[150px] rounded-full -bottom-40 -right-40 pointer-events-none"></div>
 
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-8 md:p-10 rounded-[35px] shadow-2xl w-full max-w-md flex flex-col items-center relative overflow-hidden animate-in zoom-in-95 duration-300">
+        {/* Card with subtle translucent border overlay (No harsh outlines) */}
+        <div className="bg-[#0b101d]/60 backdrop-blur-2xl border border-white/[0.06] p-8 md:p-10 rounded-[35px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-full max-w-sm flex flex-col items-center relative overflow-hidden animate-in zoom-in-95 duration-300">
           
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500/20 via-amber-500/30 to-blue-500/20"></div>
+          {/* Subtle gradient border overlay */}
+          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
           
-          <div className="w-20 h-20 bg-gradient-to-br from-slate-900 to-slate-950 rounded-full flex items-center justify-center mb-6 shadow-xl border border-blue-500/30 relative">
-            <div className="absolute inset-0 rounded-full border border-blue-500/20 blur-[4px]"></div>
-            <Crown size={32} className="text-blue-400 drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" strokeWidth={1.5}/>
+          {/* Icon with glowing ambient sphere behind it */}
+          <div className="w-16 h-16 bg-[#0f1524] rounded-full flex items-center justify-center mb-5 shadow-xl border border-white/[0.08] relative">
+            <div className="absolute w-8 h-8 bg-amber-500/20 rounded-full blur-[10px] pointer-events-none"></div>
+            <Crown size={26} className="text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.4)] z-10" strokeWidth={1.5}/>
           </div>
           
-          <h2 className="text-2xl font-black mb-2 text-center tracking-tight text-white leading-none">
-            Akses <span className="bg-gradient-to-r from-blue-400 via-indigo-200 to-blue-500 bg-clip-text text-transparent">Premium</span> Terkunci
+          {/* Header Typography */}
+          <h2 className="text-2xl font-black mb-1.5 tracking-tight text-white leading-none text-center">
+            AKSES <span className="bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 bg-clip-text text-transparent">PREMIUM</span> TERKUNCI
           </h2>
           <p className="text-xs text-slate-400 mb-6 text-center leading-relaxed">
-            Amankan data keuangan Anda dengan Lisensi Fintracker Premium. Nikmati seluruh fitur eksklusif seumur hidup!
+            Aktifkan lisensi seumur hidup untuk membuka kunci akses selamanya.
           </p>
 
-          <div className="w-full bg-slate-950/40 backdrop-blur-md rounded-2xl p-5 mb-6 space-y-3.5 border border-slate-800 shadow-inner text-left">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 size={16} className="text-blue-400 mt-0.5 shrink-0 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]"/>
-              <span className="text-xs font-bold text-slate-300 leading-tight">Catat Tanpa Internet (Offline-First)</span>
+          {/* VIP Pass Digital Ticket Stub (Clean, Responsive Flexbox-Based Layout, NO absolute cutouts) */}
+          <div className="w-full bg-[#151c30]/50 border border-amber-500/20 rounded-2xl p-5 mb-6 relative overflow-hidden shadow-inner text-left flex flex-col justify-between">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 blur-[30px] rounded-full pointer-events-none"></div>
+            
+            {/* Top Stub Content */}
+            <div className="pb-4 space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className="text-[8px] font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 uppercase tracking-widest leading-none">LIFETIME ACCESS PASS</span>
+                <Crown size={16} className="text-amber-400 drop-shadow-[0_0_6px_rgba(245,158,11,0.4)]" />
+              </div>
+              <h3 className="text-xs font-black text-white uppercase tracking-tight">PREMIUM LIFETIME PASS</h3>
+              <p className="text-[10px] font-semibold text-slate-400 leading-normal">
+                Membuka penuh proteksi PIN & sidik jari, pemisahan dompet usaha, otomatisasi tagihan berulang, alokasi pecahan transaksi, s/d mutasi multi-valas asing selamanya.
+              </p>
             </div>
-            <div className="flex items-start gap-3">
-              <CheckCircle2 size={16} className="text-blue-400 mt-0.5 shrink-0 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]"/>
-              <span className="text-xs font-bold text-slate-300 leading-tight">Pecah Struk Transaksi (Split Bill)</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <CheckCircle2 size={16} className="text-blue-400 mt-0.5 shrink-0 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]"/>
-              <span className="text-xs font-bold text-slate-300 leading-tight">Pemisahan Dompet Usaha & Pribadi</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <CheckCircle2 size={16} className="text-blue-400 mt-0.5 shrink-0 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]"/>
-              <span className="text-xs font-bold text-slate-300 leading-tight">Pengingat & 1-Click Pay Langganan</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <CheckCircle2 size={16} className="text-blue-400 mt-0.5 shrink-0 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]"/>
-              <span className="text-xs font-bold text-slate-300 leading-tight">Keamanan Sidik Jari / Face ID</span>
+            
+            {/* Clean, responsive dotted line divider (Never cuts through text!) */}
+            <div className="border-t border-dashed border-amber-500/25 my-1 pointer-events-none"></div>
+            
+            {/* Bottom Stub Content */}
+            <div className="pt-2 flex justify-between items-center text-[8px] text-slate-500 font-mono leading-none">
+              <span className="truncate max-w-[130px]">MEMBER: {user.email?.split("@")[0].toUpperCase()}</span>
+              <span>NO: FT-{user.uid.slice(0, 6).toUpperCase()}</span>
             </div>
           </div>
 
-          <div className="text-center mb-6">
-            <span className="inline-block bg-blue-500/10 text-blue-300 border border-blue-500/20 text-[8px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-widest mb-2.5">
-              💎 LIFETIME LICENSE PROMO
-            </span>
+          {/* Pricing & Checkout Section */}
+          <div className="text-center w-full space-y-4">
             <div className="flex items-baseline justify-center gap-2">
               <span className="text-xs font-bold text-slate-500 line-through">Rp 150.000</span>
               <span className="text-4xl font-black text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]">Rp 49.000</span>
+              <span className="text-[8px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md uppercase tracking-wider ml-1">SAVE 67%</span>
             </div>
-            <p className="text-[9px] font-extrabold text-blue-400/90 uppercase tracking-widest mt-1.5 leading-none">Sekali Bayar Selamanya</p>
+            <p className="text-[9px] font-extrabold text-blue-400 uppercase tracking-widest leading-none">Sekali Bayar Selamanya</p>
+
+            <a href={waLink} target="_blank" rel="noreferrer" className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 shadow-[0_4px_20px_rgba(16,185,129,0.25)] text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] duration-100 cursor-pointer">
+              <MessageCircle size={16} /> Aktivasi via WhatsApp
+            </a>
+
+            <button onClick={() => signOut(auth)} className="text-[9px] font-bold text-slate-500 hover:text-slate-300 transition-colors cursor-pointer block mx-auto pt-1">
+              Bukan {user.email}? Logout
+            </button>
           </div>
-
-          <a href={waLink} target="_blank" rel="noreferrer" className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-700 shadow-[0_0_20px_rgba(16,185,129,0.2)] text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] duration-100 cursor-pointer">
-            <MessageCircle size={18} /> Aktivasi via WhatsApp
-          </a>
-
-          <button onClick={() => signOut(auth)} className="mt-6 text-[10px] font-bold text-slate-500 hover:text-slate-300 cursor-pointer transition-colors">
-            Bukan {user.email}? Logout
-          </button>
 
         </div>
       </main>
@@ -1388,7 +1395,7 @@ export default function FintrackerApp() {
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Catatan Khusus Pecahan</label>
+                        <label className="text-[9px] font-black text-slate-450 uppercase tracking-wider">Catatan Khusus Pecahan</label>
                         <input type="text" placeholder="Keterangan..." className="w-full p-3 bg-white border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.note || ""} onChange={(e) => {
                           const updated = [...editTSplits];
                           updated[i].note = e.target.value;
@@ -1418,67 +1425,6 @@ export default function FintrackerApp() {
             </div>
           </div>
         </div>
-      )}
-
-      {showEditSplitCatModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-100 dark:border-slate-800">
-            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
-              <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
-                <span>🏷️</span> Pilih Kategori Pecahan #{activeEditSplitIndex !== null ? activeEditSplitIndex + 1 : ""}
-              </h3>
-              <button type="button" onClick={() => { setShowEditSplitCatModal(false); setActiveEditSplitIndex(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full transition-colors"><X size={14}/></button>
-            </div>
-            
-            <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2 min-w-0 text-left">
-                  <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 mb-2 border-b border-orange-100 dark:border-orange-950/30 z-10">
-                    <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel</p>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {categories.filter(c => c.type === editTType && c.expenseType !== "fixed").map(cat => (
-                      <button key={cat.id} type="button" onClick={() => handleSelectEditSplitCategory(cat.name)} className="w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:border-orange-200 dark:hover:bg-orange-900/50">{cat.name}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2 border-l border-slate-100 dark:border-slate-800 pl-4 min-w-0 text-left">
-                  <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 mb-2 border-b border-purple-100 dark:border-purple-950/30 z-10">
-                    <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">🟣 Tetap</p>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {categories.filter(c => c.type === editTType && c.expenseType === "fixed").map(cat => (
-                      <button key={cat.id} type="button" onClick={() => handleSelectEditSplitCategory(cat.name)} className="w-full text-left px-4 py-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer bg-slate-50 text-slate-800 border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-200 dark:hover:bg-purple-900/50">{cat.name}</button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isMobile && editingTransaction && activeEditKeypad && (
-        <>
-          <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveEditKeypad(null)}></div>
-          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
-            <div className="flex justify-between items-center mb-3 px-1">
-              <span className="text-[10px] font-black text-slate-500 dark:text-blue-500 tracking-widest uppercase">{activeEditKeypad === "amount" ? "Kalkulator Nominal" : "Kalkulator Biaya Admin"}</span>
-              <button onClick={() => setActiveEditKeypad(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 text-xs font-bold flex items-center gap-1">Tutup <X size={14} /></button>
-            </div>
-            <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-white font-black text-base">
-              {["+", "-", "*", "/"].map((op) => (<button key={op} type="button" onClick={() => handleEditKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>))}
-              {["7", "8", "9"].map((num) => (<button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl transition-all select-none">{num}</button>))}
-              <button type="button" onClick={() => handleEditKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 active:bg-red-100 dark:active:bg-red-900/30 rounded-xl transition-all select-none">C</button>
-              {["4", "5", "6"].map((num) => (<button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl transition-all select-none">{num}</button>))}
-              <button type="button" onClick={() => handleEditKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-300 flex items-center justify-center transition-all select-none">⌫</button>
-              {["1", "2", "3"].map((num) => (<button key={num} type="button" onClick={() => handleEditKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 rounded-xl transition-all select-none">{num}</button>))}
-              <button type="button" onClick={() => handleEditKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
-              {["(", "0", ")"].map((char) => (<button key={char} type="button" onClick={() => handleEditKeypadPress(char)} className={`${char === "0" ? "bg-slate-50 dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none`}>{char}</button>))}
-              <button type="button" onClick={() => handleEditKeypadPress("Ya")} className="py-3.5 bg-blue-600 active:bg-blue-700 rounded-xl text-white font-black hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition-all select-none">Ya</button>
-            </div>
-          </div>
-        </>
       )}
     </main>
   );
