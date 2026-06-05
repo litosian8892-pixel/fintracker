@@ -1259,10 +1259,10 @@ export default function HomeTab({
                           : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850"
                       }`}
                     >
-                      {/* Logo / Icon */}
+                      {/* Logo / Icon - Dibuat bersih tanpa bingkai hitam */}
                       <div className="flex justify-between items-start">
                         {acc.logo ? (
-                          <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white p-0.5 border border-slate-150" />
+                          <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white" />
                         ) : (
                           <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
                             <Wallet size={16} />
