@@ -341,11 +341,32 @@ export default function ReportsTab({
             </button>
             <button onClick={() => {
               if (typeof window !== "undefined") {
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                // Deteksi iOS/iPadOS yang presisi (termasuk iPad baru yang menyamar sebagai Macintosh)
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                              (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
                 const isStandalone = (window.navigator as any).standalone;
-                if (isIOS && isStandalone) { alert("Apple membatasi cetak PDF langsung di dalam Aplikasi Layar Utama.\n\nSilakan buka Fintracker via browser Safari biasa untuk mengunduh PDF Laporan ini!"); return; }
-                if (navigator.vibrate) navigator.vibrate(15);
-                window.print();
+                
+                if (isIOS && isStandalone) { 
+                  alert("Apple membatasi cetak PDF langsung di dalam Aplikasi Layar Utama.\n\nSilakan buka Fintracker via browser Safari biasa untuk mengunduh PDF Laporan ini!"); 
+                  return; 
+                }
+                
+                if (navigator.vibrate) {
+                  try { navigator.vibrate(15); } catch (e) {}
+                }
+                
+                // Gunakan penundaan mikro (setTimeout) agar Next.js menyelesaikan event cycle-nya,
+                // lalu paksa AirPrint Safari menggunakan kombinasi execCommand tingkat rendah (low-level fallback)
+                setTimeout(() => {
+                  try {
+                    const printed = document.execCommand('print', false, undefined);
+                    if (!printed) {
+                      window.print();
+                    }
+                  } catch (err) {
+                    window.print();
+                  }
+                }, 50);
               }
             }} className="flex-1 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200/50 dark:border-red-800/50 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors touch-manipulation cursor-pointer active:scale-95">
               <Printer size={14}/> Cetak PDF
