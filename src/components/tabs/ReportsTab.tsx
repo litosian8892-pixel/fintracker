@@ -209,11 +209,11 @@ export default function ReportsTab({
   const generatePrintHTML = () => {
     const tableRows = currentMonthTxs.map(t => `
       <tr style="border-bottom: 1px solid #e2e8f0;">
-        <td style="padding: 10px; font-weight: 500;">${new Date(t.tDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'short'})}</td>
-        <td style="padding: 10px; font-weight: bold;">${t.note || t.category}</td>
-        <td style="padding: 10px;">${t.category}</td>
-        <td style="padding: 10px;">${t.type === 'transfer' ? `${t.accountName} -> ${t.toAccountName}` : t.accountName}</td>
-        <td style="padding: 10px; text-align: right; font-weight: 900; color: ${t.type === 'income' ? '#10b981' : t.type === 'expense' ? '#ef4444' : '#3b82f6'};">
+        <td style="padding: 12px 10px; font-weight: 500;">${new Date(t.tDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'short'})}</td>
+        <td style="padding: 12px 10px; font-weight: bold;">${t.note || t.category}</td>
+        <td style="padding: 12px 10px;">${t.category}</td>
+        <td style="padding: 12px 10px;">${t.type === 'transfer' ? `${t.accountName} -> ${t.toAccountName}` : t.accountName}</td>
+        <td style="padding: 12px 10px; text-align: right; font-weight: 900; color: ${t.type === 'income' ? '#10b981' : t.type === 'expense' ? '#ef4444' : '#3b82f6'};">
           ${t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''} ${t.amount.toLocaleString('id-ID')}
         </td>
       </tr>
@@ -224,12 +224,21 @@ export default function ReportsTab({
       <html lang="id">
       <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <title>Laporan Keuangan - FINTRACKER</title>
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 24px; color: #1e293b; background-color: #ffffff; }
-          .no-print-btn { display: inline-flex; align-items: center; justify-content: center; background-color: #1e3a8a; color: white; border: none; padding: 12px 24px; font-size: 14px; font-weight: bold; border-radius: 12px; cursor: pointer; margin-bottom: 24px; transition: background 0.2s; -webkit-tap-highlight-color: transparent; }
-          .no-print-btn:active { background-color: #1e40af; }
+          
+          /* BARIS AKSI BUTTONS (KEMBALI & CETAK) */
+          .no-print-actions { display: flex; gap: 12px; margin-bottom: 24px; }
+          .no-print-btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 20px; font-size: 14px; font-weight: bold; border-radius: 12px; cursor: pointer; border: none; transition: background 0.2s; -webkit-tap-highlight-color: transparent; }
+          
+          .print-primary-btn { background-color: #1e3a8a; color: white; flex: 2; }
+          .print-primary-btn:active { background-color: #1e40af; }
+          
+          .print-secondary-btn { background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; flex: 1; }
+          .print-secondary-btn:active { background-color: #e2e8f0; }
+
           .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #1e293b; padding-bottom: 16px; margin-bottom: 24px; }
           .logo-title { font-size: 24px; font-weight: 900; font-style: italic; letter-spacing: -0.05em; }
           .logo-title span:first-child { color: #1e293b; }
@@ -241,17 +250,22 @@ export default function ReportsTab({
           .income { color: #10b981; }
           .expense { color: #ef4444; }
           table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
-          th { border-bottom: 1px solid #94a3b8; padding: 10px; color: #475569; font-weight: bold; }
-          td { padding: 10px; }
+          th { border-bottom: 1px solid #94a3b8; padding: 12px 10px; color: #475569; font-weight: bold; }
+          td { padding: 12px 10px; }
           .footer { text-align: center; font-size: 10px; color: #94a3b8; font-style: italic; margin-top: 40px; }
+          
           @media print {
-            .no-print-btn { display: none !important; }
+            .no-print-actions { display: none !important; }
             body { padding: 0; }
           }
         </style>
       </head>
       <body>
-        <button class="no-print-btn" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+        <!-- DUA PILIHAN AKSI VISUAL UNTUK MOBILE USER -->
+        <div class="no-print-actions">
+          <button class="no-print-btn print-primary-btn" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+          <button class="no-print-btn print-secondary-btn" onclick="window.close()">← Kembali</button>
+        </div>
         
         <div class="header">
           <div>
@@ -445,7 +459,7 @@ export default function ReportsTab({
                 triggerHaptic();
                 try {
                   const htmlContent = generatePrintHTML();
-                  // Buka jendela baru yang bersih secara murni sinkronus
+                  // Buka jendela baru secara murni sinkronus
                   const printWindow = window.open("", "_blank");
                   if (printWindow) {
                     printWindow.document.write(htmlContent);
@@ -662,7 +676,7 @@ export default function ReportsTab({
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg px-2">Rincian Pemasukan</h3>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
                 <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-2">Detail Pemasukan</p>
-                {sortedIncomeKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-500 italic">Kosong</p> : (
+                {sortedIncomeKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-550 italic">Kosong</p> : (
                   <div className="space-y-2">
                     {sortedIncomeKeys.map((key) => {
                       const data = incomeGroupedList[key];
@@ -672,7 +686,7 @@ export default function ReportsTab({
                           <div onClick={() => { triggerHaptic(); toggleExpand(`inc-${key}`); }} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1.5 -mx-1.5 rounded-xl transition-all">
                             <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1.5">
                               <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black">{data.items[0]?.category?.charAt(0).toUpperCase()}</span>
-                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span>
+                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-550 font-medium">({data.items.length}x)</span>
                             </span>
                             <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">
                               Rp {data.total.toLocaleString('id-ID')} 
@@ -761,7 +775,7 @@ export default function ReportsTab({
                 <ResponsiveContainer width="100%" height="100%">
                   <ReLineChart data={dailyCumulativeData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-slate-100 dark:stroke-slate-800" />
-                    <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={0} />
+                    <XAxis dataKey="name" tick={{ fontSize: 9, fontStyle: "normal", fontWeight: "bold", fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={0} />
                     <YAxis tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(1)}K` : v} />
                     <Tooltip content={<CustomTooltip />} />
                     <Line type="monotone" dataKey="Pemasukan" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: "#10b981", strokeWidth: 0 }} />
@@ -859,7 +873,7 @@ export default function ReportsTab({
                   <span className="text-slate-500 dark:text-slate-400 font-bold">Pengeluaran</span>
                   <span className="text-red-500 dark:text-red-400 font-black">Rp {localTotalExpense.toLocaleString('id-ID')}</span>
                 </div>
-                <div className="flex justify-between items-center text-xs pt-3 mt-1 border-t border-slate-100 dark:border-slate-800/60">
+                <div className="flex justify-between items-center text-xs pt-3 mt-1 border-t border-slate-100 border-slate-200 dark:border-slate-800/60">
                   <span className="text-slate-500 dark:text-slate-400 font-bold">Arus Kas</span>
                   <span className={`font-black ${localTotalIncome - localTotalExpense >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
                     {localTotalIncome - localTotalExpense < 0 ? '-' : ''}Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}
