@@ -8,7 +8,6 @@ import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, d
 import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData, SplitItemData, SubscriptionData } from "../types";
 import LoadingScreen from "../components/shared/LoadingScreen";
 import AuthScreen from "../components/shared/AuthScreen";
-import HistoryList from "../components/shared/HistoryList";
 import Sidebar from "../components/layout/Sidebar";
 import MobileHeader from "../components/layout/MobileHeader";
 import BottomNav from "../components/layout/BottomNav";
@@ -436,7 +435,7 @@ export default function FintrackerApp() {
         name: newName, 
         budgetLimit: newBudget, 
         expenseType: expenseType,
-        icon: newIcon || "" // Menyimpan emoji kustom ke database
+        icon: newIcon || "" 
       }); 
     } 
     catch (e) { alert("Gagal memperbarui kategori!"); }
@@ -1152,110 +1151,92 @@ export default function FintrackerApp() {
           isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode} 
         />
         <div className="max-w-5xl w-full mx-auto p-4 md:p-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-            <div className={`space-y-6 ${(activeTab === "home" || activeTab === "reports" ? "md:col-span-2" : "md:col-span-3")}`}>
-              {activeTab === "home" && (
-                <HomeTab 
-                  tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
-                  tCategory={tCategory} setTCategory={setTCategory} tAccountId={tAccountId} setTAccountId={setTAccountId}
-                  tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
-                  tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} 
-                  tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
-                  
-                  // MENGGUNAKAN reportTransactions AGAR DATA BULAN MEI TERMUAT DENGAN LENGKAP SECARA INSTAN
-                  transactions={reportTransactions} 
-                  onDeleteTransaction={handleDeleteTransaction}
-                  onEditTransaction={openEditModal} 
-                  isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode}
-
-                  // Link state koreksi transaksi
-                  editingTransaction={editingTransaction} setEditingTransaction={setEditingTransaction} handleUpdateTransaction={handleUpdateTransaction}
-                  editTAmount={editTAmount} setEditTAmount={setEditTAmount}
-                  editTType={editTType} setEditTType={setEditTType}
-                  editTAccountId={editTAccountId} setEditTAccountId={setEditTAccountId}
-                  editTToAccountId={editTToAccountId} setEditTToAccountId={setEditTToAccountId}
-                  editTNote={editTNote} setEditTNote={setEditTNote}
-                  editTCategory={editTCategory} setEditTCategory={setEditTCategory}
-                  editTDate={editTDate} setEditTDate={setEditTDate}
-                  editTAdminFee={editTAdminFee} setEditTAdminFee={setEditTAdminFee}
-                  editTSplits={editTSplits} setEditTSplits={setEditTSplits}
-                  updateCategory={handleEditCategory}
-                />
-              )}
-              {activeTab === "reports" && (
-                <ReportsTab 
-                  reportMonth={reportMonth} setReportMonth={setReportMonth} handleExportToExcel={handleExportToExcel}
-                  totalIncome={totalIncome} totalExpense={totalExpense} pieData={pieData} incomeCategoryList={incomeCategoryList} barData={barData}
-                  categories={categories} reportTransactions={reportTransactions}
-                  globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult} 
-                  prevTotalIncome={prevTotalIncome} prevTotalExpense={prevTotalExpense} 
-                  isPrivacyMode={isPrivacyMode}
-                  accounts={accounts} 
-                />
-              )}
-              {activeTab === "debts" && (
-                <DebtsTab 
-                  debts={debts} accounts={accounts} categories={categories}
-                  handleAddDebt={handleAddDebt} 
-                  handleEditDebt={handleEditDebt} 
-                  handlePayDebt={handlePayDebt} 
-                  handleDeleteDebt={handleDeleteDebt} 
-                  subscriptions={subscriptions}
-                  handleAddSubscription={handleAddSubscription}
-                  handleEditSubscription={handleEditSubscription}
-                  handlePaySubscription={handlePaySubscription}
-                  handleDeleteSubscription={handleDeleteSubscription}
-                  isPrivacyMode={isPrivacyMode}
-                />
-              )}
-              {activeTab === "assets" && (
-                <AssetsTab 
-                  accounts={accounts} walletTypes={walletTypes} accType={accType} setAccType={setAccType}
-                  accName={accName} setAccName={setAccName} accBalance={accBalance} setAccBalance={setAccBalance}
-                  accLogo={accLogo} handleLogoUpload={handleLogoUpload} accIsSavings={accIsSavings} setAccIsSavings={setAccIsSavings} 
-                  accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} 
-                  accExcludeFromTotal={accExcludeFromTotal} setAccExcludeFromTotal={setAccExcludeFromTotal}
-                  editAccExcludeFromTotal={editAccExcludeFromTotal} setEditAccExcludeFromTotal={setEditAccExcludeFromTotal}
-                  
-                  accIsBusiness={accIsBusiness} setAccIsBusiness={setAccIsBusiness}
-                  editAccIsBusiness={editAccIsBusiness} setEditAccIsBusiness={setEditAccIsBusiness}
-
-                  handleCreateAccount={handleCreateAccount} editingAccId={editingAccId} setEditingAccId={setEditingAccId} 
-                  editAccName={editAccName} setEditAccName={setEditAccName} editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} 
-                  editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} 
-                  editAccTargetBalance={editAccTargetBalance} setEditAccTargetBalance={setEditAccTargetBalance} 
-                  handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
-                  
-                  accSavingsGoalTitle={accSavingsGoalTitle} setAccSavingsGoalTitle={setAccSavingsGoalTitle}
-                  editAccSavingsGoalTitle={editAccSavingsGoalTitle} setEditAccSavingsGoalTitle={setEditAccSavingsGoalTitle}
-                  isPrivacyMode={isPrivacyMode}
-
-                  accCurrency={accCurrency} setAccCurrency={setAccCurrency}
-                  editAccCurrency={editAccCurrency} setEditAccCurrency={setEditAccCurrency}
-                  exchangeRates={exchangeRates}
-                  handleUpdateGlobalRates={handleUpdateGlobalRates}
-                  reportTransactions={reportTransactions}
-                  reportMonth={reportMonth}
-                  setReportMonth={setReportMonth}
-                />
-              )}
-              {activeTab === "settings" && (
-                <SettingsTab 
-                  user={user} onLogout={() => signOut(auth)} tType={tType} setTType={setTType}
-                  newCatName={newCatName} setNewCatName={setNewCatName} newExpenseType={newExpenseType} setNewExpenseType={setNewExpenseType}
-                  addCustomCategory={addCustomCategory} categories={categories} deleteCategory={deleteCategory} updateCategory={handleEditCategory}
-                  newWalletTypeName={newWalletTypeName} setNewWalletTypeName={setNewWalletTypeName} addCustomWalletType={addCustomWalletType} 
-                  walletTypes={walletTypes} deleteWalletType={deleteWalletType} theme={theme} setTheme={setTheme}
-                  appPin={appPin} setAppPin={handleSetAppPin}
-                />
-              )}
-            </div>
-
+          <div className="space-y-6 w-full">
+            {activeTab === "home" && (
+              <HomeTab 
+                tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
+                tCategory={tCategory} setTCategory={setTCategory} tAccountId={tAccountId} setTAccountId={setTAccountId}
+                tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
+                tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} 
+                tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
+                transactions={reportTransactions} 
+                onDeleteTransaction={handleDeleteTransaction}
+                onEditTransaction={openEditModal} 
+                isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode}
+                editingTransaction={editingTransaction} setEditingTransaction={setEditingTransaction} handleUpdateTransaction={handleUpdateTransaction}
+                editTAmount={editTAmount} setEditTAmount={setEditTAmount}
+                editTType={editTType} setEditTType={setEditTType}
+                editTAccountId={editTAccountId} setEditTAccountId={setEditTAccountId}
+                editTToAccountId={editTToAccountId} setEditTToAccountId={setEditTToAccountId}
+                editTNote={editTNote} setEditTNote={setEditTNote}
+                editTCategory={editTCategory} setEditTCategory={setEditTCategory}
+                editTDate={editTDate} setEditTDate={setEditTDate}
+                editTAdminFee={editTAdminFee} setEditTAdminFee={setEditTAdminFee}
+                editTSplits={editTSplits} setEditTSplits={setEditTSplits}
+                updateCategory={handleEditCategory}
+              />
+            )}
             {activeTab === "reports" && (
-              <HistoryList 
-                transactions={transactions} onDelete={handleDeleteTransaction} onEdit={openEditModal} 
-                onLoadMore={() => setTxLimit(prev => prev + 10)} hasMore={transactions.length >= txLimit}
+              <ReportsTab 
+                reportMonth={reportMonth} setReportMonth={setReportMonth} handleExportToExcel={handleExportToExcel}
+                totalIncome={totalIncome} totalExpense={totalExpense} pieData={pieData} incomeCategoryList={incomeCategoryList} barData={barData}
+                categories={categories} reportTransactions={reportTransactions}
+                globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult} 
+                prevTotalIncome={prevTotalIncome} prevTotalExpense={prevTotalExpense} 
                 isPrivacyMode={isPrivacyMode}
+                accounts={accounts} 
+              />
+            )}
+            {activeTab === "debts" && (
+              <DebtsTab 
+                debts={debts} accounts={accounts} categories={categories}
+                handleAddDebt={handleAddDebt} 
+                handleEditDebt={handleEditDebt} 
+                handlePayDebt={handlePayDebt} 
+                handleDeleteDebt={handleDeleteDebt} 
+                subscriptions={subscriptions}
+                handleAddSubscription={handleAddSubscription}
+                handleEditSubscription={handleEditSubscription}
+                handlePaySubscription={handlePaySubscription}
+                handleDeleteSubscription={handleDeleteSubscription}
+                isPrivacyMode={isPrivacyMode}
+              />
+            )}
+            {activeTab === "assets" && (
+              <AssetsTab 
+                accounts={accounts} walletTypes={walletTypes} accType={accType} setAccType={setAccType}
+                accName={accName} setAccName={setAccName} accBalance={accBalance} setAccBalance={setAccBalance}
+                accLogo={accLogo} handleLogoUpload={handleLogoUpload} accIsSavings={accIsSavings} setAccIsSavings={setAccIsSavings} 
+                accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} 
+                accExcludeFromTotal={accExcludeFromTotal} setAccExcludeFromTotal={setAccExcludeFromTotal}
+                editAccExcludeFromTotal={editAccExcludeFromTotal} setEditAccExcludeFromTotal={setEditAccExcludeFromTotal}
+                accIsBusiness={accIsBusiness} setAccIsBusiness={setAccIsBusiness}
+                editAccIsBusiness={editAccIsBusiness} setEditAccIsBusiness={setEditAccIsBusiness}
+                handleCreateAccount={handleCreateAccount} editingAccId={editingAccId} setEditingAccId={setEditingAccId} 
+                editAccName={editAccName} setEditAccName={setEditAccName} editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} 
+                editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} 
+                editAccTargetBalance={editAccTargetBalance} setEditAccTargetBalance={setEditAccTargetBalance} 
+                handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
+                accSavingsGoalTitle={accSavingsGoalTitle} setAccSavingsGoalTitle={setAccSavingsGoalTitle}
+                editAccSavingsGoalTitle={editAccSavingsGoalTitle} setEditAccSavingsGoalTitle={setEditAccSavingsGoalTitle}
+                isPrivacyMode={isPrivacyMode}
+                accCurrency={accCurrency} setAccCurrency={setAccCurrency}
+                editAccCurrency={editAccCurrency} setEditAccCurrency={setEditAccCurrency}
+                exchangeRates={exchangeRates}
+                handleUpdateGlobalRates={handleUpdateGlobalRates}
+                reportTransactions={reportTransactions}
+                reportMonth={reportMonth}
+                setReportMonth={setReportMonth}
+              />
+            )}
+            {activeTab === "settings" && (
+              <SettingsTab 
+                user={user} onLogout={() => signOut(auth)} tType={tType} setTType={setTType}
+                newCatName={newCatName} setNewCatName={setNewCatName} newExpenseType={newExpenseType} setNewExpenseType={setNewExpenseType}
+                addCustomCategory={addCustomCategory} categories={categories} deleteCategory={deleteCategory} updateCategory={handleEditCategory}
+                newWalletTypeName={newWalletTypeName} setNewWalletTypeName={setNewWalletTypeName} addCustomWalletType={addCustomWalletType} 
+                walletTypes={walletTypes} deleteWalletType={deleteWalletType} theme={theme} setTheme={setTheme}
+                appPin={appPin} setAppPin={handleSetAppPin}
               />
             )}
           </div>
