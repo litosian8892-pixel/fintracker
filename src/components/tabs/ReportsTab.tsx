@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { 
   Download, ChevronDown, ArrowUp, ArrowDown, X, Printer, 
   BarChart3, PieChart as PieIcon, CalendarDays, Activity, Filter, 
@@ -52,6 +52,20 @@ export default function ReportsTab({
   reportMonth, setReportMonth, handleExportToExcel, categories, reportTransactions, globalSearch, setGlobalSearch, searchResult, isPrivacyMode = false, accounts = []
 }: ReportsTabProps) {
   
+  // Perbaikan Fase 12: Ref untuk auto-scroll ke kanan (bulan terbaru) pada saat dimuat
+  const monthScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (monthScrollRef.current) {
+      const timer = setTimeout(() => {
+        if (monthScrollRef.current) {
+          monthScrollRef.current.scrollLeft = monthScrollRef.current.scrollWidth;
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   const [activeView, setActiveView] = useState<"statistik" | "laporan" | "kalender">("statistik");
   const [selectedHeatmapDate, setSelectedHeatmapDate] = useState<string | null>(null);
   
@@ -412,7 +426,7 @@ export default function ReportsTab({
             </button>
           </div>
 
-          <div className="flex overflow-x-auto hide-scrollbar gap-2 px-2 pb-2 -mx-2 snap-x">
+          <div ref={monthScrollRef} className="flex overflow-x-auto hide-scrollbar gap-2 px-2 pb-2 -mx-2 snap-x">
             {monthNavPills.map(month => {
               const isActive = month === reportMonth;
               const dateObj = new Date(month + "-01");

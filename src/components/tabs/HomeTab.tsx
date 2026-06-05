@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { AccountData, CategoryData, SplitItemData, TransactionData } from "../../types";
 import { 
   ArrowUpRight, 
@@ -151,6 +151,21 @@ export default function HomeTab({
   updateCategory
 }: HomeTabProps) {
   
+  // Perbaikan Fase 12: Ref untuk auto-scroll ke kanan (bulan terbaru) pada saat dimuat
+  const monthScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (monthScrollRef.current) {
+      // Gunakan setTimeout mikro untuk memastikan DOM telah mengkalkulasi 'scrollWidth' secara penuh
+      const timer = setTimeout(() => {
+        if (monthScrollRef.current) {
+          monthScrollRef.current.scrollLeft = monthScrollRef.current.scrollWidth;
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   // Filter bulan aktif bergaya Gambar 3
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -666,7 +681,10 @@ export default function HomeTab({
       </div>
 
       {/* HORIZONTAL MONTH SCROLLING PILLS */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 scroll-smooth -mx-4 px-4 md:mx-0 md:px-0">
+      <div 
+        ref={monthScrollRef}
+        className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 scroll-smooth -mx-4 px-4 md:mx-0 md:px-0"
+      >
         {recentMonths.map((m) => {
           const isActive = selectedMonth === m.value;
           return (
