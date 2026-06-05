@@ -42,7 +42,6 @@ export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Optimasi: Membaca status premium dari cache lokal di awal untuk menghindari loading screen yang tertahan
   const [isPremium, setIsPremium] = useState<boolean | null>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("fintracker_is_premium");
@@ -79,7 +78,6 @@ export default function FintrackerApp() {
   const [globalSearch, setGlobalSearch] = useState("");
   const [searchResult, setSearchResult] = useState<TransactionData[]>([]);
 
-  // STATES UNTUK EDIT TRANSAKSI
   const [editingTransaction, setEditingTransaction] = useState<TransactionData | null>(null);
   const [editTAmount, setEditTAmount] = useState("");
   const [editTType, setEditTType] = useState<"income" | "expense" | "transfer">("expense");
@@ -91,32 +89,17 @@ export default function FintrackerApp() {
   const [editTAdminFee, setEditTAdminFee] = useState(""); 
   const [activeEditKeypad, setActiveEditKeypad] = useState<"amount" | "adminFee" | null>(null);
   
-  // STATES RINCIAN PECAHAN EDIT BARU
   const [editTSplits, setEditTSplits] = useState<SplitItemData[]>([]);
   const [activeEditSplitIndex, setActiveEditSplitIndex] = useState<number | null>(null);
   const [showEditSplitCatModal, setShowEditSplitCatModal] = useState(false);
 
-  // STATE REAKTIF BARU: MELACAK STATUS BIOMETRIK
   const [isBiometricActive, setIsBiometricActive] = useState(false);
-
-  // STATE PRIVACY MODE (FITUR PREMIUM FASE 7)
   const [isPrivacyMode, setIsPrivacyMode] = useState(false);
-
   const [isMobile, setIsMobile] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
 
-  // --- BARU: STATE UNTUK KURS MANUAL GLOBAL TERPUSAT ---
   const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({
-    IDR: 1,
-    USD: 16000,
-    SGD: 12000,
-    EUR: 17000,
-    JPY: 100,
-    CNY: 2200,
-    GBP: 20000,
-    AUD: 10500,
-    MYR: 3400,
-    SAR: 4200
+    IDR: 1, USD: 16000, SGD: 12000, EUR: 17000, JPY: 100, CNY: 2200, GBP: 20000, AUD: 10500, MYR: 3400, SAR: 4200
   });
 
   useEffect(() => {
@@ -129,8 +112,6 @@ export default function FintrackerApp() {
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme") as "light" | "dark" | "system" | null;
     if (storedTheme) setTheme(storedTheme);
-
-    // Load Privacy Mode Status
     const storedPrivacy = localStorage.getItem("fintracker_privacy_mode");
     if (storedPrivacy === "true") setIsPrivacyMode(true);
   }, []);
@@ -218,7 +199,6 @@ export default function FintrackerApp() {
   const [accExcludeFromTotal, setAccExcludeFromTotal] = useState(false); 
   const [accIsBusiness, setAccIsBusiness] = useState(false); 
   const [accSavingsGoalTitle, setAccSavingsGoalTitle] = useState(""); 
-  // --- BINDING BARU: MULTI-CURRENCY AKUN BARU ---
   const [accCurrency, setAccCurrency] = useState("IDR");
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
@@ -230,7 +210,6 @@ export default function FintrackerApp() {
   const [editAccExcludeFromTotal, setEditAccExcludeFromTotal] = useState(false); 
   const [editAccIsBusiness, setEditAccIsBusiness] = useState(false); 
   const [editAccSavingsGoalTitle, setEditAccSavingsGoalTitle] = useState(""); 
-  // --- BINDING BARU: MULTI-CURRENCY AKUN EDIT ---
   const [editAccCurrency, setEditAccCurrency] = useState("IDR");
 
   const [tAmount, setTAmount] = useState("");
@@ -259,13 +238,11 @@ export default function FintrackerApp() {
     return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(parsed);
   };
 
-  // Optimasi: Memproses otentikasi & pengecekan dokumen hantu secara non-blocking
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => { 
       setUser(u); 
       
       if (u) {
-        // Jalankan pengecekan secara asinkron di latar belakang agar inisialisasi aplikasi tidak terhambat
         const checkGhostDocument = async () => {
           try {
             const userRef = doc(db, "users", u.uid);
@@ -316,7 +293,6 @@ export default function FintrackerApp() {
       setSubscriptions(sn.docs.map(d => ({ id: d.id, ...d.data() } as SubscriptionData)));
     });
 
-    // Optimasi: Memperbarui cache lokal & kurs global setiap kali diubah di server
     const unsubProfile = onSnapshot(doc(db, `users/${user.uid}`), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -324,7 +300,6 @@ export default function FintrackerApp() {
         setIsPremium(premiumStatus);
         localStorage.setItem("fintracker_is_premium", premiumStatus.toString());
 
-        // Sinkronisasi kurs global terpusat dari dokumen pengguna induk
         if (data.rates) {
           setExchangeRates(prev => ({
             ...prev,
@@ -361,12 +336,11 @@ export default function FintrackerApp() {
     return () => unsubTr();
   }, [user, txLimit]);
 
-  // --- MODIFIKASI: Menarik Data Transaksi 6 Bulan ke Belakang demi Analitik Tren ---
   useEffect(() => {
-    if (!user || activeTab !== "reports") return; 
-    
-    const [y, m] = reportMonth.split("-").map(Number);
-    // JS Date Month 0-indexed: June (6) minus 6 adalah 0 (Januari)
+  // PERBAIKAN: Izinkan penarikan data transaksi saat membuka tab Laporan ATAU tab Aset & Akun
+  if (!user || (activeTab !== "reports" && activeTab !== "assets")) return; 
+  
+  const [y, m] = reportMonth.split("-").map(Number);
     const startOfRangeDate = new Date(y, m - 6, 1);
     const startYear = startOfRangeDate.getFullYear();
     const startMonth = String(startOfRangeDate.getMonth() + 1).padStart(2, "0");
@@ -649,7 +623,6 @@ export default function FintrackerApp() {
     }
   };
 
-  // --- BARU: FUNGSI UPDATE KURS GLOBAL TERPUSAT ---
   const handleUpdateGlobalRates = async (newRates: Record<string, number>) => {
     if (isSubmittingRef.current) return;
     if (!user) return;
@@ -666,7 +639,6 @@ export default function FintrackerApp() {
     }
   };
 
-  // MODIFIKASI: Menyimpan mata uang & nilai kurs manual aslinya (diambil otomatis dari tabel kurs global saat ini)
   const handleCreateAccount = async () => {
     if (isSubmittingRef.current) return; 
     if (!user || !accName || !accBalance) return;
@@ -684,9 +656,8 @@ export default function FintrackerApp() {
         excludeFromTotal: accExcludeFromTotal, 
         isBusiness: accIsBusiness, 
         savingsGoalTitle: accIsSavings && accSavingsGoalTitle ? accSavingsGoalTitle : null, 
-        // --- MULTI-CURRENCY ---
         currency: accCurrency,
-        lastExchangeRate: accCurrency === "IDR" ? 1 : exchangeRates[accCurrency] || 1, // Diambil asinkronus dari kurs global terpusat
+        lastExchangeRate: accCurrency === "IDR" ? 1 : exchangeRates[accCurrency] || 1, 
         createdAt: serverTimestamp() 
       });
       setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); setAccExcludeFromTotal(false); setAccIsBusiness(false); setAccSavingsGoalTitle("");
@@ -703,7 +674,6 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
-  // MODIFIKASI: Menyimpan mata uang & kurs manual serta merekam audit saldo yang dikonversikan ke IDR
   const handleEditAccount = async (id: string) => {
     if (isSubmittingRef.current) return; 
     if (!user || !editAccName || !editAccBalance) return;
@@ -713,7 +683,7 @@ export default function FintrackerApp() {
       const oldAcc = accounts.find(a => a.id === id);
       const newBalance = Number(editAccBalance);
       const targetCurrency = editAccCurrency;
-      const targetRate = targetCurrency === "IDR" ? 1 : exchangeRates[targetCurrency] || 1; // Diambil otomatis dari kurs global terpusat
+      const targetRate = targetCurrency === "IDR" ? 1 : exchangeRates[targetCurrency] || 1; 
 
       if (oldAcc && newBalance !== oldAcc.balance) {
         const diff = newBalance - oldAcc.balance;
@@ -745,9 +715,8 @@ export default function FintrackerApp() {
         excludeFromTotal: editAccExcludeFromTotal,
         isBusiness: editAccIsBusiness, 
         savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle ? editAccSavingsGoalTitle : null,
-        // --- MULTI-CURRENCY ---
         currency: targetCurrency,
-        lastExchangeRate: targetRate // Diambil otomatis dari kurs global terpusat
+        lastExchangeRate: targetRate 
       });
       
       setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false); setEditAccIsBusiness(false); setEditAccSavingsGoalTitle("");
@@ -774,7 +743,6 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
-  // MODIFIKASI: Logika pencatatan transaksi yang secara otomatis mengonversi nominal asing ke IDR demi kestabilan database (Membaca Kurs Global)
   const handleTransaction = async (customSplits?: SplitItemData[]) => {
     if (isSubmittingRef.current) return; 
     if (!user || !tAmount || !tAccountId) return alert("Isi data dompet dan nominal dengan lengkap!");
@@ -787,9 +755,7 @@ export default function FintrackerApp() {
     const sourceAcc = accounts.find(a => a.id === tAccountId);
     if (!sourceAcc) return alert("Dompet asal tidak ditemukan!");
 
-    // Prioritaskan pembacaan kurs terpusat, dengan fallback historis dompet
     const rateSource = exchangeRates[sourceAcc.currency || "IDR"] || sourceAcc.lastExchangeRate || 1;
-    // Nilai transaksi terkonversi ke IDR
     const idrAmount = rawAmount * rateSource;
 
     if (customSplits && customSplits.length > 0) {
@@ -810,7 +776,6 @@ export default function FintrackerApp() {
         if (!destAcc) return alert("Dompet tujuan tidak ditemukan!");
         
         const rateDest = exchangeRates[destAcc.currency || "IDR"] || destAcc.lastExchangeRate || 1;
-        // Konversi nominal transfer dari IDR ke mata uang tujuan
         const destAmount = idrAmount / rateDest;
 
         await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: sourceAcc.balance - (rawAmount + rawAdminFee) });
@@ -827,7 +792,6 @@ export default function FintrackerApp() {
           category: "Transfer", 
           tDate, 
           adminFee: idrAdminFee, 
-          // Menyimpan rincian multi-currency
           originalAmount: rawAmount,
           originalCurrency: sourceAcc.currency || "IDR",
           exchangeRate: rateSource,
@@ -838,7 +802,7 @@ export default function FintrackerApp() {
         await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: newBal });
         
         const docData: any = { 
-          amount: idrAmount, // Selalu simpan IDR ke 'amount' demi laporan dan grafik
+          amount: idrAmount, 
           type: tType, 
           accountId: tAccountId, 
           accountName: sourceAcc.name, 
@@ -851,7 +815,6 @@ export default function FintrackerApp() {
           createdAt: serverTimestamp() 
         };
         if (customSplits && customSplits.length > 0) {
-          // Konversikan rincian pecahan splits ke IDR agar visual laporan splits sinkron
           docData.splits = customSplits.map(s => ({
             ...s,
             amount: s.amount * rateSource
@@ -865,7 +828,6 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
-  // MODIFIKASI: Mengembalikan saldo dompet menggunakan originalAmount jika ada (kompatibel mundur dengan Kurs Global)
   const handleDeleteTransaction = async (t: TransactionData) => {
     if (isSubmittingRef.current) return; 
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
@@ -905,7 +867,6 @@ export default function FintrackerApp() {
     setEditTSplits(t.splits ? t.splits.map(s => ({ ...s })) : []); 
   };
 
-  // MODIFIKASI: Logika koreksi transaksi yang ramah multi-currency, kurs global & kompatibel mundur
   const handleUpdateTransaction = async () => {
     if (isSubmittingRef.current) return; 
     if (!user || !editingTransaction) return;
@@ -919,7 +880,6 @@ export default function FintrackerApp() {
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
-      // 1. Pulihkan saldo dompet lama menggunakan data transaksi lama
       if (oldT.type === "transfer") {
         const oldRawAmount = oldT.originalAmount !== undefined ? oldT.originalAmount : oldT.amount;
         const oldRawAdminFee = oldT.originalAmount !== undefined ? ((oldT.adminFee || 0) / (oldT.exchangeRate || 1)) : (oldT.adminFee || 0);
@@ -942,7 +902,6 @@ export default function FintrackerApp() {
         }
       }
 
-      // 2. Baca informasi dompet baru untuk menerapkan saldo baru
       const srcAccRef = doc(db, `users/${user.uid}/accounts/${editTAccountId}`);
       const srcSnap = await getDoc(srcAccRef);
       if (!srcSnap.exists()) throw "Dompet asal tidak ditemukan";
@@ -969,10 +928,9 @@ export default function FintrackerApp() {
         await updateDoc(srcAccRef, { balance: newBal });
       }
 
-      // 3. Update dokumen transaksi di Firestore
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
       const updateData: any = { 
-        amount: newIdrAmount, // Tetap konversikan ke IDR
+        amount: newIdrAmount, 
         type: editTType, 
         accountId: editTAccountId, 
         accountName: accounts.find(a => a.id === editTAccountId)?.name || "", 
@@ -1028,38 +986,17 @@ export default function FintrackerApp() {
     setActiveEditSplitIndex(null);
   };
 
-  // --- LOGIKA FILTER ULANG: Memastikan Laporan Bulanan Tetap Menggunakan Bulan Aktif ---
+  // --- LOGIKA DATA EKSKUSIF UNTUK EKSPOR EXCEL ---
   const monthlyTransactions = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
 
+  // Menurunkan dummy props ke interface lama untuk mencegah TS Strict Mode error
   const adminFeeTxs = monthlyTransactions.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ id: `fee-${t.id}`, amount: t.adminFee!, type: "expense", accountId: t.accountId, accountName: t.accountName, category: "Biaya Admin", note: `Biaya admin transfer ke ${t.toAccountName}`, tDate: t.tDate } as TransactionData));
   const combinedExpenseTxs = [...monthlyTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
   const totalIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
   const totalExpense = combinedExpenseTxs.reduce((a, b) => a + b.amount, 0); 
-  
-  const expenseByCategory = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => {
-    if (curr.splits && curr.splits.length > 0) {
-      curr.splits.forEach(s => {
-        acc[s.category] = (acc[s.category] || 0) + s.amount;
-      });
-    } else {
-      acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
-    }
-    return acc;
-  }, {});
-
+  const expenseByCategory = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { if (curr.splits && curr.splits.length > 0) { curr.splits.forEach(s => { acc[s.category] = (acc[s.category] || 0) + s.amount; }); } else { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; } return acc; }, {});
   const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
-  
-  const incomeByCategory = monthlyTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => {
-    if (curr.splits && curr.splits.length > 0) {
-      curr.splits.forEach(s => {
-        acc[s.category] = (acc[s.category] || 0) + s.amount;
-      });
-    } else {
-      acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
-    }
-    return acc;
-  }, {});
-
+  const incomeByCategory = monthlyTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => { if (curr.splits && curr.splits.length > 0) { curr.splits.forEach(s => { acc[s.category] = (acc[s.category] || 0) + s.amount; }); } else { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; } return acc; }, {});
   const incomeCategoryList = Object.keys(incomeByCategory).map(key => ({ name: key, value: incomeByCategory[key] }));
   const expenseByDate = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc; }, {});
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
@@ -1104,8 +1041,6 @@ export default function FintrackerApp() {
     XLSX.writeFile(workbook, `Fintracker_Laporan_${reportMonth}.xlsx`);
   };
 
-  // --- RENDER LAYAR LOADING, AUTH, & KUNCI ---
-  
   if (loading || !pinChecked || (user && isPremium === null)) return <LoadingScreen />;
   if (!user) return <AuthScreen />;
 
@@ -1146,75 +1081,47 @@ export default function FintrackerApp() {
 
     return (
       <main className="min-h-screen bg-[#070a13] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-200">
-        
-        {/* Soft, rich ambient glows in the background (Match the new AuthScreen tone) */}
         <div className="absolute w-[500px] h-[500px] bg-blue-600/10 blur-[150px] rounded-full -top-40 -left-40 pointer-events-none"></div>
         <div className="absolute w-[500px] h-[500px] bg-indigo-500/10 blur-[150px] rounded-full -bottom-40 -right-40 pointer-events-none"></div>
 
-        {/* Card with subtle translucent border overlay (No harsh outlines) */}
         <div className="bg-[#0b101d]/60 backdrop-blur-2xl border border-white/[0.06] p-8 md:p-10 rounded-[35px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-full max-w-sm flex flex-col items-center relative overflow-hidden animate-in zoom-in-95 duration-300">
-          
-          {/* Subtle gradient border overlay */}
           <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
           
-          {/* Icon with glowing ambient sphere behind it */}
           <div className="w-16 h-16 bg-[#0f1524] rounded-full flex items-center justify-center mb-5 shadow-xl border border-white/[0.08] relative">
             <div className="absolute w-8 h-8 bg-amber-500/20 rounded-full blur-[10px] pointer-events-none"></div>
             <Crown size={26} className="text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.4)] z-10" strokeWidth={1.5}/>
           </div>
           
-          {/* Header Typography */}
           <h2 className="text-2xl font-black mb-1.5 tracking-tight text-white leading-none text-center">
             AKSES <span className="bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 bg-clip-text text-transparent">PREMIUM</span> TERKUNCI
           </h2>
-          <p className="text-xs text-slate-400 mb-6 text-center leading-relaxed">
-            Aktifkan lisensi seumur hidup untuk membuka kunci akses selamanya.
-          </p>
+          <p className="text-xs text-slate-400 mb-6 text-center leading-relaxed">Aktifkan lisensi seumur hidup untuk membuka kunci akses selamanya.</p>
 
-          {/* VIP Pass Digital Ticket Stub (Clean, Responsive Flexbox-Based Layout, NO absolute cutouts) */}
           <div className="w-full bg-[#151c30]/50 border border-amber-500/20 rounded-2xl p-5 mb-6 relative overflow-hidden shadow-inner text-left flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 blur-[30px] rounded-full pointer-events-none"></div>
-            
-            {/* Top Stub Content */}
             <div className="pb-4 space-y-1.5">
-              <div className="flex justify-between items-center">
-                <span className="text-[8px] font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 uppercase tracking-widest leading-none">LIFETIME ACCESS PASS</span>
-                <Crown size={16} className="text-amber-400 drop-shadow-[0_0_6px_rgba(245,158,11,0.4)]" />
-              </div>
+              <div className="flex justify-between items-center"><span className="text-[8px] font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 uppercase tracking-widest leading-none">LIFETIME ACCESS PASS</span><Crown size={16} className="text-amber-400 drop-shadow-[0_0_6px_rgba(245,158,11,0.4)]" /></div>
               <h3 className="text-xs font-black text-white uppercase tracking-tight">PREMIUM LIFETIME PASS</h3>
-              <p className="text-[10px] font-semibold text-slate-400 leading-normal">
-                Membuka penuh proteksi PIN & sidik jari, pemisahan dompet usaha, otomatisasi tagihan berulang, alokasi pecahan transaksi, s/d mutasi multi-valas asing selamanya.
-              </p>
+              <p className="text-[10px] font-semibold text-slate-400 leading-normal">Membuka penuh proteksi PIN & sidik jari, pemisahan dompet usaha, otomatisasi tagihan berulang, alokasi pecahan transaksi, s/d mutasi multi-valas asing selamanya.</p>
             </div>
-            
-            {/* Clean, responsive dotted line divider (Never cuts through text!) */}
             <div className="border-t border-dashed border-amber-500/25 my-1 pointer-events-none"></div>
-            
-            {/* Bottom Stub Content */}
             <div className="pt-2 flex justify-between items-center text-[8px] text-slate-500 font-mono leading-none">
-              <span className="truncate max-w-[130px]">MEMBER: {user.email?.split("@")[0].toUpperCase()}</span>
-              <span>NO: FT-{user.uid.slice(0, 6).toUpperCase()}</span>
+              <span className="truncate max-w-[130px]">MEMBER: {user.email?.split("@")[0].toUpperCase()}</span><span>NO: FT-{user.uid.slice(0, 6).toUpperCase()}</span>
             </div>
           </div>
 
-          {/* Pricing & Checkout Section */}
           <div className="text-center w-full space-y-4">
             <div className="flex items-baseline justify-center gap-2">
-              <span className="text-xs font-bold text-slate-500 line-through">Rp 150.000</span>
-              <span className="text-4xl font-black text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]">Rp 49.000</span>
-              <span className="text-[8px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md uppercase tracking-wider ml-1">SAVE 67%</span>
+              <span className="text-xs font-bold text-slate-500 line-through">Rp 150.000</span><span className="text-4xl font-black text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]">Rp 49.000</span><span className="text-[8px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md uppercase tracking-wider ml-1">SAVE 67%</span>
             </div>
             <p className="text-[9px] font-extrabold text-blue-400 uppercase tracking-widest leading-none">Sekali Bayar Selamanya</p>
-
             <a href={waLink} target="_blank" rel="noreferrer" className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 shadow-[0_4px_20px_rgba(16,185,129,0.25)] text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] duration-100 cursor-pointer">
               <MessageCircle size={16} /> Aktivasi via WhatsApp
             </a>
-
             <button onClick={() => signOut(auth)} className="text-[9px] font-bold text-slate-500 hover:text-slate-300 transition-colors cursor-pointer block mx-auto pt-1">
               Bukan {user.email}? Logout
             </button>
           </div>
-
         </div>
       </main>
     );
@@ -1252,6 +1159,7 @@ export default function FintrackerApp() {
                   globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult} 
                   prevTotalIncome={prevTotalIncome} prevTotalExpense={prevTotalExpense} 
                   isPrivacyMode={isPrivacyMode}
+                  accounts={accounts} 
                 />
               )}
               {activeTab === "debts" && (
@@ -1291,11 +1199,16 @@ export default function FintrackerApp() {
                   editAccSavingsGoalTitle={editAccSavingsGoalTitle} setEditAccSavingsGoalTitle={setEditAccSavingsGoalTitle}
                   isPrivacyMode={isPrivacyMode}
 
-                  // --- BARU: PROPS UNTUK MULTI-CURRENCY BINDINGS ---
                   accCurrency={accCurrency} setAccCurrency={setAccCurrency}
                   editAccCurrency={editAccCurrency} setEditAccCurrency={setEditAccCurrency}
                   exchangeRates={exchangeRates}
                   handleUpdateGlobalRates={handleUpdateGlobalRates}
+                  // ----------------------------------------------------
+                  // TAMBAHKAN 3 BARIS INI AGAR DETAIL DOMPET BISA MUNCUL:
+                  // ----------------------------------------------------
+                  reportTransactions={reportTransactions}
+                  reportMonth={reportMonth}
+                  setReportMonth={setReportMonth}
                 />
               )}
               {activeTab === "settings" && (

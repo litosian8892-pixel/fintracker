@@ -1,43 +1,50 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, Wallet, Briefcase } from "lucide-react";
-import { AccountData, WalletTypeData } from "../../types";
+import { useState, useEffect, useMemo } from "react";
+import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, Wallet, Briefcase, Plus, ChevronLeft, TrendingDown, TrendingUp, ChevronRight, Activity, LayoutGrid, List } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart as RePieChart, Pie, Cell } from "recharts";
+import { AccountData, WalletTypeData, TransactionData } from "../../types";
+
+const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#0ea5e9', '#6366f1', '#d946ef', '#f43f5e'];
 
 const getCardDesign = (type: string) => {
   const t = type.toLowerCase();
   if (t.includes("bank") || t.includes("kartu") || t.includes("credit") || t.includes("savings")) {
     return { 
-      bg: "bg-white dark:bg-slate-900 border-2 border-blue-100 dark:border-blue-900/30 hover:border-blue-300 dark:hover:border-blue-800", 
+      bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
       icon: <CreditCard size={18} className="text-blue-600 dark:text-blue-400" />, 
-      iconBg: "bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/50",
-      chip: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800", 
+      iconBg: "bg-blue-50 dark:bg-blue-950/50", 
+      chip: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", 
       progressBar: "bg-blue-500"
     };
   } else if (t.includes("wallet") || t.includes("gopay") || t.includes("ovo") || t.includes("dana") || t.includes("pay")) {
     return { 
-      bg: "bg-white dark:bg-slate-900 border-2 border-purple-100 dark:border-purple-900/30 hover:border-purple-300 dark:hover:border-purple-800", 
+      bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
       icon: <Smartphone size={18} className="text-purple-600 dark:text-purple-400" />, 
-      iconBg: "bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/50",
-      chip: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-800",
+      iconBg: "bg-purple-50 dark:bg-purple-950/50", 
+      chip: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
       progressBar: "bg-purple-500" 
     };
   } else if (t.includes("cash") || t.includes("dompet") || t.includes("tunai")) {
     return { 
-      bg: "bg-white dark:bg-slate-900 border-2 border-emerald-100 dark:border-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-800", 
-      icon: <Banknote size={18} className="text-emerald-600 dark:text-emerald-400" />, 
-      iconBg: "bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/50",
-      chip: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800",
+      bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
+      icon: <Banknote size={18} className="text-emerald-600" />, 
+      iconBg: "bg-emerald-50 dark:bg-emerald-955", 
+      chip: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
       progressBar: "bg-emerald-500" 
     };
   } else {
     return { 
-      bg: "bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700", 
+      bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
       icon: <Wallet size={18} className="text-slate-600 dark:text-slate-400" />, 
-      iconBg: "bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50",
-      chip: "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700",
+      iconBg: "bg-slate-50 dark:bg-slate-800/50", 
+      chip: "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
       progressBar: "bg-slate-500" 
     };
   }
+};
+
+const getCurrencySymbol = (cur?: string) => {
+  switch (cur?.toUpperCase()) { case "USD": return "$"; case "SGD": return "S$"; case "EUR": return "€"; case "JPY": case "CNY": return "¥"; case "GBP": return "£"; case "AUD": return "A$"; case "MYR": return "RM"; case "SAR": return "SR"; default: return "Rp"; }
 };
 
 const safeEvaluate = (expr: string): number => {
@@ -57,95 +64,74 @@ const safeEvaluate = (expr: string): number => {
 };
 
 const getGoalStatus = (percentage: number) => {
-  if (percentage >= 100) return { label: "✨ Selesai!", color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50" };
-  if (percentage >= 75) return { label: "🚀 Sikit Lagi!", color: "text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/50" };
-  if (percentage >= 40) return { label: "🔥 On Track", color: "text-amber-600 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/50" };
+  if (percentage >= 100) return { label: "✨ Selesai!", color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-95.0/40 border-emerald-200 dark:border-emerald-800/50" };
+  if (percentage >= 75) return { label: "🚀 Sikit Lagi!", color: "text-blue-600 bg-blue-50 dark:bg-blue-95.0/40 border-amber-200 dark:border-amber-800/50" };
+  if (percentage >= 40) return { label: "🔥 On Track", color: "text-amber-600 bg-amber-50 dark:bg-amber-95.0/40 border-amber-200 dark:border-amber-800/50" };
   return { label: "🌱 Berjuang!", color: "text-slate-500 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50" };
 };
 
-// Asisten Pembaca Simbol Mata Uang
-const getCurrencySymbol = (currency?: string) => {
-  if (!currency) return "Rp";
-  switch (currency.toUpperCase()) {
-    case "IDR": return "Rp";
-    case "USD": return "$";
-    case "SGD": return "S$";
-    case "EUR": return "€";
-    case "JPY": return "¥";
-    case "CNY": return "¥"; // Integrasi Yuan China (CNY)
-    case "GBP": return "£";
-    case "AUD": return "A$";
-    case "MYR": return "RM";
-    case "SAR": return "SR";
-    default: return currency;
+// ASISTEN MULTI-COLOR SEGMENT: Membuat daftar warna pembatas naik/turun per segmen harian
+const generateGradientStops = (data: any[], dataKey: string) => {
+  if (!data || data.length < 2) return [];
+  const stops = [];
+  const totalPoints = data.length;
+  for (let i = 1; i < totalPoints; i++) {
+    const prevVal = data[i - 1][dataKey] || 0;
+    const currVal = data[i][dataKey] || 0;
+    const segmentColor = currVal >= prevVal ? "#10b981" : "#ef4444";
+    const prevOffset = `${((i - 1) / (totalPoints - 1)) * 100}%`;
+    const currOffset = `${(i / (totalPoints - 1)) * 100}%`;
+    stops.push({ offset: prevOffset, color: segmentColor });
+    stops.push({ offset: currOffset, color: segmentColor });
   }
+  return stops;
 };
 
 interface AssetsTabProps {
   accounts: AccountData[]; walletTypes: WalletTypeData[];
-  accType: string; setAccType: (val: string) => void;
-  accName: string; setAccName: (val: string) => void;
-  accBalance: string; setAccBalance: (val: string) => void;
+  accType: string; setAccType: (val: string) => void; accName: string; setAccName: (val: string) => void; accBalance: string; setAccBalance: (val: string) => void;
   accLogo: string; handleLogoUpload: (e: React.ChangeEvent<HTMLInputElement>, isEdit?: boolean) => void;
-  accIsSavings: boolean; setAccIsSavings: (val: boolean) => void; 
-  accTargetBalance: string; setAccTargetBalance: (val: string) => void;
-  accExcludeFromTotal: boolean; setAccExcludeFromTotal: (val: boolean) => void;
-  editAccExcludeFromTotal: boolean; setEditAccExcludeFromTotal: (val: boolean) => void;
-  
-  accIsBusiness: boolean; setAccIsBusiness: (val: boolean) => void;
-  editAccIsBusiness: boolean; setEditAccIsBusiness: (val: boolean) => void;
-
-  handleCreateAccount: () => void;
-  editingAccId: string | null; setEditingAccId: (val: string | null) => void;
-  editAccName: string; setEditAccName: (val: string) => void;
-  editAccBalance: string; setEditAccBalance: (val: string) => void;
-  editAccLogo: string; setEditAccLogo: (val: string) => void;
-  editAccIsSavings: boolean; setEditAccIsSavings: (val: boolean) => void; 
-  editAccTargetBalance: string; setEditAccTargetBalance: (val: string) => void;
-  handleEditAccount: (id: string) => void;
-  deleteAccount: (id: string, name: string) => void;
-  moveAccountOrder: (index: number, direction: "up" | "down") => void;
-
-  accSavingsGoalTitle: string; setAccSavingsGoalTitle: (val: string) => void;
-  editAccSavingsGoalTitle: string; setEditAccSavingsGoalTitle: (val: string) => void;
-
-  isPrivacyMode?: boolean;
-
-  // --- BINDING PROPS UNTUK MULTI-CURRENCY ---
-  accCurrency?: string; setAccCurrency?: (val: string) => void;
-  editAccCurrency?: string; setEditAccCurrency?: (val: string) => void;
-  
-  // --- BARU: PROPS UNTUK KURS GLOBAL ---
-  exchangeRates?: Record<string, number>;
-  handleUpdateGlobalRates?: (rates: Record<string, number>) => void;
+  accIsSavings: boolean; setAccIsSavings: (val: boolean) => void; accTargetBalance: string; setAccTargetBalance: (val: string) => void;
+  accExcludeFromTotal: boolean; setAccExcludeFromTotal: (val: boolean) => void; editAccExcludeFromTotal: boolean; setEditAccExcludeFromTotal: (val: boolean) => void;
+  accIsBusiness: boolean; setAccIsBusiness: (val: boolean) => void; editAccIsBusiness: boolean; setEditAccIsBusiness: (val: boolean) => void;
+  handleCreateAccount: () => void; editingAccId: string | null; setEditingAccId: (val: string | null) => void;
+  editAccName: string; setEditAccName: (val: string) => void; editAccBalance: string; setEditAccBalance: (val: string) => void; editAccLogo: string; setEditAccLogo: (val: string) => void;
+  editAccIsSavings: boolean; setEditAccIsSavings: (val: boolean) => void; editAccTargetBalance: string; setEditAccTargetBalance: (val: string) => void;
+  handleEditAccount: (id: string) => void; deleteAccount: (id: string, name: string) => void; moveAccountOrder: (index: number, direction: "up" | "down") => void;
+  accSavingsGoalTitle: string; setAccSavingsGoalTitle: (val: string) => void; editAccSavingsGoalTitle: string; setEditAccSavingsGoalTitle: (val: string) => void;
+  isPrivacyMode?: boolean; accCurrency?: string; setAccCurrency?: (val: string) => void; editAccCurrency?: string; setEditAccCurrency?: (val: string) => void;
+  exchangeRates?: Record<string, number>; handleUpdateGlobalRates?: (rates: Record<string, number>) => void;
+  reportTransactions?: TransactionData[]; reportMonth?: string; setReportMonth?: (val: string) => void;
 }
 
 export default function AssetsTab({
-  accounts, walletTypes, accType, setAccType, accName, setAccName, accBalance, setAccBalance, accLogo, handleLogoUpload, accIsSavings, setAccIsSavings, accTargetBalance, setAccTargetBalance, 
-  accExcludeFromTotal, setAccExcludeFromTotal, editAccExcludeFromTotal, setEditAccExcludeFromTotal,
-  accIsBusiness, setAccIsBusiness, editAccIsBusiness, setEditAccIsBusiness,
-  handleCreateAccount, editingAccId, setEditingAccId, editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings, editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder,
-  accSavingsGoalTitle, setAccSavingsGoalTitle, editAccSavingsGoalTitle, setEditAccSavingsGoalTitle,
-  isPrivacyMode = false,
-  
-  // Destrukturisasi Props Baru
-  accCurrency, setAccCurrency,
-  editAccCurrency, setEditAccCurrency,
-  
-  // Destrukturisasi Props Kurs Global
-  exchangeRates,
-  handleUpdateGlobalRates
+  accounts, walletTypes, accType, setAccType, accName, setAccName, accBalance, setAccBalance, accLogo, handleLogoUpload,
+  accIsSavings, setAccIsSavings, accTargetBalance, setAccTargetBalance, accExcludeFromTotal, setAccExcludeFromTotal, editAccExcludeFromTotal, setEditAccExcludeFromTotal,
+  accIsBusiness, setAccIsBusiness, editAccIsBusiness, setEditAccIsBusiness, handleCreateAccount, editingAccId, setEditingAccId,
+  editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings,
+  editAccTargetBalance, setEditAccTargetBalance, handleEditAccount, deleteAccount, moveAccountOrder, accSavingsGoalTitle, setAccSavingsGoalTitle,
+  editAccSavingsGoalTitle, setEditAccSavingsGoalTitle, isPrivacyMode = false, accCurrency, setAccCurrency, editAccCurrency, setEditAccCurrency,
+  exchangeRates, handleUpdateGlobalRates, reportTransactions = [], reportMonth, setReportMonth
 }: AssetsTabProps) {
   
+  // STATE NAVIGASI VIEW & FALLBACK INTERN
+  const [activeSubTab, setActiveSubTab] = useState<"net_worth" | "akun" | "aset">("akun"); 
+  const [detailAccId, setDetailAccId] = useState<string | null>(null);
   const [isManageOpen, setIsManageOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"pribadi" | "bisnis">("pribadi");
+  
+  // STATE BARU: Toggle Tampilan Grid vs List
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // Fallback State Internal (Mencegah Compile Error)
+  const [showRatesModal, setShowRatesModal] = useState(false);
+  const [localRates, setLocalRates] = useState<Record<string, string>>({});
+  
   const [localAccCurrency, setLocalAccCurrency] = useState("IDR");
   const [localEditAccCurrency, setLocalEditAccCurrency] = useState("IDR");
-  
-  // State lokal khusus untuk form input kelola kurs global
-  const [localRates, setLocalRates] = useState<Record<string, string>>({});
+
+  const [localBalanceOverride, setLocalBalanceOverride] = useState<Record<string, number>>({});
+  const [localNameOverride, setLocalNameOverride] = useState<Record<string, string>>({});
+
+  const triggerHaptic = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
 
   const currency = accCurrency !== undefined ? accCurrency : localAccCurrency;
   const setCurrency = setAccCurrency !== undefined ? setAccCurrency : setLocalAccCurrency;
@@ -153,615 +139,671 @@ export default function AssetsTab({
   const editCurrency = editAccCurrency !== undefined ? editAccCurrency : localEditAccCurrency;
   const setEditCurrency = setEditAccCurrency !== undefined ? setEditAccCurrency : setLocalEditAccCurrency;
 
-  // Sinkronisasikan input kurs global setiap kali data di server berubah
-  useEffect(() => {
-    if (exchangeRates) {
-      const temp: Record<string, string> = {};
-      Object.keys(exchangeRates).forEach(k => {
-        temp[k] = exchangeRates[k].toString();
-      });
-      setLocalRates(temp);
-    }
-  }, [exchangeRates]);
+  useEffect(() => { if (exchangeRates) { const temp: Record<string, string> = {}; Object.keys(exchangeRates).forEach(k => { temp[k] = exchangeRates[k].toString(); }); setLocalRates(temp); } }, [exchangeRates]);
+  useEffect(() => { if (editingAccId) setIsManageOpen(true); }, [editingAccId]);
 
-  useEffect(() => {
-    if (editingAccId) setIsManageOpen(true);
-  }, [editingAccId]);
+  const getRate = (curCode?: string, historicalRate?: number) => { if (!curCode || curCode === "IDR") return 1; if (exchangeRates && exchangeRates[curCode] !== undefined) return exchangeRates[curCode]; return historicalRate || 1; };
 
-  const personalActiveAccounts = accounts.filter((a: AccountData) => !a.isSavings && !a.isBusiness);
-  const businessActiveAccounts = accounts.filter((a: AccountData) => !a.isSavings && a.isBusiness);
-  
-  const emergencyAccounts = accounts.filter((a: AccountData) => a.isSavings && !a.savingsGoalTitle);
-  const dreamGoals = accounts.filter((a: AccountData) => a.isSavings && a.savingsGoalTitle);
-  
-  const displayedActiveAccounts = activeTab === "pribadi" ? personalActiveAccounts : businessActiveAccounts;
+  // =============================================================
+  // HELPER RENDER GRAFIK AREA ESTETIK (OTOMATIS BERUBAH WARNA SEGMEN PER SEGMEN SEPERTI CHART SAHAM)
+  // =============================================================
+  const renderAreaChart = (data: any[], defaultColor: string, dataKey: string) => {
+    const strokeGradientId = `strokeGeom${dataKey}${defaultColor.replace('#', '')}`;
+    const stops = generateGradientStops(data, dataKey);
 
-  // Pendeteksi nilai konversi dari objek kurs global (Kompatibel mundur)
-  const getRate = (curCode?: string, historicalRate?: number) => {
-    if (!curCode || curCode === "IDR") return 1;
-    if (exchangeRates && exchangeRates[curCode] !== undefined) {
-      return exchangeRates[curCode];
-    }
-    return historicalRate || 1;
+    return (
+      <div className="h-40 w-full relative z-10 -ml-2 mt-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <defs>
+              {/* Gradient Horizontal untuk Warna Sumbu Garis (Mendeteksi Naik/Turun Segmen) */}
+              <linearGradient id={strokeGradientId} x1="0" y1="0" x2="1" y2="0">
+                {stops.map((stop, index) => (
+                  <stop key={index} offset={stop.offset} stopColor={stop.color} />
+                ))}
+              </linearGradient>
+              {/* Gradient Vertical Netral untuk Latar Belakang Area Bawah Garis */}
+              <linearGradient id={`areaNeutralGradient${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.12}/>
+                <stop offset="95%" stopColor="#94a3b8" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.15)" />
+            <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#94a3b8", fontWeight: "bold" }} tickLine={false} axisLine={false} minTickGap={30} dy={10} />
+            <YAxis hide domain={['dataMin - 100000', 'dataMax + 100000']} />
+            <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 'bold' }} formatter={(val: any) => `Rp ${Number(val).toLocaleString('id-ID')}`} />
+            <Area 
+              type="monotone" 
+              dataKey={dataKey} 
+              stroke={`url(#${strokeGradientId})`} 
+              strokeWidth={3} 
+              fillOpacity={1} 
+              fill={`url(#areaNeutralGradient${dataKey})`} 
+              activeDot={{ r: 6, fill: "#ffffff", stroke: "#1e3a8a", strokeWidth: 2 }} 
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    );
   };
 
-  // MODIFIKASI: Perhitungan saldo terakumulasi mengalikan nominal asing dengan kurs global terpusat
-  const totalPersonalActiveBalance = personalActiveAccounts.reduce((accVal: number, curr: AccountData) => {
-    if (curr.excludeFromTotal) return accVal;
-    const rate = getRate(curr.currency, curr.lastExchangeRate);
-    return accVal + (curr.balance * rate);
-  }, 0);
+  // PROSES DATA DOMPET DENGAN SYSTEM OVERRIDE REAL-TIME (Dinamis Tanpa Caching)
+  const updatedAccounts = accounts.map(a => {
+    let balance = a.balance;
+    let name = a.name;
+    if (localBalanceOverride[a.id] !== undefined) balance = localBalanceOverride[a.id];
+    if (localNameOverride[a.id] !== undefined) name = localNameOverride[a.id];
+    return { ...a, balance, name };
+  });
 
-  const totalExcludedBalance = personalActiveAccounts.reduce((accVal: number, curr: AccountData) => {
-    if (curr.excludeFromTotal) {
-      const rate = getRate(curr.currency, curr.lastExchangeRate);
-      return accVal + (curr.balance * rate);
-    }
-    return accVal;
-  }, 0);
+  const personalActiveAccounts = updatedAccounts.filter(a => !a.isSavings && !a.isBusiness);
+  const businessActiveAccounts = updatedAccounts.filter(a => !a.isSavings && a.isBusiness);
+  const emergencyAccounts = updatedAccounts.filter(a => a.isSavings && !a.savingsGoalTitle);
+  const dreamGoals = updatedAccounts.filter(a => a.isSavings && a.savingsGoalTitle);
 
-  const totalBusinessBalance = businessActiveAccounts.reduce((accVal: number, curr: AccountData) => {
-    const rate = getRate(curr.currency, curr.lastExchangeRate);
-    return accVal + (curr.balance * rate);
-  }, 0);
+  // MENGHITUNG DEKLARASI DETAIL AKUN SECARA SINKRONUS
+  const detailAcc = useMemo(() => {
+    return updatedAccounts.find(a => a.id === detailAccId);
+  }, [updatedAccounts, detailAccId]);
 
-  const totalEmergencyBalance = emergencyAccounts.reduce((accVal: number, curr: AccountData) => {
-    const rate = getRate(curr.currency, curr.lastExchangeRate);
-    return accVal + (curr.balance * rate);
-  }, 0);
-
-  const totalDreamBalance = dreamGoals.reduce((accVal: number, curr: AccountData) => {
-    const rate = getRate(curr.currency, curr.lastExchangeRate);
-    return accVal + (curr.balance * rate);
-  }, 0);
-
-  const savingsWithTargets = accounts.filter(a => a.isSavings && a.targetBalance && a.targetBalance > 0);
+  const totalPersonal = personalActiveAccounts.reduce((sum, curr) => curr.excludeFromTotal ? sum : sum + (curr.balance * getRate(curr.currency, curr.lastExchangeRate)), 0);
+  const totalBusiness = businessActiveAccounts.reduce((sum, curr) => sum + (curr.balance * getRate(curr.currency, curr.lastExchangeRate)), 0);
+  const totalAssets = emergencyAccounts.reduce((sum, curr) => sum + (curr.balance * getRate(curr.currency, curr.lastExchangeRate)), 0) + dreamGoals.reduce((sum, curr) => sum + (curr.balance * getRate(curr.currency, curr.lastExchangeRate)), 0);
   
-  // MODIFIKASI: Target saldo dikonversikan ke IDR demi agregasi persentase akumulatif yang adil
-  const totalTargetAmount = savingsWithTargets.reduce((sum, a) => {
-    const rate = getRate(a.currency, a.lastExchangeRate);
-    return sum + ((a.targetBalance || 0) * rate);
-  }, 0);
+  // TOTAL SALDO BERSIH (Untuk kalkulasi porsi persentase Grid)
+  const totalActiveBalance = totalPersonal + totalBusiness;
 
-  const totalSavedAmount = savingsWithTargets.reduce((sum, a) => {
-    const rate = getRate(a.currency, a.lastExchangeRate);
-    return sum + (a.balance * rate);
-  }, 0);
+  // Pembagian Set ID Akun untuk Keakuratan Grafik Gabungan Mandiri
+  const activeAccountIds = useMemo(() => new Set(personalActiveAccounts.concat(businessActiveAccounts).map(a => a.id)), [personalActiveAccounts, businessActiveAccounts]);
+  const assetAccountIds = useMemo(() => new Set(emergencyAccounts.concat(dreamGoals).map(a => a.id)), [emergencyAccounts, dreamGoals]);
 
-  const overallPercentage = totalTargetAmount > 0 ? Math.min((totalSavedAmount / totalTargetAmount) * 100, 100) : 0;
+  // 1. GRAFIK HISTORIS NILAI BERSIH (NET WORTH = AKTIF + ASET)
+  const historicalNetWorthData = useMemo(() => {
+    let runningBalance = totalPersonal + totalBusiness + totalAssets;
+    const data = [];
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      const dayName = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+      data.unshift({ name: dayName, dateStr, Balance: runningBalance });
 
-  const formatRupiahTerbaca = (val: string) => {
-    if (!val) return "Rp 0";
-    const parsed = safeEvaluate(val);
-    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(parsed);
+      const dayTxs = reportTransactions.filter(t => t.tDate === dateStr);
+      const dayInc = dayTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+      const dayExp = dayTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+      const adminFees = dayTxs.filter(t => t.type === 'transfer' && t.adminFee).reduce((sum, t) => sum + t.adminFee!, 0);
+
+      runningBalance = runningBalance - dayInc + dayExp + adminFees; 
+    }
+    return data;
+  }, [totalPersonal, totalBusiness, totalAssets, reportTransactions]);
+
+  // 2. GRAFIK HISTORIS AKUN (HANYA DOMPET AKTIF)
+  const historicalAccountsData = useMemo(() => {
+    let runningBalance = totalPersonal + totalBusiness;
+    const data = [];
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      const dayName = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+      data.unshift({ name: dayName, dateStr, Balance: runningBalance });
+
+      const dayTxs = reportTransactions.filter(t => t.tDate === dateStr);
+      const dayInc = dayTxs.filter(t => t.type === 'income' && activeAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0);
+      const dayExp = dayTxs.filter(t => t.type === 'expense' && activeAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0);
+      
+      const transfersToAssets = dayTxs.filter(t => t.type === 'transfer' && activeAccountIds.has(t.accountId) && assetAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0);
+      const transfersFromAssets = dayTxs.filter(t => t.type === 'transfer' && assetAccountIds.has(t.accountId) && activeAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0);
+      const adminFees = dayTxs.filter(t => t.type === 'transfer' && t.adminFee && activeAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.adminFee!, 0);
+
+      runningBalance = runningBalance - dayInc + dayExp + transfersToAssets - transfersFromAssets + adminFees;
+    }
+    return data;
+  }, [totalPersonal, totalBusiness, activeAccountIds, assetAccountIds, reportTransactions]);
+
+  // 3. GRAFIK HISTORIS ASET (HANYA TABUNGAN & IMPIAN)
+  const historicalAssetsData = useMemo(() => {
+    let runningBalance = totalAssets;
+    const data = [];
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      const dayName = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+      data.unshift({ name: dayName, dateStr, Balance: runningBalance });
+
+      const dayTxs = reportTransactions.filter(t => t.tDate === dateStr);
+      const dayInc = dayTxs.filter(t => t.type === 'income' && assetAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0);
+      const dayExp = dayTxs.filter(t => t.type === 'expense' && assetAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0);
+      const transfersFromActive = dayTxs.filter(t => t.type === 'transfer' && activeAccountIds.has(t.accountId) && assetAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0);
+      const transfersToActive = dayTxs.filter(t => t.type === 'transfer' && assetAccountIds.has(t.accountId) && activeAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0);
+
+      runningBalance = runningBalance - dayInc + dayExp - transfersFromActive + transfersToActive;
+    }
+    return data;
+  }, [totalAssets, activeAccountIds, assetAccountIds, reportTransactions]);
+
+  // LOGIKA DETAIL TRANSAKSI KHUSUS (Mengembalikan variabel rincian detail yang hilang)
+  const detailTxs = useMemo(() => {
+    return reportTransactions.filter(t => t.tDate?.startsWith(reportMonth || "") && (t.accountId === detailAccId || t.toAccountId === detailAccId));
+  }, [reportTransactions, reportMonth, detailAccId]);
+
+  const detailInc = useMemo(() => {
+    return detailTxs.filter(t => t.type === 'income' || (t.type === 'transfer' && t.toAccountId === detailAccId)).reduce((sum, t) => sum + t.amount, 0);
+  }, [detailTxs, detailAccId]);
+
+  const detailExp = useMemo(() => {
+    return detailTxs.filter(t => t.type === 'expense' || (t.type === 'transfer' && t.accountId === detailAccId)).reduce((sum, t) => sum + t.amount, 0);
+  }, [detailTxs, detailAccId]);
+
+  const detailPieData = useMemo(() => {
+    const detailExpGrouped = detailTxs.filter(t => t.type === 'expense').reduce((acc: Record<string, number>, t) => { acc[t.category] = (acc[t.category] || 0) + t.amount; return acc; }, {});
+    return Object.keys(detailExpGrouped).map(k => ({ name: k, value: detailExpGrouped[k] })).sort((a,b) => b.value - a.value);
+  }, [detailTxs]);
+
+  // MENCARI HISTORI TRANSAKSI TERAKHIR KHUSUS DOMPET SPESIFIK (GRID VIEW SUB-INFO)
+  const getLatestTxForAccount = (accId: string) => {
+    const latest = reportTransactions.find(t => t.accountId === accId || t.toAccountId === accId);
+    if (!latest) return null;
+
+    const isIncome = latest.type === 'income' || (latest.type === 'transfer' && latest.toAccountId === accId);
+    const dateObj = new Date(latest.tDate);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    let dayLabel = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+    if (latest.tDate === todayStr) dayLabel = "Hari Ini";
+    else if (latest.tDate === yesterdayStr) dayLabel = "Kemarin";
+
+    return {
+      category: latest.category,
+      amount: latest.amount,
+      note: latest.note || latest.category,
+      isIncome,
+      dayLabel
+    };
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in">
-      <div className="bg-blue-600 p-8 md:p-10 rounded-[35px] text-white shadow-xl relative overflow-hidden">
-        <div className="absolute -top-4 -right-4 p-8 opacity-10"><CreditCard size={120} /></div>
+    <div className="space-y-6 animate-in fade-in pb-20">
+      
+      {/* SKELETON KONDISIONAL UTAMA */}
+      {detailAccId && detailAcc ? (
         
-        <p className="text-blue-100 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1 relative z-10">Total Uang Bisa Dipakai</p>
-        <h2 className="text-4xl md:text-5xl font-black italic relative z-10 text-left">
-          {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalPersonalActiveBalance.toLocaleString('id-ID')}`}
-        </h2>
-        
-        {totalExcludedBalance > 0 && (
-          <div className="mt-5 pt-4 border-t border-blue-500/40 flex justify-between items-center text-xs text-blue-100 font-bold z-10 relative animate-in fade-in duration-200">
-            <span className="opacity-85">Total Saldo Terpisah (Dikecualikan):</span>
-            <span className="text-sm font-black">
-              {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalExcludedBalance.toLocaleString('id-ID')}`}
-            </span>
+        // =============================================================
+        // VIEW A: DETAIL AKUN / DOMPET (DRILL-DOWN)
+        // =============================================================
+        <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+          <div className="flex justify-between items-center px-2 animate-in fade-in duration-200">
+            <div className="flex items-center gap-3">
+              <button onClick={() => { triggerHaptic(); setDetailAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 transition-colors flex items-center justify-center cursor-pointer"><ChevronLeft size={20} className="text-slate-800 dark:text-slate-200"/></button>
+              <h2 className="font-black text-xl text-slate-800 dark:text-white">{detailAcc.name}</h2>
+            </div>
+            
+            {/* TOMBOL EDIT AKUN LANGSUNG DARI DETAIL DRILL-DOWN */}
+            <button onClick={() => {
+              triggerHaptic();
+              setEditingAccId(detailAcc.id);
+              setEditAccName(detailAcc.name);
+              setEditAccBalance(detailAcc.balance.toString());
+              setEditAccLogo(detailAcc.logo || "");
+              setEditAccIsSavings(!!detailAcc.isSavings);
+              setEditAccIsBusiness(!!detailAcc.isBusiness);
+              setEditAccTargetBalance(accTargetBalance?.toString() || "");
+              setEditAccExcludeFromTotal(!!detailAcc.excludeFromTotal);
+              setEditAccSavingsGoalTitle(detailAcc.savingsGoalTitle || "");
+              
+              setEditCurrency(detailAcc.currency || "IDR");
+              if (setEditAccCurrency) setEditAccCurrency(detailAcc.currency || "IDR");
+              setIsManageOpen(true);
+            }} className="p-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-full cursor-pointer transition-colors active:scale-95 flex items-center justify-center">
+              <Edit2 size={16}/>
+            </button>
           </div>
-        )}
-      </div>
 
-      <div className="space-y-3">
-        <div className="flex justify-between items-center px-1">
-          <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl shadow-inner border border-slate-200 dark:border-slate-700">
-            <button 
-              onClick={() => setActiveTab("pribadi")} 
-              className={`px-3 md:px-5 py-1.5 md:py-2 text-[10px] md:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${activeTab === "pribadi" ? "bg-white dark:bg-slate-900 shadow-sm text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-800" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
-            >
-              👤 Pribadi
-            </button>
-            <button 
-              onClick={() => setActiveTab("bisnis")} 
-              className={`px-3 md:px-5 py-1.5 md:py-2 text-[10px] md:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${activeTab === "bisnis" ? "bg-white dark:bg-slate-900 shadow-sm text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-800" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
-            >
-              <Briefcase size={14} /> Bisnis
-            </button>
+          {/* Month Navigation Pills */}
+          <div className="flex overflow-x-auto hide-scrollbar gap-2 px-2 pb-2 -mx-2 snap-x">
+            {[4,3,2,1,0,-1].map(i => {
+              const d = new Date(); d.setMonth(d.getMonth() - i);
+              const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+              const isActive = mStr === reportMonth;
+              return (
+                <button key={mStr} onClick={() => { triggerHaptic(); setReportMonth?.(mStr); }} className="snap-center shrink-0 px-4 py-2 rounded-full text-xs font-black transition-all cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  {d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}
+                </button>
+              );
+            })}
           </div>
-          {activeTab === "bisnis" && (
-            <span className="text-[10px] md:text-xs font-black text-amber-600 dark:text-amber-500 animate-in fade-in slide-in-from-right-2">
-              Total Bisnis: {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalBusinessBalance.toLocaleString('id-ID')}`}
-            </span>
+
+          <div className="bg-[#1e3a8a] p-6 rounded-[30px] text-white shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-6 opacity-10"><CreditCard size={100} /></div>
+            <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest mb-1">Total Saldo Dompet</p>
+            <h2 className="text-3xl font-black mb-6">{isPrivacyMode ? `${getCurrencySymbol(detailAcc.currency)} ••••••` : `${getCurrencySymbol(detailAcc.currency)} ${detailAcc.balance.toLocaleString('id-ID')}`}</h2>
+            
+            <div className="flex gap-4">
+              <div className="flex-1 bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10">
+                <p className="text-[10px] text-emerald-300 font-bold mb-1 flex items-center gap-1"><TrendingUp size={12}/> Pemasukan</p>
+                <p className="text-sm font-black text-white">Rp {detailInc.toLocaleString('id-ID')}</p>
+              </div>
+              <div className="flex-1 bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10">
+                <p className="text-[10px] text-red-300 font-bold mb-1 flex items-center gap-1"><TrendingDown size={12}/> Pengeluaran</p>
+                <p className="text-sm font-black text-white">Rp {detailExp.toLocaleString('id-ID')}</p>
+              </div>
+            </div>
+          </div>
+
+          {detailExp > 0 ? (
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Pengeluaran</h3>
+                <span className="font-black text-slate-800 dark:text-slate-100 text-lg">Rp {detailExp.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <div className="relative w-32 h-32 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RePieChart>
+                      <Pie data={detailPieData} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={2} dataKey="value" stroke="none">
+                        {/* PERBAIKAN: Menambahkan strict typing (e: any, i: number) untuk mencegah implicit any error */}
+                        {detailPieData.map((e: any, i: number) => <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />)}
+                      </Pie>
+                      <Tooltip contentStyle={{borderRadius:'12px', fontSize:'10px', fontWeight:'bold'}} formatter={(v: any) => `Rp ${Number(v).toLocaleString('id-ID')}`} />
+                    </RePieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="w-full space-y-1">
+                  {/* PERBAIKAN: Menambahkan strict typing (item: any, idx: number) */}
+                  {detailPieData.slice(0, 5).map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between items-center text-xs w-full p-2 bg-slate-50 dark:bg-slate-800/55 rounded-xl">
+                      <div className="flex items-center gap-2 min-w-0"><div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }} /><span className="font-bold text-slate-700 dark:text-slate-300 truncate">{item.name}</span></div>
+                      <div className="flex items-center gap-3 shrink-0"><span className="font-black text-slate-800 dark:text-slate-200">{((item.value / detailExp) * 100).toFixed(0)}%</span><span className="font-bold text-slate-400">Rp {item.value.toLocaleString('id-ID')}</span></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center py-10 text-slate-400 text-xs italic bg-white dark:bg-slate-900 rounded-[30px] border border-slate-100 dark:border-slate-800">Tidak ada pengeluaran di bulan ini.</p>
           )}
         </div>
 
-        {displayedActiveAccounts.length === 0 ? <p className="text-center py-6 text-slate-400 text-sm italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">{activeTab === "pribadi" ? "Belum ada dompet aktif" : "Belum ada dompet bisnis"}</p> : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {displayedActiveAccounts.map((acc: AccountData) => {
-              const design = getCardDesign(acc.type);
-              const symbol = getCurrencySymbol(acc.currency);
-              const isForeign = acc.currency && acc.currency !== "IDR";
-              const currentRate = getRate(acc.currency, acc.lastExchangeRate);
-              return (
-                <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[120px] md:min-h-[135px]`}>
-                    <div className="flex justify-between items-start mb-4">
-                      {acc.logo ? (
-                        <img src={acc.logo} alt="custom-logo" className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-contain bg-white p-1 border border-slate-100 shadow-sm" /> 
-                      ) : (
-                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div>
-                      )}
-                      <div className={`px-2 py-1 rounded-md text-[8px] md:text-[10px] font-black uppercase tracking-widest ${design.chip}`}>{acc.type}</div>
-                    </div>
-                    
-                    <div className="space-y-0.5 mt-auto text-left">
-                      <div className="flex items-center mb-1.5">
-                        <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1 truncate text-left">{acc.name}</p>
-                        {acc.excludeFromTotal && !acc.isBusiness && <span className="text-[7px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-slate-200 dark:border-slate-700">Terpisah</span>}
-                        {acc.isBusiness && <span className="text-[7px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded ml-1.5 uppercase font-black shrink-0 tracking-widest border border-amber-200 dark:border-amber-800">Bisnis</span>}
-                      </div>
-                      <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate text-left">
-                        {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
-                      </p>
-                      {isForeign && (
-                        <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold mt-1 text-left">
-                          Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * currentRate).toLocaleString('id-ID')}`}
-                        </p>
-                      )}
-                    </div>
+      ) : (
+
+        // =============================================================
+        // VIEW B: DASHBOARD / LIST UTAMA AKUN (PERSONAL, BUSINESS, ASSETS)
+        // =============================================================
+        <>
+          <div className="text-center mb-2">
+            <h2 className="font-black text-2xl text-[#064e3b] dark:text-emerald-400 tracking-tight mb-4">Akun</h2>
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-inner w-max mx-auto">
+              {[ { id: "net_worth", label: "Nilai Bersih" }, { id: "akun", label: "Akun" }, { id: "aset", label: "Aset" } ].map(tab => (
+                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveSubTab(tab.id as any); }} className={`px-5 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${activeSubTab === tab.id ? "bg-blue-900 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {activeSubTab === "net_worth" && (
+            <div className="space-y-4 animate-in slide-in-from-left-4 duration-300">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-1">Nilai Bersih</p>
+                <h2 className="text-3xl font-black text-slate-800 dark:text-white text-center mb-6">{isPrivacyMode ? 'Rp •••••••' : `Rp ${(totalPersonal + totalBusiness + totalAssets).toLocaleString('id-ID')}`}</h2>
+                
+                {renderAreaChart(historicalNetWorthData, "#ef4444", "Balance")}
+                
+                <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-2">
+                  <span>{historicalNetWorthData[0]?.name}</span>
+                  <span>{historicalNetWorthData[historicalNetWorthData.length - 1]?.name}</span>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {emergencyAccounts.length > 0 && (
-        <div className="space-y-3 pt-2">
-          <div className="flex justify-between items-end px-1">
-             <h3 className="font-bold text-slate-800 dark:text-slate-100 italic text-lg transition-colors">Tabungan & Dana Darurat</h3>
-             <span className="text-[10px] md:text-xs font-black text-blue-600 dark:text-blue-400">
-               Total Saldo: {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalEmergencyBalance.toLocaleString('id-ID')}`}
-             </span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-            {emergencyAccounts.map((acc: AccountData) => {
-              const design = getCardDesign(acc.type);
-              const symbol = getCurrencySymbol(acc.currency);
-              const isForeign = acc.currency && acc.currency !== "IDR";
-              const currentRate = getRate(acc.currency, acc.lastExchangeRate);
-              const hasTarget = acc.targetBalance && acc.targetBalance > 0;
-              const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
-              const remaining = hasTarget ? Math.max(0, acc.targetBalance! - acc.balance) : 0;
-              const status = getGoalStatus(percentage);
-
-              return (
-                <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[135px] md:min-h-[150px]`}>
-                    <div className="flex justify-between items-start mb-3">
-                      {acc.logo ? (
-                        <img src={acc.logo} alt="custom-logo" className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-contain bg-white p-1 border border-slate-100 shadow-sm" /> 
-                      ) : (
-                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div>
-                      )}
-                      {hasTarget ? (
-                        <div className={`text-[9px] md:text-[10px] px-2.5 py-1 rounded-md font-black uppercase tracking-widest border ${status.color}`}>
-                          {status.label} • {percentage.toFixed(0)}%
-                        </div>
-                      ) : (
-                        <div className="text-[9px] md:text-[10px] px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-bold uppercase tracking-widest">Dana Darurat</div>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-1.5 mt-auto w-full text-left">
-                      <div>
-                        <div className="flex items-center mb-1.5 gap-1.5">
-                          <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none truncate">{acc.name}</p>
-                          {acc.isBusiness && <span className="text-[7px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded uppercase font-black shrink-0 tracking-widest border border-amber-200 dark:border-amber-800">Bisnis</span>}
-                        </div>
-                        <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1">
-                          {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
-                        </p>
-                        {isForeign && (
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mb-1 leading-none">
-                            Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * currentRate).toLocaleString('id-ID')}`}
-                          </p>
-                        )}
-                        {hasTarget && (
-                          <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold leading-none mt-1 shadow-sm">
-                            Target: <span className="font-extrabold text-slate-600 dark:text-slate-300">
-                              {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.targetBalance!.toLocaleString('id-ID')}`}
-                            </span>
-                          </p>
-                        )}
-                      </div>
-
-                      {hasTarget && (
-                        <div className="w-full mt-2 space-y-1.5">
-                          <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
-                            <div className={`h-full ${percentage >= 100 ? 'bg-emerald-500' : design.progressBar} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div>
-                          </div>
-                          {remaining > 0 ? (
-                            <p className="text-[9px] text-slate-400 dark:text-slate-550 font-bold text-right leading-none">
-                              Kurang {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${remaining.toLocaleString('id-ID')}`} lagi
-                            </p>
-                          ) : (
-                            <p className="text-[9px] text-emerald-500 dark:text-emerald-400 font-black text-right uppercase tracking-wider leading-none">
-                              Target Terpenuhi! 🎉
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {dreamGoals.length > 0 && (
-        <div className="space-y-4 pt-2">
-          <div className="flex justify-between items-end px-1">
-             <h3 className="font-bold text-slate-800 dark:text-slate-100 italic text-lg transition-colors">Target Impian Menabung</h3>
-             <span className="text-[10px] md:text-xs font-black text-emerald-600 dark:text-emerald-400">
-               Total Impian: {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalDreamBalance.toLocaleString('id-ID')}`}
-             </span>
-          </div>
-
-          {savingsWithTargets.length > 0 && (
-            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-[30px] text-white shadow-lg relative overflow-hidden transition-all duration-300">
-              <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
-                <CreditCard size={120} />
               </div>
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-left">
-                  <p className="text-emerald-100 text-[10px] uppercase tracking-widest font-bold mb-1">Akumulasi Target Impian</p>
-                  <h3 className="text-2xl font-black">
-                    {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalSavedAmount.toLocaleString('id-ID')}`}
-                  </h3>
-                </div>
-                <span className="bg-emerald-400/30 text-emerald-100 text-[10px] font-black px-2.5 py-1 rounded-full uppercase border border-emerald-300/20">
-                  {overallPercentage.toFixed(0)}% Terkumpul
-                </span>
+
+              <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm flex divide-x divide-slate-100 dark:divide-slate-800 p-4">
+                <div className="flex-1 text-center"><p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Total Saldo</p><p className="text-sm font-black text-blue-600">Rp {(totalPersonal + totalBusiness).toLocaleString('id-ID')}</p></div>
+                <div className="flex-1 text-center"><p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Total Aset</p><p className="text-sm font-black text-emerald-600">Rp {totalAssets.toLocaleString('id-ID')}</p></div>
               </div>
-              <div className="w-full h-2.5 bg-emerald-700/50 rounded-full overflow-hidden border border-emerald-500/20 mb-2">
-                <div className="h-full bg-white rounded-full transition-all duration-1000 ease-out" style={{ width: `${overallPercentage}%` }}></div>
-              </div>
-              <p className="text-[10px] text-emerald-100/95 font-bold text-left leading-relaxed">
-                Telah terkumpul <span className="font-black text-white">{isPrivacyMode ? 'Rp •••••••' : `Rp ${totalSavedAmount.toLocaleString('id-ID')}`}</span> dari target <span className="font-black text-white">{isPrivacyMode ? 'Rp •••••••' : `Rp ${totalTargetAmount.toLocaleString('id-ID')}`}</span> untuk seluruh impian masa depan Anda.
-              </p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-            {dreamGoals.map((acc: AccountData) => {
-              const design = getCardDesign(acc.type);
-              const symbol = getCurrencySymbol(acc.currency);
-              const isForeign = acc.currency && acc.currency !== "IDR";
-              const currentRate = getRate(acc.currency, acc.lastExchangeRate);
-              const hasTarget = acc.targetBalance && acc.targetBalance > 0;
-              const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
-              const remaining = hasTarget ? Math.max(0, acc.targetBalance! - acc.balance) : 0;
-              const status = getGoalStatus(percentage);
+          {activeSubTab === "akun" && (
+            <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h2 className="text-3xl font-black text-slate-800 dark:text-white text-center mb-1">{isPrivacyMode ? 'Rp •••••••' : `Rp ${(totalPersonal + totalBusiness).toLocaleString('id-ID')}`}</h2>
+                <p className="text-[10px] font-bold text-slate-500 text-center mb-6">Total Saldo Tersedia • {personalActiveAccounts.length + businessActiveAccounts.length} Dompet</p>
+                {renderAreaChart(historicalAccountsData, "#ef4444", "Balance")}
+              </div>
 
-              return (
-                <div key={acc.id} className={`${design.bg} p-4 md:p-5 rounded-[24px] flex flex-col justify-between transition-all duration-200 shadow-sm min-h-[135px] md:min-h-[150px]`}>
-                    <div className="flex justify-between items-start mb-3">
-                      {acc.logo ? (
-                        <img src={acc.logo} alt="custom-logo" className="w-8 h-8 md:w-10 md:h-10 rounded-xl object-contain bg-white p-1 border border-slate-100 shadow-sm" /> 
-                      ) : (
-                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div>
-                      )}
-                      <div className={`text-[9px] md:text-[10px] px-2.5 py-1 rounded-md font-black uppercase tracking-widest border ${status.color}`}>
-                        {status.label} • {percentage.toFixed(0)}%
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-1.5 mt-auto w-full text-left">
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none">🎯 Impian: {acc.savingsGoalTitle}</p>
-                          {acc.isBusiness && <span className="text-[7px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded uppercase font-black shrink-0 tracking-widest border border-amber-200 dark:border-amber-800">Bisnis</span>}
-                        </div>
-                        <p className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight leading-none mb-1.5 truncate">{acc.name}</p>
-                        <p className="text-base md:text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none truncate mb-1">
-                          {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
-                        </p>
-                        {isForeign && (
-                          <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold mb-1 leading-none">
-                            Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * currentRate).toLocaleString('id-ID')}`}
-                          </p>
-                        )}
-                        {hasTarget && (
-                          <p className="text-[10px] text-slate-400 dark:text-slate-555 font-bold leading-none mt-1 shadow-sm">
-                            Target: <span className="font-extrabold text-slate-600 dark:text-slate-300">
-                              {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.targetBalance!.toLocaleString('id-ID')}`}
-                            </span>
-                          </p>
-                        )}
-                      </div>
-
-                      {hasTarget && (
-                        <div className="w-full mt-2 space-y-1.5">
-                          <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
-                            <div className={`h-full ${percentage >= 100 ? 'bg-emerald-500' : design.progressBar} rounded-full transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}></div>
-                          </div>
-                          {remaining > 0 ? (
-                            <p className="text-[9px] text-slate-400 dark:text-slate-550 font-bold text-right leading-none">
-                              Kurang {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${remaining.toLocaleString('id-ID')}`} lagi
-                            </p>
-                          ) : (
-                            <p className="text-[9px] text-emerald-500 dark:text-emerald-400 font-black text-right uppercase tracking-wider leading-none">
-                              Target Terpenuhi! 🎉
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
+              <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/30 px-4">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dompet</span>
+                  
+                  {/* TOGGLE LAYOUT MODE */}
+                  <div className="flex bg-slate-200/50 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-850">
+                    <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("grid"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "grid" ? "bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-slate-600"}`}>
+                      <LayoutGrid size={14} />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("list"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "list" ? "bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-slate-600"}`}>
+                      <List size={14} />
+                    </button>
+                  </div>
                 </div>
-              );
-            })}
+
+                {/* KONDISIKAN VIEW: GRID (KOTAK) VS LIST */}
+                {viewMode === "grid" ? (
+                  <div className="p-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 animate-in fade-in duration-300">
+                    {[...personalActiveAccounts, ...businessActiveAccounts].map((acc) => {
+                      const design = getCardDesign(acc.type);
+                      const symbol = getCurrencySymbol(acc.currency);
+                      const accRate = getRate(acc.currency, acc.lastExchangeRate);
+                      const accIdrBalance = acc.balance * accRate;
+                      
+                      const pct = totalActiveBalance > 0 ? Math.round((accIdrBalance / totalActiveBalance) * 100) : 0;
+                      const latestTx = getLatestTxForAccount(acc.id);
+
+                      return (
+                        <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition-all border border-transparent dark:border-slate-700/50 flex flex-col justify-between min-h-[140px] text-left">
+                          <div>
+                            <div className="flex justify-between items-start">
+                              {acc.logo ? ( <img src={acc.logo} className="w-8 h-8 rounded-lg object-cover" alt="logo" /> ) : ( <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
+                              
+                              {/* Portions indicator blocks */}
+                              <div className="flex items-center gap-1.5">
+                                <div className="flex gap-0.5">
+                                  {[1,2,3,4].map((block) => {
+                                    const filled = pct >= block * 25 - 10;
+                                    return (
+                                      <div key={block} className={`w-3.5 h-1.5 rounded-sm ${filled ? 'bg-blue-900 dark:bg-blue-500' : 'bg-slate-100 dark:bg-slate-800'}`} />
+                                    );
+                                  })}
+                                </div>
+                                <span className="text-[10px] font-black text-slate-400">{pct}%</span>
+                              </div>
+                            </div>
+
+                            <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-3 truncate">{acc.name}</p>
+                            <p className="text-sm font-black text-slate-600 dark:text-slate-400 tracking-tight leading-none mt-1">
+                              {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
+                            </p>
+                          </div>
+
+                          {/* Sub-info: Transaksi Terakhir Khusus Dompet Ini */}
+                          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-start gap-1.5 text-left">
+                            {latestTx ? (
+                              <>
+                                <div className="w-5 h-5 rounded-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-[10px] font-black">{latestTx.category.charAt(0)}</div>
+                                <div className="min-w-0">
+                                  <p className="text-[9px] font-bold text-slate-755 dark:text-slate-300 truncate leading-tight">{latestTx.note}</p>
+                                  <p className="text-[8px] font-semibold text-slate-400 mt-0.5 leading-none">
+                                    {latestTx.isIncome ? '+' : '-'}Rp {latestTx.amount.toLocaleString('id-ID')} • {latestTx.dayLabel}
+                                  </p>
+                                </div>
+                              </>
+                            ) : (
+                              <p className="text-[9px] font-bold text-slate-400 italic">Tidak ada transaksi terbaru</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in duration-300">
+                    {[...personalActiveAccounts, ...businessActiveAccounts].map((acc) => {
+                      const design = getCardDesign(acc.type);
+                      const symbol = getCurrencySymbol(acc.currency);
+                      return (
+                        <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-855 transition-colors group">
+                          <div className="flex items-center gap-3">
+                            {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-cover" alt="logo" /> ) : ( <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
+                            <div className="text-left">
+                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{acc.name} {acc.isBusiness && <span className="text-[8px] bg-amber-100 text-amber-600 px-1 py-0.5 rounded ml-1 font-black">BISNIS</span>}</p>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase">{acc.currency || "IDR"} • {acc.type}</p>
+                            </div>
+                          </div>
+                          <div className="text-right flex items-center gap-3">
+                            <p className="text-sm font-black text-slate-800 dark:text-slate-100">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
+                            <ChevronRight size={16} className="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeSubTab === "aset" && (
+            <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h2 className="text-3xl font-black text-slate-800 dark:text-white text-center mb-1">{isPrivacyMode ? 'Rp •••••••' : `Rp ${totalAssets.toLocaleString('id-ID')}`}</h2>
+                <p className="text-[10px] font-bold text-slate-500 text-center mb-6">Total Nilai Aset Tabungan & Impian</p>
+                {renderAreaChart(historicalAssetsData, "#10b981", "Balance")}
+              </div>
+
+              {(emergencyAccounts.length === 0 && dreamGoals.length === 0) ? (
+                <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm p-10 flex flex-col items-center justify-center text-center">
+                  <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-955 rounded-full flex items-center justify-center mb-4"><Activity size={32} className="text-emerald-500"/></div>
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-1">Belum Ada Aset</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">Lacak investasi dan tabungan Anda dengan menekan tombol + di bawah.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[...emergencyAccounts, ...dreamGoals].map((acc) => {
+                    const design = getCardDesign(acc.type);
+                    const symbol = getCurrencySymbol(acc.currency);
+                    const hasTarget = acc.targetBalance && acc.targetBalance > 0;
+                    const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
+                    
+                    return (
+                      <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="bg-white dark:bg-slate-900 p-5 rounded-[24px] shadow-sm cursor-pointer hover:shadow-md transition-all group border border-transparent dark:border-slate-700/50">
+                        <div className="flex justify-between items-start mb-4">
+                          {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-cover" alt="logo" /> ) : ( <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
+                          {hasTarget && <span className="text-[10px] font-black px-2 py-1 rounded bg-emerald-50 text-emerald-600">{percentage.toFixed(0)}%</span>}
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-emerald-600 uppercase mb-0.5">{acc.savingsGoalTitle || "Dana Darurat"}</p>
+                          <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1">{acc.name}</p>
+                          <p className="text-lg font-black text-slate-800 dark:text-slate-100">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
+                        </div>
+                        {hasTarget && (
+                          <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-3"><div className="h-full bg-emerald-500" style={{ width: `${percentage}%` }}></div></div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* BUTTON KURS GLOBAL STANDALONE (KARTU ELEGAN KHUSUS) */}
+          <div className="px-2 mt-4 animate-in fade-in duration-300">
+            <button onClick={() => { triggerHaptic(); setShowRatesModal(true); }} className="w-full bg-white dark:bg-slate-900 p-4 rounded-[24px] flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/55 transition-colors border border-transparent dark:border-slate-700/50">
+              <span className="flex items-center gap-2">🪙 Pengaturan Kurs Global</span>
+              <ChevronRight size={16} className="text-slate-400" />
+            </button>
           </div>
-        </div>
+
+          {/* FLOATING ACTION BUTTON (+) */}
+          <button onClick={() => { triggerHaptic(); setIsManageOpen(true); }} className="fixed bottom-24 md:bottom-10 right-6 w-14 h-14 bg-blue-900 text-white rounded-full flex items-center justify-center shadow-[0_10px_25px_rgba(30,58,138,0.5)] hover:scale-105 active:scale-95 transition-all z-40 cursor-pointer">
+            <Plus size={28} strokeWidth={2.5} />
+          </button>
+        </>
       )}
 
-      <details 
-        open={isManageOpen} 
-        onToggle={(e) => setIsManageOpen(e.currentTarget.open)}
-        className="bg-white dark:bg-slate-900 rounded-[25px] p-5 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-200 animate-none"
-      >
-        <summary className="text-[10px] font-black text-slate-500 dark:text-slate-400 cursor-pointer uppercase tracking-widest outline-none select-none flex items-center gap-2">
-          <span>⚙️ Kelola Akun & Dompet</span>
-        </summary>
-        <div className="mt-5 space-y-4 animate-none">
-          <div className="space-y-2 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-left">
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 mb-3">Tambah Dompet Baru</h4>
-            <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer animate-none" value={accType} onChange={(e) => setAccType(e.target.value)}>
-                {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
-            </select>
+      {/* =============================================================
+          LACI-LACI DI RENDER GLOBAL DI BAWAH AGAR POP-UP BISA DIPANGGIL 
+          DARI DETAIL BCA MAUPUN DARI DASHBOARD LUAR
+          ============================================================= */}
+
+      {/* LACI BAWAH 1: KELOLA AKUN & DOMPET */}
+      {isManageOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => { setIsManageOpen(false); setEditingAccId(null); }}>
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800" onClick={e => e.stopPropagation()}>
+            <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
+            <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
+              <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{editingAccId ? "Edit Dompet" : "Kelola Akun & Dompet"}</h3>
+              <button onClick={() => { setIsManageOpen(false); setEditingAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-755 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={16} className="text-slate-700 dark:text-slate-200"/></button>
+            </div>
             
-            {/* BINDING: Dropdown Mata Uang tanpa form input kurs manual lagi */}
-            <div className="space-y-1 text-left">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Mata Uang Dompet</label>
-              <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                <option value="IDR">🇮🇩 Rupiah (IDR)</option>
-                <option value="USD">🇺🇸 Dollar Amerika (USD)</option>
-                <option value="SGD">🇸🇬 Dollar Singapura (SGD)</option>
-                <option value="EUR">🇪🇺 Euro (EUR)</option>
-                <option value="JPY">🇯🇵 Yen Jepang (JPY)</option>
-                <option value="GBP">🇬🇧 Pound Inggris (GBP)</option>
-                <option value="AUD">🇦🇺 Dollar Australia (AUD)</option>
-                <option value="MYR">🇲🇾 Ringgit Malaysia (MYR)</option>
-                <option value="SAR">🇸🇦 Riyal Arab Saudi (SAR)</option>
-                <option value="CNY">🇨🇳 Yuan China (CNY)</option>
-              </select>
-            </div>
+            <div className="p-6 overflow-y-auto space-y-6">
+              
+              {/* JIKA SEDANG MENGEDIT: HANYA TAMPILKAN FORM EDIT (FOCUS VIEW) */}
+              {editingAccId ? (
+                <div className="space-y-3 bg-slate-50 dark:bg-slate-800/40 p-5 rounded-[24px] border border-slate-100 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
+                  <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
+                  
+                  <div className="space-y-1 text-left">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Mata Uang Dompet</label>
+                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
+                      <option value="IDR">🇮🇩 Rupiah (IDR)</option><option value="USD">🇺🇸 Dollar (USD)</option><option value="SGD">🇸🇬 Dollar (SGD)</option><option value="EUR">🇪🇺 Euro (EUR)</option><option value="JPY">🇯🇵 Yen (JPY)</option><option value="CNY">🇨🇳 Yuan (CNY)</option><option value="GBP">🇬🇧 Pound (GBP)</option><option value="AUD">🇦🇺 Dollar (AUD)</option><option value="MYR">🇲🇾 Ringgit (MYR)</option><option value="SAR">🇸🇦 Riyal (SAR)</option>
+                    </select>
+                  </div>
 
-            <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
-            <input type="number" placeholder={currency !== "IDR" ? `Saldo Awal (${currency})` : "Saldo Awal"} className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-transparent dark:border-slate-700 outline-none font-bold text-slate-700 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
-            
-            <div onClick={() => setAccIsBusiness(!accIsBusiness)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
-              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsBusiness ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{accIsBusiness && <Check size={10} strokeWidth={4} />}</div>
-              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Jadikan Dompet <span className="text-amber-600 dark:text-amber-500">"Bisnis"</span></span>
-            </div>
+                  <div className="space-y-1 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                    <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Audit Saldo Nyata (Real - {editCurrency})</label>
+                    <input type="number" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
+                  </div>
+                  
+                  <div className="flex flex-col gap-2 pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                      <input type="checkbox" checked={editAccIsBusiness} onChange={() => setEditAccIsBusiness(!editAccIsBusiness)} className="rounded text-blue-600 focus:ring-blue-500" />
+                      Jadikan Dompet Bisnis
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                      <input type="checkbox" checked={editAccExcludeFromTotal} onChange={() => setEditAccExcludeFromTotal(!editAccExcludeFromTotal)} className="rounded text-blue-600 focus:ring-blue-500" />
+                      Sembunyikan dari "Total Uang Bisa Dipakai" (Pemisahan Saldo)
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                      <input type="checkbox" checked={editAccIsSavings} onChange={() => setEditAccIsSavings(!editAccIsSavings)} className="rounded text-emerald-600 focus:ring-emerald-500" />
+                      Jadikan Aset Tabungan / Impian
+                    </label>
+                  </div>
 
-            <div onClick={() => setAccExcludeFromTotal(!accExcludeFromTotal)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
-              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{accExcludeFromTotal && <Check size={10} strokeWidth={4} />}</div>
-              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Sembunyikan dari "Total Uang Bisa Dipakai" (Pemisahan Saldo)</span>
-            </div>
-
-            <div onClick={() => setAccIsSavings(!accIsSavings)} className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none">
-              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${accIsSavings ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{accIsSavings && <Check size={10} strokeWidth={4} />}</div>
-              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Jadikan Kategori "Tabungan" di bagian bawah</span>
-            </div>
-
-            {accIsSavings && (
-              <div className="space-y-3">
-                <div className="space-y-1 text-left">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Nama Impian / Barang Belanja (Opsional)</label>
-                  <input type="text" placeholder="Contoh: Beli Handphone Baru, DP Rumah" className="w-full p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-slate-700 dark:text-slate-200" value={accSavingsGoalTitle} onChange={(e) => setAccSavingsGoalTitle(e.target.value)} />
-                </div>
-
-                <div className="space-y-1 text-left">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Target Nominal Tabungan (Opsional - {currency})</label>
-                  <input type="text" placeholder={`Target Nominal Tabungan (${currency})`} className="w-full p-3.5 bg-white dark:bg-slate-900 border border-emerald-100 dark:border-slate-700 rounded-xl text-xs outline-none font-bold text-emerald-800 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-1 pt-1 text-left">
-              <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
-              <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, false)} className="hidden" id="custom-logo-file" />
-                <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
-                <span className="text-[10px] text-slate-400 dark:text-slate-555 truncate">{accLogo ? "Logo Siap Diunggah ✅" : "Format PNG/JPG (Maks 500KB)"}</span>
-              </div>
-            </div>
-            <button onClick={handleCreateAccount} className="w-full py-3.5 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg cursor-pointer transition-colors">Simpan Dompet Baru</button>
-          </div>
-
-          <div className="pt-4 space-y-3 text-left">
-            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-555 uppercase tracking-widest pl-1">Daftar Dompet (Ubah / Urutan / Hapus)</p>
-            {accounts.map((acc: AccountData, index: number) => {
-              const symbol = getCurrencySymbol(acc.currency);
-              const isForeign = acc.currency && acc.currency !== "IDR";
-              const currentRate = getRate(acc.currency, acc.lastExchangeRate);
-              return (
-                <div key={acc.id} className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl flex flex-col gap-3 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
-                  {editingAccId === acc.id ? (
-                    <div className="space-y-3 animate-in fade-in duration-200">
-                      <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label><input className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-900/50 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} /></div>
-                      
-                      {/* BINDING: Dropdown Mata Uang Edit */}
-                      <div className="space-y-1 text-left">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Mata Uang Dompet</label>
-                        <select className="w-full p-3.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-blue-100 dark:border-blue-900/30 outline-none font-bold text-slate-700 dark:text-slate-200 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
-                          <option value="IDR">🇮🇩 Rupiah (IDR)</option>
-                          <option value="USD">🇺🇸 Dollar Amerika (USD)</option>
-                          <option value="SGD">🇸🇬 Dollar Singapura (SGD)</option>
-                          <option value="EUR">🇪🇺 Euro (EUR)</option>
-                          <option value="JPY">🇯🇵 Yen Jepang (JPY)</option>
-                          <option value="GBP">🇬🇧 Pound Inggris (GBP)</option>
-                          <option value="AUD">🇦🇺 Dollar Australia (AUD)</option>
-                          <option value="MYR">🇲🇾 Ringgit Malaysia (MYR)</option>
-                          <option value="SAR">🇸🇦 Riyal Arab Saudi (SAR)</option>
-                          <option value="CNY">🇨🇳 Yuan China (CNY)</option>
-                        </select>
-                      </div>
-
-                      <div className="space-y-1 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">
-                        <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Audit Saldo Nyata (Real - {editCurrency})</label>
-                        <input type="number" className="w-full bg-white dark:bg-slate-900 p-3 text-xs rounded-xl border border-blue-200 dark:border-blue-800 outline-none font-bold text-slate-700 dark:text-slate-200" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
-                      </div>
-                      
-                      <div onClick={() => setEditAccIsBusiness(!editAccIsBusiness)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsBusiness ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{editAccIsBusiness && <Check size={10} strokeWidth={4} />}</div>
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jadikan Dompet <span className="text-amber-600 dark:text-amber-500">"Bisnis"</span></span>
-                      </div>
-
-                      <div onClick={() => setEditAccExcludeFromTotal(!editAccExcludeFromTotal)} className="flex items-center gap-2 pt-1 cursor-pointer select-none">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccExcludeFromTotal ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'}`}>{editAccExcludeFromTotal && <Check size={10} strokeWidth={4} />}</div>
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Sembunyikan dari Total Saldo (Pemisahan Saldo)</span>
-                      </div>
-
-                      <div onClick={() => setEditAccIsSavings(!editAccIsSavings)} className="flex items-center gap-2 pt-1 pb-1 cursor-pointer select-none">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${editAccIsSavings ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-750 bg-white dark:bg-slate-900'}`}>{editAccIsSavings && <Check size={10} strokeWidth={4} />}</div>
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jadikan Kategori "Tabungan"</span>
-                      </div>
-
-                      <div className="flex gap-2 pt-2">
-                        <button onClick={() => handleEditAccount(acc.id)} className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"><Check size={14}/> Simpan</button>
-                        <button onClick={() => setEditingAccId(null)} className="py-3 px-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-all cursor-pointer"><X size={14}/> Batal</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-contain bg-white border border-slate-200 dark:border-slate-700 p-1 shadow-sm" alt="logo" /> ) : ( <div className="w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400">{getCardDesign(acc.type).icon}</div> )}
-                        <div className="text-left">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-none">{acc.name}</p>
-                            {acc.isBusiness && <span className="text-[8px] bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Bisnis</span>}
-                          </div>
-                          <p className="text-xs font-black text-blue-600 dark:text-blue-400 leading-none mb-1">
-                            {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString("id-ID")}`}
-                          </p>
-                          {isForeign && (
-                            <p className="text-[9px] text-slate-400 dark:text-slate-555 font-bold mt-1 leading-none text-left">
-                              Setara: {isPrivacyMode ? 'Rp •••••••' : `Rp ${(acc.balance * currentRate).toLocaleString('id-ID')}`}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Render Tombol Urutan (Naik/Turun), Edit, dan Hapus */}
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Tombol Urutan Naik */}
-                        <button 
-                          disabled={index === 0} 
-                          onClick={() => moveAccountOrder(index, "up")} 
-                          className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 disabled:opacity-30 cursor-pointer transition-colors"
-                        >
-                          <ArrowUp size={14}/>
-                        </button>
-                        
-                        {/* Tombol Urutan Turun */}
-                        <button 
-                          disabled={index === accounts.length - 1} 
-                          onClick={() => moveAccountOrder(index, "down")} 
-                          className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 disabled:opacity-30 cursor-pointer transition-colors"
-                        >
-                          <ArrowDown size={14}/>
-                        </button>
-
-                        {/* Tombol Edit */}
-                        <button onClick={() => { 
-                          setEditingAccId(acc.id); 
-                          setEditAccName(acc.name); 
-                          setEditAccBalance(acc.balance.toString()); 
-                          setEditAccLogo(acc.logo || ""); 
-                          setEditAccIsSavings(!!acc.isSavings); 
-                          setEditAccIsBusiness(!!acc.isBusiness); 
-                          setEditAccTargetBalance(acc.targetBalance?.toString() || ""); 
-                          setEditAccExcludeFromTotal(!!acc.excludeFromTotal); 
-                          setEditAccSavingsGoalTitle(acc.savingsGoalTitle || ""); 
-                          
-                          setEditCurrency(acc.currency || "IDR");
-                          if (setEditAccCurrency) setEditAccCurrency(acc.currency || "IDR");
-                        }} className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 cursor-pointer transition-colors">
-                          <Edit2 size={14}/>
-                        </button>
-
-                        {/* Tombol Hapus */}
-                        <button 
-                          onClick={() => deleteAccount(acc.id, acc.name)} 
-                          className="p-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/30 text-red-500 hover:text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
-                        >
-                          <Trash2 size={14}/>
-                        </button>
-                      </div>
+                  {editAccIsSavings && (
+                    <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                      <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
+                      <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
                     </div>
                   )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </details>
 
-      {/* ============================================================== */}
-      {/* BARU: AKORDEON PENGATURAN KURS GLOBAL TERPUSAT (UX COHESION)    */}
-      {/* ============================================================== */}
-      <details className="bg-white dark:bg-slate-900 rounded-[25px] p-5 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-200 mt-4 text-left">
-        <summary className="text-[10px] font-black text-slate-500 dark:text-slate-400 cursor-pointer uppercase tracking-widest outline-none select-none flex items-center gap-2">
-          <span>🪙 Pengaturan Kurs Global</span>
-        </summary>
-        <div className="mt-5 space-y-4">
-          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-555 uppercase tracking-widest pl-1 leading-relaxed">
-            Tentukan Nilai Tukar Manual (Kurs Terhadap Rupiah / IDR)
-          </p>
-          
-          <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-            {exchangeRates && Object.keys(exchangeRates).filter(k => k !== "IDR").map((cur) => (
-              <div key={cur} className="space-y-1">
-                <label className="text-[9px] font-black text-slate-400 dark:text-slate-350 uppercase tracking-wider pl-1">
-                  1 {cur} (Rupiah)
-                </label>
-                <input 
-                  type="text" 
-                  className="w-full p-3 bg-white dark:bg-slate-900 rounded-xl text-xs border border-slate-100 dark:border-slate-700 outline-none font-bold text-slate-750 dark:text-slate-200"
-                  value={localRates[cur] || ""}
-                  onChange={(e) => {
-                    setLocalRates({
-                      ...localRates,
-                      [cur]: e.target.value
-                    });
-                  }}
-                />
-              </div>
-            ))}
+                  {/* UNIVERSAL LOGO UPLOADER */}
+                  <div className="flex flex-col gap-1 pt-1 text-left">
+                    <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Ubah Logo Dompet (Opsional)</label>
+                    <div className="flex items-center gap-3 bg-slate-100/50 dark:bg-slate-955 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                      <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, true)} className="hidden" id="custom-logo-file" />
+                      <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{editAccLogo ? "Logo Baru Siap Diunggah ✅" : "Pilih logo baru (Maks 500KB)"}</span>
+                      {editAccLogo && <button type="button" onClick={() => setEditAccLogo("")} className="text-red-500 hover:text-red-700 text-[10px] font-bold cursor-pointer">Hapus Logo</button>}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-3">
+                    <button onClick={async () => { triggerHaptic(); if (editingAccId) { setLocalBalanceOverride(p => ({ ...p, [editingAccId]: Number(editAccBalance) })); setLocalNameOverride(p => ({ ...p, [editingAccId]: editAccName })); } await handleEditAccount(editingAccId!); setIsManageOpen(false); setEditingAccId(null); }} className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95">Simpan Perubahan</button>
+                    <button onClick={() => { setEditingAccId(null); }} className="py-3 px-5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95">Batal</button>
+                  </div>
+                </div>
+              ) : (
+                // JIKA TIDAK MENGEDIT: RENDER TAMBAH BARU & LIST SELURUH DOMPET
+                <>
+                  <div className="space-y-3 bg-slate-50 dark:bg-slate-800/40 p-5 rounded-[24px] border border-slate-100 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
+                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 mb-2">Tambah Dompet Baru</h4>
+                    
+                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-850 outline-none font-bold text-slate-800 dark:text-slate-200 cursor-pointer" value={accCurrency || localAccCurrency} onChange={(e) => setAccCurrency ? setAccCurrency(e.target.value) : setLocalAccCurrency(e.target.value)}>
+                      <option value="IDR">🇮🇩 Rupiah (IDR)</option><option value="USD">🇺🇸 Dollar (USD)</option><option value="SGD">🇸🇬 Dollar (SGD)</option><option value="EUR">🇪🇺 Euro (EUR)</option><option value="JPY">🇯🇵 Yen (JPY)</option><option value="CNY">🇨🇳 Yuan (CNY)</option><option value="GBP">🇬🇧 Pound (GBP)</option><option value="AUD">🇦🇺 Dollar (AUD)</option><option value="MYR">🇲🇾 Ringgit (MYR)</option><option value="SAR">🇸🇦 Riyal (SAR)</option>
+                    </select>
+
+                    <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-850 outline-none font-bold text-slate-800 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
+                    <input type="number" placeholder="Saldo Aktual" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-850 outline-none font-bold text-slate-800 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
+                    
+                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-850 outline-none font-bold text-slate-800 dark:text-slate-200 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
+                        {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
+                    </select>
+
+                    <div className="flex flex-col gap-2 pt-2">
+                      <label className="flex items-center gap-2 cursor-pointer text-[10px] font-bold text-slate-600 dark:text-slate-300"><input type="checkbox" checked={accIsBusiness} onChange={() => setAccIsBusiness(!accIsBusiness)} className="rounded text-blue-600 focus:ring-blue-500" />Jadikan Dompet Bisnis</label>
+                      <label className="flex items-center gap-2 cursor-pointer text-[10px] font-bold text-slate-600 dark:text-slate-300"><input type="checkbox" checked={accExcludeFromTotal} onChange={() => setAccExcludeFromTotal(!accExcludeFromTotal)} className="rounded text-blue-600 focus:ring-blue-500" />Sembunyikan dari "Total Uang Bisa Dipakai" (Pemisahan Saldo)</label>
+                      <label className="flex items-center gap-2 cursor-pointer text-[10px] font-bold text-slate-600 dark:text-slate-300"><input type="checkbox" checked={accIsSavings} onChange={() => setAccIsSavings(!accIsSavings)} className="rounded text-emerald-600 focus:ring-emerald-500" />Jadikan Aset Tabungan / Impian</label>
+                    </div>
+
+                    {accIsSavings && (
+                      <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                        <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-850 outline-none font-bold text-slate-800 dark:text-slate-200" value={accSavingsGoalTitle} onChange={(e) => setAccSavingsGoalTitle(e.target.value)} />
+                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-850 outline-none font-bold text-slate-800 dark:text-slate-200" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-1 pt-1 text-left">
+                      <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
+                      <div className="flex items-center gap-3 bg-slate-100/50 dark:bg-slate-955 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                        <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, false)} className="hidden" id="custom-logo-file" />
+                        <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{accLogo ? "Logo Siap Diunggah ✅" : "Format PNG/JPG (Maks 500KB)"}</span>
+                      </div>
+                    </div>
+
+                    <button onClick={async () => { triggerHaptic(); await handleCreateAccount(); setIsManageOpen(false); }} className="w-full py-3 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95">Simpan Dompet Baru</button>
+                  </div>
+
+                  {/* LIST DOMPET (EDIT / HAPUS) */}
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest pl-1">Daftar Dompet Anda</p>
+                    {accounts.map((acc, index) => (
+                      <div key={acc.id} className="flex justify-between items-center p-3 bg-slate-100/50 dark:bg-slate-955 border border-slate-200/50 dark:border-slate-850 rounded-xl transition-colors duration-200">
+                        <div className="text-left">
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-100">{acc.name} {acc.isBusiness && <span className="text-[8px] text-amber-600 bg-amber-100 px-1 rounded font-black">Bisnis</span>}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">{acc.currency || "IDR"} • {acc.balance.toLocaleString('id-ID')}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button disabled={index===0} onClick={()=>moveAccountOrder(index, "up")} className="p-1.5 bg-slate-200/50 dark:bg-slate-900 rounded text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-30"><ArrowUp size={12}/></button>
+                          <button disabled={index===accounts.length-1} onClick={()=>moveAccountOrder(index, "down")} className="p-1.5 bg-slate-200/50 dark:bg-slate-900 rounded text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-30"><ArrowDown size={12}/></button>
+                          <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccIsSavings(!!acc.isSavings); setEditAccIsBusiness(!!acc.isBusiness); setEditAccTargetBalance(acc.targetBalance?.toString()||""); setEditAccExcludeFromTotal(!!acc.excludeFromTotal); setEditAccSavingsGoalTitle(acc.savingsGoalTitle||""); if(setEditAccCurrency)setEditAccCurrency(acc.currency||"IDR"); else setLocalEditAccCurrency(acc.currency||"IDR"); }} className="p-1.5 bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded ml-1 cursor-pointer hover:bg-blue-100"><Edit2 size={12}/></button>
+                          <button onClick={() => deleteAccount(acc.id, acc.name)} className="p-1.5 bg-red-50 dark:bg-red-950/40 text-red-500 hover:text-red-700 rounded cursor-pointer hover:bg-red-100"><Trash2 size={12}/></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+            </div>
           </div>
-          
-          <button 
-            type="button"
-            onClick={() => {
-              const parsedRates: Record<string, number> = {};
-              Object.keys(localRates).forEach(k => {
-                parsedRates[k] = safeEvaluate(localRates[k]) || 1;
-              });
-              if (handleUpdateGlobalRates) {
-                handleUpdateGlobalRates(parsedRates);
-              }
-            }} 
-            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg cursor-pointer transition-colors"
-          >
-            Simpan Nilai Kurs Baru
-          </button>
         </div>
-      </details>
+      )}
+
+      {/* LACI BAWAH 2: PENGATURAN KURS GLOBAL */}
+      {showRatesModal && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowRatesModal(false)}>
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800" onClick={e => e.stopPropagation()}>
+            <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
+            <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
+              <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">🪙 Pengaturan Kurs Global</h3>
+              <button onClick={() => setShowRatesModal(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={16} className="text-slate-700 dark:text-slate-200"/></button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-4">
+              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-555 uppercase tracking-widest pl-1 leading-relaxed">
+                Tentukan Nilai Tukar Manual (Kurs Terhadap Rupiah / IDR)
+              </p>
+              
+              <div className="grid grid-cols-2 gap-3 bg-slate-100/50 dark:bg-slate-950 p-4 rounded-[24px]">
+                {exchangeRates && Object.keys(exchangeRates).filter(k => k !== "IDR").map((cur) => (
+                  <div key={cur} className="space-y-1 text-left">
+                    <label className="text-[9px] font-black text-slate-400 uppercase pl-1">1 {cur} (Rp)</label>
+                    <input type="text" className="w-full p-2.5 bg-white dark:bg-slate-900 rounded-xl text-xs font-bold outline-none border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white" value={localRates[cur] || ""} onChange={(e) => setLocalRates({...localRates, [cur]: e.target.value})} />
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => { triggerHaptic(); const parsed: Record<string, number> = {}; Object.keys(localRates).forEach(k => { parsed[k] = parseFloat(localRates[k].replace(/[^0-9.]/g, "")) || 1; }); if (handleUpdateGlobalRates) handleUpdateGlobalRates(parsed); setShowRatesModal(false); }} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors active:scale-95">Simpan Kurs Baru</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
