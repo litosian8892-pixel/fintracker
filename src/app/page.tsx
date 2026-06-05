@@ -315,6 +315,7 @@ export default function FintrackerApp() {
     return () => { unsubAcc(); unsubCat(); unsubTypes(); unsubDebts(); unsubSubs(); unsubProfile(); };
   }, [user]);
 
+  // Mengubah limit muatan history transaksi default menjadi lebih tinggi untuk Tab Home yang baru
   useEffect(() => {
     if (!user) return;
     const qHistory = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(txLimit));
@@ -337,10 +338,10 @@ export default function FintrackerApp() {
   }, [user, txLimit]);
 
   useEffect(() => {
-  // PERBAIKAN: Izinkan penarikan data transaksi saat membuka tab Laporan ATAU tab Aset & Akun
-  if (!user || (activeTab !== "reports" && activeTab !== "assets")) return; 
-  
-  const [y, m] = reportMonth.split("-").map(Number);
+    // PERBAIKAN: Izinkan penarikan data transaksi saat membuka tab Laporan, Tab Aset, ATAU Tab Beranda (Home)
+    if (!user || (activeTab !== "reports" && activeTab !== "assets" && activeTab !== "home")) return; 
+    
+    const [y, m] = reportMonth.split("-").map(Number);
     const startOfRangeDate = new Date(y, m - 6, 1);
     const startYear = startOfRangeDate.getFullYear();
     const startMonth = String(startOfRangeDate.getMonth() + 1).padStart(2, "0");
@@ -862,9 +863,16 @@ export default function FintrackerApp() {
   };
 
   const openEditModal = (t: TransactionData) => {
-    setEditingTransaction(t); setEditTAmount(t.amount.toString()); setEditTType(t.type as any); setEditTAccountId(t.accountId);
-    setEditTToAccountId(t.toAccountId || ""); setEditTNote(t.note || ""); setEditTCategory(t.category); setEditTDate(t.tDate); setEditTAdminFee(t.adminFee?.toString() || ""); 
-    setEditTSplits(t.splits ? t.splits.map(s => ({ ...s })) : []); 
+    setEditingTransaction(t); 
+    setEditTAmount(t.originalAmount !== undefined ? t.originalAmount.toString() : t.amount.toString()); 
+    setEditTType(t.type as any); 
+    setEditTAccountId(t.accountId);
+    setEditTToAccountId(t.toAccountId || ""); 
+    setEditTNote(t.note || ""); 
+    setEditTCategory(t.category); 
+    setEditTDate(t.tDate); 
+    setEditTAdminFee(t.originalAmount !== undefined ? ((t.adminFee || 0) / (t.exchangeRate || 1)).toString() : (t.adminFee?.toString() || "")); 
+    setEditTSplits(t.splits ? t.splits.map(s => ({ ...s, amount: t.originalAmount !== undefined ? (s.amount / (t.exchangeRate || 1)) : s.amount })) : []); 
   };
 
   const handleUpdateTransaction = async () => {
@@ -1148,7 +1156,22 @@ export default function FintrackerApp() {
                   tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
                   tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} 
                   tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
-                  isPrivacyMode={isPrivacyMode}
+                  
+                  // Link state histori dan aksi mutasi data ke HomeTab baru
+                  transactions={transactions} onDeleteTransaction={handleDeleteTransaction}
+                  isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode}
+
+                  // Link state koreksi transaksi
+                  editingTransaction={editingTransaction} setEditingTransaction={setEditingTransaction} handleUpdateTransaction={handleUpdateTransaction}
+                  editTAmount={editTAmount} setEditTAmount={setEditTAmount}
+                  editTType={editTType} setEditTType={setEditTType}
+                  editTAccountId={editTAccountId} setEditTAccountId={setEditTAccountId}
+                  editTToAccountId={editTToAccountId} setEditTToAccountId={setEditTToAccountId}
+                  editTNote={editTNote} setEditTNote={setEditTNote}
+                  editTCategory={editTCategory} setEditTCategory={setEditTCategory}
+                  editTDate={editTDate} setEditTDate={setEditTDate}
+                  editTAdminFee={editTAdminFee} setEditTAdminFee={setEditTAdminFee}
+                  editTSplits={editTSplits} setEditTSplits={setEditTSplits}
                 />
               )}
               {activeTab === "reports" && (
@@ -1203,9 +1226,6 @@ export default function FintrackerApp() {
                   editAccCurrency={editAccCurrency} setEditAccCurrency={setEditAccCurrency}
                   exchangeRates={exchangeRates}
                   handleUpdateGlobalRates={handleUpdateGlobalRates}
-                  // ----------------------------------------------------
-                  // TAMBAHKAN 3 BARIS INI AGAR DETAIL DOMPET BISA MUNCUL:
-                  // ----------------------------------------------------
                   reportTransactions={reportTransactions}
                   reportMonth={reportMonth}
                   setReportMonth={setReportMonth}
@@ -1223,7 +1243,8 @@ export default function FintrackerApp() {
               )}
             </div>
 
-            {(activeTab === "home" || activeTab === "reports") && (
+            {/* Sembunyikan HistoryList di Tab Home karena sudah diintegrasikan langsung ke dalam HomeTab */}
+            {activeTab === "reports" && (
               <HistoryList 
                 transactions={transactions} onDelete={handleDeleteTransaction} onEdit={openEditModal} 
                 onLoadMore={() => setTxLimit(prev => prev + 10)} hasMore={transactions.length >= txLimit}
@@ -1234,150 +1255,6 @@ export default function FintrackerApp() {
         </div>
       </div>
       <BottomNav activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
-
-      {/* POP-UP MODAL EDIT TRANSAKSI */}
-      {editingTransaction && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 border border-slate-100 dark:border-slate-800 transition-colors duration-200">
-            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
-              <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Koreksi Transaksi</h3>
-              <button disabled={isSubmitting} onClick={() => { setEditingTransaction(null); setActiveEditKeypad(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full disabled:opacity-50 transition-colors"><X size={14}/></button>
-            </div>
-            
-            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto pb-12 text-left">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipe Transaksi</label>
-                <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTType} onChange={(e) => { const newType = e.target.value as "income" | "expense" | "transfer"; setEditTType(newType); if (newType !== "transfer") { const filtered = categories.filter(c => c.type === newType); setEditTCategory(filtered.length > 0 ? filtered[0].name : (newType === "income" ? "Gaji" : "Makanan")); } else { setEditTCategory("Transfer"); } }}>
-                  <option value="expense">🔴 Pengeluaran</option><option value="income">🟢 Pemasukan</option><option value="transfer">🔵 Transfer Dana</option>
-                </select>
-              </div>
-
-              {editTSplits.length === 0 && (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal (Rp)</label>
-                  <input disabled={isSubmitting} type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveEditKeypad("amount"); }} className={`w-full p-3.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white disabled:opacity-50 transition-all ${activeEditKeypad === 'amount' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)] bg-white dark:bg-slate-800' : 'border-slate-100 dark:border-slate-700'}`} value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
-                  {editTAmount && <p className="text-[10px] font-bold text-slate-455 dark:text-slate-400 pl-1 animate-in fade-in duration-150">Terbaca: <span className={`text-slate-600 dark:text-slate-200 font-black ${isPrivacyMode ? 'blur-sm select-none transition-all duration-300' : ''}`}>{formatRupiahTerbaca(editTAmount)}</span></p>}
-                </div>
-              )}
-
-              {editTType === "transfer" && (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Biaya Admin (Opsional)</label>
-                  <input disabled={isSubmitting} type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveEditKeypad("adminFee"); } }} className={`w-full p-3.5 bg-blue-50/20 dark:bg-slate-800 border rounded-xl text-xs font-bold outline-blue-500 text-blue-900 dark:text-white disabled:opacity-50 transition-all ${activeEditKeypad === 'adminFee' && isMobile ? 'border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]' : 'border-blue-100'}`} value={editTAdminFee} onChange={(e) => setEditTAdminFee(e.target.value)} />
-                  {editTAdminFee && <p className="text-[10px] font-bold text-blue-450 pl-1 animate-in fade-in duration-150">Terbaca: <span className={`text-blue-600 dark:text-blue-200 font-black ${isPrivacyMode ? 'blur-sm select-none transition-all duration-300' : ''}`}>{formatRupiahTerbaca(editTAdminFee)}</span></p>}
-                </div>
-              )}
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</label>
-                <input disabled={isSubmitting} type="date" className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTDate} onChange={(e) => setEditTDate(e.target.value)} />
-              </div>
-
-              {editTType !== "transfer" && editTSplits.length === 0 && (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
-                  <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTCategory} onChange={(e) => setEditTCategory(e.target.value)}>
-                    {editTCategory && !categories.some(c => c.type === editTType && c.name === editTCategory) && (
-                      <option value={editTCategory}>{editTCategory} (Sistem)</option>
-                    )}
-                    {categories.filter(c => c.type === editTType).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
-                  </select>
-                </div>
-              )}
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dompet Asal</label>
-                <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTAccountId} onChange={(e) => setEditTAccountId(e.target.value)}>
-                  {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
-                </select>
-              </div>
-
-              {editTType === "transfer" && (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kirim Ke Dompet Tujuan</label>
-                  <select disabled={isSubmitting} className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-850 dark:text-white cursor-pointer disabled:opacity-50 transition-colors" value={editTToAccountId} onChange={(e) => setEditTToAccountId(e.target.value)}>
-                    {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
-                  </select>
-                </div>
-              )}
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Catatan (Struk Utama)</label>
-                <input disabled={isSubmitting} onFocus={() => { setActiveEditKeypad(null); }} type="text" className="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white disabled:opacity-50 transition-colors" value={editTNote} onChange={(e) => setEditTNote(e.target.value)} />
-              </div>
-
-              {editTSplits && editTSplits.length > 0 && (
-                <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800 mt-2">
-                  <div className="flex justify-between items-center">
-                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">✂️ Koreksi Rincian Pecahan</p>
-                    <span className={`text-[10px] font-black text-emerald-600 ${isPrivacyMode ? 'blur-sm select-none transition-all duration-300' : ''}`}>Total: Rp {editTSplits.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}</span>
-                  </div>
-                  {editTSplits.map((item, i) => (
-                    <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-150 dark:border-slate-800 space-y-3 relative text-left">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black text-slate-400">PECAHAN #{i + 1}</span>
-                        {editTSplits.length > 1 && (
-                          <button type="button" onClick={() => {
-                            const updated = editTSplits.filter((_, idx) => idx !== i);
-                            setEditTSplits(updated);
-                          }} className="text-red-500 hover:text-red-700 text-xs font-bold flex items-center gap-0.5 cursor-pointer">
-                            <X size={14} /> Hapus
-                          </button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Kategori</label>
-                          <div onClick={() => {
-                            setActiveEditSplitIndex(i);
-                            setShowEditSplitCatModal(true);
-                          }} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-750 truncate">
-                            <span className="truncate">{item.category || "Pilih..."}</span>
-                            <ChevronDown size={14} className="text-slate-400 shrink-0" />
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Nominal (Rp)</label>
-                          <input type="text" placeholder="Contoh: 15000" className={`w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500 ${isPrivacyMode ? 'blur-sm select-none transition-all duration-300' : ''}`} value={item.amount === 0 ? "" : item.amount} onChange={(e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, "");
-                            const updated = [...editTSplits];
-                            updated[i].amount = val ? Number(val) : 0;
-                            setEditTSplits(updated);
-                          }} />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-450 uppercase tracking-wider">Catatan Khusus Pecahan</label>
-                        <input type="text" placeholder="Keterangan..." className="w-full p-3 bg-white border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.note || ""} onChange={(e) => {
-                          const updated = [...editTSplits];
-                          updated[i].note = e.target.value;
-                          setEditTSplits(updated);
-                        }} />
-                      </div>
-                    </div>
-                  ))}
-                  <button type="button" onClick={() => {
-                    const totalSoFar = editTSplits.reduce((sum, s) => sum + s.amount, 0);
-                    const diff = Math.max(0, safeEvaluate(editTAmount) - totalSoFar);
-                    setEditTSplits([...editTSplits, { category: "", amount: diff, note: "" }]);
-                  }} className="w-full py-2.5 border border-dashed border-blue-300 text-blue-600 dark:border-blue-800 dark:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 rounded-xl text-xs font-black flex items-center justify-center gap-1 cursor-pointer">
-                    + Tambah Baris Pecahan
-                  </button>
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-4 shrink-0">
-                <button disabled={isSubmitting} onClick={handleUpdateTransaction} className={`flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg transition-all ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}>
-                  {isSubmitting ? "Menyimpan..." : "Simpan Koreksi"}
-                </button>
-                <button disabled={isSubmitting} onClick={() => { setEditingTransaction(null); setActiveEditKeypad(null); }} className="py-3 px-6 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-bold transition-all disabled:opacity-50">
-                  Batal
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
