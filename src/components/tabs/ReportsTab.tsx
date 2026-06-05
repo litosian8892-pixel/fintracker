@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { 
   Download, ChevronDown, ArrowUp, ArrowDown, X, Printer, 
   BarChart3, PieChart as PieIcon, CalendarDays, Activity, Filter, 
@@ -66,7 +66,46 @@ export default function ReportsTab({
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [showAllVarList, setShowAllVarList] = useState(false);
 
+  // Deklarasi referensi DOM tombol Cetak untuk bypass Synthetic Event
+  const printBtnRef = useRef<HTMLButtonElement>(null);
+
   const triggerHaptic = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
+
+  // IMPLEMENTASI NATIVE EVENT LISTENER UNTUK KEBAL PROTEKSI WEBKIT SAFARI iOS
+  useEffect(() => {
+    const btn = printBtnRef.current;
+    if (!btn) return;
+
+    const handleNativeClick = (e: MouseEvent) => {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
+      
+      const isStandalone = (window.navigator as any).standalone || 
+                           window.matchMedia('(display-mode: standalone)').matches;
+
+      if (isIOS) {
+        if (isStandalone) {
+          e.preventDefault();
+          e.stopPropagation();
+          alert("Apple membatasi cetak PDF langsung di dalam Aplikasi Layar Utama.\n\nSilakan buka Fintracker via browser Safari biasa untuk mengunduh PDF Laporan ini!");
+        } else {
+          // Panggil fungsi print secara sinkron murni lewat interaksi fisik asli
+          try {
+            window.print();
+          } catch (err) {
+            try {
+              document.execCommand('print', false, undefined);
+            } catch (e) {}
+          }
+        }
+      }
+    };
+
+    btn.addEventListener("click", handleNativeClick);
+    return () => {
+      btn.removeEventListener("click", handleNativeClick);
+    };
+  }, []);
 
   const uniqueAccounts = useMemo(() => {
     const accs = new Set<string>();
@@ -198,7 +237,7 @@ export default function ReportsTab({
 
   const savingsRate = localTotalIncome > 0 ? ((localTotalIncome - localTotalExpense) / localTotalIncome) * 100 : 0;
   const consistencyScore = (trackedDays / daysInMonth) * 100;
-  const expenseControlScore = localTotalExpense <= localTotalIncome ? 100 : (localTotalIncome === 0 ? 0 : Math.max(0, 100 - ((localTotalExpense - localTotalIncome) / localTotalIncome * 100)));
+  const expenseControlScore = localTotalExpense <= localTotalIncome ? 100 : (localTotalIncome === 0 ? 0 : Math.max(0, 100 - ((localTotalExpense - localTotalIncome) / localTotalIncome * 105)));
   const healthScore = Math.min(Math.max(Math.round((savingsRate > 0 ? 40 : 10) + (consistencyScore * 0.3) + (expenseControlScore * 0.3)), 0), 100);
   
   let healthStatus = { text: "Needs Attention", color: "text-red-500", bg: "bg-red-100 dark:bg-red-900/30", stroke: "#ef4444" };
@@ -338,35 +377,20 @@ export default function ReportsTab({
             <button onClick={handleExportToExcel} className="flex-1 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer active:scale-95">
               <Download size={14}/> Export Excel
             </button>
-            <button onClick={() => {
-              if (typeof window !== "undefined") {
-                // Deteksi iOS/iPadOS
+            
+            {/* TOMBOL CETAK PDF (NATIVE BINDING BYPASS SYNTHETIC EVENTS) */}
+            <button 
+              ref={printBtnRef}
+              onClick={(e) => {
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                               (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
-                
-                // Deteksi PWA Layar Utama (Standalone Mode)
-                const isStandalone = (window.navigator as any).standalone || 
-                                     window.matchMedia('(display-mode: standalone)').matches;
-                
-                if (isIOS && isStandalone) { 
-                  alert("Apple membatasi cetak PDF langsung di dalam Aplikasi Layar Utama.\n\nSilakan buka Fintracker via browser Safari biasa untuk mengunduh PDF Laporan ini!"); 
-                  return; 
-                }
-                
-                if (navigator.vibrate) {
-                  try { navigator.vibrate(15); } catch (e) {}
-                }
-                
-                // Eksekusi murni sinkronus instan agar WebKit mendeteksi ketukan sah pengguna
-                try {
+                if (!isIOS) {
+                  triggerHaptic();
                   window.print();
-                } catch (err) {
-                  try {
-                    document.execCommand('print', false, undefined);
-                  } catch (e) {}
                 }
-              }
-            }} className="flex-1 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200/50 dark:border-red-800/50 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors touch-manipulation cursor-pointer active:scale-95">
+              }} 
+              className="flex-1 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200/50 dark:border-red-800/50 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors touch-manipulation cursor-pointer active:scale-95"
+            >
               <Printer size={14}/> Cetak PDF
             </button>
           </div>
@@ -495,7 +519,7 @@ export default function ReportsTab({
                               {data.items.sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime()).map((item) => (
                                 <div key={item.id} className="flex justify-between items-center text-[10px] pb-2 last:pb-0 border-b border-slate-200/40 dark:border-slate-700/40 last:border-none">
                                   <div className="flex flex-col text-left">
-                                    <span className="text-slate-400 dark:text-slate-500 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
+                                    <span className="text-slate-400 dark:text-slate-550 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
                                     <span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
                                   </div>
                                   <span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
@@ -579,7 +603,7 @@ export default function ReportsTab({
                           <div onClick={() => { triggerHaptic(); toggleExpand(`inc-${key}`); }} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 p-1.5 -mx-1.5 rounded-xl transition-all">
                             <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1.5">
                               <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black">{data.items[0]?.category?.charAt(0).toUpperCase()}</span>
-                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">({data.items.length}x)</span>
+                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-550 font-medium">({data.items.length}x)</span>
                             </span>
                             <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">
                               Rp {data.total.toLocaleString('id-ID')} 
