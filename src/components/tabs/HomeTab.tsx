@@ -459,6 +459,18 @@ export default function HomeTab({
     setActiveAccSelector(null);
   };
 
+  // Menentukan tipe transaksi aktif secara dinamis (expense/income) baik mode baru maupun edit
+  const activeType = editingTransaction ? editTType : tType;
+
+  const handleSelectCategory = (catName: string) => {
+    if (editingTransaction) {
+      setEditTCategory(catName);
+    } else {
+      setTCategory(catName);
+    }
+    setShowCatModal(false);
+  };
+
   return (
     <div className="space-y-6 text-left relative min-h-[calc(100vh-120px)] transition-colors duration-200">
       
@@ -472,7 +484,7 @@ export default function HomeTab({
               <input 
                 type="text" 
                 placeholder="Cari transaksi..." 
-                className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold outline-none focus:border-blue-500 text-slate-850 dark:text-slate-100"
+                className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold outline-none focus:border-blue-500 text-slate-855 dark:text-slate-100"
                 value={searchQueryInput}
                 onChange={(e) => setSearchQueryInput(e.target.value)}
                 autoFocus
@@ -480,7 +492,7 @@ export default function HomeTab({
               <button 
                 type="button" 
                 onClick={() => { setSearchQueryInput(""); setIsSearchExpanded(false); }} 
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-full text-slate-400"
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-855 rounded-full text-slate-400"
               >
                 <X size={14} />
               </button>
@@ -549,7 +561,7 @@ export default function HomeTab({
               className={`px-4 py-2 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shrink-0 border ${
                 isActive 
                   ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/10" 
-                  : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"
+                  : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-855 dark:hover:text-slate-100"
               }`}
             >
               {m.label}
@@ -622,7 +634,7 @@ export default function HomeTab({
                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-600">{monthYear}</span>
                   </div>
                   <span className={`text-xs font-black ${dailyNet > 0 ? "text-emerald-500" : dailyNet < 0 ? "text-rose-500" : "text-slate-400"}`}>
-                    {isPrivacyMode ? "Rp •••" : `${dailyNet > 0 ? "+" : ""}${dailyNet.toLocaleString("id-ID")}`}
+                    {isPrivacyMode ? "Rp ••" : `${dailyNet > 0 ? "+" : ""}${dailyNet.toLocaleString("id-ID")}`}
                   </span>
                 </div>
 
@@ -711,6 +723,7 @@ export default function HomeTab({
           
           {/* Diubah menjadi h-full (Full Screen) & rounded-none di HP, serta tetap melengkung di desktop */}
           <div className="bg-white dark:bg-slate-950 w-full h-full rounded-none sm:max-w-md sm:h-[95vh] sm:rounded-t-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 z-10 flex flex-col border-t border-slate-200 dark:border-slate-800">
+            
             {/* Header Laci Dinamis Berdasarkan Tipe Transaksi - MERAH PEKAT, BUKAN PINK (Gambar 4 Style) */}
             {editingTransaction ? (
               <div className={`p-6 ${editTType === 'income' ? 'bg-emerald-500' : editTType === 'expense' ? 'bg-red-600' : 'bg-blue-600'} text-white shrink-0 transition-colors duration-300 relative`}>
@@ -737,7 +750,7 @@ export default function HomeTab({
                     </button>
                     <div>
                       {/* Header besar Gambar 4 */}
-                      <span className="text-[10px] font-black text-white/70 uppercase tracking-widest leading-none block mb-1">Koreksi Transaksi</span>
+                      <span className="text-[10px] font-black text-white/70 uppercase tracking-widest block mb-1">Koreksi Transaksi</span>
                       <div className="text-3xl font-black leading-none flex items-baseline gap-1">
                         {editTAmount ? parseFloat(editTAmount).toLocaleString("id-ID") : "0"}
                       </div>
@@ -771,7 +784,7 @@ export default function HomeTab({
                     </button>
                     <div>
                       {/* Header besar Gambar 4 */}
-                      <span className="text-[10px] font-black text-white/70 uppercase tracking-widest leading-none block mb-1">Catat Baru</span>
+                      <span className="text-[10px] font-black text-white/70 uppercase tracking-widest block mb-1">Catat Baru</span>
                       <div className="text-3xl font-black leading-none flex items-baseline gap-1">
                         {tAmount ? parseFloat(tAmount).toLocaleString("id-ID") : "0"}
                       </div>
@@ -892,12 +905,17 @@ export default function HomeTab({
                         <button type="button" onClick={() => setEditTSplits([])} className="text-[10px] font-black underline hover:text-blue-800">Batalkan Pecahan</button>
                       </div>
                     ) : (
-                      <select className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" value={editTCategory} onChange={(e) => setEditTCategory(e.target.value)}>
-                        <option value="" disabled>Pilih Kategori...</option>
-                        {categories.filter(c => c.type === editTType).map(cat => (
-                          <option key={cat.id} value={cat.name}>{cat.name}</option>
-                        ))}
-                      </select>
+                      <div onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-850 dark:text-white cursor-pointer flex items-center justify-between truncate">
+                        <span className={`truncate ${!editTCategory ? "text-slate-400 font-medium" : ""}`}>
+                          {editTCategory ? (
+                            <>
+                              <span className="mr-2">{activeCategoryObject?.icon || getCategoryIcon(editTCategory)}</span>
+                              {editTCategory}
+                            </>
+                          ) : "Pilih Kategori..."}
+                        </span>
+                        <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                      </div>
                     )
                   ) : (
                     splits.length > 0 ? (
@@ -907,8 +925,16 @@ export default function HomeTab({
                       </div>
                     ) : (
                       <div className="flex gap-2 items-center">
-                        <div onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 dark:bg-slate-900 dark:border-slate-800 dark:text-white cursor-pointer flex items-center justify-between truncate">
-                          <span className={`truncate ${!tCategory ? "text-slate-400 font-medium" : ""}`}>{tCategory || "Pilih Kategori..."}</span><ChevronDown size={14} className="text-slate-400 shrink-0" />
+                        <div onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="flex-1 p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-850 dark:text-white cursor-pointer flex items-center justify-between truncate">
+                          <span className={`truncate ${!tCategory ? "text-slate-400 font-medium" : ""}`}>
+                            {tCategory ? (
+                              <>
+                                <span className="mr-2">{activeCategoryObject?.icon || getCategoryIcon(tCategory)}</span>
+                                {tCategory}
+                              </>
+                            ) : "Pilih Kategori..."}
+                          </span>
+                          <ChevronDown size={14} className="text-slate-400 shrink-0" />
                         </div>
                         {safeEvaluate(tAmount) > 0 && (
                           <button type="button" onClick={() => {
@@ -991,31 +1017,31 @@ export default function HomeTab({
       )}
 
       {/* POP-UP CATEGORY MODAL FOR NEW CREATION */}
-      {showCatModal && tType !== "transfer" && (
+      {showCatModal && activeType !== "transfer" && (
         <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-100 dark:border-slate-800">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
               <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
-                <span>🏷️</span> Pilih Kategori {tType === 'expense' ? 'Pengeluaran' : 'Pemasukan'}
+                <span>🏷️</span> Pilih Kategori {activeType === 'expense' ? 'Pengeluaran' : 'Pemasukan'}
               </h3>
               <button type="button" onClick={() => setShowCatModal(false)} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full"><X size={14}/></button>
             </div>
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
               <div className="relative">
                 <Search className="absolute left-3 top-3 text-slate-400" size={16} />
-                <input type="text" placeholder="Cari kategori..." className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-850 dark:text-slate-100" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <input type="text" placeholder="Cari kategori..." className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
             </div>
             
             <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900 text-left">
-              {tType === "expense" ? (
+              {activeType === "expense" ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2 animate-in fade-in duration-150">
                     <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-orange-100 dark:border-orange-950/30 z-10"><p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel</p></div>
                     <div className="flex flex-col gap-1.5">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").map(cat => (
                         <div key={cat.id} className="flex gap-1.5 items-center w-full">
-                          <button type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-red-600 text-white border-red-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"}`}>
+                          <button type="button" onClick={() => handleSelectCategory(cat.name)} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-red-600 text-white border-red-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"}`}>
                             <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
                             <span className="truncate">{cat.name}</span>
                           </button>
@@ -1029,7 +1055,7 @@ export default function HomeTab({
                     <div className="flex flex-col gap-1.5">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType === "fixed").map(cat => (
                         <div key={cat.id} className="flex gap-1.5 items-center w-full">
-                          <button type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-purple-600 text-white border-purple-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"}`}>
+                          <button type="button" onClick={() => handleSelectCategory(cat.name)} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-purple-600 text-white border-purple-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"}`}>
                             <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
                             <span className="truncate">{cat.name}</span>
                           </button>
@@ -1043,7 +1069,7 @@ export default function HomeTab({
                 <div className="grid grid-cols-1 gap-2 animate-in fade-in duration-150">
                   {filteredCategories.filter(c => c.type === "income").map(cat => (
                     <div key={cat.id} className="flex gap-1.5 items-center w-full">
-                      <button type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-green-600 text-white border-green-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"}`}>
+                      <button type="button" onClick={() => handleSelectCategory(cat.name)} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-green-600 text-white border-green-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"}`}>
                         <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
                         <span className="truncate">{cat.name}</span>
                       </button>
@@ -1259,7 +1285,7 @@ export default function HomeTab({
                           : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850"
                       }`}
                     >
-                      {/* Logo / Icon - Dibuat bersih tanpa bingkai hitam */}
+                      {/* Logo / Icon */}
                       <div className="flex justify-between items-start">
                         {acc.logo ? (
                           <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white" />
