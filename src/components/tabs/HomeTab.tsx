@@ -156,6 +156,9 @@ export default function HomeTab({
   const [selectedAccountIdFilter, setSelectedAccountIdFilter] = useState("all");
   const [showAccountFilterDropdown, setShowAccountFilterDropdown] = useState(false);
 
+  // State baru untuk menentukan apakah pencarian dilakukan secara global lintas bulan atau tidak
+  const [searchAllMonths, setSearchAllMonths] = useState(false);
+
   // State pemilih akun/dompet aktif untuk pop-up card
   const [activeAccSelector, setActiveAccSelector] = useState<"source" | "dest" | null>(null);
 
@@ -388,7 +391,14 @@ export default function HomeTab({
 
   // Saringan Berantai (Filter) Berdasarkan Bulan, Pencarian, & Filter Dompet Aktif
   const monthlyTransactions = useMemo(() => {
-    let filtered = transactions.filter(t => t.tDate && t.tDate.startsWith(selectedMonth));
+    let filtered = transactions;
+    
+    // Saring berdasarkan bulan aktif hanya jika:
+    // 1. Kolom pencarian kosong, ATAU
+    // 2. Kolom pencarian ada isi, tapi opsi "Semua Bulan" sedang non-aktif
+    if (!searchQueryInput.trim() || !searchAllMonths) {
+      filtered = filtered.filter(t => t.tDate && t.tDate.startsWith(selectedMonth));
+    }
     
     // Filter Berdasarkan Akun/Dompet Terpilih
     if (selectedAccountIdFilter !== "all") {
@@ -405,7 +415,7 @@ export default function HomeTab({
     }
 
     return filtered;
-  }, [transactions, selectedMonth, selectedAccountIdFilter, searchQueryInput]);
+  }, [transactions, selectedMonth, selectedAccountIdFilter, searchQueryInput, searchAllMonths]);
 
   const monthlySummary = useMemo(() => {
     let income = 0;
@@ -550,16 +560,30 @@ export default function HomeTab({
             <div className="flex items-center gap-2 w-full pr-2 animate-in slide-in-from-left-2 duration-150">
               <input 
                 type="text" 
-                placeholder="Cari transaksi..." 
+                placeholder={searchAllMonths ? "Cari semua bulan..." : "Cari bulan ini..."} 
                 className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold outline-none focus:border-blue-500 text-slate-855 dark:text-slate-100"
                 value={searchQueryInput}
                 onChange={(e) => setSearchQueryInput(e.target.value)}
                 autoFocus
               />
+              
+              {/* Tombol Toggle Opsi Pencarian Global "Semua Bulan" */}
+              <button
+                type="button"
+                onClick={() => { triggerHaptic(); setSearchAllMonths(!searchAllMonths); }}
+                className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black shrink-0 border transition-all cursor-pointer active:scale-95 ${
+                  searchAllMonths 
+                    ? "bg-blue-600 border-blue-600 text-white shadow" 
+                    : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
+              >
+                Semua Bulan
+              </button>
+
               <button 
                 type="button" 
-                onClick={() => { setSearchQueryInput(""); setIsSearchExpanded(false); }} 
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-855 rounded-full text-slate-400"
+                onClick={() => { setSearchQueryInput(""); setIsSearchExpanded(false); setSearchAllMonths(false); }} 
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-full text-slate-400 shrink-0 cursor-pointer"
               >
                 <X size={14} />
               </button>
