@@ -733,11 +733,12 @@ export default function HomeTab({
                             <p className={`text-xs font-black ${isIncome ? "text-emerald-500" : isTransfer ? "text-blue-500" : "text-rose-500"}`}>
                               {isPrivacyMode ? "Rp •••••" : `${isIncome ? "+" : "-"}${t.amount.toLocaleString("id-ID")}`}
                             </p>
-                            {t.adminFee && t.adminFee > 0 && (
+                            {/* Menggunakan ternary murni agar angka 0 tidak bocor dan tercetak di layar */}
+                            {t.adminFee && t.adminFee > 0 ? (
                               <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 mt-0.5">
                                 Admin: Rp {t.adminFee.toLocaleString("id-ID")}
                               </p>
-                            )}
+                            ) : null}
                           </div>
 
                           {/* Tombol edit/delete cepat - Dibuat selalu muncul penuh */}
