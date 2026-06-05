@@ -295,9 +295,12 @@ export default function HomeTab({
     if (key === "⌫") updated[activeSplitKeypadIndex].amountStr = currentVal.slice(0, -1);
     else if (key === "C") updated[activeSplitKeypadIndex].amountStr = "";
     else if (key === "=") {
-      const evaluated = safeEvaluate(currentVal);
-      updated[activeSplitKeypadIndex].amountStr = evaluated > 0 ? evaluated.toString() : "";
-    } else if (key === "Ya") {
+                const evaluated = safeEvaluate(currentVal);
+                // Langsung panggil variabel 'evaluated' yang sudah dihitung di baris atasnya
+                updated[activeSplitKeypadIndex].amountStr = evaluated > 0 ? evaluated.toString() : "";
+              }
+
+    else if (key === "Ya") {
       setActiveSplitKeypadIndex(null);
       return;
     } else updated[activeSplitKeypadIndex].amountStr = currentVal + key;
@@ -555,7 +558,7 @@ export default function HomeTab({
               />
               <button 
                 type="button" 
-                onClick={() => { setSearchQueryInput(""); setIsSearchExpanded(false); }}
+                onClick={() => { setSearchQueryInput(""); setIsSearchExpanded(false); }} 
                 className="p-1 hover:bg-slate-100 dark:hover:bg-slate-855 rounded-full text-slate-400"
               >
                 <X size={14} />
@@ -569,7 +572,7 @@ export default function HomeTab({
           <button 
             type="button" 
             onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-            className={`p-2 rounded-xl transition-colors cursor-pointer ${isSearchExpanded ? 'text-blue-600 bg-blue-50 dark:bg-blue-950/30' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+            className={`p-2 rounded-xl transition-colors cursor-pointer ${isSearchExpanded ? 'text-blue-600 bg-blue-50 dark:bg-blue-955/30' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
           >
             <Search size={18} />
           </button>
@@ -601,7 +604,7 @@ export default function HomeTab({
                       key={acc.id}
                       type="button"
                       onClick={() => { setSelectedAccountIdFilter(acc.id); setShowAccountFilterDropdown(false); }}
-                      className={`w-full text-left px-4 py-2 text-xs font-bold ${selectedAccountIdFilter === acc.id ? "text-blue-600 bg-blue-50 dark:bg-blue-950/30" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850"}`}
+                      className={`w-full text-left px-4 py-2 text-xs font-bold ${selectedAccountIdFilter === acc.id ? "text-blue-600 bg-blue-50 dark:bg-blue-955/30" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850"}`}
                     >
                       {acc.name}
                     </button>
@@ -733,7 +736,6 @@ export default function HomeTab({
                             <p className={`text-xs font-black ${isIncome ? "text-emerald-500" : isTransfer ? "text-blue-500" : "text-rose-500"}`}>
                               {isPrivacyMode ? "Rp •••••" : `${isIncome ? "+" : "-"}${t.amount.toLocaleString("id-ID")}`}
                             </p>
-                            {/* Menggunakan ternary murni agar angka 0 tidak bocor dan tercetak di layar */}
                             {t.adminFee && t.adminFee > 0 ? (
                               <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 mt-0.5">
                                 Admin: Rp {t.adminFee.toLocaleString("id-ID")}
@@ -913,7 +915,7 @@ export default function HomeTab({
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">💳 Dompet Asal</label>
                   <div 
                     onClick={() => { triggerHaptic(); setActiveAccSelector("source"); }}
-                    className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-855 dark:text-white hover:bg-slate-100"
+                    className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-855 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
                     <div className="flex items-center gap-2 truncate">
                       <Wallet size={14} className="text-slate-400 shrink-0" />
@@ -932,7 +934,7 @@ export default function HomeTab({
                     <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">💳 Dompet Tujuan</label>
                     <div 
                       onClick={() => { triggerHaptic(); setActiveAccSelector("dest"); }}
-                      className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-855 dark:text-white hover:bg-slate-100"
+                      className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-855 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
                       <div className="flex items-center gap-2 truncate">
                         <Wallet size={14} className="text-slate-400 shrink-0" />
@@ -980,7 +982,7 @@ export default function HomeTab({
                         <button type="button" onClick={() => setEditTSplits([])} className="text-[10px] font-black underline hover:text-blue-800">Batalkan Pecahan</button>
                       </div>
                     ) : (
-                      <div onClick={() => { triggerHaptic(); setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-850 dark:text-white cursor-pointer flex items-center justify-between truncate hover:bg-slate-100">
+                      <div onClick={() => { triggerHaptic(); setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-850 dark:text-white cursor-pointer flex items-center justify-between truncate hover:bg-slate-100 dark:hover:bg-slate-800">
                         <span className={`truncate ${!editTCategory ? "text-slate-400 font-medium" : ""}`}>
                           {editTCategory ? (
                             <>
@@ -1000,7 +1002,7 @@ export default function HomeTab({
                       </div>
                     ) : (
                       <div className="flex gap-2 items-center">
-                        <div onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="flex-1 p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-855 dark:text-white cursor-pointer flex items-center justify-between truncate hover:bg-slate-100">
+                        <div onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="flex-1 p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-855 dark:text-white cursor-pointer flex items-center justify-between truncate hover:bg-slate-100 dark:hover:bg-slate-800">
                           <span className={`truncate ${!tCategory ? "text-slate-400 font-medium" : ""}`}>
                             {tCategory ? (
                               <>
@@ -1030,7 +1032,7 @@ export default function HomeTab({
               {/* INPUT CATATAN / MEMO */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan</label>
-                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-850 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
+                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
               </div>
 
               {/* EDITING SPLITS SECTION (Untuk Koreksi Splits Langsung di Form Laci) */}
@@ -1207,7 +1209,7 @@ export default function HomeTab({
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400">Kategori</label>
-                        <div onClick={() => { setActiveSplitIndex(i); setShowSplitCatModal(true); setSearchQuery(""); }} className="p-3 bg-white border border-slate-200 dark:bg-slate-955 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between truncate">
+                        <div onClick={() => { setActiveSplitIndex(i); setShowSplitCatModal(true); setSearchQuery(""); }} className="p-3 bg-white border border-slate-200 dark:bg-slate-955 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-850 dark:text-white cursor-pointer flex items-center justify-between truncate">
                           <span className="truncate">{item.category || "Pilih..."}</span><ChevronDown size={14} className="text-slate-400" />
                         </div>
                       </div>
