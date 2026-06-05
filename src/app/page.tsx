@@ -1150,30 +1150,31 @@ export default function FintrackerApp() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
             <div className={`space-y-6 ${(activeTab === "home" || activeTab === "reports" ? "md:col-span-2" : "md:col-span-3")}`}>
               {activeTab === "home" && (
-                <HomeTab 
-                  tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
-                  tCategory={tCategory} setTCategory={setTCategory} tAccountId={tAccountId} setTAccountId={setTAccountId}
-                  tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
-                  tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} 
-                  tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
-                  
-                  // Link state histori dan aksi mutasi data ke HomeTab baru
-                  transactions={transactions} onDeleteTransaction={handleDeleteTransaction}
-                  isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode}
+  <HomeTab 
+    tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
+    tCategory={tCategory} setTCategory={setTCategory} tAccountId={tAccountId} setTAccountId={setTAccountId}
+    tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
+    tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} 
+    tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
+    
+    // Kirimkan fungsi mutasi riwayat dan aksi edit ke HomeTab baru
+    transactions={transactions} onDeleteTransaction={handleDeleteTransaction}
+    onEditTransaction={openEditModal} // <--- BAGIAN INI MENGHUBUNGKAN AKSI EDIT DENGAN AMAN
+    isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode}
 
-                  // Link state koreksi transaksi
-                  editingTransaction={editingTransaction} setEditingTransaction={setEditingTransaction} handleUpdateTransaction={handleUpdateTransaction}
-                  editTAmount={editTAmount} setEditTAmount={setEditTAmount}
-                  editTType={editTType} setEditTType={setEditTType}
-                  editTAccountId={editTAccountId} setEditTAccountId={setEditTAccountId}
-                  editTToAccountId={editTToAccountId} setEditTToAccountId={setEditTToAccountId}
-                  editTNote={editTNote} setEditTNote={setEditTNote}
-                  editTCategory={editTCategory} setEditTCategory={setEditTCategory}
-                  editTDate={editTDate} setEditTDate={setEditTDate}
-                  editTAdminFee={editTAdminFee} setEditTAdminFee={setEditTAdminFee}
-                  editTSplits={editTSplits} setEditTSplits={setEditTSplits}
-                />
-              )}
+    // Link state koreksi transaksi
+    editingTransaction={editingTransaction} setEditingTransaction={setEditingTransaction} handleUpdateTransaction={handleUpdateTransaction}
+    editTAmount={editTAmount} setEditTAmount={setEditTAmount}
+    editTType={editTType} setEditTType={setEditTType}
+    editTAccountId={editTAccountId} setEditTAccountId={setEditTAccountId}
+    editTToAccountId={editTToAccountId} setEditTToAccountId={setEditTToAccountId}
+    editTNote={editTNote} setEditTNote={setEditTNote}
+    editTCategory={editTCategory} setEditTCategory={setEditTCategory}
+    editTDate={editTDate} setEditTDate={setEditTDate}
+    editTAdminFee={editTAdminFee} setEditTAdminFee={setEditTAdminFee}
+    editTSplits={editTSplits} setEditTSplits={setEditTSplits}
+  />
+)}
               {activeTab === "reports" && (
                 <ReportsTab 
                   reportMonth={reportMonth} setReportMonth={setReportMonth} handleExportToExcel={handleExportToExcel}
