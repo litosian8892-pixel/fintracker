@@ -105,6 +105,20 @@ export default function FintrackerApp() {
   const [isMobile, setIsMobile] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
 
+  // --- BARU: STATE UNTUK KURS MANUAL GLOBAL TERPUSAT ---
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({
+    IDR: 1,
+    USD: 16000,
+    SGD: 12000,
+    EUR: 17000,
+    JPY: 100,
+    CNY: 2200,
+    GBP: 20000,
+    AUD: 10500,
+    MYR: 3400,
+    SAR: 4200
+  });
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768); 
     handleResize();
@@ -204,9 +218,8 @@ export default function FintrackerApp() {
   const [accExcludeFromTotal, setAccExcludeFromTotal] = useState(false); 
   const [accIsBusiness, setAccIsBusiness] = useState(false); 
   const [accSavingsGoalTitle, setAccSavingsGoalTitle] = useState(""); 
-  // --- BARU: MULTI-CURRENCY AKUN BARU ---
+  // --- BINDING BARU: MULTI-CURRENCY AKUN BARU ---
   const [accCurrency, setAccCurrency] = useState("IDR");
-  const [accExchangeRate, setAccExchangeRate] = useState("1");
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [editAccName, setEditAccName] = useState("");
@@ -217,9 +230,8 @@ export default function FintrackerApp() {
   const [editAccExcludeFromTotal, setEditAccExcludeFromTotal] = useState(false); 
   const [editAccIsBusiness, setEditAccIsBusiness] = useState(false); 
   const [editAccSavingsGoalTitle, setEditAccSavingsGoalTitle] = useState(""); 
-  // --- BARU: MULTI-CURRENCY AKUN EDIT ---
+  // --- BINDING BARU: MULTI-CURRENCY AKUN EDIT ---
   const [editAccCurrency, setEditAccCurrency] = useState("IDR");
-  const [editAccExchangeRate, setEditAccExchangeRate] = useState("1");
 
   const [tAmount, setTAmount] = useState("");
   const [tAdminFee, setTAdminFee] = useState(""); 
@@ -304,12 +316,21 @@ export default function FintrackerApp() {
       setSubscriptions(sn.docs.map(d => ({ id: d.id, ...d.data() } as SubscriptionData)));
     });
 
-    // Optimasi: Memperbarui cache lokal setiap kali status premium diubah di server
+    // Optimasi: Memperbarui cache lokal & kurs global setiap kali diubah di server
     const unsubProfile = onSnapshot(doc(db, `users/${user.uid}`), (docSnap) => {
       if (docSnap.exists()) {
-        const premiumStatus = docSnap.data().isPremium === true;
+        const data = docSnap.data();
+        const premiumStatus = data.isPremium === true;
         setIsPremium(premiumStatus);
         localStorage.setItem("fintracker_is_premium", premiumStatus.toString());
+
+        // Sinkronisasi kurs global terpusat dari dokumen pengguna induk
+        if (data.rates) {
+          setExchangeRates(prev => ({
+            ...prev,
+            ...data.rates
+          }));
+        }
       } else {
         setIsPremium(false);
         localStorage.setItem("fintracker_is_premium", "false");
@@ -628,7 +649,24 @@ export default function FintrackerApp() {
     }
   };
 
-  // MODIFIKASI: Menyimpan mata uang dan kurs manual dompet baru
+  // --- BARU: FUNGSI UPDATE KURS GLOBAL TERPUSAT ---
+  const handleUpdateGlobalRates = async (newRates: Record<string, number>) => {
+    if (isSubmittingRef.current) return;
+    if (!user) return;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    try {
+      await updateDoc(doc(db, `users/${user.uid}`), { rates: newRates });
+      alert("Sistem: Seluruh nilai kurs global manual berhasil diperbarui!");
+    } catch (e) {
+      alert("Gagal memperbarui nilai kurs global");
+    } finally {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  };
+
+  // MODIFIKASI: Menyimpan mata uang & nilai kurs manual aslinya (diambil otomatis dari tabel kurs global saat ini)
   const handleCreateAccount = async () => {
     if (isSubmittingRef.current) return; 
     if (!user || !accName || !accBalance) return;
@@ -648,11 +686,11 @@ export default function FintrackerApp() {
         savingsGoalTitle: accIsSavings && accSavingsGoalTitle ? accSavingsGoalTitle : null, 
         // --- MULTI-CURRENCY ---
         currency: accCurrency,
-        lastExchangeRate: accCurrency === "IDR" ? 1 : safeEvaluate(accExchangeRate) || 1,
+        lastExchangeRate: accCurrency === "IDR" ? 1 : exchangeRates[accCurrency] || 1, // Diambil asinkronus dari kurs global terpusat
         createdAt: serverTimestamp() 
       });
       setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); setAccExcludeFromTotal(false); setAccIsBusiness(false); setAccSavingsGoalTitle("");
-      setAccCurrency("IDR"); setAccExchangeRate("1");
+      setAccCurrency("IDR"); 
     } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
@@ -675,7 +713,7 @@ export default function FintrackerApp() {
       const oldAcc = accounts.find(a => a.id === id);
       const newBalance = Number(editAccBalance);
       const targetCurrency = editAccCurrency;
-      const targetRate = targetCurrency === "IDR" ? 1 : safeEvaluate(editAccExchangeRate) || 1;
+      const targetRate = targetCurrency === "IDR" ? 1 : exchangeRates[targetCurrency] || 1; // Diambil otomatis dari kurs global terpusat
 
       if (oldAcc && newBalance !== oldAcc.balance) {
         const diff = newBalance - oldAcc.balance;
@@ -709,11 +747,11 @@ export default function FintrackerApp() {
         savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle ? editAccSavingsGoalTitle : null,
         // --- MULTI-CURRENCY ---
         currency: targetCurrency,
-        lastExchangeRate: targetRate
+        lastExchangeRate: targetRate // Diambil otomatis dari kurs global terpusat
       });
       
       setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false); setEditAccIsBusiness(false); setEditAccSavingsGoalTitle("");
-      setEditAccCurrency("IDR"); setEditAccExchangeRate("1");
+      setEditAccCurrency("IDR");
       alert("Dompet berhasil diperbarui & riwayat audit otomatis dicatat!");
     } catch (e) { alert("Gagal memperbarui"); }
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
@@ -736,7 +774,7 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
-  // MODIFIKASI: Logika pencatatan transaksi yang secara otomatis mengonversi nominal asing ke IDR demi kestabilan database
+  // MODIFIKASI: Logika pencatatan transaksi yang secara otomatis mengonversi nominal asing ke IDR demi kestabilan database (Membaca Kurs Global)
   const handleTransaction = async (customSplits?: SplitItemData[]) => {
     if (isSubmittingRef.current) return; 
     if (!user || !tAmount || !tAccountId) return alert("Isi data dompet dan nominal dengan lengkap!");
@@ -749,7 +787,8 @@ export default function FintrackerApp() {
     const sourceAcc = accounts.find(a => a.id === tAccountId);
     if (!sourceAcc) return alert("Dompet asal tidak ditemukan!");
 
-    const rateSource = sourceAcc.lastExchangeRate || 1;
+    // Prioritaskan pembacaan kurs terpusat, dengan fallback historis dompet
+    const rateSource = exchangeRates[sourceAcc.currency || "IDR"] || sourceAcc.lastExchangeRate || 1;
     // Nilai transaksi terkonversi ke IDR
     const idrAmount = rawAmount * rateSource;
 
@@ -770,7 +809,7 @@ export default function FintrackerApp() {
         const destAcc = accounts.find(a => a.id === tToAccountId);
         if (!destAcc) return alert("Dompet tujuan tidak ditemukan!");
         
-        const rateDest = destAcc.lastExchangeRate || 1;
+        const rateDest = exchangeRates[destAcc.currency || "IDR"] || destAcc.lastExchangeRate || 1;
         // Konversi nominal transfer dari IDR ke mata uang tujuan
         const destAmount = idrAmount / rateDest;
 
@@ -826,7 +865,7 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
-  // MODIFIKASI: Mengembalikan saldo dompet menggunakan originalAmount jika ada (kompatibel mundur)
+  // MODIFIKASI: Mengembalikan saldo dompet menggunakan originalAmount jika ada (kompatibel mundur dengan Kurs Global)
   const handleDeleteTransaction = async (t: TransactionData) => {
     if (isSubmittingRef.current) return; 
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
@@ -843,7 +882,7 @@ export default function FintrackerApp() {
           await updateDoc(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: sourceAcc.balance + (rawAmount + rawAdminFee) });
         }
         if (destAcc) {
-          const rateDest = destAcc.lastExchangeRate || 1;
+          const rateDest = exchangeRates[destAcc.currency || "IDR"] || destAcc.lastExchangeRate || 1;
           const destAmount = t.originalAmount !== undefined ? (t.amount / rateDest) : t.amount;
           await updateDoc(doc(db, `users/${user.uid}/accounts/${t.toAccountId}`), { balance: destAcc.balance - destAmount });
         }
@@ -866,7 +905,7 @@ export default function FintrackerApp() {
     setEditTSplits(t.splits ? t.splits.map(s => ({ ...s })) : []); 
   };
 
-  // MODIFIKASI: Logika koreksi transaksi yang ramah multi-currency & kompatibel mundur
+  // MODIFIKASI: Logika koreksi transaksi yang ramah multi-currency, kurs global & kompatibel mundur
   const handleUpdateTransaction = async () => {
     if (isSubmittingRef.current) return; 
     if (!user || !editingTransaction) return;
@@ -890,7 +929,7 @@ export default function FintrackerApp() {
         
         if (oldSrc) await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.accountId}`), { balance: oldSrc.balance + (oldRawAmount + oldRawAdminFee) });
         if (oldDest) {
-          const rateOldDest = oldDest.lastExchangeRate || 1;
+          const rateOldDest = exchangeRates[oldDest.currency || "IDR"] || oldDest.lastExchangeRate || 1;
           const oldDestAmount = oldT.originalAmount !== undefined ? (oldT.amount / rateOldDest) : oldT.amount;
           await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.toAccountId}`), { balance: oldDest.balance - oldDestAmount });
         }
@@ -909,7 +948,7 @@ export default function FintrackerApp() {
       if (!srcSnap.exists()) throw "Dompet asal tidak ditemukan";
       const freshSrcBal = srcSnap.data().balance;
       const srcCurrency = srcSnap.data().currency || "IDR";
-      const rateSource = srcSnap.data().lastExchangeRate || 1;
+      const rateSource = exchangeRates[srcCurrency] || srcSnap.data().lastExchangeRate || 1;
 
       const newIdrAmount = newRawAmount * rateSource;
       const newIdrAdminFee = newRawAdminFee * rateSource;
@@ -919,7 +958,7 @@ export default function FintrackerApp() {
         const destSnap = await getDoc(destAccRef);
         if (!destSnap.exists()) throw "Dompet tujuan tidak ditemukan";
         const freshDestBal = destSnap.data().balance;
-        const rateDest = destSnap.data().lastExchangeRate || 1;
+        const rateDest = exchangeRates[destSnap.data().currency || "IDR"] || destSnap.data().lastExchangeRate || 1;
         
         const destAmount = newIdrAmount / rateDest;
 
@@ -1254,9 +1293,9 @@ export default function FintrackerApp() {
 
                   // --- BARU: PROPS UNTUK MULTI-CURRENCY BINDINGS ---
                   accCurrency={accCurrency} setAccCurrency={setAccCurrency}
-                  accExchangeRate={accExchangeRate} setAccExchangeRate={setAccExchangeRate}
                   editAccCurrency={editAccCurrency} setEditAccCurrency={setEditAccCurrency}
-                  editAccExchangeRate={editAccExchangeRate} setEditAccExchangeRate={setEditAccExchangeRate}
+                  exchangeRates={exchangeRates}
+                  handleUpdateGlobalRates={handleUpdateGlobalRates}
                 />
               )}
               {activeTab === "settings" && (
