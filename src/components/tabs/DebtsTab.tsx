@@ -51,6 +51,9 @@ export default function DebtsTab({
   
   // Layout toggle: Grid (kotak) vs List (baris)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  // Status Filter: active (Belum Lunas) vs paid (Lunas)
+  const [statusFilter, setStatusFilter] = useState<"active" | "paid">("active");
   
   // Navigation State for Detail Page
   const [selectedDebtId, setSelectedDebtId] = useState<string | null>(null);
@@ -194,6 +197,9 @@ export default function DebtsTab({
   const totalActive = filteredDebts.filter(d => d.status === "active").reduce((a, b) => a + (b.amount - b.paidAmount), 0);
   const totalMonthlySubscriptions = subscriptions.reduce((acc, sub) => acc + (sub.cycle === 'monthly' ? sub.amount : sub.amount / 12), 0);
 
+  // Saring daftar utang aktif berdasarkan Status (Belum Lunas vs Lunas)
+  const currentDebtsList = filteredDebts.filter(d => statusFilter === "active" ? d.status === "active" : d.status === "paid");
+
   // Get currently selected debt detail object
   const selectedDebt = debts.find(d => d.id === selectedDebtId);
 
@@ -222,7 +228,7 @@ export default function DebtsTab({
                   setEditDueDate(selectedDebt.dueDate || "");
                   setEditingDebtId(selectedDebt.id);
                 }}
-                className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 rounded-xl transition-all text-blue-600 cursor-pointer border border-slate-200/40 dark:border-slate-700/40"
+                className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-755 rounded-xl transition-all text-blue-600 cursor-pointer border border-slate-200/40 dark:border-slate-700/40"
               >
                 <Pencil size={15} />
               </button>
@@ -233,7 +239,7 @@ export default function DebtsTab({
                     setSelectedDebtId(null);
                   }
                 }}
-                className="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-955/20 dark:hover:bg-red-900/40 rounded-xl transition-all text-red-500 cursor-pointer border border-red-100/40 dark:border-red-900/40"
+                className="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-900/40 rounded-xl transition-all text-red-500 cursor-pointer border border-red-100/40 dark:border-red-900/40"
               >
                 <Trash2 size={15} />
               </button>
@@ -265,7 +271,7 @@ export default function DebtsTab({
                 <div>
                   <h4 className="font-black text-base text-slate-900 dark:text-slate-100 leading-tight">{selectedDebt.personName}</h4>
                   
-                  {/* MEMO / NOTE DI DETAIL (Memperbaiki catatan lama yang hilang di detail) */}
+                  {/* MEMO / NOTE DI DETAIL */}
                   {selectedDebt.note && (
                     <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1 leading-normal italic">
                       "{selectedDebt.note}"
@@ -319,8 +325,8 @@ export default function DebtsTab({
             {/* High-contrast status block for dark mode (Matches Photo 2 with Fixed Contrast) */}
             <div className={`p-4 rounded-2xl border flex items-center justify-between ${
               selectedDebt.type === "debt" 
-                ? "bg-red-50/50 dark:bg-red-955/20 border-red-100/80 dark:border-red-900/30 text-red-700 dark:text-red-300" 
-                : "bg-emerald-50/50 dark:bg-emerald-955/20 border-emerald-100/80 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+                ? "bg-red-50/50 dark:bg-red-955/20 border-red-100/80 dark:border-red-900/30 text-red-700 dark:text-red-350" 
+                : "bg-emerald-50/50 dark:bg-emerald-955/20 border-emerald-100/80 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-355"
             }`}>
               <div className="flex items-center gap-2.5">
                 <div className={`p-1.5 rounded-lg ${selectedDebt.type === "debt" ? "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300" : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300"}`}>
@@ -339,7 +345,7 @@ export default function DebtsTab({
               </div>
               <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border ${
                 selectedDebt.type === "debt" 
-                  ? "bg-red-100/60 dark:bg-red-955/40 border-red-200/50 dark:border-red-900/30 text-red-700 dark:text-red-355" 
+                  ? "bg-red-100/60 dark:bg-red-955/40 border-red-200/50 dark:border-red-900/30 text-red-700 dark:text-red-350" 
                   : "bg-emerald-100/60 dark:bg-emerald-955/40 border-emerald-200/50 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-355"
               }`}>
                 {selectedDebt.type === "debt" ? "↓ DIPINJAM" : "↑ DIPINJAMKAN"}
@@ -351,7 +357,7 @@ export default function DebtsTab({
           <div className="bg-white dark:bg-slate-900 p-5 rounded-[26px] border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
             <div className="flex justify-between items-center px-1">
               <h5 className="font-black text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">Debt Records</h5>
-              <span className="px-2 py-0.5 bg-blue-100/60 dark:bg-slate-800 text-[9px] font-black rounded-full text-blue-600 dark:text-blue-350 border border-transparent dark:border-slate-700/60">
+              <span className="px-2 py-0.5 bg-blue-100/60 dark:bg-slate-800 text-[9px] font-black rounded-full text-blue-600 dark:text-blue-355 border border-transparent dark:border-slate-700/60">
                 {selectedDebt.paidAmount > 0 ? "1 entries" : "0 entries"}
               </span>
             </div>
@@ -360,14 +366,14 @@ export default function DebtsTab({
               <p className="text-center py-6 text-slate-450 dark:text-slate-400 text-xs italic">Belum ada mutasi pembayaran yang terekam.</p>
             ) : (
               <div className="space-y-2">
-                <div className="flex justify-between items-center p-3.5 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-100/50 dark:border-slate-800/40 rounded-xl">
+                <div className="flex justify-between items-center p-3.5 bg-slate-50/50 dark:bg-slate-955/40 border border-slate-100/50 dark:border-slate-800/40 rounded-xl">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 dark:bg-emerald-955/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 rounded-lg">
                       <ArrowDownLeft size={14} />
                     </div>
                     <div>
                       <h6 className="font-black text-xs text-emerald-600 dark:text-emerald-400">-Rp {selectedDebt.paidAmount.toLocaleString('id-ID')}</h6>
-                      <p className="text-[9px] text-slate-450 dark:text-slate-400 font-bold mt-0.5">
+                      <p className="text-[9px] text-slate-455 dark:text-slate-400 font-bold mt-0.5">
                         {(() => {
                           const dateVal = selectedDebt.createdAt as any;
                           const d = dateVal?.seconds 
@@ -407,7 +413,6 @@ export default function DebtsTab({
           {/* Pop-up Payment Modal Overlay (Matches request for immediate top pop-up) */}
           {showPayModal && (
             <div className="fixed inset-0 z-[180] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-200">
-              {/* Backdrop klik untuk menutup pop-up secara aman */}
               <div className="absolute inset-0 z-0" onClick={() => { setShowPayModal(false); setActiveKeypad(null); }}></div>
               
               <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[32px] sm:rounded-[28px] shadow-2xl p-6 overflow-hidden z-10 flex flex-col max-h-[85vh] border border-slate-150 dark:border-slate-800 text-left animate-in slide-in-from-bottom sm:zoom-in-95 duration-250">
@@ -478,7 +483,7 @@ export default function DebtsTab({
 
                 <div className="flex gap-2 pt-5">
                   <button onClick={() => submitPay(selectedDebt)} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black cursor-pointer shadow-md">Konfirmasi Pembayaran</button>
-                  <button onClick={() => { setShowPayModal(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-500 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-850">Batal</button>
+                  <button onClick={() => { setShowPayModal(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-505 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-850">Batal</button>
                 </div>
               </div>
             </div>
@@ -632,34 +637,54 @@ export default function DebtsTab({
                 <div className="flex justify-between items-center px-1">
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
                     <span className={`w-[3px] h-3.5 rounded-full ${activeType === 'debt' ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
-                    {activeType === 'debt' ? `DIPINJAM (${filteredDebts.length})` : `DIPINJAMKAN (${filteredDebts.length})`}
+                    {activeType === 'debt' 
+                      ? (statusFilter === 'active' ? `DIPINJAM (${currentDebtsList.length})` : `LUNAS SAYA (${currentDebtsList.length})`)
+                      : (statusFilter === 'active' ? `DIPINJAMKAN (${currentDebtsList.length})` : `LUNAS ORANG (${currentDebtsList.length})`)}
                   </div>
                   
-                  {/* Grid vs List View Selector Toggle (Matches Photo 3) */}
-                  <div className="flex items-center bg-slate-100 dark:bg-slate-955 p-1 rounded-xl border border-slate-200/40 dark:border-slate-800/80">
-                    <button 
-                      onClick={() => setViewMode("grid")}
-                      className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === "grid" ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-400 dark:text-slate-500 hover:text-slate-700"}`}
-                    >
-                      <LayoutGrid size={14} />
-                    </button>
-                    <button 
-                      onClick={() => setViewMode("list")}
-                      className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === "list" ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-400 dark:text-slate-500 hover:text-slate-700"}`}
-                    >
-                      <List size={14} />
-                    </button>
+                  <div className="flex items-center gap-3">
+                    {/* STATUS FILTER: Belum Lunas vs Lunas (Mencegah Penimbunan Data Rp 0) */}
+                    <div className="flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800">
+                      <button 
+                        onClick={() => { triggerHaptic(); setStatusFilter("active"); }}
+                        className={`px-2.5 py-1 rounded-md text-[9px] font-black transition-all cursor-pointer ${statusFilter === "active" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-650"}`}
+                      >
+                        Belum Lunas
+                      </button>
+                      <button 
+                        onClick={() => { triggerHaptic(); setStatusFilter("paid"); }}
+                        className={`px-2.5 py-1 rounded-md text-[9px] font-black transition-all cursor-pointer ${statusFilter === "paid" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-655"}`}
+                      >
+                        Lunas
+                      </button>
+                    </div>
+
+                    {/* Layout switcher */}
+                    <div className="flex bg-slate-100 dark:bg-slate-955 p-1 rounded-xl border border-slate-200/40 dark:border-slate-800/80">
+                      <button 
+                        onClick={() => setViewMode("grid")}
+                        className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === "grid" ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-400 dark:text-slate-500 hover:text-slate-700"}`}
+                      >
+                        <LayoutGrid size={14} />
+                      </button>
+                      <button 
+                        onClick={() => setViewMode("list")}
+                        className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === "list" ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-400 dark:text-slate-500 hover:text-slate-700"}`}
+                      >
+                        <List size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                {filteredDebts.length === 0 ? (
+                {currentDebtsList.length === 0 ? (
                   <p className="text-center py-12 text-slate-455 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150 dark:border-slate-855">
-                    Belum ada catatan {activeType === "debt" ? "utang" : "piutang"}.
+                    Tidak ada catatan {activeType === "debt" ? "utang" : "piutang"} yang {statusFilter === "active" ? "belum lunas" : "lunas"}.
                   </p>
                 ) : viewMode === "grid" ? (
                   /* GRID BOX VIEW MODE (Matches Photo 3 - Perfectly optimized 2 columns for Mobile) */
                   <div className="grid grid-cols-2 gap-3.5">
-                    {filteredDebts.map(debt => {
+                    {currentDebtsList.map(debt => {
                       const percentage = Math.min((debt.paidAmount / debt.amount) * 100, 100);
                       const isPaid = debt.status === "paid";
                       const overdue = !isPaid && isOverdue(debt.dueDate || "");
@@ -675,15 +700,22 @@ export default function DebtsTab({
                           }`}
                         >
                           <div className="flex justify-between items-start pl-1.5">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                               {/* Square box logo (Matches Photo 3) */}
                               <div className="w-8 h-8 bg-slate-100 dark:bg-slate-800 text-orange-600 dark:text-orange-400 rounded-lg flex items-center justify-center font-black text-xs shrink-0">
                                 {debt.personName.charAt(0).toUpperCase()}
                               </div>
                               <div className="min-w-0">
-                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs tracking-tight truncate">{debt.personName}</h4>
+                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight truncate">{debt.personName}</h4>
                                 
-                                {/* 4-Segment signal/battery visual representation of payoff percentage (Matches Photo 3) */}
+                                {/* CATATAN MEMO UTANG PADA KARTU (Memulihkan memo catatan di list utama) */}
+                                {debt.note && (
+                                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold truncate leading-none my-1" title={debt.note}>
+                                    {debt.note}
+                                  </p>
+                                )}
+
+                                {/* 4-Segment signal/battery visual representation (Matches Photo 3) */}
                                 <div className="flex gap-0.5 items-center mt-0.5">
                                   {[1, 2, 3, 4].map((seg) => {
                                     const filled = percentage >= seg * 25;
@@ -721,7 +753,7 @@ export default function DebtsTab({
                 ) : (
                   /* LINEAR LIST VIEW MODE */
                   <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[24px] overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
-                    {filteredDebts.map(debt => {
+                    {currentDebtsList.map(debt => {
                       const percentage = Math.min((debt.paidAmount / debt.amount) * 100, 100);
                       const isPaid = debt.status === "paid";
                       const overdue = !isPaid && isOverdue(debt.dueDate || "");
@@ -730,7 +762,7 @@ export default function DebtsTab({
                         <div 
                           key={debt.id} 
                           onClick={() => setSelectedDebtId(debt.id)}
-                          className="p-4 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-850/30 transition-all cursor-pointer text-left pl-5 relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-slate-200"
+                          className="p-4 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-855/30 transition-all cursor-pointer text-left pl-5 relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-slate-200"
                         >
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 bg-slate-100 dark:bg-slate-800 text-orange-600 dark:text-orange-400 rounded-lg flex items-center justify-center font-black text-xs">
@@ -738,7 +770,15 @@ export default function DebtsTab({
                             </div>
                             <div>
                               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs tracking-tight">{debt.personName}</h4>
-                              <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mt-0.5">
+                              
+                              {/* MEMO PADA LIST VIEW */}
+                              {debt.note && (
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5 leading-none">
+                                  {debt.note}
+                                </p>
+                              )}
+
+                              <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mt-1 leading-none">
                                 {debt.dueDate ? `Tempo: ${new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}` : "Tidak Ada Jatuh Tempo"}
                               </p>
                             </div>
@@ -866,7 +906,7 @@ export default function DebtsTab({
 
                   <div className="flex gap-2 pt-2.5">
                     <button onClick={submitAddSub} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-colors active:scale-[0.98]">Simpan Langganan</button>
-                    <button onClick={() => { setShowAddSubForm(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 text-slate-650 rounded-xl text-xs font-bold">Batal</button>
+                    <button onClick={() => { setShowAddSubForm(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-850 text-slate-650 rounded-xl text-xs font-bold">Batal</button>
                   </div>
                 </div>
               )}
@@ -897,12 +937,12 @@ export default function DebtsTab({
                         {editingSubId === sub.id ? (
                           <div className="space-y-3 pb-1">
                             <div className="flex justify-between items-center px-1 mb-1">
-                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-455 uppercase tracking-widest">Koreksi Langganan</p>
+                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-450 uppercase tracking-widest">Koreksi Langganan</p>
                               <button onClick={() => { setEditingSubId(null); setActiveKeypad(null); }} className="text-slate-400"><X size={15}/></button>
                             </div>
                             
                             <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editSubName} onChange={e => setEditSubName(e.target.value)} />
-                            <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editSubAmount} onChange={e => setEditSubAmount(e.target.value)} />
+                            <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editSubAmount} onChange={e => setEditSubAmount(e.target.value)} />
                             
                             <div className="grid grid-cols-2 gap-3">
                               <select className="w-full p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editSubCycle} onChange={e => setEditSubCycle(e.target.value as any)}>
@@ -917,7 +957,7 @@ export default function DebtsTab({
                               {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                             </select>
 
-                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-850 dark:text-white" value={editSubCategory} onChange={e => setEditSubCategory(e.target.value)}>
+                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-855 dark:text-white" value={editSubCategory} onChange={e => setEditSubCategory(e.target.value)}>
                               <option value="" disabled>Pilih kategori...</option>
                               {categories.filter(c => c.type === "expense").sort((a,b)=>a.name.localeCompare(b.name)).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
                             </select>
@@ -982,7 +1022,7 @@ export default function DebtsTab({
                                 className={`flex-1 py-3 rounded-xl text-xs font-bold shadow-sm cursor-pointer flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] ${
                                   isOverdue || isToday 
                                     ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                                    : 'bg-blue-50/40 hover:bg-blue-100/60 dark:bg-blue-955/40 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-100/30 dark:border-blue-900/30'
+                                    : 'bg-blue-50/40 hover:bg-blue-100/60 dark:bg-blue-955/40 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-300 border border-blue-100/30 dark:border-blue-900/30'
                                 }`}
                               >
                                 <CreditCard size={14} /> 1-Click Pay
@@ -1016,7 +1056,7 @@ export default function DebtsTab({
         </div>
       )}
 
-      {/* Virtual Keypad Bottom Sheet (Without backdrop blur filter) */}
+      {/* Virtual Keypad Bottom Sheet */}
       {isMobile && activeKeypad !== null && (
         <>
           {/* Backdrop tanpa blur filter */}
@@ -1048,7 +1088,7 @@ export default function DebtsTab({
                   key={num} 
                   type="button" 
                   onClick={() => handleKeypadPress(num)} 
-                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-850/10"
+                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
                 >
                   {num}
                 </button>
@@ -1067,7 +1107,7 @@ export default function DebtsTab({
                   key={num} 
                   type="button" 
                   onClick={() => handleKeypadPress(num)} 
-                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
+                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-850 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
                 >
                   {num}
                 </button>
@@ -1076,7 +1116,7 @@ export default function DebtsTab({
               <button 
                 type="button" 
                 onClick={() => handleKeypadPress("⌫")} 
-                className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-400 flex items-center justify-center transition-all select-none"
+                className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-400 flex items-center justify-center transition-all select-none"
               >
                 ⌫
               </button>
@@ -1086,7 +1126,7 @@ export default function DebtsTab({
                   key={num} 
                   type="button" 
                   onClick={() => handleKeypadPress(num)} 
-                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
+                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-855 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
                 >
                   {num}
                 </button>
@@ -1095,7 +1135,7 @@ export default function DebtsTab({
               <button 
                 type="button" 
                 onClick={() => handleKeypadPress(".")} 
-                className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none"
+                className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-850 rounded-xl transition-all select-none"
               >
                 .
               </button>
@@ -1110,7 +1150,6 @@ export default function DebtsTab({
                   {char}
                 </button>
               ))}
-              
               <button 
                 type="button" 
                 onClick={() => handleKeypadPress("Ya")} 
@@ -1175,7 +1214,7 @@ export default function DebtsTab({
         </div>
       )}
 
-     {/* ========================================== */}
+      {/* ========================================== */}
       {/* BOTTOM SHEET: PILIH KATEGORI PEMBAYARAN KEPINGAN */}
       {/* ========================================== */}
       {payCatSelector && (
@@ -1195,7 +1234,7 @@ export default function DebtsTab({
                 <div className="grid grid-cols-2 gap-4">
                   {/* KOLOM 1: VARIABEL */}
                   <div className="space-y-2">
-                    <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-orange-100 dark:border-orange-950/30 z-10">
+                    <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-orange-100 dark:border-orange-955/30 z-10">
                       <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel</p>
                     </div>
                     <div className="flex flex-col gap-1.5">
