@@ -122,6 +122,9 @@ export default function AssetsTab({
   // STATE BARU: Toggle Tampilan Grid vs List
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
+  // STATE BARU: Toggle Dompet Harian vs Bisnis (Menghemat Space Vertikal)
+  const [walletGroup, setWalletGroup] = useState<"pribadi" | "bisnis">("pribadi");
+
   const [showRatesModal, setShowRatesModal] = useState(false);
   const [localRates, setLocalRates] = useState<Record<string, string>>({});
   
@@ -145,7 +148,7 @@ export default function AssetsTab({
   const getRate = (curCode?: string, historicalRate?: number) => { if (!curCode || curCode === "IDR") return 1; if (exchangeRates && exchangeRates[curCode] !== undefined) return exchangeRates[curCode]; return historicalRate || 1; };
 
   // =============================================================
-  // HELPER RENDER GRAFIK AREA ESTETIK (OTOMATIS BERUBAH WARNA SEGMEN PER SEGMEN SEPERTI CHART SAHAM)
+  // HELPER RENDER GRAFIK AREA ESTETIK
   // =============================================================
   const renderAreaChart = (data: any[], defaultColor: string, dataKey: string) => {
     const strokeGradientId = `strokeGeom${dataKey}${defaultColor.replace('#', '')}`;
@@ -156,13 +159,11 @@ export default function AssetsTab({
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
-              {/* Gradient Horizontal untuk Warna Sumbu Garis (Mendeteksi Naik/Turun Segmen) */}
               <linearGradient id={strokeGradientId} x1="0" y1="0" x2="1" y2="0">
                 {stops.map((stop, index) => (
                   <stop key={index} offset={stop.offset} stopColor={stop.color} />
                 ))}
               </linearGradient>
-              {/* Gradient Vertical Netral untuk Latar Belakang Area Bawah Garis */}
               <linearGradient id={`areaNeutralGradient${dataKey}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.12}/>
                 <stop offset="95%" stopColor="#94a3b8" stopOpacity={0}/>
@@ -287,7 +288,7 @@ export default function AssetsTab({
     return data;
   }, [totalAssets, activeAccountIds, assetAccountIds, reportTransactions]);
 
-  // LOGIKA DETAIL TRANSAKSI KHUSUS
+  // LOGIKA DETAIL TRANSAKSI KHUSUS (Mengembalikan variabel rincian detail yang hilang)
   const detailTxs = useMemo(() => {
     return reportTransactions.filter(t => t.tDate?.startsWith(reportMonth || "") && (t.accountId === detailAccId || t.toAccountId === detailAccId));
   }, [reportTransactions, reportMonth, detailAccId]);
@@ -305,7 +306,7 @@ export default function AssetsTab({
     return Object.keys(detailExpGrouped).map(k => ({ name: k, value: detailExpGrouped[k] })).sort((a,b) => b.value - a.value);
   }, [detailTxs]);
 
-  // MENCARI HISTORI TRANSAKSI TERAKHIR KHUSUS DOMPET SPESIFIK
+  // MENCARI HISTORI TRANSAKSI TERAKHIR KHUSUS DOMPET SPESIFIK (GRID VIEW SUB-INFO)
   const getLatestTxForAccount = (accId: string) => {
     const latest = reportTransactions.find(t => t.accountId === accId || t.toAccountId === accId);
     if (!latest) return null;
@@ -329,6 +330,9 @@ export default function AssetsTab({
     };
   };
 
+  // 3. SELEKSI DOMPET BERDASARKAN TOGGLE GRUP (PRIBADI VS BISNIS) UNTUK MENGHEMAT SPACE
+  const activeWalletsToRender = walletGroup === "pribadi" ? personalActiveAccounts : businessActiveAccounts;
+
   return (
     <div className="space-y-6 animate-in fade-in pb-20">
       
@@ -345,7 +349,6 @@ export default function AssetsTab({
               <h2 className="font-black text-xl text-slate-800 dark:text-white">{detailAcc.name}</h2>
             </div>
             
-            {/* TOMBOL EDIT AKUN LANGSUNG DARI DETAIL DRILL-DOWN */}
             <button onClick={() => {
               triggerHaptic();
               setEditingAccId(detailAcc.id);
@@ -432,7 +435,7 @@ export default function AssetsTab({
       ) : (
 
         // =============================================================
-        // VIEW B: DASHBOARD / LIST UTAMA AKUN
+        // VIEW B: DASHBOARD / LIST UTAMA AKUN (PRIBADI / BISNIS SWITCHER)
         // =============================================================
         <>
           <div className="text-center mb-2">
@@ -475,118 +478,67 @@ export default function AssetsTab({
                 {renderAreaChart(historicalAccountsData, "#ef4444", "Balance")}
               </div>
 
-              {/* 1. SEKSI DOMPET PRIBADI */}
+              {/* INTEGRATED SINGLE CONTAINER WITH PRIBADI VS BISNIS SWITCHER (Mencegah Pemborosan Space) */}
               <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/30 px-4">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-widest">Dompet Pribadi ({personalActiveAccounts.length})</span>
-                  
-                  {/* TOGGLE LAYOUT MODE */}
-                  <div className="flex bg-slate-200/50 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800">
-                    <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("grid"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "grid" ? "bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-slate-600"}`}>
-                      <LayoutGrid size={14} />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("list"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "list" ? "bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-slate-600"}`}>
-                      <List size={14} />
-                    </button>
-                  </div>
-                </div>
-
-                {personalActiveAccounts.length === 0 ? (
-                  <p className="text-center py-8 text-slate-400 text-xs italic">Belum ada dompet pribadi.</p>
-                ) : viewMode === "grid" ? (
-                  <div className="p-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 animate-in fade-in duration-300">
-                    {personalActiveAccounts.map((acc) => {
-                      const design = getCardDesign(acc.type);
-                      const symbol = getCurrencySymbol(acc.currency);
-                      const accRate = getRate(acc.currency, acc.lastExchangeRate);
-                      const accIdrBalance = acc.balance * accRate;
-                      
-                      const pct = totalActiveBalance > 0 ? Math.round((accIdrBalance / totalActiveBalance) * 100) : 0;
-                      const latestTx = getLatestTxForAccount(acc.id);
-
-                      return (
-                        <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition-all border border-transparent dark:border-slate-700/50 flex flex-col justify-between min-h-[140px] text-left">
-                          <div>
-                            <div className="flex justify-between items-start">
-                              {acc.logo ? ( <img src={acc.logo} className="w-8 h-8 rounded-lg object-cover" alt="logo" /> ) : ( <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
-                              
-                              <div className="flex items-center gap-1.5">
-                                <div className="flex gap-0.5">
-                                  {[1,2,3,4].map((block) => {
-                                    const filled = pct >= block * 25 - 10;
-                                    return (
-                                      <div key={block} className={`w-3.5 h-1.5 rounded-sm ${filled ? 'bg-blue-900 dark:bg-blue-500' : 'bg-slate-100 dark:bg-slate-800'}`} />
-                                    );
-                                  })}
-                                </div>
-                                <span className="text-[10px] font-black text-slate-400">{pct}%</span>
-                              </div>
-                            </div>
-
-                            <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-3 truncate">{acc.name}</p>
-                            <p className="text-sm font-black text-slate-600 dark:text-slate-400 tracking-tight leading-none mt-1">
-                              {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
-                            </p>
-                          </div>
-
-                          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-start gap-1.5 text-left">
-                            {latestTx ? (
-                              <>
-                                <div className="w-5 h-5 rounded-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-[10px] font-black">{latestTx.category.charAt(0)}</div>
-                                <div className="min-w-0">
-                                  <p className="text-[9px] font-bold text-slate-700 dark:text-slate-300 truncate leading-tight">{latestTx.note}</p>
-                                  <p className="text-[8px] font-semibold text-slate-400 mt-0.5 leading-none">
-                                    {latestTx.isIncome ? '+' : '-'}Rp {latestTx.amount.toLocaleString('id-ID')} • {latestTx.dayLabel}
-                                  </p>
-                                </div>
-                              </>
-                            ) : (
-                              <p className="text-[9px] font-bold text-slate-400 italic">Tidak ada transaksi terbaru</p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in duration-300">
-                    {personalActiveAccounts.map((acc) => {
-                      const design = getCardDesign(acc.type);
-                      const symbol = getCurrencySymbol(acc.currency);
-                      return (
-                        <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
-                          <div className="flex items-center gap-3">
-                            {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-cover" alt="logo" /> ) : ( <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
-                            <div className="text-left">
-                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{acc.name}</p>
-                              <p className="text-[9px] font-bold text-slate-400 uppercase">{acc.currency || "IDR"} • {acc.type}</p>
-                            </div>
-                          </div>
-                          <div className="text-right flex items-center gap-3">
-                            <p className="text-sm font-black text-slate-800 dark:text-slate-100">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
-                            <ChevronRight size={16} className="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* 2. SEKSI DOMPET BISNIS (Dipulihkan visualnya) */}
-              <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/30 px-4 text-left">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <Briefcase size={12} className="text-amber-500" />
-                    Dompet Bisnis ({businessActiveAccounts.length})
+                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center bg-slate-50 dark:bg-slate-800/30 px-4 gap-2 text-left">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                    {walletGroup === "pribadi" ? (
+                      `Dompet Pribadi (${personalActiveAccounts.length})`
+                    ) : (
+                      <>
+                        <Briefcase size={12} className="text-amber-500 shrink-0" />
+                        Dompet Bisnis ({businessActiveAccounts.length})
+                      </>
+                    )}
                   </span>
+                  
+                  <div className="flex items-center gap-2.5">
+                    {/* DUAL TOGGLE PIL: PRIBADI VS BISNIS (Menghemat Space Vertikal Secara Cerdas) */}
+                    <div className="flex bg-slate-200/50 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800">
+                      <button 
+                        onClick={() => { triggerHaptic(); setWalletGroup("pribadi"); }} 
+                        className={`px-3 py-1 rounded-md text-[9px] font-black transition-all cursor-pointer ${
+                          walletGroup === "pribadi" 
+                            ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm" 
+                            : "text-slate-400 hover:text-slate-650"
+                        }`}
+                      >
+                        Pribadi
+                      </button>
+                      <button 
+                        onClick={() => { triggerHaptic(); setWalletGroup("bisnis"); }} 
+                        className={`px-3 py-1 rounded-md text-[9px] font-black transition-all cursor-pointer ${
+                          walletGroup === "bisnis" 
+                            ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 shadow-sm font-black" 
+                            : "text-slate-400 hover:text-slate-655"
+                        }`}
+                      >
+                        Bisnis
+                      </button>
+                    </div>
+
+                    {/* TOGGLE LAYOUT MODE */}
+                    <div className="flex bg-slate-200/50 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800">
+                      <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("grid"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "grid" ? "bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-slate-600"}`}>
+                        <LayoutGrid size={14} />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("list"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "list" ? "bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-slate-600"}`}>
+                        <List size={14} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                {businessActiveAccounts.length === 0 ? (
-                  <p className="text-center py-10 text-slate-450 text-xs italic">Belum ada dompet bisnis terdaftar.</p>
+                {/* RENDERING DOMPET AKTIF BERDASARKAN TOGGLE GRUP */}
+                {activeWalletsToRender.length === 0 ? (
+                  <div className="p-12 text-center animate-in fade-in duration-300">
+                    <p className="text-slate-400 dark:text-slate-500 text-xs italic">
+                      {walletGroup === "pribadi" ? "Belum ada dompet pribadi terdaftar." : "Belum ada dompet bisnis terdaftar."}
+                    </p>
+                  </div>
                 ) : viewMode === "grid" ? (
                   <div className="p-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 animate-in fade-in duration-300">
-                    {businessActiveAccounts.map((acc) => {
+                    {activeWalletsToRender.map((acc) => {
                       const design = getCardDesign(acc.type);
                       const symbol = getCurrencySymbol(acc.currency);
                       const accRate = getRate(acc.currency, acc.lastExchangeRate);
@@ -601,12 +553,13 @@ export default function AssetsTab({
                             <div className="flex justify-between items-start">
                               {acc.logo ? ( <img src={acc.logo} className="w-8 h-8 rounded-lg object-cover" alt="logo" /> ) : ( <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
                               
+                              {/* Portions indicator blocks */}
                               <div className="flex items-center gap-1.5">
                                 <div className="flex gap-0.5">
                                   {[1,2,3,4].map((block) => {
                                     const filled = pct >= block * 25 - 10;
                                     return (
-                                      <div key={block} className={`w-3.5 h-1.5 rounded-sm ${filled ? 'bg-amber-600 dark:bg-amber-500' : 'bg-slate-100 dark:bg-slate-800'}`} />
+                                      <div key={block} className={`w-3.5 h-1.5 rounded-sm ${filled ? (walletGroup === 'pribadi' ? 'bg-blue-900 dark:bg-blue-500' : 'bg-amber-600 dark:bg-amber-500') : 'bg-slate-100 dark:bg-slate-800'}`} />
                                     );
                                   })}
                                 </div>
@@ -620,6 +573,7 @@ export default function AssetsTab({
                             </p>
                           </div>
 
+                          {/* Sub-info: Transaksi Terakhir Khusus Dompet Ini */}
                           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-start gap-1.5 text-left">
                             {latestTx ? (
                               <>
@@ -641,7 +595,7 @@ export default function AssetsTab({
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in duration-300">
-                    {businessActiveAccounts.map((acc) => {
+                    {activeWalletsToRender.map((acc) => {
                       const design = getCardDesign(acc.type);
                       const symbol = getCurrencySymbol(acc.currency);
                       return (
@@ -649,7 +603,7 @@ export default function AssetsTab({
                           <div className="flex items-center gap-3">
                             {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-cover" alt="logo" /> ) : ( <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
                             <div className="text-left">
-                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{acc.name} <span className="text-[8px] bg-amber-100/65 text-amber-600 px-1 py-0.5 rounded ml-1 font-black">BISNIS</span></p>
+                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{acc.name} {acc.isBusiness && <span className="text-[8px] bg-amber-100 text-amber-600 px-1 py-0.5 rounded ml-1 font-black">BISNIS</span>}</p>
                               <p className="text-[9px] font-bold text-slate-400 uppercase">{acc.currency || "IDR"} • {acc.type}</p>
                             </div>
                           </div>
@@ -736,7 +690,7 @@ export default function AssetsTab({
             <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
             <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{editingAccId ? "Edit Dompet" : "Kelola Akun & Dompet"}</h3>
-              <button onClick={() => { setIsManageOpen(false); setEditingAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={16} className="text-slate-700 dark:text-slate-200"/></button>
+              <button onClick={() => { setIsManageOpen(false); setEditingAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-505 rounded-full cursor-pointer transition-colors"><X size={16} className="text-slate-700 dark:text-slate-200"/></button>
             </div>
             
             <div className="p-6 overflow-y-auto space-y-6">
@@ -796,7 +750,7 @@ export default function AssetsTab({
 
                   <div className="flex gap-2 pt-3">
                     <button onClick={async () => { triggerHaptic(); if (editingAccId) { setLocalBalanceOverride(p => ({ ...p, [editingAccId]: Number(editAccBalance) })); setLocalNameOverride(p => ({ ...p, [editingAccId]: editAccName })); } await handleEditAccount(editingAccId!); setIsManageOpen(false); setEditingAccId(null); }} className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95">Simpan Perubahan</button>
-                    <button onClick={() => { setEditingAccId(null); }} className="py-3 px-5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-300 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95">Batal</button>
+                    <button onClick={() => { setEditingAccId(null); }} className="py-3 px-5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-305 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95">Batal</button>
                   </div>
                 </div>
               ) : (
@@ -838,7 +792,7 @@ export default function AssetsTab({
                       </div>
                     </div>
 
-                    <button onClick={async () => { triggerHaptic(); await handleCreateAccount(); setIsManageOpen(false); }} className="w-full py-3 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95">Simpan Dompet Baru</button>
+                    <button onClick={async () => { triggerHaptic(); await handleCreateAccount(); setIsManageOpen(false); }} className="w-full py-3 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-[0.95]">Simpan Dompet Baru</button>
                   </div>
 
                   {/* LIST DOMPET (EDIT / HAPUS) */}
@@ -854,7 +808,7 @@ export default function AssetsTab({
                           <button disabled={index===0} onClick={()=>moveAccountOrder(index, "up")} className="p-1.5 bg-slate-200/50 dark:bg-slate-900 rounded text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-30"><ArrowUp size={12}/></button>
                           <button disabled={index===accounts.length-1} onClick={()=>moveAccountOrder(index, "down")} className="p-1.5 bg-slate-200/50 dark:bg-slate-900 rounded text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-30"><ArrowDown size={12}/></button>
                           <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccIsSavings(!!acc.isSavings); setEditAccIsBusiness(!!acc.isBusiness); setEditAccTargetBalance(acc.targetBalance?.toString()||""); setEditAccExcludeFromTotal(!!acc.excludeFromTotal); setEditAccSavingsGoalTitle(acc.savingsGoalTitle||""); if(setEditAccCurrency)setEditAccCurrency(acc.currency||"IDR"); else setLocalEditAccCurrency(acc.currency||"IDR"); }} className="p-1.5 bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded ml-1 cursor-pointer hover:bg-blue-100"><Edit2 size={12}/></button>
-                          <button onClick={() => deleteAccount(acc.id, acc.name)} className="p-1.5 bg-red-50 dark:bg-red-950/40 text-red-500 hover:text-red-700 rounded cursor-pointer hover:bg-red-100"><Trash2 size={12}/></button>
+                          <button onClick={() => deleteAccount(acc.id, acc.name)} className="p-1.5 bg-red-50 dark:bg-red-955/40 text-red-500 hover:text-red-700 rounded cursor-pointer hover:bg-red-100"><Trash2 size={12}/></button>
                         </div>
                       </div>
                     ))}
