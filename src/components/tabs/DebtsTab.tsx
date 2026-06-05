@@ -194,7 +194,7 @@ export default function DebtsTab({
     <div className="space-y-6 animate-in fade-in duration-200 text-slate-800 dark:text-slate-100">
       
       {/* Main Tab Navigation */}
-      <div className="bg-slate-100/60 dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-250 dark:border-slate-800/80 shadow-sm flex items-center gap-1.5 transition-all">
+<div className="bg-slate-100/60 dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm flex items-center gap-1.5 transition-all">
         <button 
           onClick={() => setMainTab("debts")} 
           className={`flex-1 py-3 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
