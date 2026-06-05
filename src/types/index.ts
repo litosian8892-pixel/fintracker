@@ -47,6 +47,7 @@ export interface CategoryData {
   type: string; 
   budgetLimit?: number; 
   expenseType?: "fixed" | "variable";
+  icon?: string;
 }
 
 export interface WalletTypeData { 
