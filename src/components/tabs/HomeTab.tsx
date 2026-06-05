@@ -148,6 +148,9 @@ export default function HomeTab({
   const [selectedAccountIdFilter, setSelectedAccountIdFilter] = useState("all");
   const [showAccountFilterDropdown, setShowAccountFilterDropdown] = useState(false);
 
+  // State pemilih akun/dompet aktif untuk pop-up card
+  const [activeAccSelector, setActiveAccSelector] = useState<"source" | "dest" | null>(null);
+
   // States pecahan transaksi (splits) baru
   const [splits, setSplits] = useState<SplitItemData[]>([]);
   const [showSplitModal, setShowSplitModal] = useState(false);
@@ -439,6 +442,23 @@ export default function HomeTab({
     return catObj?.icon || getCategoryIcon(item.category);
   };
 
+  const handleSelectAccount = (accId: string) => {
+    if (activeAccSelector === "source") {
+      if (editingTransaction) {
+        setEditTAccountId(accId);
+      } else {
+        setTAccountId(accId);
+      }
+    } else if (activeAccSelector === "dest") {
+      if (editingTransaction) {
+        setEditTToAccountId(accId);
+      } else {
+        setTToAccountId(accId);
+      }
+    }
+    setActiveAccSelector(null);
+  };
+
   return (
     <div className="space-y-6 text-left relative min-h-[calc(100vh-120px)] transition-colors duration-200">
       
@@ -506,16 +526,16 @@ export default function HomeTab({
                       type="button"
                       onClick={() => { setSelectedAccountIdFilter(acc.id); setShowAccountFilterDropdown(false); }}
                       className={`w-full text-left px-4 py-2 text-xs font-bold ${selectedAccountIdFilter === acc.id ? "text-blue-600 bg-blue-50 dark:bg-blue-950/30" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
-                  >
-                    {acc.name}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+                    >
+                      {acc.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
 
       {/* HORIZONTAL MONTH SCROLLING PILLS */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 scroll-smooth -mx-4 px-4 md:mx-0 md:px-0">
@@ -644,8 +664,8 @@ export default function HomeTab({
                             )}
                           </div>
 
-                          {/* Tombol edit/delete cepat */}
-                          <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                          {/* Tombol edit/delete cepat - Dibuat selalu muncul penuh */}
+                          <div className="flex items-center gap-1.5 shrink-0 opacity-100">
                             <button 
                               type="button" 
                               onClick={() => { triggerHaptic(); onEditTransaction(t); }} 
@@ -810,46 +830,42 @@ export default function HomeTab({
               )}
 
               {/* DOMPET ASAL & DOMPET TUJUAN */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Dompet Asal</label>
-                  <select className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" value={editingTransaction ? editTAccountId : tAccountId} onChange={(e) => editingTransaction ? setEditTAccountId(e.target.value) : setTAccountId(e.target.value)}>
-                    <option value="" disabled>Pilih...</option>
-                    {availableSourceAccounts.map(acc => (
-                      <option key={acc.id} value={acc.id}>{acc.name}</option>
-                    ))}
-                  </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className={`space-y-1 min-w-0 ${(editingTransaction ? editTType : tType) === "transfer" ? "" : "md:col-span-2"}`}> 
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">💳 Dompet Asal</label>
+                  <div 
+                    onClick={() => { triggerHaptic(); setActiveAccSelector("source"); }}
+                    className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-855 dark:text-white hover:bg-slate-100"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Wallet size={14} className="text-slate-400 shrink-0" />
+                      <span className="truncate">
+                        {editingTransaction 
+                          ? (accounts.find(a => a.id === editTAccountId)?.name || "Pilih Dompet...") 
+                          : (selectedSourceAcc?.name || "Pilih Dompet...")}
+                      </span>
+                    </div>
+                    <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                  </div>
                 </div>
 
-                {((editingTransaction ? editTType : tType) === "transfer") ? (
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Tujuan</label>
-                    <select className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" value={editingTransaction ? editTToAccountId : tToAccountId} onChange={(e) => editingTransaction ? setEditTToAccountId(e.target.value) : setTToAccountId(e.target.value)}>
-                      <option value="" disabled>Pilih...</option>
-                      {accounts.map(acc => (
-                        <option key={acc.id} value={acc.id}>{acc.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  /* INPUT TANGGAL + TOMBOL KEMARIN (GAMBAR 4 STYLE) */
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center justify-between px-1">
-                      <span>Tanggal</span>
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          triggerHaptic();
-                          const yesterday = getYesterdayDateString();
-                          if (editingTransaction) setEditTDate(yesterday);
-                          else setTDate(yesterday);
-                        }} 
-                        className="text-[9px] font-black text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        Kemarin?
-                      </button>
-                    </label>
-                    <input type="date" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" value={editingTransaction ? editTDate : tDate} onChange={(e) => editingTransaction ? setEditTDate(e.target.value) : setTDate(e.target.value)} />
+                {((editingTransaction ? editTType : tType) === "transfer") && (
+                  <div className="space-y-1 min-w-0 animate-in fade-in slide-in-from-left-2 duration-200">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">💳 Dompet Tujuan</label>
+                    <div 
+                      onClick={() => { triggerHaptic(); setActiveAccSelector("dest"); }}
+                      className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-855 dark:text-white hover:bg-slate-100"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <Wallet size={14} className="text-slate-400 shrink-0" />
+                        <span className="truncate">
+                          {editingTransaction 
+                            ? (accounts.find(a => a.id === editTToAccountId)?.name || "Pilih Tujuan...") 
+                            : (accounts.find(a => a.id === tToAccountId)?.name || "Pilih Tujuan...")}
+                        </span>
+                      </div>
+                      <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                    </div>
                   </div>
                 )}
               </div>
@@ -913,7 +929,7 @@ export default function HomeTab({
               {/* INPUT CATATAN / MEMO */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan</label>
-                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-850 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
+                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
               </div>
 
               {/* EDITING SPLITS SECTION (Untuk Koreksi Splits Langsung di Form Laci) */}
@@ -987,7 +1003,7 @@ export default function HomeTab({
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
               <div className="relative">
                 <Search className="absolute left-3 top-3 text-slate-400" size={16} />
-                <input type="text" placeholder="Cari kategori..." className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <input type="text" placeholder="Cari kategori..." className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-850 dark:text-slate-100" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
             </div>
             
@@ -1199,6 +1215,82 @@ export default function HomeTab({
             </div>
           </div>
         </>
+      )}
+
+      {/* ========================================== */}
+      {/* BOTTOM SHEET: PILIH DOMPET/AKUN (Gambar Pop-up Card Style) */}
+      {/* ========================================== */}
+      {activeAccSelector && (
+        <div className="fixed inset-0 z-[190] flex items-end justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="absolute inset-0 z-0" onClick={() => setActiveAccSelector(null)}></div>
+          
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[32px] shadow-2xl p-6 pb-8 overflow-hidden animate-in slide-in-from-bottom duration-300 z-10 flex flex-col max-h-[85vh] border-t border-slate-200 dark:border-slate-800">
+            <div className="w-full flex justify-center pb-2"><div className="w-12 h-1 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
+            
+            <div className="flex justify-between items-center mb-6 pt-2">
+              <div className="flex items-center gap-2">
+                <Wallet size={18} className="text-blue-600 dark:text-blue-400" />
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Select From Account</h3>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setActiveAccSelector(null)} 
+                className="p-1.5 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-500 rounded-full transition-colors cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-3">
+                {(activeAccSelector === "source" ? availableSourceAccounts : accounts).map(acc => {
+                  const activeId = activeAccSelector === "source" 
+                    ? (editingTransaction ? editTAccountId : tAccountId) 
+                    : (editingTransaction ? editTToAccountId : tToAccountId);
+                  const isSelected = activeId === acc.id;
+                  
+                  return (
+                    <div 
+                      key={acc.id}
+                      onClick={() => { triggerHaptic(); handleSelectAccount(acc.id); }}
+                      className={`p-4 rounded-2xl border text-left flex flex-col justify-between relative transition-all active:scale-95 cursor-pointer h-28 ${
+                        isSelected 
+                          ? "border-blue-600 bg-blue-50/50 dark:bg-blue-950/20 shadow-md shadow-blue-500/5" 
+                          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850"
+                      }`}
+                    >
+                      {/* Logo / Icon */}
+                      <div className="flex justify-between items-start">
+                        {acc.logo ? (
+                          <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white p-0.5 border border-slate-150" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                            <Wallet size={16} />
+                          </div>
+                        )}
+                        
+                        {/* Checkmark overlay */}
+                        {isSelected && (
+                          <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[8px] font-black shadow shadow-blue-500/50">
+                            ✓
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Text */}
+                      <div className="mt-2 min-w-0">
+                        <p className="text-xs font-black text-slate-800 dark:text-white truncate leading-none mb-1">{acc.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate leading-none">
+                          {getCurrencySymbol(acc.currency)} {acc.balance.toLocaleString("id-ID")}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* MINI MODAL: EDIT NAMA & LOGO EMOJI KATEGORI SECARA INSTAN */}
