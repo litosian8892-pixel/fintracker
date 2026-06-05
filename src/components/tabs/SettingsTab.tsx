@@ -11,7 +11,7 @@ interface SettingsTabProps {
   newExpenseType: "fixed" | "variable"; setNewExpenseType: (val: "fixed" | "variable") => void;
   addCustomCategory: () => void;
   categories: CategoryData[]; deleteCategory: (id: string) => void;
-  updateCategory: (id: string, name: string, limit: number, expenseType: "fixed" | "variable") => void;
+  updateCategory: (id: string, name: string, limit: number | null, expenseType: "fixed" | "variable", icon?: string) => void;
   newWalletTypeName: string; setNewWalletTypeName: (val: string) => void;
   addCustomWalletType: () => void; walletTypes: WalletTypeData[]; deleteWalletType: (id: string) => void;
   theme: "light" | "dark" | "system"; setTheme: (theme: "light" | "dark" | "system") => void;
@@ -19,6 +19,20 @@ interface SettingsTabProps {
   // PROP KUNCI PIN
   appPin: string | null; setAppPin: (val: string | null) => void;
 }
+
+const getCategoryIcon = (catName: string) => {
+  const name = catName.toLowerCase();
+  if (name.includes("makan") || name.includes("food") || name.includes("cafe") || name.includes("kopi")) return "🍔";
+  if (name.includes("transport") || name.includes("ojek") || name.includes("bensin") || name.includes("car")) return "🚗";
+  if (name.includes("gaji") || name.includes("salary") || name.includes("income") || name.includes("gajian")) return "💰";
+  if (name.includes("tagihan") || name.includes("bill") || name.includes("listrik") || name.includes("wifi") || name.includes("pulsa")) return "⚡";
+  if (name.includes("belanja") || name.includes("grocer") || name.includes("pasar") || name.includes("supermarket")) return "🛒";
+  if (name.includes("transfer") || name.includes("kirim")) return "💸";
+  if (name.includes("piutang") || name.includes("utang") || name.includes("debt")) return "🤝";
+  if (name.includes("invest") || name.includes("saham") || name.includes("crypto")) return "📈";
+  if (name.includes("hiburan") || name.includes("game") || name.includes("nonton") || name.includes("netflix")) return "🎬";
+  return "🏷️";
+};
 
 export default function SettingsTab({
   user, onLogout, tType, setTType, newCatName, setNewCatName, newExpenseType, setNewExpenseType, addCustomCategory,
@@ -30,6 +44,7 @@ export default function SettingsTab({
   const [editCatName, setEditCatName] = useState("");
   const [editCatBudget, setEditCatBudget] = useState("");
   const [editCatExpType, setEditCatExpType] = useState<"fixed" | "variable">("variable");
+  const [editCatIcon, setEditCatIcon] = useState(""); // State baru pemilih emoji kustom
 
   const [showAllVar, setShowAllVar] = useState(false);
   const [showAllFixed, setShowAllFixed] = useState(false);
@@ -125,9 +140,16 @@ export default function SettingsTab({
     <div key={cat.id} className="bg-slate-50 dark:bg-slate-800 p-3.5 rounded-[20px] border border-slate-200 dark:border-slate-700/80 transition-colors duration-200 shadow-sm min-h-[60px] flex flex-col justify-center">
       {editingCatId === cat.id ? (
         <div className="space-y-2 animate-in fade-in duration-200">
-          <div className="space-y-1 text-left">
-            <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-widest px-1">Ubah Nama Kategori</label>
-            <input type="text" placeholder="Nama Kategori" className="w-full p-2 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editCatName} onChange={e => setEditCatName(e.target.value)} />
+          {/* Ubah Nama & Emoji Side-by-Side */}
+          <div className="flex gap-2 text-left">
+            <div className="flex-1 space-y-1">
+              <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-widest px-1">Ubah Nama Kategori</label>
+              <input type="text" placeholder="Nama Kategori" className="w-full p-2 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg text-xs outline-blue-500 font-bold text-slate-700 dark:text-slate-100" value={editCatName} onChange={e => setEditCatName(e.target.value)} />
+            </div>
+            <div className="w-24 space-y-1">
+              <label className="text-[9px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-widest px-1">Emoji / Logo</label>
+              <input type="text" maxLength={2} placeholder="🍛" className="w-full p-2 bg-white dark:bg-slate-900 border border-blue-200 dark:border-slate-700 rounded-lg text-xs outline-blue-500 font-bold text-center text-slate-700 dark:text-slate-100" value={editCatIcon} onChange={e => setEditCatIcon(e.target.value)} />
+            </div>
           </div>
           {tType === 'expense' && (
             <div className="flex gap-2 text-left">
@@ -145,7 +167,7 @@ export default function SettingsTab({
             </div>
           )}
           <div className="flex gap-2 pt-2">
-            <button onClick={() => { updateCategory(cat.id, editCatName, Number(editCatBudget), editCatExpType); setEditingCatId(null); }} className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer"><Check size={12}/> Simpan</button>
+            <button onClick={() => { updateCategory(cat.id, editCatName, editCatBudget ? Number(editCatBudget) : null, editCatExpType, editCatIcon); setEditingCatId(null); }} className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer"><Check size={12}/> Simpan</button>
             <button onClick={() => setEditingCatId(null)} className="flex-1 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-400 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer"><X size={12}/> Batal</button>
           </div>
         </div>
@@ -153,6 +175,8 @@ export default function SettingsTab({
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-1 w-full overflow-hidden">
             <div className="flex items-center gap-1.5 truncate">
+              {/* Render emoji kustom jika ada dari database, jika tidak gunakan default cerdas */}
+              <span className="text-base mr-0.5 shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
               <span className="text-xs font-black text-slate-800 dark:text-slate-100 leading-none truncate">{cat.name}</span>
               {tType === 'expense' && (
                 <span className={`text-[8px] font-black px-1.5 py-0.5 rounded shrink-0 ${cat.expenseType === 'fixed' ? 'bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-900/50' : 'bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900/50'}`}>
@@ -167,7 +191,7 @@ export default function SettingsTab({
             )}
           </div>
           <div className="flex gap-1.5 pl-2 shrink-0">
-            <button onClick={() => { setEditingCatId(cat.id); setEditCatName(cat.name); setEditCatBudget(cat.budgetLimit?.toString() || ""); setEditCatExpType(cat.expenseType || "variable"); }} className="text-slate-400 hover:text-blue-500 p-1.5 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-lg transition-all cursor-pointer"><Edit2 size={14}/></button>
+            <button onClick={() => { setEditingCatId(cat.id); setEditCatName(cat.name); setEditCatBudget(cat.budgetLimit?.toString() || ""); setEditCatExpType(cat.expenseType || "variable"); setEditCatIcon(cat.icon || ""); }} className="text-slate-400 hover:text-blue-500 p-1.5 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-lg transition-all cursor-pointer"><Edit2 size={14}/></button>
             <button onClick={() => deleteCategory(cat.id)} className="text-slate-400 hover:text-red-500 p-1.5 hover:bg-red-50 dark:hover:bg-slate-800 rounded-lg transition-all cursor-pointer"><Trash2 size={14}/></button>
           </div>
         </div>
@@ -182,7 +206,7 @@ export default function SettingsTab({
         <img src={user?.photoURL || ""} className="w-20 h-20 rounded-full border-4 border-blue-500 shadow-lg" alt="Profile" />
         <div>
           <h3 className="font-black text-lg text-slate-800 dark:text-slate-100">{user?.displayName}</h3>
-          <p className="text-xs text-slate-450 dark:text-slate-550 font-semibold">{user?.email}</p>
+          <p className="text-xs text-slate-450 dark:text-slate-555 font-semibold">{user?.email}</p>
         </div>
         <button onClick={onLogout} className="px-6 py-2.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"><LogOut size={14}/> Logout</button>
       </div>
@@ -232,15 +256,15 @@ export default function SettingsTab({
         <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl">
           <button
             onClick={() => { setTheme("light"); localStorage.setItem("theme", "light"); }}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${theme === "light" ? "bg-blue-600 text-white shadow-md animate-none" : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${theme === "light" ? "bg-blue-600 text-white shadow-md animate-none" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}
           ><Sun size={14} />Terang</button>
           <button
             onClick={() => { setTheme("dark"); localStorage.setItem("theme", "dark"); }}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${theme === "dark" ? "bg-blue-600 text-white shadow-md animate-none" : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${theme === "dark" ? "bg-blue-600 text-white shadow-md animate-none" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}
           ><Moon size={14} />Gelap</button>
           <button
             onClick={() => { setTheme("system"); localStorage.setItem("theme", "system"); }}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${theme === "system" ? "bg-blue-600 text-white shadow-md animate-none" : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all cursor-pointer ${theme === "system" ? "bg-blue-600 text-white shadow-md animate-none" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}
           ><Monitor size={14} />Sistem</button>
         </div>
       </div>
@@ -274,7 +298,7 @@ export default function SettingsTab({
             )}
             <button 
               onClick={addCustomCategory} 
-              className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95"
             >
               Tambah
             </button>
