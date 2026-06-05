@@ -42,11 +42,9 @@ export default function SettingsTab({
   theme, setTheme, appPin, setAppPin
 }: SettingsTabProps) {
   
-  // STATE NAVIGASI SUB-MENU
   const [activeMenu, setActiveMenu] = useState<"main" | "categories" | "wallets" | "profile">("main");
   const [showThemeModal, setShowThemeModal] = useState(false);
 
-  // STATE KATEGORI
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [editCatName, setEditCatName] = useState("");
   const [editCatBudget, setEditCatBudget] = useState("");
@@ -56,7 +54,6 @@ export default function SettingsTab({
   const [showAllFixed, setShowAllFixed] = useState(false);
   const [showAllIncome, setShowAllIncome] = useState(false);
 
-  // STATE FITUR BARU & KEAMANAN
   const [pinModalMode, setPinModalMode] = useState<"setup" | "confirm" | "disable" | null>(null);
   const [tempPin, setTempPin] = useState("");
   const [inputPin, setInputPin] = useState("");
@@ -66,7 +63,6 @@ export default function SettingsTab({
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [editProfileName, setEditProfileName] = useState(user?.displayName || "");
 
-  // INISIALISASI PREFERENSI DARI PENYIMPANAN LOKAL
   useEffect(() => {
     setBiometricEnabled(localStorage.getItem("fintracker_biometric_enabled") === "true");
     setHapticEnabled(localStorage.getItem("fintracker_haptic") !== "false");
@@ -74,7 +70,6 @@ export default function SettingsTab({
     setEditProfileName(user?.displayName || "");
   }, [user]);
 
-  // FUNGSI GETAR CERDAS (Mematuhi Preferensi)
   const triggerHaptic = () => { 
     if (typeof window !== "undefined" && navigator.vibrate) {
       if (localStorage.getItem("fintracker_haptic") !== "false") {
@@ -83,7 +78,6 @@ export default function SettingsTab({
     }
   };
 
-  // TOGGLE GETARAN
   const toggleHaptic = () => {
     if (hapticEnabled) {
       localStorage.setItem("fintracker_haptic", "false");
@@ -95,7 +89,6 @@ export default function SettingsTab({
     }
   };
 
-  // TOGGLE PENGINGAT (NOTIFIKASI BROWSER)
   const toggleReminder = async () => {
     triggerHaptic();
     if (reminderEnabled) {
@@ -117,7 +110,6 @@ export default function SettingsTab({
     }
   };
 
-  // SIMPAN PERUBAHAN NAMA PROFIL
   const handleUpdateProfile = async () => {
     triggerHaptic();
     if (!user || !editProfileName.trim()) return alert("Nama tidak boleh kosong.");
@@ -130,7 +122,6 @@ export default function SettingsTab({
     }
   };
 
-  // BIOMETRIK
   const handleToggleBiometric = async () => {
     triggerHaptic();
     if (biometricEnabled) {
@@ -172,7 +163,7 @@ export default function SettingsTab({
   const visibleIncomeCats = showAllIncome ? incomeCats : incomeCats.slice(0, 5);
 
   const MenuItem = ({ icon: Icon, iconBg, iconColor, title, subtitle, rightElement, onClick, isDestructive = false }: any) => (
-    <div onClick={() => { if(onClick) { triggerHaptic(); onClick(); } }} className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors cursor-pointer group">
+    <div onClick={() => { if(onClick) { triggerHaptic(); onClick(); } }} className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
       <div className="flex items-center gap-4">
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}><Icon size={18} strokeWidth={2.5} /></div>
         <div className="text-left">
@@ -227,7 +218,7 @@ export default function SettingsTab({
               <span className="text-xl shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
               <span className="text-sm font-black text-slate-800 dark:text-slate-100 leading-none truncate">{cat.name}</span>
               {tType === 'expense' && (
-                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded shrink-0 ${cat.expenseType === 'fixed' ? 'bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400' : 'bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400'}`}>
+                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded shrink-0 ${cat.expenseType === 'fixed' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400' : 'bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400'}`}>
                   {cat.expenseType === 'fixed' ? 'FIXED' : 'VAR'}
                 </span>
               )}
@@ -260,8 +251,7 @@ export default function SettingsTab({
         <div className="mb-6 text-left">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-4 mb-2">Akun Pengguna</p>
           <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
-            {/* Profil Interaktif -> Membuka Sub-Menu Edit Profil */}
-            <div onClick={() => { triggerHaptic(); setActiveMenu("profile"); }} className="p-5 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors cursor-pointer group">
+            <div onClick={() => { triggerHaptic(); setActiveMenu("profile"); }} className="p-5 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
               <img src={user?.photoURL || ""} className="w-14 h-14 rounded-full border-2 border-slate-100 dark:border-slate-800 object-cover" alt="Profile" />
               <div className="min-w-0 flex-1">
                 <h3 className="font-black text-base text-slate-800 dark:text-slate-100 truncate">{user?.displayName || "Pengguna"}</h3>
@@ -270,7 +260,7 @@ export default function SettingsTab({
               <ChevronRight size={18} className="text-slate-300 dark:text-slate-600 group-hover:text-slate-400 transition-colors shrink-0" />
             </div>
             <MenuItem 
-              icon={LogOut} iconBg="bg-red-50 dark:bg-red-955/30" iconColor="text-red-500" 
+              icon={LogOut} iconBg="bg-red-50 dark:bg-red-950/30" iconColor="text-red-500" 
               title="Keluar / Logout" subtitle="Akhiri sesi Anda saat ini" 
               rightElement={<div/>} isDestructive={true} onClick={onLogout} 
             />
@@ -282,30 +272,30 @@ export default function SettingsTab({
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-4 mb-2">Personalisasi & Data</p>
           <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
             <MenuItem 
-              icon={Palette} iconBg="bg-indigo-50 dark:bg-indigo-955/30" iconColor="text-indigo-600 dark:text-indigo-400" 
+              icon={Palette} iconBg="bg-indigo-50 dark:bg-indigo-950/30" iconColor="text-indigo-600 dark:text-indigo-400" 
               title="Tema Visual" subtitle="Terang, Gelap, atau Otomatis" 
               onClick={() => setShowThemeModal(true)}
               rightElement={<div className="flex items-center gap-1.5"><span className="text-xs font-bold text-slate-400 uppercase">{theme === 'system' ? 'Auto' : theme}</span><ChevronRight size={16} className="text-slate-300 dark:text-slate-600"/></div>}
             />
             <MenuItem 
-              icon={Tag} iconBg="bg-orange-50 dark:bg-orange-955/30" iconColor="text-orange-600 dark:text-orange-400" 
+              icon={Tag} iconBg="bg-orange-50 dark:bg-orange-950/30" iconColor="text-orange-600 dark:text-orange-400" 
               title="Kategori Transaksi" subtitle="Kelola pemasukan & pengeluaran" 
               onClick={() => setActiveMenu("categories")}
             />
             <MenuItem 
-              icon={CreditCard} iconBg="bg-blue-50 dark:bg-blue-955/30" iconColor="text-blue-600 dark:text-blue-400" 
+              icon={CreditCard} iconBg="bg-blue-50 dark:bg-blue-950/30" iconColor="text-blue-600 dark:text-blue-400" 
               title="Tipe Dompet Aset" subtitle="Kelola jenis-jenis sumber dana" 
               onClick={() => setActiveMenu("wallets")}
             />
           </div>
         </div>
 
-        {/* SECTION 3: PREFERENSI SISTEM (FITUR BARU) */}
+        {/* SECTION 3: PREFERENSI SISTEM */}
         <div className="mb-6 text-left">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-4 mb-2">Preferensi Sistem</p>
           <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
             <MenuItem 
-              icon={Bell} iconBg="bg-amber-50 dark:bg-amber-955/30" iconColor="text-amber-500" 
+              icon={Bell} iconBg="bg-amber-50 dark:bg-amber-950/30" iconColor="text-amber-500" 
               title="Pengingat Harian" subtitle="Notifikasi pencatatan pengeluaran rutin" 
               onClick={toggleReminder}
               rightElement={
@@ -315,7 +305,7 @@ export default function SettingsTab({
               }
             />
             <MenuItem 
-              icon={Smartphone} iconBg="bg-pink-50 dark:bg-pink-955/30" iconColor="text-pink-500" 
+              icon={Smartphone} iconBg="bg-pink-50 dark:bg-pink-950/30" iconColor="text-pink-500" 
               title="Getaran (Haptic)" subtitle="Umpan balik saat menekan tombol" 
               onClick={toggleHaptic}
               rightElement={
@@ -356,7 +346,7 @@ export default function SettingsTab({
       </div>
 
       {/* ========================================== */}
-      {/* SUB-MENU 1: EDIT PROFIL (FITUR BARU) */}
+      {/* SUB-MENU 1: EDIT PROFIL */}
       {/* ========================================== */}
       <div className={`absolute top-0 left-0 w-full transition-all duration-300 ${activeMenu === "profile" ? "opacity-100 translate-x-0 relative" : "opacity-0 translate-x-full pointer-events-none absolute"}`}>
         <div className="flex items-center justify-between mb-6">
@@ -506,7 +496,7 @@ export default function SettingsTab({
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Daftar Kategori Dompet</p>
           <div className="flex flex-wrap gap-2.5">
             {walletTypes.map(t => (
-              <span key={t.id} className="bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 px-4 py-2.5 rounded-2xl text-[11px] font-bold flex items-center gap-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-sm transition-colors duration-200 group">
+              <span key={t.id} className="bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 px-4 py-2.5 rounded-2xl text-[11px] font-bold flex items-center gap-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-sm transition-colors duration-200 group">
                 {t.name} 
                 <div className="w-px h-3 bg-slate-200 dark:bg-slate-700 mx-1"></div>
                 <X size={14} className="text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 cursor-pointer transition-colors" onClick={() => deleteWalletType(t.id)}/>
