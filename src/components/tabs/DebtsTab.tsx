@@ -304,25 +304,31 @@ export default function DebtsTab({
               </div>
             </div>
 
-            {/* Dynamic Status Notification Card (Matches Photo 2) */}
+            {/* High-contrast status block for dark mode (Matches Photo 2 with Fixed Contrast) */}
             <div className={`p-4 rounded-2xl border flex items-center justify-between ${
               selectedDebt.type === "debt" 
-                ? "bg-red-50/50 dark:bg-red-955/10 border-red-100/50 dark:border-red-900/20 text-red-700 dark:text-red-400" 
-                : "bg-emerald-50/50 dark:bg-emerald-955/10 border-emerald-100/50 dark:border-emerald-900/20 text-emerald-700 dark:text-emerald-400"
+                ? "bg-red-50/50 dark:bg-red-950/20 border-red-100/80 dark:border-red-900/30 text-red-700 dark:text-red-300" 
+                : "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100/80 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-300"
             }`}>
               <div className="flex items-center gap-2.5">
-                <div className={`p-1.5 rounded-lg ${selectedDebt.type === "debt" ? "bg-red-100/60 dark:bg-red-900/30" : "bg-emerald-100/60 dark:bg-emerald-900/30"}`}>
+                <div className={`p-1.5 rounded-lg ${selectedDebt.type === "debt" ? "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300" : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300"}`}>
                   {selectedDebt.type === "debt" ? <ArrowDownLeft size={16}/> : <ArrowUpRight size={16}/>}
                 </div>
                 <div className="text-[10px] font-black tracking-wide leading-tight text-left">
-                  <p className="uppercase">{selectedDebt.type === "debt" ? "DIPINJAM" : "DIPINJAMKAN"}</p>
-                  <p className="font-bold opacity-80">{selectedDebt.type === "debt" ? `You owe Rp ${(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}` : `Owed Rp ${(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}`}</p>
+                  <p className={`uppercase ${selectedDebt.type === "debt" ? "text-red-500 dark:text-red-400" : "text-emerald-500 dark:text-emerald-400"}`}>
+                    {selectedDebt.type === "debt" ? "DIPINJAM" : "DIPINJAMKAN"}
+                  </p>
+                  <p className="font-bold text-slate-700 dark:text-slate-300">
+                    {selectedDebt.type === "debt" 
+                      ? `You owe Rp ${(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}` 
+                      : `Owed Rp ${(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}`}
+                  </p>
                 </div>
               </div>
               <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border ${
                 selectedDebt.type === "debt" 
-                  ? "bg-red-100/40 dark:bg-red-955/20 border-red-200/50 dark:border-red-900/30" 
-                  : "bg-emerald-100/40 dark:bg-emerald-955/20 border-emerald-200/50 dark:border-emerald-900/30"
+                  ? "bg-red-100/60 dark:bg-red-950/40 border-red-200/50 dark:border-red-900/30 text-red-700 dark:text-red-350" 
+                  : "bg-emerald-100/60 dark:bg-emerald-950/40 border-emerald-200/50 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-350"
               }`}>
                 {selectedDebt.type === "debt" ? "↓ DIPINJAM" : "↑ DIPINJAMKAN"}
               </span>
@@ -333,13 +339,13 @@ export default function DebtsTab({
           <div className="bg-white dark:bg-slate-900 p-5 rounded-[26px] border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
             <div className="flex justify-between items-center px-1">
               <h5 className="font-black text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">Debt Records</h5>
-              <span className="px-2 py-0.5 bg-blue-100/60 dark:bg-slate-800 text-[9px] font-black rounded-full text-blue-600 dark:text-blue-350 border border-transparent dark:border-slate-700/60">
+              <span className="px-2 py-0.5 bg-blue-100/60 dark:bg-slate-800 text-[9px] font-black rounded-full text-blue-600 dark:text-blue-300 border border-transparent dark:border-slate-700/60">
                 {selectedDebt.paidAmount > 0 ? "1 entries" : "0 entries"}
               </span>
             </div>
 
             {selectedDebt.paidAmount === 0 ? (
-              <p className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs italic">Belum ada mutasi pembayaran yang terekam.</p>
+              <p className="text-center py-6 text-slate-450 dark:text-slate-400 text-xs italic">Belum ada mutasi pembayaran yang terekam.</p>
             ) : (
               <div className="space-y-2">
                 <div className="flex justify-between items-center p-3.5 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-100/50 dark:border-slate-800/40 rounded-xl">
@@ -349,7 +355,7 @@ export default function DebtsTab({
                     </div>
                     <div>
                       <h6 className="font-black text-xs text-emerald-600 dark:text-emerald-400">-Rp {selectedDebt.paidAmount.toLocaleString('id-ID')}</h6>
-                      <p className="text-[9px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">
+                      <p className="text-[9px] text-slate-450 dark:text-slate-400 font-bold mt-0.5">
                         {(() => {
                           const dateVal = selectedDebt.createdAt as any;
                           const d = dateVal?.seconds 
@@ -449,9 +455,10 @@ export default function DebtsTab({
           )}
         </div>
       ) : (
-        /* Standard / Old style listing with visually upgraded layout switcher */
+        /* Classic List View with beautiful Photo 3 styled Cards */
         <div className="space-y-6 animate-in fade-in duration-200">
           
+          {/* Main Sub Tab Swapper (UTANG SAYA / PIUTANG ORANG) */}
           <div className="bg-slate-100/60 dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm flex items-center gap-1.5 transition-all">
             <button 
               onClick={() => setMainTab("debts")} 
@@ -478,14 +485,14 @@ export default function DebtsTab({
           {mainTab === "debts" ? (
             <div className="space-y-6 animate-in fade-in duration-200">
               
-              {/* Refined Tab Swapper inside Utang (UTANG SAYA / PIUTANG ORANG) */}
+              {/* Classic Selection Tab Swapper */}
               <div className="bg-white dark:bg-slate-900/65 p-5 rounded-[26px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
                 <div className="flex gap-1.5 bg-slate-100/70 dark:bg-slate-950 p-1 rounded-xl">
                   <button 
                     onClick={() => { setActiveType("debt"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
                     className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                       activeType === "debt" 
-                        ? "bg-white dark:bg-slate-800 text-red-650 dark:text-red-400 shadow-sm border border-slate-150 dark:border-slate-700" 
+                        ? "bg-white dark:bg-slate-800 text-red-655 dark:text-red-400 shadow-sm border border-slate-150 dark:border-slate-700" 
                         : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
                     }`}
                   >
@@ -495,7 +502,7 @@ export default function DebtsTab({
                     onClick={() => { setActiveType("receivable"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
                     className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                       activeType === "receivable" 
-                        ? "bg-white dark:bg-slate-800 text-emerald-650 dark:text-emerald-400 shadow-sm border border-slate-150 dark:border-slate-700" 
+                        ? "bg-white dark:bg-slate-800 text-emerald-655 dark:text-emerald-400 shadow-sm border border-slate-150 dark:border-slate-700" 
                         : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
                     }`}
                   >
@@ -505,8 +512,8 @@ export default function DebtsTab({
                 
                 <div className={`p-5 rounded-2xl transition-all duration-200 border text-left ${
                   activeType === "debt" 
-                    ? "bg-red-50/40 dark:bg-red-950/10 border-red-100/80 dark:border-red-900/20" 
-                    : "bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-100/80 dark:border-emerald-900/20"
+                    ? "bg-red-50/40 dark:bg-red-955/10 border-red-100/80 dark:border-red-900/20" 
+                    : "bg-emerald-50/40 dark:bg-emerald-955/10 border-emerald-100/80 dark:border-emerald-900/20"
                 }`}>
                   <p className={`text-[10px] font-black uppercase tracking-wider ${activeType === "debt" ? "text-red-500" : "text-emerald-500"}`}>
                     Sisa {activeType === "debt" ? "Utang Saya" : "Uang Saya di Orang"}
@@ -539,7 +546,7 @@ export default function DebtsTab({
                         placeholder="Nominal Total (Rp)" 
                         inputMode={isMobile ? "none" : undefined} 
                         onFocus={() => { if(isMobile) setActiveKeypad("add"); }} 
-                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-755 dark:text-white placeholder-slate-400" 
+                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-white placeholder-slate-400" 
                         value={amount} 
                         onChange={e => setAmount(e.target.value)} 
                       />
@@ -584,7 +591,7 @@ export default function DebtsTab({
 
                     <div className="flex gap-2 pt-1.5">
                       <button onClick={submitAdd} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all active:scale-[0.98]">Simpan</button>
-                      <button onClick={() => { setShowAddForm(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 text-slate-600 rounded-xl text-xs font-bold">Batal</button>
+                      <button onClick={() => { setShowAddForm(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 text-slate-605 rounded-xl text-xs font-bold">Batal</button>
                     </div>
                   </div>
                 )}
@@ -616,12 +623,12 @@ export default function DebtsTab({
                 </div>
 
                 {filteredDebts.length === 0 ? (
-                  <p className="text-center py-12 text-slate-450 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150 dark:border-slate-850">
+                  <p className="text-center py-12 text-slate-450 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150 dark:border-slate-855">
                     Belum ada catatan {activeType === "debt" ? "utang" : "piutang"}.
                   </p>
                 ) : viewMode === "grid" ? (
-                  /* GRID BOX VIEW MODE (Matches Photo 3) */
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  /* GRID BOX VIEW MODE (Matches Photo 3 - Perfectly optimized 2 columns for Mobile) */
+                  <div className="grid grid-cols-2 gap-3.5">
                     {filteredDebts.map(debt => {
                       const percentage = Math.min((debt.paidAmount / debt.amount) * 100, 100);
                       const isPaid = debt.status === "paid";
@@ -631,50 +638,50 @@ export default function DebtsTab({
                         <div 
                           key={debt.id} 
                           onClick={() => setSelectedDebtId(debt.id)}
-                          className={`relative overflow-hidden bg-white dark:bg-slate-900 p-5 rounded-[24px] border shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md cursor-pointer flex flex-col justify-between ${
+                          className={`relative overflow-hidden bg-white dark:bg-slate-900 p-4 rounded-[20px] border shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md cursor-pointer flex flex-col justify-between ${
                             isPaid 
                               ? "border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/10 dark:bg-emerald-950/10 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-emerald-500" 
                               : "border-slate-100 dark:border-slate-800/80 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] " + (activeType === "debt" ? "before:bg-red-500" : "before:bg-emerald-500")
                           }`}
                         >
-                          <div className="flex justify-between items-start pl-2">
-                            <div className="flex items-center gap-3">
-                              {/* Soft rounded box logo (Matches Photo 3) */}
-                              <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 text-orange-600 dark:text-orange-400 rounded-xl flex items-center justify-center font-black text-sm">
+                          <div className="flex justify-between items-start pl-1.5">
+                            <div className="flex items-center gap-2">
+                              {/* Square box logo (Matches Photo 3) */}
+                              <div className="w-8 h-8 bg-slate-100 dark:bg-slate-800 text-orange-600 dark:text-orange-400 rounded-lg flex items-center justify-center font-black text-xs shrink-0">
                                 {debt.personName.charAt(0).toUpperCase()}
                               </div>
-                              <div>
-                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">{debt.personName}</h4>
+                              <div className="min-w-0">
+                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs tracking-tight truncate">{debt.personName}</h4>
                                 
-                                {/* 4-Segment signal/battery visual representation of payoff percentage (Matches Photo 3) */}
-                                <div className="flex gap-0.5 items-center mt-1">
+                                {/* 4-Segment signal progress indicators (Matches Photo 3) */}
+                                <div className="flex gap-0.5 items-center mt-0.5">
                                   {[1, 2, 3, 4].map((seg) => {
                                     const filled = percentage >= seg * 25;
                                     return (
-                                      <span key={seg} className={`w-1.5 h-3 rounded-[2px] ${
+                                      <span key={seg} className={`w-1 h-2 rounded-[1px] ${
                                         filled 
                                           ? (activeType === 'debt' ? 'bg-orange-500' : 'bg-emerald-500') 
                                           : 'bg-slate-200 dark:bg-slate-800'
                                       }`} />
                                     );
                                   })}
-                                  <span className={`text-[10px] font-black ml-1.5 ${
+                                  <span className={`text-[8px] font-black ml-1 shrink-0 ${
                                     activeType === 'debt' ? 'text-orange-500 dark:text-orange-400' : 'text-emerald-500 dark:text-emerald-400'
                                   }`}>
-                                    {Math.round(percentage)}% lunas
+                                    {Math.round(percentage)}%
                                   </span>
                                 </div>
                               </div>
                             </div>
                           </div>
 
-                          <div className="mt-4 pl-2 space-y-1">
-                            <h3 className="text-xl font-black text-slate-800 dark:text-white leading-tight">
+                          <div className="mt-3 pl-1.5 space-y-0.5">
+                            <h3 className="text-sm font-black text-slate-850 dark:text-white leading-none truncate">
                               {isPrivacyMode ? 'Rp •••••' : `Rp ${(debt.amount - debt.paidAmount).toLocaleString('id-ID')}`}
                             </h3>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
-                              {debt.dueDate ? `Tempo: ${new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : "Tidak Ada Jatuh Tempo"}
-                              {overdue && " • Overdue! ⚠️"}
+                            <p className="text-[8px] text-slate-500 dark:text-slate-400 font-bold truncate">
+                              {debt.dueDate ? `Tempo: ${new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}` : "No Tempo"}
+                              {overdue && " ⚠️"}
                             </p>
                           </div>
                         </div>
@@ -702,7 +709,7 @@ export default function DebtsTab({
                             <div>
                               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs tracking-tight">{debt.personName}</h4>
                               <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mt-0.5">
-                                {debt.dueDate ? `Tempo: ${new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : "Tidak Ada Jatuh Tempo"}
+                                {debt.dueDate ? `Tempo: ${new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}` : "Tidak Ada Jatuh Tempo"}
                               </p>
                             </div>
                           </div>
@@ -829,7 +836,7 @@ export default function DebtsTab({
 
                   <div className="flex gap-2 pt-2.5">
                     <button onClick={submitAddSub} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-colors active:scale-[0.98]">Simpan Langganan</button>
-                    <button onClick={() => { setShowAddSubForm(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 text-slate-650 rounded-xl text-xs font-bold">Batal</button>
+                    <button onClick={() => { setShowAddSubForm(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 text-slate-605 rounded-xl text-xs font-bold">Batal</button>
                   </div>
                 </div>
               )}
@@ -926,7 +933,7 @@ export default function DebtsTab({
                             }`}>
                               <div className="flex items-center gap-1.5 pl-0.5">
                                 {isOverdue ? <AlertCircle size={14}/> : <CalendarClock size={14}/>}
-                                <span>Tempo: {new Date(sub.nextDueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}</span>
+                                <span>Tempo: {new Date(sub.nextDueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span>
                               </div>
                               <span className={`px-2 py-0.5 rounded text-[8.5px] uppercase tracking-widest font-black ${
                                 isOverdue 
@@ -935,7 +942,7 @@ export default function DebtsTab({
                                     ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' 
                                     : 'bg-slate-200 dark:bg-slate-700 text-slate-655 dark:text-slate-300'
                               }`}>
-                                {isOverdue ? `Lewat ${Math.abs(daysLeft)} Hari` : isToday ? 'HARI INI' : `${daysLeft} Hari Lagi`}
+                                {isOverdue ? `Lewat ${Math.abs(daysLeft)} Hari` : isToday ? 'HARI INI' : `${daysLeft} Hari`}
                               </span>
                             </div>
 
@@ -961,7 +968,7 @@ export default function DebtsTab({
             </div>
           )}
 
-          {/* Floating Action Button (FAB) at Bottom Right (List screen) */}
+          {/* Floating Action Button (FAB) at Bottom Right (List screen - Perfectly Raised above BottomNav) */}
           {mainTab === "debts" && (
             <button 
               onClick={() => {
@@ -970,7 +977,7 @@ export default function DebtsTab({
                 setActiveKeypad(null);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-             className="fixed bottom-24 right-6 z-50 p-4 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white rounded-full shadow-2xl transition-all cursor-pointer border border-blue-500/10"
+              className="fixed bottom-24 right-6 z-50 p-4 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white rounded-full shadow-2xl transition-all cursor-pointer border border-blue-500/10"
             >
               {showAddForm ? <X size={24} /> : <Plus size={24} />}
             </button>
@@ -979,10 +986,10 @@ export default function DebtsTab({
         </div>
       )}
 
-      {/* Virtual Keypad Bottom Sheet */}
+      {/* Virtual Keypad Bottom Sheet (Matches Photo 1 with Clean Background) */}
       {isMobile && activeKeypad !== null && (
         <>
-          <div className="fixed inset-0 z-[140] bg-black/25 dark:bg-black/50 backdrop-blur-[1px]" onClick={() => setActiveKeypad(null)}></div>
+          <div className="fixed inset-0 z-[140] bg-black/25 dark:bg-black/50" onClick={() => setActiveKeypad(null)}></div>
           <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200/80 dark:border-slate-800/80 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[28px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
             <div className="flex justify-between items-center mb-3.5 px-1">
               <span className="text-[9px] font-black text-slate-400 dark:text-blue-400 tracking-wider uppercase">
