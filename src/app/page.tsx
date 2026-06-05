@@ -42,7 +42,14 @@ export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   
-  const [isPremium, setIsPremium] = useState<boolean | null>(null);
+  // Optimasi: Membaca status premium dari cache lokal di awal untuk menghindari loading screen yang tertahan
+  const [isPremium, setIsPremium] = useState<boolean | null>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("fintracker_is_premium");
+      return stored === "true" ? true : stored === "false" ? false : null;
+    }
+    return null;
+  });
   
   const [appPin, setAppPin] = useState<string | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -234,28 +241,36 @@ export default function FintrackerApp() {
     return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(parsed);
   };
 
+  // Optimasi: Memproses otentikasi & pengecekan dokumen hantu secara non-blocking
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => { 
+    const unsub = onAuthStateChanged(auth, (u) => { 
       setUser(u); 
       
       if (u) {
-        try {
-          const userRef = doc(db, "users", u.uid);
-          const userSnap = await getDoc(userRef);
-          
-          if (!userSnap.exists()) {
-            await setDoc(userRef, {
-              uid: u.uid,
-              name: u.displayName || "Pengguna Fintracker",
-              email: u.email || "",
-              photoURL: u.photoURL || "",
-              isPremium: false, 
-              createdAt: serverTimestamp()
-            }, { merge: true });
+        // Jalankan pengecekan secara asinkron di latar belakang agar inisialisasi aplikasi tidak terhambat
+        const checkGhostDocument = async () => {
+          try {
+            const userRef = doc(db, "users", u.uid);
+            const userSnap = await getDoc(userRef);
+            
+            if (!userSnap.exists()) {
+              await setDoc(userRef, {
+                uid: u.uid,
+                name: u.displayName || "Pengguna Fintracker",
+                email: u.email || "",
+                photoURL: u.photoURL || "",
+                isPremium: false, 
+                createdAt: serverTimestamp()
+              }, { merge: true });
+            }
+          } catch (error) {
+            console.error("Gagal memeriksa profil pengguna:", error);
           }
-        } catch (error) {
-          console.error("Gagal memeriksa profil pengguna:", error);
-        }
+        };
+        checkGhostDocument();
+      } else {
+        localStorage.removeItem("fintracker_is_premium");
+        setIsPremium(null);
       }
       
       setLoading(false); 
@@ -283,11 +298,15 @@ export default function FintrackerApp() {
       setSubscriptions(sn.docs.map(d => ({ id: d.id, ...d.data() } as SubscriptionData)));
     });
 
+    // Optimasi: Memperbarui cache lokal setiap kali status premium diubah di server
     const unsubProfile = onSnapshot(doc(db, `users/${user.uid}`), (docSnap) => {
       if (docSnap.exists()) {
-        setIsPremium(docSnap.data().isPremium === true);
+        const premiumStatus = docSnap.data().isPremium === true;
+        setIsPremium(premiumStatus);
+        localStorage.setItem("fintracker_is_premium", premiumStatus.toString());
       } else {
         setIsPremium(false);
+        localStorage.setItem("fintracker_is_premium", "false");
       }
     });
 
@@ -631,7 +650,7 @@ export default function FintrackerApp() {
     if (!user || !confirm(`Hapus dompet "${name}"?`)) return;
     isSubmittingRef.current = true;
     setIsSubmitting(true);
-    try { await deleteDoc(doc(db, `users/${user.uid}/accounts/${id}`)); } catch (e) { alert("Gagal hapus"); }
+    try { deleteDoc(doc(db, `users/${user.uid}/accounts/${id}`)); } catch (e) { alert("Gagal hapus"); }
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
