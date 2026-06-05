@@ -861,7 +861,7 @@ export default function HomeTab({
             )}
 
             {/* Input Form Fields (Scrollable) */}
-            <div className="p-6 space-y-4 overflow-y-auto bg-white dark:bg-slate-955 flex-1">
+            <div className="p-6 space-y-4 overflow-y-auto bg-white dark:bg-slate-950 flex-1">
               
               {/* TABS SELECTOR (Untuk Transaksi Baru) */}
               {!editingTransaction && (
