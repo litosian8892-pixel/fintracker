@@ -12,7 +12,7 @@ const getCardDesign = (type: string) => {
     return { 
       bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
       icon: <CreditCard size={18} className="text-blue-600 dark:text-blue-400" />, 
-      iconBg: "bg-blue-50 dark:bg-blue-950/50", 
+      iconBg: "bg-blue-50 dark:bg-blue-955/50", 
       chip: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", 
       progressBar: "bg-blue-500"
     };
@@ -20,7 +20,7 @@ const getCardDesign = (type: string) => {
     return { 
       bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
       icon: <Smartphone size={18} className="text-purple-600 dark:text-purple-400" />, 
-      iconBg: "bg-purple-50 dark:bg-purple-950/50", 
+      iconBg: "bg-purple-50 dark:bg-purple-95.5/50", 
       chip: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
       progressBar: "bg-purple-500" 
     };
@@ -28,7 +28,7 @@ const getCardDesign = (type: string) => {
     return { 
       bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
       icon: <Banknote size={18} className="text-emerald-600" />, 
-      iconBg: "bg-emerald-50 dark:bg-emerald-950/50", 
+      iconBg: "bg-emerald-50 dark:bg-emerald-955/50", 
       chip: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
       progressBar: "bg-emerald-500" 
     };
@@ -64,9 +64,9 @@ const safeEvaluate = (expr: string): number => {
 };
 
 const getGoalStatus = (percentage: number) => {
-  if (percentage >= 100) return { label: "✨ Selesai!", color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50" };
-  if (percentage >= 75) return { label: "🚀 Sikit Lagi!", color: "text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-amber-200 dark:border-amber-800/50" };
-  if (percentage >= 40) return { label: "🔥 On Track", color: "text-amber-600 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/50" };
+  if (percentage >= 100) return { label: "✨ Selesai!", color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-95.5/40 border-emerald-200 dark:border-emerald-800/50" };
+  if (percentage >= 75) return { label: "🚀 Sikit Lagi!", color: "text-blue-600 bg-blue-50 dark:bg-blue-95.5/40 border-amber-200 dark:border-amber-800/50" };
+  if (percentage >= 40) return { label: "🔥 On Track", color: "text-amber-600 bg-amber-50 dark:bg-amber-95.5/40 border-amber-200 dark:border-amber-800/50" };
   return { label: "🌱 Berjuang!", color: "text-slate-500 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50" };
 };
 
@@ -287,7 +287,7 @@ export default function AssetsTab({
     return data;
   }, [totalAssets, activeAccountIds, assetAccountIds, reportTransactions]);
 
-  // LOGIKA DETAIL TRANSAKSI KHUSUS (Mengembalikan variabel rincian detail yang hilang)
+  // LOGIKA DETAIL TRANSAKSI KHUSUS
   const detailTxs = useMemo(() => {
     return reportTransactions.filter(t => t.tDate?.startsWith(reportMonth || "") && (t.accountId === detailAccId || t.toAccountId === detailAccId));
   }, [reportTransactions, reportMonth, detailAccId]);
@@ -305,7 +305,7 @@ export default function AssetsTab({
     return Object.keys(detailExpGrouped).map(k => ({ name: k, value: detailExpGrouped[k] })).sort((a,b) => b.value - a.value);
   }, [detailTxs]);
 
-  // MENCARI HISTORI TRANSAKSI TERAKHIR KHUSUS DOMPET SPESIFIK (GRID VIEW SUB-INFO)
+  // MENCARI HISTORI TRANSAKSI TERAKHIR KHUSUS DOMPET SPESIFIK
   const getLatestTxForAccount = (accId: string) => {
     const latest = reportTransactions.find(t => t.accountId === accId || t.toAccountId === accId);
     if (!latest) return null;
@@ -373,7 +373,7 @@ export default function AssetsTab({
               const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
               const isActive = mStr === reportMonth;
               return (
-                <button key={mStr} onClick={() => { triggerHaptic(); setReportMonth?.(mStr); }} className="snap-center shrink-0 px-4 py-2 rounded-full text-xs font-black transition-all cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                <button key={mStr} onClick={() => { triggerHaptic(); setReportMonth?.(mStr); }} className="snap-center shrink-0 px-4 py-2 rounded-full text-xs font-black transition-all cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-400">
                   {d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}
                 </button>
               );
@@ -432,12 +432,12 @@ export default function AssetsTab({
       ) : (
 
         // =============================================================
-        // VIEW B: DASHBOARD / LIST UTAMA AKUN (PERSONAL, BUSINESS, ASSETS)
+        // VIEW B: DASHBOARD / LIST UTAMA AKUN
         // =============================================================
         <>
           <div className="text-center mb-2">
             <h2 className="font-black text-2xl text-[#064e3b] dark:text-emerald-400 tracking-tight mb-4">Akun</h2>
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-inner w-max mx-auto">
+            <div className="flex bg-slate-100 dark:bg-slate-850 p-1 rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-inner w-max mx-auto">
               {[ { id: "net_worth", label: "Nilai Bersih" }, { id: "akun", label: "Akun" }, { id: "aset", label: "Aset" } ].map(tab => (
                 <button key={tab.id} onClick={() => { triggerHaptic(); setActiveSubTab(tab.id as any); }} className={`px-5 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${activeSubTab === tab.id ? "bg-blue-900 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}>
                   {tab.label}
@@ -475,9 +475,10 @@ export default function AssetsTab({
                 {renderAreaChart(historicalAccountsData, "#ef4444", "Balance")}
               </div>
 
+              {/* 1. SEKSI DOMPET PRIBADI */}
               <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/30 px-4">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dompet</span>
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-widest">Dompet Pribadi ({personalActiveAccounts.length})</span>
                   
                   {/* TOGGLE LAYOUT MODE */}
                   <div className="flex bg-slate-200/50 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800">
@@ -490,10 +491,11 @@ export default function AssetsTab({
                   </div>
                 </div>
 
-                {/* KONDISIKAN VIEW: GRID (KOTAK) VS LIST */}
-                {viewMode === "grid" ? (
+                {personalActiveAccounts.length === 0 ? (
+                  <p className="text-center py-8 text-slate-400 text-xs italic">Belum ada dompet pribadi.</p>
+                ) : viewMode === "grid" ? (
                   <div className="p-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 animate-in fade-in duration-300">
-                    {[...personalActiveAccounts, ...businessActiveAccounts].map((acc) => {
+                    {personalActiveAccounts.map((acc) => {
                       const design = getCardDesign(acc.type);
                       const symbol = getCurrencySymbol(acc.currency);
                       const accRate = getRate(acc.currency, acc.lastExchangeRate);
@@ -508,7 +510,6 @@ export default function AssetsTab({
                             <div className="flex justify-between items-start">
                               {acc.logo ? ( <img src={acc.logo} className="w-8 h-8 rounded-lg object-cover" alt="logo" /> ) : ( <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
                               
-                              {/* Portions indicator blocks */}
                               <div className="flex items-center gap-1.5">
                                 <div className="flex gap-0.5">
                                   {[1,2,3,4].map((block) => {
@@ -528,7 +529,6 @@ export default function AssetsTab({
                             </p>
                           </div>
 
-                          {/* Sub-info: Transaksi Terakhir Khusus Dompet Ini */}
                           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-start gap-1.5 text-left">
                             {latestTx ? (
                               <>
@@ -550,7 +550,7 @@ export default function AssetsTab({
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in duration-300">
-                    {[...personalActiveAccounts, ...businessActiveAccounts].map((acc) => {
+                    {personalActiveAccounts.map((acc) => {
                       const design = getCardDesign(acc.type);
                       const symbol = getCurrencySymbol(acc.currency);
                       return (
@@ -558,7 +558,98 @@ export default function AssetsTab({
                           <div className="flex items-center gap-3">
                             {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-cover" alt="logo" /> ) : ( <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
                             <div className="text-left">
-                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{acc.name} {acc.isBusiness && <span className="text-[8px] bg-amber-100 text-amber-600 px-1 py-0.5 rounded ml-1 font-black">BISNIS</span>}</p>
+                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{acc.name}</p>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase">{acc.currency || "IDR"} • {acc.type}</p>
+                            </div>
+                          </div>
+                          <div className="text-right flex items-center gap-3">
+                            <p className="text-sm font-black text-slate-800 dark:text-slate-100">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
+                            <ChevronRight size={16} className="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. SEKSI DOMPET BISNIS (Dipulihkan visualnya) */}
+              <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/30 px-4 text-left">
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <Briefcase size={12} className="text-amber-500" />
+                    Dompet Bisnis ({businessActiveAccounts.length})
+                  </span>
+                </div>
+
+                {businessActiveAccounts.length === 0 ? (
+                  <p className="text-center py-10 text-slate-450 text-xs italic">Belum ada dompet bisnis terdaftar.</p>
+                ) : viewMode === "grid" ? (
+                  <div className="p-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 animate-in fade-in duration-300">
+                    {businessActiveAccounts.map((acc) => {
+                      const design = getCardDesign(acc.type);
+                      const symbol = getCurrencySymbol(acc.currency);
+                      const accRate = getRate(acc.currency, acc.lastExchangeRate);
+                      const accIdrBalance = acc.balance * accRate;
+                      
+                      const pct = totalActiveBalance > 0 ? Math.round((accIdrBalance / totalActiveBalance) * 100) : 0;
+                      const latestTx = getLatestTxForAccount(acc.id);
+
+                      return (
+                        <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition-all border border-transparent dark:border-slate-700/50 flex flex-col justify-between min-h-[140px] text-left">
+                          <div>
+                            <div className="flex justify-between items-start">
+                              {acc.logo ? ( <img src={acc.logo} className="w-8 h-8 rounded-lg object-cover" alt="logo" /> ) : ( <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
+                              
+                              <div className="flex items-center gap-1.5">
+                                <div className="flex gap-0.5">
+                                  {[1,2,3,4].map((block) => {
+                                    const filled = pct >= block * 25 - 10;
+                                    return (
+                                      <div key={block} className={`w-3.5 h-1.5 rounded-sm ${filled ? 'bg-amber-600 dark:bg-amber-500' : 'bg-slate-100 dark:bg-slate-800'}`} />
+                                    );
+                                  })}
+                                </div>
+                                <span className="text-[10px] font-black text-slate-400">{pct}%</span>
+                              </div>
+                            </div>
+
+                            <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-3 truncate">{acc.name}</p>
+                            <p className="text-sm font-black text-slate-600 dark:text-slate-400 tracking-tight leading-none mt-1">
+                              {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
+                            </p>
+                          </div>
+
+                          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-start gap-1.5 text-left">
+                            {latestTx ? (
+                              <>
+                                <div className="w-5 h-5 rounded-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-[10px] font-black">{latestTx.category.charAt(0)}</div>
+                                <div className="min-w-0">
+                                  <p className="text-[9px] font-bold text-slate-700 dark:text-slate-300 truncate leading-tight">{latestTx.note}</p>
+                                  <p className="text-[8px] font-semibold text-slate-400 mt-0.5 leading-none">
+                                    {latestTx.isIncome ? '+' : '-'}Rp {latestTx.amount.toLocaleString('id-ID')} • {latestTx.dayLabel}
+                                  </p>
+                                </div>
+                              </>
+                            ) : (
+                              <p className="text-[9px] font-bold text-slate-400 italic">Tidak ada transaksi terbaru</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in duration-300">
+                    {businessActiveAccounts.map((acc) => {
+                      const design = getCardDesign(acc.type);
+                      const symbol = getCurrencySymbol(acc.currency);
+                      return (
+                        <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
+                          <div className="flex items-center gap-3">
+                            {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-cover" alt="logo" /> ) : ( <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
+                            <div className="text-left">
+                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{acc.name} <span className="text-[8px] bg-amber-100/65 text-amber-600 px-1 py-0.5 rounded ml-1 font-black">BISNIS</span></p>
                               <p className="text-[9px] font-bold text-slate-400 uppercase">{acc.currency || "IDR"} • {acc.type}</p>
                             </div>
                           </div>
@@ -585,7 +676,7 @@ export default function AssetsTab({
 
               {(emergencyAccounts.length === 0 && dreamGoals.length === 0) ? (
                 <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm p-10 flex flex-col items-center justify-center text-center">
-                  <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-950/50 rounded-full flex items-center justify-center mb-4"><Activity size={32} className="text-emerald-500"/></div>
+                  <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-955/50 rounded-full flex items-center justify-center mb-4"><Activity size={32} className="text-emerald-500"/></div>
                   <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-1">Belum Ada Aset</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">Lacak investasi dan tabungan Anda dengan menekan tombol + di bawah.</p>
                 </div>
@@ -619,7 +710,7 @@ export default function AssetsTab({
             </div>
           )}
 
-          {/* BUTTON KURS GLOBAL STANDALONE (KARTU ELEGAN KHUSUS) */}
+          {/* BUTTON KURS GLOBAL STANDALONE */}
           <div className="px-2 mt-4 animate-in fade-in duration-300">
             <button onClick={() => { triggerHaptic(); setShowRatesModal(true); }} className="w-full bg-white dark:bg-slate-900 p-4 rounded-[24px] flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/55 transition-colors border border-transparent dark:border-slate-700/50">
               <span className="flex items-center gap-2">🪙 Pengaturan Kurs Global</span>
@@ -635,8 +726,7 @@ export default function AssetsTab({
       )}
 
       {/* =============================================================
-          LACI-LACI DI RENDER GLOBAL DI BAWAH AGAR POP-UP BISA DIPANGGIL 
-          DARI DETAIL BCA MAUPUN DARI DASHBOARD LUAR
+          LACI-LACI DI RENDER GLOBAL DI BAWAH 
           ============================================================= */}
 
       {/* LACI BAWAH 1: KELOLA AKUN & DOMPET */}
@@ -651,24 +741,24 @@ export default function AssetsTab({
             
             <div className="p-6 overflow-y-auto space-y-6">
               
-              {/* JIKA SEDANG MENGEDIT: HANYA TAMPILKAN FORM EDIT (FOCUS VIEW) */}
+              {/* JIKA SEDANG MENGEDIT: HANYA TAMPILKAN FORM EDIT */}
               {editingAccId ? (
                 <div className="space-y-3 bg-slate-50 dark:bg-slate-800/40 p-5 rounded-[24px] border border-slate-100 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
                   <div className="space-y-1">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label>
-                    <input className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-950 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} />
+                    <input className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} />
                   </div>
                   
                   <div className="space-y-1 text-left">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Mata Uang Dompet</label>
-                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-950 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
+                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
                       <option value="IDR">🇮🇩 Rupiah (IDR)</option><option value="USD">🇺🇸 Dollar (USD)</option><option value="SGD">🇸🇬 Dollar (SGD)</option><option value="EUR">🇪🇺 Euro (EUR)</option><option value="JPY">🇯🇵 Yen (JPY)</option><option value="CNY">🇨🇳 Yuan (CNY)</option><option value="GBP">🇬🇧 Pound (GBP)</option><option value="AUD">🇦🇺 Dollar (AUD)</option><option value="MYR">🇲🇾 Ringgit (MYR)</option><option value="SAR">🇸🇦 Riyal (SAR)</option>
                     </select>
                   </div>
 
                   <div className="space-y-1 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">
                     <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Audit Saldo Nyata (Real - {editCurrency})</label>
-                    <input type="number" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-950 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
+                    <input type="number" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
                   </div>
                   
                   <div className="flex flex-col gap-2 pt-2">
@@ -689,13 +779,13 @@ export default function AssetsTab({
                   {editAccIsSavings && (
                     <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                       <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
-                      <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-950 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+                      <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
                     </div>
                   )}
 
                   {/* UNIVERSAL LOGO UPLOADER */}
                   <div className="flex flex-col gap-1 pt-1 text-left">
-                    <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Ubah Logo Dompet (Opsional)</label>
+                    <label className="text-[9px] font-black text-slate-505 dark:text-slate-400 uppercase tracking-widest px-1">Ubah Logo Dompet (Opsional)</label>
                     <div className="flex items-center gap-3 bg-slate-100/50 dark:bg-slate-950 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                       <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, true)} className="hidden" id="custom-logo-file" />
                       <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
@@ -706,7 +796,7 @@ export default function AssetsTab({
 
                   <div className="flex gap-2 pt-3">
                     <button onClick={async () => { triggerHaptic(); if (editingAccId) { setLocalBalanceOverride(p => ({ ...p, [editingAccId]: Number(editAccBalance) })); setLocalNameOverride(p => ({ ...p, [editingAccId]: editAccName })); } await handleEditAccount(editingAccId!); setIsManageOpen(false); setEditingAccId(null); }} className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95">Simpan Perubahan</button>
-                    <button onClick={() => { setEditingAccId(null); }} className="py-3 px-5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95">Batal</button>
+                    <button onClick={() => { setEditingAccId(null); }} className="py-3 px-5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-300 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95">Batal</button>
                   </div>
                 </div>
               ) : (
@@ -715,7 +805,7 @@ export default function AssetsTab({
                   <div className="space-y-3 bg-slate-50 dark:bg-slate-800/40 p-5 rounded-[24px] border border-slate-100 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
                     <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 mb-2">Tambah Dompet Baru</h4>
                     
-                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-950 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={accCurrency || localAccCurrency} onChange={(e) => setAccCurrency ? setAccCurrency(e.target.value) : setLocalAccCurrency(e.target.value)}>
+                    <select className="w-full p-3.5 bg-slate-100/50 dark:bg-slate-955 rounded-xl text-xs border border-slate-200/50 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={accCurrency || localAccCurrency} onChange={(e) => setAccCurrency ? setAccCurrency(e.target.value) : setLocalAccCurrency(e.target.value)}>
                       <option value="IDR">🇮🇩 Rupiah (IDR)</option><option value="USD">🇺🇸 Dollar (USD)</option><option value="SGD">🇸🇬 Dollar (SGD)</option><option value="EUR">🇪🇺 Euro (EUR)</option><option value="JPY">🇯🇵 Yen (JPY)</option><option value="CNY">🇨🇳 Yuan (CNY)</option><option value="GBP">🇬🇧 Pound (GBP)</option><option value="AUD">🇦🇺 Dollar (AUD)</option><option value="MYR">🇲🇾 Ringgit (MYR)</option><option value="SAR">🇸🇦 Riyal (SAR)</option>
                     </select>
 
@@ -755,9 +845,9 @@ export default function AssetsTab({
                   <div className="space-y-2">
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest pl-1">Daftar Dompet Anda</p>
                     {accounts.map((acc, index) => (
-                      <div key={acc.id} className="flex justify-between items-center p-3 bg-slate-100/50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 rounded-xl transition-colors duration-200">
+                      <div key={acc.id} className="flex justify-between items-center p-3 bg-slate-100/50 dark:bg-slate-955 border border-slate-200/50 dark:border-slate-800 rounded-xl transition-colors duration-200">
                         <div className="text-left">
-                          <p className="text-xs font-bold text-slate-800 dark:text-slate-100">{acc.name} {acc.isBusiness && <span className="text-[8px] text-amber-600 bg-amber-100 px-1 rounded font-black">Bisnis</span>}</p>
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-100">{acc.name} {acc.isBusiness && <span className="text-[8px] text-amber-605 bg-amber-100 px-1 rounded font-black">Bisnis</span>}</p>
                           <p className="text-[10px] text-slate-500 dark:text-slate-400">{acc.currency || "IDR"} • {acc.balance.toLocaleString('id-ID')}</p>
                         </div>
                         <div className="flex items-center gap-1">
