@@ -380,7 +380,7 @@ export default function DebtsTab({
                 setPayCategory("");
                 setShowPayModal(true);
               }}
-              className="fixed bottom-6 right-6 z-50 p-4 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white rounded-full shadow-2xl transition-all cursor-pointer border border-blue-500/10"
+              className="fixed bottom-24 right-6 z-50 p-4 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white rounded-full shadow-2xl transition-all cursor-pointer border border-blue-500/10"
             >
               <Plus size={24} />
             </button>
@@ -970,7 +970,7 @@ export default function DebtsTab({
                 setActiveKeypad(null);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="fixed bottom-6 right-6 z-50 p-4 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white rounded-full shadow-2xl transition-all cursor-pointer border border-blue-500/10"
+             className="fixed bottom-24 right-6 z-50 p-4 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white rounded-full shadow-2xl transition-all cursor-pointer border border-blue-500/10"
             >
               {showAddForm ? <X size={24} /> : <Plus size={24} />}
             </button>
