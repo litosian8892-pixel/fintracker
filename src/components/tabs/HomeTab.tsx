@@ -692,7 +692,7 @@ export default function HomeTab({
         
         <div className="flex justify-between items-start mb-1 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black text-blue-100 tracking-wider uppercase">Total Saldo Terkonsolidasi</span>
+            <span className="text-[10px] font-black text-blue-100 tracking-wider uppercase">Total Saldo</span>
             <button type="button" className="p-1 text-blue-200/50 hover:text-white rounded-full transition-colors"><Trophy size={12} className="text-yellow-400" /></button>
             <span className="text-[9px] font-black bg-blue-900/40 px-1.5 py-0.5 rounded border border-blue-500/20 text-blue-100 flex items-center gap-0.5"><Receipt size={10} /> {monthlyTransactions.length}</span>
           </div>
