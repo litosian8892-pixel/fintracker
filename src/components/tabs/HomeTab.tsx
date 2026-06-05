@@ -381,11 +381,11 @@ export default function HomeTab({
     return new Date().toISOString().split('T')[0];
   };
 
-  // --- LOGIKA GENERASI BULAN REAKTIF (6 Bulan Terakhir) ---
+  // --- LOGIKA GENERASI BULAN REAKTIF (12 Bulan Terakhir) ---
   const recentMonths = useMemo(() => {
     const months = [];
     const now = new Date();
-    for (let i = 5; i >= 0; i--) {
+    for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" });

@@ -477,7 +477,7 @@ export default function AssetsTab({
           {/* SELEKTOR BULAN HISTORIS (Baru - Memungkinkan pelacakan menabung bulan-bulan lalu) */}
           {activeSubTab === "aset" && setReportMonth && (
             <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 animate-in fade-in duration-200">
-              {[5, 4, 3, 2, 1, 0].map((i) => {
+              {[11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((i) => {
                 const d = new Date();
                 d.setMonth(d.getMonth() - i);
                 const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
