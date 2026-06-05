@@ -1175,43 +1175,110 @@ export default function DebtsTab({
         </div>
       )}
 
-      {/* ========================================== */}
+     {/* ========================================== */}
       {/* BOTTOM SHEET: PILIH KATEGORI PEMBAYARAN KEPINGAN */}
       {/* ========================================== */}
       {payCatSelector && (
         <div className="fixed inset-0 z-[190] flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-200">
           <div className="absolute inset-0 z-0" onClick={() => setPayCatSelector(false)}></div>
-          <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden z-10 flex flex-col max-h-[75vh] border border-slate-150 dark:border-slate-800 text-left">
+          <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden z-10 flex flex-col max-h-[75vh] border border-slate-150 dark:border-slate-800 text-left">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
               <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
                 <span>🏷️</span> Pilih Kategori Pembayaran
               </h3>
-              <button type="button" onClick={() => setPayCatSelector(false)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-650 rounded-full"><X size={14}/></button>
+              <button type="button" onClick={() => setPayCatSelector(false)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-650 rounded-full cursor-pointer"><X size={14}/></button>
             </div>
+            
             <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
-              <div className="grid grid-cols-2 gap-3">
-                {categories
-                  .filter(c => c.type === (selectedDebt?.type === "debt" ? "expense" : "income"))
-                  .sort((a,b) => a.name.localeCompare(b.name))
-                  .map(cat => {
-                    const isSelected = payCategory === cat.name;
-                    return (
-                      <button 
-                        key={cat.id} 
-                        type="button" 
-                        onClick={() => { triggerHaptic(); setPayCategory(cat.name); setPayCatSelector(false); }} 
-                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${
-                          isSelected 
-                            ? "bg-blue-600 text-white border-blue-700" 
-                            : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100"
-                        }`}
-                      >
-                        <span className="shrink-0">{cat.icon || "🏷️"}</span>
-                        <span className="truncate">{cat.name}</span>
-                      </button>
-                    );
-                  })}
-              </div>
+              {selectedDebt?.type === "debt" ? (
+                /* Pengelompokan Kategori Pengeluaran (Expense) */
+                <div className="grid grid-cols-2 gap-4">
+                  {/* KOLOM 1: VARIABEL */}
+                  <div className="space-y-2">
+                    <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-orange-100 dark:border-orange-950/30 z-10">
+                      <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel</p>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {categories
+                        .filter(c => c.type === "expense" && c.expenseType !== "fixed")
+                        .sort((a,b) => a.name.localeCompare(b.name))
+                        .map(cat => {
+                          const isSelected = payCategory === cat.name;
+                          return (
+                            <button 
+                              key={cat.id} 
+                              type="button" 
+                              onClick={() => { triggerHaptic(); setPayCategory(cat.name); setPayCatSelector(false); }} 
+                              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${
+                                isSelected 
+                                  ? "bg-blue-600 text-white border-blue-700 shadow-sm" 
+                                  : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-755"
+                              }`}
+                            >
+                              <span className="w-5 text-center shrink-0">{cat.icon || "🏷️"}</span>
+                              <span className="truncate flex-1 text-left">{cat.name}</span>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+
+                  {/* KOLOM 2: TETAP */}
+                  <div className="space-y-2 border-l border-slate-100 dark:border-slate-800 pl-4">
+                    <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-purple-100 dark:border-purple-955/30 z-10">
+                      <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">🟣 Tetap</p>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {categories
+                        .filter(c => c.type === "expense" && c.expenseType === "fixed")
+                        .sort((a,b) => a.name.localeCompare(b.name))
+                        .map(cat => {
+                          const isSelected = payCategory === cat.name;
+                          return (
+                            <button 
+                              key={cat.id} 
+                              type="button" 
+                              onClick={() => { triggerHaptic(); setPayCategory(cat.name); setPayCatSelector(false); }} 
+                              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${
+                                isSelected 
+                                  ? "bg-purple-600 text-white border-purple-700 shadow-sm" 
+                                  : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-755"
+                              }`}
+                            >
+                              <span className="w-5 text-center shrink-0">{cat.icon || "🏷️"}</span>
+                              <span className="truncate flex-1 text-left">{cat.name}</span>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Pengelompokan Kategori Pemasukan (Income) */
+                <div className="grid grid-cols-1 gap-2">
+                  {categories
+                    .filter(c => c.type === "income")
+                    .sort((a,b) => a.name.localeCompare(b.name))
+                    .map(cat => {
+                      const isSelected = payCategory === cat.name;
+                      return (
+                        <button 
+                          key={cat.id} 
+                          type="button" 
+                          onClick={() => { triggerHaptic(); setPayCategory(cat.name); setPayCatSelector(false); }} 
+                          className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${
+                            isSelected 
+                              ? "bg-green-600 text-white border-green-700 shadow-sm" 
+                              : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-755"
+                          }`}
+                        >
+                          <span className="w-5 text-center shrink-0">{cat.icon || "🏷️"}</span>
+                          <span className="truncate flex-1 text-left">{cat.name}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
             </div>
           </div>
         </div>
