@@ -45,6 +45,7 @@ interface HomeTabProps {
   // States tambahan hasil sinkronisasi dengan page.tsx
   transactions: TransactionData[];
   onDeleteTransaction: (t: TransactionData) => void;
+  onEditTransaction: (t: TransactionData) => void; // Digunakan agar pengisian data edit berjalan presisi
   isPrivacyMode: boolean;
   togglePrivacyMode: () => void;
 
@@ -123,7 +124,7 @@ const getCategoryIcon = (catName: string) => {
 
 export default function HomeTab({
   tType, setTType, tDate, setTDate, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction,
-  transactions, onDeleteTransaction, isPrivacyMode, togglePrivacyMode,
+  transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode,
   editingTransaction, setEditingTransaction, handleUpdateTransaction,
   editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits
 }: HomeTabProps) {
@@ -337,9 +338,10 @@ export default function HomeTab({
   }, []);
 
   // --- KALKULASI RINGKASAN SALDO PREMIUM CARD ---
+  // PERBAIKAN: Hanya kalkulasi dompet bertipe AKUN (!acc.isSavings) dan keluarkan dompet bertipe ASET (acc.isSavings === true)
   const totalBalanceCalculated = useMemo(() => {
     return accounts
-      .filter(acc => !acc.excludeFromTotal)
+      .filter(acc => !acc.isSavings && !acc.excludeFromTotal)
       .reduce((sum, acc) => sum + (acc.balance * (acc.lastExchangeRate || 1)), 0);
   }, [accounts]);
 
@@ -419,7 +421,7 @@ export default function HomeTab({
               className={`px-4 py-2 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shrink-0 border ${
                 isActive 
                   ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/10" 
-                  : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                  : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"
               }`}
             >
               {m.label}
@@ -534,11 +536,11 @@ export default function HomeTab({
                             )}
                           </div>
 
-                          {/* Tombol edit/delete cepat */}
+                          {/* Tombol edit/delete cepat dengan delegasi fungsi onEditTransaction */}
                           <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                             <button 
                               type="button" 
-                              onClick={() => { triggerHaptic(); setEditingTransaction(t); }} 
+                              onClick={() => { triggerHaptic(); onEditTransaction(t); }} 
                               className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors cursor-pointer"
                             >
                               <Edit3 size={13} />
