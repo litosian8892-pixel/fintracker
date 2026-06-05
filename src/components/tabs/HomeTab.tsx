@@ -72,6 +72,14 @@ interface HomeTabProps {
   updateCategory?: (id: string, newName: string, newBudget: number | null, expenseType: "fixed" | "variable", newIcon?: string) => Promise<void>;
 }
 
+// Fungsi bantu untuk membersihkan nama kategori dari emoji agar pencocokan berjalan 100% akurat
+const cleanCategoryName = (name: string): string => {
+  if (!name) return "";
+  return name
+    .replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '')
+    .trim();
+};
+
 const safeEvaluate = (expr: string): number => {
   if (!expr) return 0;
   let sanitized = expr.replace(/[^0-9+\-*/().]/g, "");
@@ -425,11 +433,24 @@ export default function HomeTab({
     setActiveKeypad(null);
   };
 
-  // Cari objek kategori aktif pilihan pengguna untuk merender logo besar secara dinamis di header
+  // ALGORITMA PENYELARAS DATA HISTORIS EMOTICON OTOMATIS (SELF-HEALING DETECT)
   const activeCategoryObject = useMemo(() => {
     const activeName = editingTransaction ? editTCategory : tCategory;
-    return categories.find(c => c.name === activeName);
+    if (!activeName) return null;
+    const cleanActive = cleanCategoryName(activeName);
+    return categories.find(c => cleanCategoryName(c.name) === cleanActive);
   }, [categories, tCategory, editTCategory, editingTransaction]);
+
+  // Efek reaktif menyelaraskan state edit jika terdeteksi data historis mengandung emoji lawas
+  useEffect(() => {
+    if (editingTransaction && editTCategory && categories.length > 0) {
+      const cleanActive = cleanCategoryName(editTCategory);
+      const matched = categories.find(c => cleanCategoryName(c.name) === cleanActive);
+      if (matched && matched.name !== editTCategory) {
+        setEditTCategory(matched.name); // Otomatis timpa ke nama database yang bersih
+      }
+    }
+  }, [editingTransaction, editTCategory, categories]);
 
   const renderActiveCategoryIcon = () => {
     if (activeCategoryObject?.icon) return activeCategoryObject.icon;
@@ -438,7 +459,7 @@ export default function HomeTab({
   };
 
   const getRowIcon = (item: TransactionData) => {
-    const catObj = categories.find(c => c.name === item.category);
+    const catObj = categories.find(c => cleanCategoryName(c.name) === cleanCategoryName(item.category));
     return catObj?.icon || getCategoryIcon(item.category);
   };
 
@@ -801,18 +822,18 @@ export default function HomeTab({
               {/* TABS SELECTOR (Untuk Transaksi Baru) */}
               {!editingTransaction && (
                 <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl mb-2">
-                  <button type="button" onClick={() => handleTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "expense" ? "bg-red-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
-                  <button type="button" onClick={() => handleTypeChange("income")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "income" ? "bg-emerald-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowUpRight size={12} /> Pemasukan</button>
-                  <button type="button" onClick={() => handleTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "transfer" ? "bg-blue-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowRightLeft size={12} /> Transfer</button>
+                  <button type="button" onClick={() => handleTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "expense" ? "bg-red-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-855 dark:hover:text-slate-100"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
+                  <button type="button" onClick={() => handleTypeChange("income")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "income" ? "bg-emerald-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-855 dark:hover:text-slate-100"}`}><ArrowUpRight size={12} /> Pemasukan</button>
+                  <button type="button" onClick={() => handleTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "transfer" ? "bg-blue-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-855 dark:hover:text-slate-100"}`}><ArrowRightLeft size={12} /> Transfer</button>
                 </div>
               )}
 
               {/* TABS SELECTOR (Untuk Koreksi/Edit Transaksi) */}
               {editingTransaction && (
                 <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl mb-2">
-                  <button type="button" onClick={() => handleEditTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "expense" ? "bg-red-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
-                  <button type="button" onClick={() => handleEditTypeChange("income")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "income" ? "bg-emerald-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowUpRight size={12} /> Pemasukan</button>
-                  <button type="button" onClick={() => handleEditTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "transfer" ? "bg-blue-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowRightLeft size={12} /> Transfer</button>
+                  <button type="button" onClick={() => handleEditTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "expense" ? "bg-red-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-855 dark:hover:text-slate-100"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
+                  <button type="button" onClick={() => handleEditTypeChange("income")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "income" ? "bg-emerald-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-855 dark:hover:text-slate-100"}`}><ArrowUpRight size={12} /> Pemasukan</button>
+                  <button type="button" onClick={() => handleEditTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "transfer" ? "bg-blue-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-855 dark:hover:text-slate-100"}`}><ArrowRightLeft size={12} /> Transfer</button>
                 </div>
               )}
 
@@ -837,7 +858,7 @@ export default function HomeTab({
               {((editingTransaction ? editTType : tType) === "transfer") && (
                 <div className="space-y-1 animate-in fade-in duration-200">
                   <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest block pl-1">Biaya Admin ({selectedSourceAcc?.currency || "IDR"}) (Opsional)</label>
-                  <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("adminFee"); setActiveSplitKeypadIndex(null); } }} className="w-full p-3.5 bg-blue-50/30 border border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/30 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100" placeholder="0" value={editingTransaction ? editTAdminFee : tAdminFee} onChange={(e) => editingTransaction ? setEditTAdminFee(e.target.value) : setTAdminFee(e.target.value)} />
+                  <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("adminFee"); setActiveSplitKeypadIndex(null); } }} className="w-full p-3.5 bg-blue-50/30 border border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/30 rounded-2xl text-xs font-bold outline-blue-500 text-slate-855 dark:text-slate-100" placeholder="0" value={editingTransaction ? editTAdminFee : tAdminFee} onChange={(e) => editingTransaction ? setEditTAdminFee(e.target.value) : setTAdminFee(e.target.value)} />
                   {(editingTransaction ? editTAdminFee : tAdminFee) && <p className="text-[10px] font-bold text-blue-400 pl-1">Terbaca: <span className="text-blue-600 dark:text-blue-300 font-black">{formatCurrencyTerbaca(editingTransaction ? editTAdminFee : tAdminFee, selectedSourceAcc?.currency)}</span></p>}
                 </div>
               )}
@@ -925,7 +946,7 @@ export default function HomeTab({
                       </div>
                     ) : (
                       <div className="flex gap-2 items-center">
-                        <div onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="flex-1 p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-850 dark:text-white cursor-pointer flex items-center justify-between truncate hover:bg-slate-100">
+                        <div onClick={() => { setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="flex-1 p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-855 dark:text-white cursor-pointer flex items-center justify-between truncate hover:bg-slate-100">
                           <span className={`truncate ${!tCategory ? "text-slate-400 font-medium" : ""}`}>
                             {tCategory ? (
                               <>
@@ -1041,7 +1062,7 @@ export default function HomeTab({
                     <div className="flex flex-col gap-1.5">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").map(cat => (
                         <div key={cat.id} className="flex gap-1.5 items-center w-full">
-                          <button type="button" onClick={() => handleSelectCategory(cat.name)} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-red-600 text-white border-red-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-755"}`}>
+                          <button type="button" onClick={() => handleSelectCategory(cat.name)} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-red-600 text-white border-red-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"}`}>
                             <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
                             <span className="truncate">{cat.name}</span>
                           </button>
@@ -1114,7 +1135,7 @@ export default function HomeTab({
               <button type="button" onClick={() => { setShowSplitModal(false); setActiveSplitKeypadIndex(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full"><X size={14}/></button>
             </div>
 
-            <div className="p-5 overflow-y-auto space-y-4 bg-white dark:bg-slate-950 flex-1">
+            <div className="p-5 overflow-y-auto space-y-4 bg-white dark:bg-slate-955 flex-1">
               <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30">
                 <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-300">
                   <span>Nominal Transaksi:</span>
@@ -1141,21 +1162,21 @@ export default function HomeTab({
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400">Kategori</label>
-                        <div onClick={() => { setActiveSplitIndex(i); setShowSplitCatModal(true); setSearchQuery(""); }} className="p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between truncate">
+                        <div onClick={() => { setActiveSplitIndex(i); setShowSplitCatModal(true); setSearchQuery(""); }} className="p-3 bg-white border border-slate-200 dark:bg-slate-955 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between truncate">
                           <span className="truncate">{item.category || "Pilih..."}</span><ChevronDown size={14} className="text-slate-400" />
                         </div>
                       </div>
 
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
-                        <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveSplitKeypadIndex(i); setActiveKeypad(null); } }} className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.amountStr} onChange={(e) => {
+                        <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveSplitKeypadIndex(i); setActiveKeypad(null); } }} className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-955 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.amountStr} onChange={(e) => {
                           const updated = [...tempSplits];
                           updated[i].amountStr = e.target.value;
                           setTempSplits(updated);
                         }} />
                       </div>
                     </div>
-                    <input type="text" placeholder="Catatan Pecahan (Opsional)..." className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={item.note || ""} onChange={(e) => {
+                    <input type="text" placeholder="Catatan Pecahan (Opsional)..." className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-955 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={item.note || ""} onChange={(e) => {
                       const updated = [...tempSplits];
                       updated[i].note = e.target.value;
                       setTempSplits(updated);
@@ -1189,7 +1210,7 @@ export default function HomeTab({
               {["7", "8", "9"].map((num) => (<button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
               <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("C") : handleEditKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-950/40 text-red-600 rounded-xl select-none">C</button>
               {["4", "5", "6"].map((num) => (<button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
-              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("⌫") : handleKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl text-slate-500 flex items-center justify-center select-none">⌫</button>
+              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("⌫") : handleKeypadPress("5")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl text-slate-500 flex items-center justify-center select-none">⌫</button>
               {["1", "2", "3"].map((num) => (<button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
               <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress(".") : handleKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl select-none">.</button>
               {["(", "0", ")"].map((char) => (<button key={char} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(char) : handleKeypadPress(char)} className="bg-slate-50 dark:bg-slate-800 py-3.5 rounded-xl select-none">{char}</button>))}
@@ -1262,7 +1283,7 @@ export default function HomeTab({
                       className={`p-4 rounded-2xl border text-left flex flex-col justify-between relative transition-all active:scale-95 cursor-pointer h-28 ${
                         isSelected 
                           ? "border-blue-600 bg-blue-50/50 dark:bg-blue-950/20 shadow-md shadow-blue-500/5" 
-                          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850"
+                          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-855"
                       }`}
                     >
                       {/* Logo / Icon */}
