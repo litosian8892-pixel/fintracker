@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil, Tag, X, Calendar, CalendarClock, CreditCard, AlertCircle, BookUser, ArrowLeft, ArrowDownLeft, ArrowUpRight, Link as LinkIcon, LayoutGrid, List } from "lucide-react";
+import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil, Tag, X, Calendar, CalendarClock, CreditCard, AlertCircle, BookUser, ArrowLeft, ArrowDownLeft, ArrowUpRight, Link as LinkIcon, LayoutGrid, List, ChevronDown } from "lucide-react";
 import { DebtData, AccountData, CategoryData, SubscriptionData } from "../../types";
 
 interface DebtsTabProps {
@@ -72,6 +72,10 @@ export default function DebtsTab({
   const [payAmount, setPayAmount] = useState("");
   const [payAccountId, setPayAccountId] = useState("");
   const [payCategory, setPayCategory] = useState(""); 
+
+  // Modal selector states for payment form
+  const [payAccSelector, setPayAccSelector] = useState(false);
+  const [payCatSelector, setPayCatSelector] = useState(false);
 
   const [showAddSubForm, setShowAddSubForm] = useState(false);
   const [subName, setSubName] = useState("");
@@ -229,7 +233,7 @@ export default function DebtsTab({
                     setSelectedDebtId(null);
                   }
                 }}
-                className="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-900/40 rounded-xl transition-all text-red-500 cursor-pointer border border-red-100/40 dark:border-red-900/40"
+                className="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-955/20 dark:hover:bg-red-900/40 rounded-xl transition-all text-red-500 cursor-pointer border border-red-100/40 dark:border-red-900/40"
               >
                 <Trash2 size={15} />
               </button>
@@ -241,9 +245,9 @@ export default function DebtsTab({
             <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3.5">
               <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Koreksi Data Transaksi</p>
               <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editPerson} onChange={e => setEditPerson(e.target.value)} />
-              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editAmount} onChange={e => setEditAmount(e.target.value)} />
-              <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} />
-              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editNote} onChange={e => setEditNote(e.target.value)} />
+              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editAmount} onChange={e => setEditAmount(e.target.value)} />
+              <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} />
+              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editNote} onChange={e => setEditNote(e.target.value)} />
               <div className="flex gap-2">
                 <button onClick={() => submitEdit(selectedDebt.id)} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer">Simpan Perubahan</button>
                 <button onClick={() => setEditingDebtId(null)} className="py-2.5 px-4 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold">Batal</button>
@@ -260,12 +264,20 @@ export default function DebtsTab({
                 </div>
                 <div>
                   <h4 className="font-black text-base text-slate-900 dark:text-slate-100 leading-tight">{selectedDebt.personName}</h4>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-wider">
+                  
+                  {/* MEMO / NOTE DI DETAIL (Memperbaiki catatan lama yang hilang di detail) */}
+                  {selectedDebt.note && (
+                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1 leading-normal italic">
+                      "{selectedDebt.note}"
+                    </p>
+                  )}
+
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1.5 uppercase tracking-wider leading-none">
                     {selectedDebt.dueDate ? `Tanggal Jatuh Tempo: ${new Date(selectedDebt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : "Tidak Ada Jatuh Tempo"}
                   </p>
                 </div>
               </div>
-              <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-100/50 dark:border-amber-900/30 rounded-full text-[9px] font-black text-amber-600 dark:text-amber-400 tracking-wider">
+              <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-955/40 border border-amber-100/50 dark:border-amber-900/30 rounded-full text-[9px] font-black text-amber-600 dark:text-amber-400 tracking-wider">
                 {Math.round((selectedDebt.paidAmount / selectedDebt.amount) * 100)}% lunas
               </span>
             </div>
@@ -307,8 +319,8 @@ export default function DebtsTab({
             {/* High-contrast status block for dark mode (Matches Photo 2 with Fixed Contrast) */}
             <div className={`p-4 rounded-2xl border flex items-center justify-between ${
               selectedDebt.type === "debt" 
-                ? "bg-red-50/50 dark:bg-red-950/20 border-red-100/80 dark:border-red-900/30 text-red-700 dark:text-red-300" 
-                : "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100/80 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+                ? "bg-red-50/50 dark:bg-red-955/20 border-red-100/80 dark:border-red-900/30 text-red-700 dark:text-red-300" 
+                : "bg-emerald-50/50 dark:bg-emerald-955/20 border-emerald-100/80 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-300"
             }`}>
               <div className="flex items-center gap-2.5">
                 <div className={`p-1.5 rounded-lg ${selectedDebt.type === "debt" ? "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300" : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300"}`}>
@@ -327,8 +339,8 @@ export default function DebtsTab({
               </div>
               <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border ${
                 selectedDebt.type === "debt" 
-                  ? "bg-red-100/60 dark:bg-red-950/40 border-red-200/50 dark:border-red-900/30 text-red-700 dark:text-red-350" 
-                  : "bg-emerald-100/60 dark:bg-emerald-950/40 border-emerald-200/50 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-350"
+                  ? "bg-red-100/60 dark:bg-red-955/40 border-red-200/50 dark:border-red-900/30 text-red-700 dark:text-red-355" 
+                  : "bg-emerald-100/60 dark:bg-emerald-955/40 border-emerald-200/50 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-355"
               }`}>
                 {selectedDebt.type === "debt" ? "↓ DIPINJAM" : "↑ DIPINJAMKAN"}
               </span>
@@ -339,7 +351,7 @@ export default function DebtsTab({
           <div className="bg-white dark:bg-slate-900 p-5 rounded-[26px] border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
             <div className="flex justify-between items-center px-1">
               <h5 className="font-black text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">Debt Records</h5>
-              <span className="px-2 py-0.5 bg-blue-100/60 dark:bg-slate-800 text-[9px] font-black rounded-full text-blue-600 dark:text-blue-300 border border-transparent dark:border-slate-700/60">
+              <span className="px-2 py-0.5 bg-blue-100/60 dark:bg-slate-800 text-[9px] font-black rounded-full text-blue-600 dark:text-blue-350 border border-transparent dark:border-slate-700/60">
                 {selectedDebt.paidAmount > 0 ? "1 entries" : "0 entries"}
               </span>
             </div>
@@ -350,7 +362,7 @@ export default function DebtsTab({
               <div className="space-y-2">
                 <div className="flex justify-between items-center p-3.5 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-100/50 dark:border-slate-800/40 rounded-xl">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-955/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
                       <ArrowDownLeft size={14} />
                     </div>
                     <div>
@@ -395,17 +407,18 @@ export default function DebtsTab({
           {/* Inline Payment Drawer Overlay */}
           {showPayModal && (
             <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 mt-3 animate-in fade-in duration-200">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-1">
                 <h5 className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Catat Cicilan / Pelunasan</h5>
                 <button onClick={() => { setShowPayModal(false); setActiveKeypad(null); }} className="text-slate-400"><X size={15}/></button>
               </div>
 
+              {/* INPUT NOMINAL */}
               <div className="space-y-1">
                 <input 
                   type="text" 
                   placeholder="Nominal Pembayaran (Rp)" 
                   inputMode={isMobile ? "none" : undefined} 
-                  onFocus={() => { if(isMobile) setActiveKeypad("pay"); }} 
+                  onFocus={() => { if(isMobile) { setActiveKeypad("pay"); } }} 
                   className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-xl text-xs font-bold outline-none text-slate-800 dark:text-white" 
                   value={payAmount} 
                   onChange={e => setPayAmount(e.target.value)} 
@@ -413,42 +426,51 @@ export default function DebtsTab({
                 {payAmount && <p className="text-[10px] font-bold text-slate-500 pl-1">Terbaca: <span className="font-black text-blue-600">{formatRupiahTerbaca(payAmount)}</span></p>}
               </div>
 
+              {/* TOMBOL BAYAR LUNAS CEPAT */}
               <div className="flex gap-1.5 flex-wrap">
                 <button 
                   type="button" 
                   onClick={() => { triggerHaptic(); setPayAmount((selectedDebt.amount - selectedDebt.paidAmount).toString()); }} 
-                  className="flex-1 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-[10px] font-black text-blue-700 dark:text-blue-300 rounded-lg border border-transparent cursor-pointer transition-all active:scale-95 text-center"
+                  className="w-full py-2.5 bg-blue-100 hover:bg-blue-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-[10px] font-black text-blue-700 dark:text-blue-300 rounded-lg border border-transparent cursor-pointer transition-all active:scale-95 text-center"
                 >
                   🚀 Bayar Lunas (Sisa Rp {(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')})
                 </button>
               </div>
 
-              <div className="relative text-left">
-                <Wallet className="absolute left-3 top-3 text-slate-400" size={15}/>
-                <select 
-                  className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white" 
-                  value={payAccountId} 
-                  onChange={e => setPayAccountId(e.target.value)}
+              {/* PEMILIH DOMPET PREMIUM CARD POP-UP (Mengganti select lama yang kaku) */}
+              <div className="space-y-1">
+                <div 
+                  onClick={() => { triggerHaptic(); setPayAccSelector(true); }}
+                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
-                  <option value="" disabled>Pilih Dompet Pengeluaran...</option>
-                  {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>)}
-                </select>
+                  <div className="flex items-center gap-2 truncate">
+                    <Wallet size={14} className="text-slate-400 shrink-0" />
+                    <span className="truncate text-slate-700 dark:text-slate-300">
+                      {payAccountId ? (accounts.find(a => a.id === payAccountId)?.name || "Pilih Dompet...") : "Pilih Dompet Pengeluaran..."}
+                    </span>
+                  </div>
+                  <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                </div>
               </div>
 
-              <div className="relative text-left">
-                <Tag className="absolute left-3 top-3 text-slate-400" size={15}/>
-                <select 
-                  className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white" 
-                  value={payCategory} 
-                  onChange={e => setPayCategory(e.target.value)}
+              {/* PEMILIH KATEGORI PREMIUM POP-UP (Mengganti select lama yang kaku) */}
+              <div className="space-y-1">
+                <div 
+                  onClick={() => { triggerHaptic(); setPayCatSelector(true); }}
+                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
-                  <option value="" disabled>Pilih Kategori...</option>
-                  {categories.filter(c => c.type === (selectedDebt.type === "debt" ? "expense" : "income")).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
-                </select>
+                  <div className="flex items-center gap-2 truncate">
+                    <Tag size={14} className="text-slate-400 shrink-0" />
+                    <span className="truncate text-slate-700 dark:text-slate-300">
+                      {payCategory ? payCategory : "Pilih Kategori..."}
+                    </span>
+                  </div>
+                  <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                </div>
               </div>
 
-              <div className="flex gap-2">
-                <button onClick={() => submitPay(selectedDebt)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer">Konfirmasi Pembayaran</button>
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => submitPay(selectedDebt)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black cursor-pointer">Konfirmasi Pembayaran</button>
                 <button onClick={() => { setShowPayModal(false); setActiveKeypad(null); }} className="py-2.5 px-4 bg-white dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800">Batal</button>
               </div>
             </div>
@@ -545,8 +567,8 @@ export default function DebtsTab({
                         type="text" 
                         placeholder="Nominal Total (Rp)" 
                         inputMode={isMobile ? "none" : undefined} 
-                        onFocus={() => { if(isMobile) setActiveKeypad("add"); }} 
-                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-white placeholder-slate-400" 
+                        onFocus={() => { if(isMobile) { setActiveKeypad("add"); } }} 
+                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-755 dark:text-white placeholder-slate-400" 
                         value={amount} 
                         onChange={e => setAmount(e.target.value)} 
                       />
@@ -606,7 +628,7 @@ export default function DebtsTab({
                   </div>
                   
                   {/* Grid vs List View Selector Toggle (Matches Photo 3) */}
-                  <div className="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/40 dark:border-slate-800/80">
+                  <div className="flex items-center bg-slate-100 dark:bg-slate-955 p-1 rounded-xl border border-slate-200/40 dark:border-slate-800/80">
                     <button 
                       onClick={() => setViewMode("grid")}
                       className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === "grid" ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-400 dark:text-slate-500 hover:text-slate-700"}`}
@@ -623,7 +645,7 @@ export default function DebtsTab({
                 </div>
 
                 {filteredDebts.length === 0 ? (
-                  <p className="text-center py-12 text-slate-450 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150 dark:border-slate-855">
+                  <p className="text-center py-12 text-slate-455 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150 dark:border-slate-855">
                     Belum ada catatan {activeType === "debt" ? "utang" : "piutang"}.
                   </p>
                 ) : viewMode === "grid" ? (
@@ -640,7 +662,7 @@ export default function DebtsTab({
                           onClick={() => setSelectedDebtId(debt.id)}
                           className={`relative overflow-hidden bg-white dark:bg-slate-900 p-4 rounded-[20px] border shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md cursor-pointer flex flex-col justify-between ${
                             isPaid 
-                              ? "border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/10 dark:bg-emerald-950/10 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-emerald-500" 
+                              ? "border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/10 dark:bg-emerald-955/10 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-emerald-500" 
                               : "border-slate-100 dark:border-slate-800/80 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] " + (activeType === "debt" ? "before:bg-red-500" : "before:bg-emerald-500")
                           }`}
                         >
@@ -653,7 +675,7 @@ export default function DebtsTab({
                               <div className="min-w-0">
                                 <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs tracking-tight truncate">{debt.personName}</h4>
                                 
-                                {/* 4-Segment signal progress indicators (Matches Photo 3) */}
+                                {/* 4-Segment signal/battery visual representation of payoff percentage (Matches Photo 3) */}
                                 <div className="flex gap-0.5 items-center mt-0.5">
                                   {[1, 2, 3, 4].map((seg) => {
                                     const filled = percentage >= seg * 25;
@@ -676,7 +698,7 @@ export default function DebtsTab({
                           </div>
 
                           <div className="mt-3 pl-1.5 space-y-0.5">
-                            <h3 className="text-sm font-black text-slate-850 dark:text-white leading-none truncate">
+                            <h3 className="text-sm font-black text-slate-855 dark:text-white leading-none truncate">
                               {isPrivacyMode ? 'Rp •••••' : `Rp ${(debt.amount - debt.paidAmount).toLocaleString('id-ID')}`}
                             </h3>
                             <p className="text-[8px] text-slate-500 dark:text-slate-400 font-bold truncate">
@@ -775,7 +797,7 @@ export default function DebtsTab({
                       type="text" 
                       placeholder="Contoh: 186000" 
                       inputMode={isMobile ? "none" : undefined} 
-                      onFocus={() => { if(isMobile) setActiveKeypad("add-sub"); }} 
+                      onFocus={() => { if(isMobile) { setActiveKeypad("add-sub"); } }} 
                       className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" 
                       value={subAmount} 
                       onChange={e => setSubAmount(e.target.value)} 
@@ -836,7 +858,7 @@ export default function DebtsTab({
 
                   <div className="flex gap-2 pt-2.5">
                     <button onClick={submitAddSub} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-colors active:scale-[0.98]">Simpan Langganan</button>
-                    <button onClick={() => { setShowAddSubForm(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 text-slate-605 rounded-xl text-xs font-bold">Batal</button>
+                    <button onClick={() => { setShowAddSubForm(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 text-slate-650 rounded-xl text-xs font-bold">Batal</button>
                   </div>
                 </div>
               )}
@@ -867,7 +889,7 @@ export default function DebtsTab({
                         {editingSubId === sub.id ? (
                           <div className="space-y-3 pb-1">
                             <div className="flex justify-between items-center px-1 mb-1">
-                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-450 uppercase tracking-widest">Koreksi Langganan</p>
+                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-455 uppercase tracking-widest">Koreksi Langganan</p>
                               <button onClick={() => { setEditingSubId(null); setActiveKeypad(null); }} className="text-slate-400"><X size={15}/></button>
                             </div>
                             
@@ -875,19 +897,19 @@ export default function DebtsTab({
                             <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editSubAmount} onChange={e => setEditSubAmount(e.target.value)} />
                             
                             <div className="grid grid-cols-2 gap-3">
-                              <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editSubCycle} onChange={e => setEditSubCycle(e.target.value as any)}>
+                              <select className="w-full p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editSubCycle} onChange={e => setEditSubCycle(e.target.value as any)}>
                                 <option value="monthly">Bulanan</option>
                                 <option value="yearly">Tahunan</option>
                               </select>
-                              <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-800 dark:text-white" value={editSubDueDate} onChange={e => setEditSubDueDate(e.target.value)} />
+                              <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-800 dark:text-white" value={editSubDueDate} onChange={e => setEditSubDueDate(e.target.value)} />
                             </div>
 
-                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-850 dark:text-white" value={editSubAccountId} onChange={e => setEditSubAccountId(e.target.value)}>
+                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-850 dark:text-white" value={editSubAccountId} onChange={e => setEditSubAccountId(e.target.value)}>
                               <option value="" disabled>Pilih dompet...</option>
                               {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                             </select>
 
-                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-850 dark:text-white" value={editSubCategory} onChange={e => setEditSubCategory(e.target.value)}>
+                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-850 dark:text-white" value={editSubCategory} onChange={e => setEditSubCategory(e.target.value)}>
                               <option value="" disabled>Pilih kategori...</option>
                               {categories.filter(c => c.type === "expense").sort((a,b)=>a.name.localeCompare(b.name)).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
                             </select>
@@ -952,7 +974,7 @@ export default function DebtsTab({
                                 className={`flex-1 py-3 rounded-xl text-xs font-bold shadow-sm cursor-pointer flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] ${
                                   isOverdue || isToday 
                                     ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                                    : 'bg-blue-50/40 hover:bg-blue-100/60 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-100/30 dark:border-blue-900/30'
+                                    : 'bg-blue-50/40 hover:bg-blue-100/60 dark:bg-blue-955/40 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-100/30 dark:border-blue-900/30'
                                 }`}
                               >
                                 <CreditCard size={14} /> 1-Click Pay
@@ -986,11 +1008,12 @@ export default function DebtsTab({
         </div>
       )}
 
-      {/* Virtual Keypad Bottom Sheet (Matches Photo 1 with Clean Background) */}
+      {/* Virtual Keypad Bottom Sheet (Without backdrop blur filter) */}
       {isMobile && activeKeypad !== null && (
         <>
+          {/* Backdrop tanpa blur filter */}
           <div className="fixed inset-0 z-[140] bg-black/25 dark:bg-black/50" onClick={() => setActiveKeypad(null)}></div>
-          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200/80 dark:border-slate-800/80 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[28px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-955 border-t border-slate-200/80 dark:border-slate-800/80 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[28px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
             <div className="flex justify-between items-center mb-3.5 px-1">
               <span className="text-[9px] font-black text-slate-400 dark:text-blue-400 tracking-wider uppercase">
                 {activeKeypad === "add" ? "Kalkulator Nominal Baru" : activeKeypad === "edit" ? "Koreksi Nominal" : activeKeypad === "pay" ? "Kalkulator Pembayaran" : "Kalkulator Langganan"}
@@ -1017,7 +1040,7 @@ export default function DebtsTab({
                   key={num} 
                   type="button" 
                   onClick={() => handleKeypadPress(num)} 
-                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-855/10"
+                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-150/40 dark:border-slate-850/10"
                 >
                   {num}
                 </button>
@@ -1090,6 +1113,100 @@ export default function DebtsTab({
             </div>
           </div>
         </>
+      )}
+
+      {/* ========================================== */}
+      {/* BOTTOM SHEET: PILIH DOMPET PEMBAYARAN KEPINGAN */}
+      {/* ========================================== */}
+      {payAccSelector && (
+        <div className="fixed inset-0 z-[190] flex items-end justify-center bg-slate-900/60 animate-in fade-in duration-200">
+          <div className="absolute inset-0 z-0" onClick={() => setPayAccSelector(false)}></div>
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[32px] shadow-2xl p-6 pb-8 overflow-hidden z-10 flex flex-col max-h-[85vh] border-t border-slate-200 dark:border-slate-800 text-left">
+            <div className="w-full flex justify-center pb-2"><div className="w-12 h-1 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
+            <div className="flex justify-between items-center mb-6 pt-2">
+              <div className="flex items-center gap-2">
+                <Wallet size={18} className="text-blue-600 dark:text-blue-400" />
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Pilih Dompet Pengeluaran</h3>
+              </div>
+              <button type="button" onClick={() => setPayAccSelector(false)} className="p-1.5 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 text-slate-500 rounded-full transition-colors cursor-pointer"><X size={14} /></button>
+            </div>
+            <div className="overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-3">
+                {accounts.map(acc => {
+                  const isSelected = payAccountId === acc.id;
+                  return (
+                    <div 
+                      key={acc.id}
+                      onClick={() => { triggerHaptic(); setPayAccountId(acc.id); setPayAccSelector(false); }}
+                      className={`p-4 rounded-2xl border text-left flex flex-col justify-between relative transition-all active:scale-95 cursor-pointer h-28 ${
+                        isSelected 
+                          ? "border-blue-600 bg-blue-50/50 dark:bg-blue-955/20 shadow-md shadow-blue-500/5" 
+                          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-855"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        {acc.logo ? (
+                          <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                            <Wallet size={16} />
+                          </div>
+                        )}
+                        {isSelected && <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[8px] font-black">✓</div>}
+                      </div>
+                      <div className="mt-2 min-w-0">
+                        <p className="text-xs font-black text-slate-800 dark:text-white truncate leading-none mb-1">{acc.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate leading-none">Rp {acc.balance.toLocaleString("id-ID")}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* BOTTOM SHEET: PILIH KATEGORI PEMBAYARAN KEPINGAN */}
+      {/* ========================================== */}
+      {payCatSelector && (
+        <div className="fixed inset-0 z-[190] flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-200">
+          <div className="absolute inset-0 z-0" onClick={() => setPayCatSelector(false)}></div>
+          <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden z-10 flex flex-col max-h-[75vh] border border-slate-150 dark:border-slate-800 text-left">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
+              <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
+                <span>🏷️</span> Pilih Kategori Pembayaran
+              </h3>
+              <button type="button" onClick={() => setPayCatSelector(false)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-650 rounded-full"><X size={14}/></button>
+            </div>
+            <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
+              <div className="grid grid-cols-2 gap-3">
+                {categories
+                  .filter(c => c.type === (selectedDebt?.type === "debt" ? "expense" : "income"))
+                  .sort((a,b) => a.name.localeCompare(b.name))
+                  .map(cat => {
+                    const isSelected = payCategory === cat.name;
+                    return (
+                      <button 
+                        key={cat.id} 
+                        type="button" 
+                        onClick={() => { triggerHaptic(); setPayCategory(cat.name); setPayCatSelector(false); }} 
+                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${
+                          isSelected 
+                            ? "bg-blue-600 text-white border-blue-700" 
+                            : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100"
+                        }`}
+                      >
+                        <span className="shrink-0">{cat.icon || "🏷️"}</span>
+                        <span className="truncate">{cat.name}</span>
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
