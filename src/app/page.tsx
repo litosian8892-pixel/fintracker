@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react"; 
 import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc, setDoc, getDocs, writeBatch } from "firebase/firestore";
 
 import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData, SplitItemData, SubscriptionData } from "../types";
 import LoadingScreen from "../components/shared/LoadingScreen";
@@ -18,6 +18,14 @@ import SettingsTab from "../components/tabs/SettingsTab";
 import DebtsTab from "../components/tabs/DebtsTab";
 
 import { X, Lock, ChevronDown, Fingerprint, Crown, CheckCircle2, MessageCircle } from "lucide-react"; 
+
+// Fungsi bantu untuk membersihkan nama kategori dari emoji agar pencocokan berjalan 100% akurat
+const cleanCategoryName = (name: string): string => {
+  if (!name) return "";
+  return name
+    .replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '')
+    .trim();
+};
 
 const safeEvaluate = (expr: string): number => {
   if (!expr) return 0;
@@ -388,6 +396,35 @@ export default function FintrackerApp() {
     return () => unsubGlobal();
   }, [user, globalSearch]);
 
+  // SISTEM BACKGROUND DATA HEALER SENYAP: Memindai & merapikan emoji pada riwayat transaksi lama di database otomatis!
+  useEffect(() => {
+    if (!user || categories.length === 0 || reportTransactions.length === 0) return;
+    
+    const healData = async () => {
+      const batch = writeBatch(db);
+      let hasUpdates = false;
+      
+      reportTransactions.forEach(t => {
+        const cleanTxCat = cleanCategoryName(t.category);
+        const matchedCat = categories.find(c => cleanCategoryName(c.name) === cleanTxCat);
+        
+        // Jika terdeteksi nama kategori berbeda karena mengandung emoji lawas
+        if (matchedCat && t.category !== matchedCat.name) {
+          const txRef = doc(db, `users/${user.uid}/transactions/${t.id}`);
+          batch.update(txRef, { category: matchedCat.name });
+          hasUpdates = true;
+        }
+      });
+      
+      if (hasUpdates) {
+        await batch.commit();
+        console.log("Fintracker: Penyelarasan background data healer sukses membersihkan emoji!");
+      }
+    };
+    
+    healData();
+  }, [user, categories, reportTransactions]);
+
   const setupDefaultCategories = async (uid: string) => {
     const defaults = [
       { name: "Makanan", type: "expense", expenseType: "variable" }, 
@@ -428,15 +465,42 @@ export default function FintrackerApp() {
   const handleEditCategory = async (id: string, newName: string, newBudget: number | null, expenseType: "fixed" | "variable", newIcon?: string) => {
     if (isSubmittingRef.current) return; 
     if (!user) return;
+    
+    const oldCategory = categories.find(c => c.id === id);
+    const oldName = oldCategory ? oldCategory.name : "";
+    
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try { 
+      // 1. Perbarui dokumen kategori utama
       await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { 
         name: newName, 
         budgetLimit: newBudget, 
         expenseType: expenseType,
         icon: newIcon || "" 
       }); 
+
+      // 2. SISTEM CASCADE UPDATE: Update semua transaksi yang menggunakan nama kategori lama ini masal
+      if (oldName && oldName !== newName) {
+        const txQuery = query(collection(db, `users/${user.uid}/transactions`), where("category", "==", oldName));
+        const txSnap = await getDocs(txQuery);
+        const batch = writeBatch(db);
+        
+        txSnap.docs.forEach(docSnap => {
+          const data = docSnap.data();
+          const updatePayload: any = { category: newName };
+          
+          // Jika ada splits sub-kategori, ikut selaraskan di dalamnya
+          if (data.splits && Array.isArray(data.splits)) {
+            updatePayload.splits = data.splits.map((s: any) => 
+              s.category === oldName ? { ...s, category: newName } : s
+            );
+          }
+          batch.update(doc(db, `users/${user.uid}/transactions/${docSnap.id}`), updatePayload);
+        });
+        
+        await batch.commit();
+      }
     } 
     catch (e) { alert("Gagal memperbarui kategori!"); }
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
