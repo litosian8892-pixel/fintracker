@@ -16,9 +16,7 @@ import {
   EyeOff, 
   Edit3, 
   Trash2, 
-  Calendar, 
-  Wallet,
-  Coins
+  Wallet
 } from "lucide-react";
 
 interface HomeTabProps {
@@ -45,7 +43,7 @@ interface HomeTabProps {
   // States tambahan hasil sinkronisasi dengan page.tsx
   transactions: TransactionData[];
   onDeleteTransaction: (t: TransactionData) => void;
-  onEditTransaction: (t: TransactionData) => void; // Digunakan agar pengisian data edit berjalan presisi
+  onEditTransaction: (t: TransactionData) => void;
   isPrivacyMode: boolean;
   togglePrivacyMode: () => void;
 
@@ -137,7 +135,13 @@ export default function HomeTab({
   const [activeKeypad, setActiveKeypad] = useState<"amount" | "adminFee" | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // States pecah transaksi (splits) baru
+  // States baru pencarian dan penyaringan dompet
+  const [searchQueryInput, setSearchQueryInput] = useState("");
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [selectedAccountIdFilter, setSelectedAccountIdFilter] = useState("all");
+  const [showAccountFilterDropdown, setShowAccountFilterDropdown] = useState(false);
+
+  // States pecahan transaksi (splits) baru
   const [splits, setSplits] = useState<SplitItemData[]>([]);
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [tempSplits, setTempSplits] = useState<{ category: string; amountStr: string; note: string }[]>([]);
@@ -287,7 +291,6 @@ export default function HomeTab({
     setActiveSplitIndex(null);
   };
 
-  // FUNGSI BARU: Mengubah kategori rincian pecahan khusus mode edit
   const handleSelectEditSplitCategory = (catName: string) => {
     if (activeEditSplitIndex !== null) {
       const updated = [...editTSplits];
@@ -338,17 +341,33 @@ export default function HomeTab({
   }, []);
 
   // --- KALKULASI RINGKASAN SALDO PREMIUM CARD ---
-  // PERBAIKAN: Hanya kalkulasi dompet bertipe AKUN (!acc.isSavings) dan keluarkan dompet bertipe ASET (acc.isSavings === true)
+  // Hanya kalkulasi dompet bertipe AKUN (!acc.isSavings) dan keluarkan dompet bertipe ASET (acc.isSavings === true)
   const totalBalanceCalculated = useMemo(() => {
     return accounts
       .filter(acc => !acc.isSavings && !acc.excludeFromTotal)
       .reduce((sum, acc) => sum + (acc.balance * (acc.lastExchangeRate || 1)), 0);
   }, [accounts]);
 
-  // Filter transaksi berdasarkan bulan terpilih
+  // Saringan Berantai (Filter) Berdasarkan Bulan, Pencarian, & Filter Dompet Aktif
   const monthlyTransactions = useMemo(() => {
-    return transactions.filter(t => t.tDate && t.tDate.startsWith(selectedMonth));
-  }, [transactions, selectedMonth]);
+    let filtered = transactions.filter(t => t.tDate && t.tDate.startsWith(selectedMonth));
+    
+    // Filter Berdasarkan Akun/Dompet Terpilih
+    if (selectedAccountIdFilter !== "all") {
+      filtered = filtered.filter(t => t.accountId === selectedAccountIdFilter || t.toAccountId === selectedAccountIdFilter);
+    }
+    
+    // Filter Berdasarkan Kata Kunci Pencarian
+    if (searchQueryInput.trim()) {
+      const q = searchQueryInput.toLowerCase();
+      filtered = filtered.filter(t => 
+        (t.note && t.note.toLowerCase().includes(q)) || 
+        t.category.toLowerCase().includes(q)
+      );
+    }
+
+    return filtered;
+  }, [transactions, selectedMonth, selectedAccountIdFilter, searchQueryInput]);
 
   const monthlySummary = useMemo(() => {
     let income = 0;
@@ -356,7 +375,6 @@ export default function HomeTab({
     monthlyTransactions.forEach(t => {
       if (t.type === "income") income += t.amount;
       else if (t.type === "expense") expense += t.amount;
-      // Untuk transfer, jika ada adminFee maka masuk pengeluaran
       if (t.type === "transfer" && t.adminFee) expense += t.adminFee;
     });
     return { income, expense };
@@ -399,13 +417,78 @@ export default function HomeTab({
   return (
     <div className="space-y-6 text-left relative min-h-[calc(100vh-120px)] transition-colors duration-200">
       
-      {/* HEADER TAB TRANSAKSI */}
+      {/* HEADER TAB TRANSAKSI (GAMBAR 3 STYLE DENGAN PENCARIAN & FILTER DOMPET AKTIF) */}
       <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
-        <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Transaksi</h2>
-        <div className="flex items-center gap-2.5">
-          <button type="button" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"><Coins size={18} /></button>
-          <button type="button" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"><Search size={18} /></button>
-          <div className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 flex items-center gap-1">All <ChevronDown size={10} /></div>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {!isSearchExpanded ? (
+            <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight truncate">Transaksi</h2>
+          ) : (
+            <div className="flex items-center gap-2 w-full pr-2 animate-in slide-in-from-left-2 duration-150">
+              <input 
+                type="text" 
+                placeholder="Cari transaksi..." 
+                className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold outline-none focus:border-blue-500 text-slate-850 dark:text-slate-100"
+                value={searchQueryInput}
+                onChange={(e) => setSearchQueryInput(e.target.value)}
+                autoFocus
+              />
+              <button 
+                type="button" 
+                onClick={() => { setSearchQueryInput(""); setIsSearchExpanded(false); }} 
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-full text-slate-400"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2.5 shrink-0 ml-2">
+          {/* Tombol Cari Transaksi */}
+          <button 
+            type="button" 
+            onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+            className={`p-2 rounded-xl transition-colors cursor-pointer ${isSearchExpanded ? 'text-blue-600 bg-blue-50 dark:bg-blue-950/30' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+          >
+            <Search size={18} />
+          </button>
+
+          {/* Filter Akun/Dompet Terpakai - Sebelah Kanan Atas */}
+          <div className="relative">
+            <button 
+              type="button" 
+              onClick={() => setShowAccountFilterDropdown(!showAccountFilterDropdown)}
+              className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 flex items-center gap-1 cursor-pointer select-none"
+            >
+              {selectedAccountIdFilter === "all" ? "All" : accounts.find(a => a.id === selectedAccountIdFilter)?.name || "All"}
+              <ChevronDown size={10} />
+            </button>
+            
+            {showAccountFilterDropdown && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowAccountFilterDropdown(false)}></div>
+                <div className="absolute right-0 mt-1.5 w-48 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedAccountIdFilter("all"); setShowAccountFilterDropdown(false); }}
+                    className={`w-full text-left px-4 py-2 text-xs font-bold ${selectedAccountIdFilter === "all" ? "text-blue-600 bg-blue-50 dark:bg-blue-950/30" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
+                  >
+                    Semua Dompet (All)
+                  </button>
+                  {accounts.map(acc => (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      onClick={() => { setSelectedAccountIdFilter(acc.id); setShowAccountFilterDropdown(false); }}
+                      className={`w-full text-left px-4 py-2 text-xs font-bold ${selectedAccountIdFilter === acc.id ? "text-blue-600 bg-blue-50 dark:bg-blue-950/30" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
+                    >
+                      {acc.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -536,7 +619,7 @@ export default function HomeTab({
                             )}
                           </div>
 
-                          {/* Tombol edit/delete cepat dengan delegasi fungsi onEditTransaction */}
+                          {/* Tombol edit/delete cepat */}
                           <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                             <button 
                               type="button" 
@@ -583,9 +666,9 @@ export default function HomeTab({
           
           <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 z-10 flex flex-col max-h-[92vh] border-t border-slate-200 dark:border-slate-800">
             
-            {/* Header Laci Dinamis Berdasarkan Tipe Transaksi (Gambar 4 Style) */}
+            {/* Header Laci Dinamis Berdasarkan Tipe Transaksi - MERAH PEKAT, BUKAN PINK (Gambar 4 Style) */}
             {editingTransaction ? (
-              <div className={`p-6 ${editTType === 'income' ? 'bg-emerald-500' : editTType === 'expense' ? 'bg-rose-500' : 'bg-blue-600'} text-white shrink-0 transition-colors duration-300 relative`}>
+              <div className={`p-6 ${editTType === 'income' ? 'bg-emerald-500' : editTType === 'expense' ? 'bg-red-600' : 'bg-blue-600'} text-white shrink-0 transition-colors duration-300 relative`}>
                 <button type="button" onClick={closeMainDrawer} className="absolute top-4 left-4 p-1.5 hover:bg-white/10 text-white rounded-full"><X size={16} /></button>
                 <div className="flex items-center justify-between mt-4">
                   <div className="flex items-center gap-3">
@@ -604,7 +687,7 @@ export default function HomeTab({
                 </div>
               </div>
             ) : (
-              <div className={`p-6 ${tType === 'income' ? 'bg-emerald-500' : tType === 'expense' ? 'bg-rose-500' : 'bg-blue-600'} text-white shrink-0 transition-colors duration-300 relative`}>
+              <div className={`p-6 ${tType === 'income' ? 'bg-emerald-500' : tType === 'expense' ? 'bg-red-600' : 'bg-blue-600'} text-white shrink-0 transition-colors duration-300 relative`}>
                 <button type="button" onClick={closeMainDrawer} className="absolute top-4 left-4 p-1.5 hover:bg-white/10 text-white rounded-full"><X size={16} /></button>
                 <div className="flex items-center justify-between mt-4">
                   <div className="flex items-center gap-3">
@@ -630,7 +713,7 @@ export default function HomeTab({
               {/* TABS SELECTOR (Untuk Transaksi Baru) */}
               {!editingTransaction && (
                 <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl mb-2">
-                  <button type="button" onClick={() => handleTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "expense" ? "bg-rose-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
+                  <button type="button" onClick={() => handleTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "expense" ? "bg-red-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
                   <button type="button" onClick={() => handleTypeChange("income")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "income" ? "bg-emerald-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowUpRight size={12} /> Pemasukan</button>
                   <button type="button" onClick={() => handleTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "transfer" ? "bg-blue-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowRightLeft size={12} /> Transfer</button>
                 </div>
@@ -639,7 +722,7 @@ export default function HomeTab({
               {/* TABS SELECTOR (Untuk Koreksi/Edit Transaksi) */}
               {editingTransaction && (
                 <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl mb-2">
-                  <button type="button" onClick={() => handleEditTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "expense" ? "bg-rose-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
+                  <button type="button" onClick={() => handleEditTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "expense" ? "bg-red-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
                   <button type="button" onClick={() => handleEditTypeChange("income")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "income" ? "bg-emerald-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowUpRight size={12} /> Pemasukan</button>
                   <button type="button" onClick={() => handleEditTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${editTType === "transfer" ? "bg-blue-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"}`}><ArrowRightLeft size={12} /> Transfer</button>
                 </div>
@@ -783,7 +866,7 @@ export default function HomeTab({
                 <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                   <div className="flex justify-between items-center"><p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">✂️ Rincian Pecahan Koreksi</p><span className="text-[10px] font-black text-emerald-600">Total: Rp {editTSplits.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}</span></div>
                   {editTSplits.map((item, i) => (
-                    <div key={i} className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 text-left">
+                    <div key={i} className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 text-left">
                       <div className="flex justify-between items-center">
                         <span className="text-[10px] font-black text-slate-400">Pecahan #{i + 1}</span>
                         {editTSplits.length > 1 && (
@@ -1026,7 +1109,7 @@ export default function HomeTab({
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveSplitKeypadIndex(null)}></div>
           <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0">
-            <div className="flex justify-between items-center mb-3 px-1 text-left">
+            <div className="flex justify-between items-center mb-3 text-left">
               <span className="text-[10px] font-black text-slate-500 dark:text-blue-500 tracking-widest uppercase">Kalkulator Pecahan #{activeSplitKeypadIndex + 1}</span>
               <button onClick={() => setActiveSplitKeypadIndex(null)} className="text-slate-400 hover:text-slate-600 p-1 text-xs font-bold flex items-center gap-1">Tutup <X size={14} /></button>
             </div>

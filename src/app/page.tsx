@@ -315,7 +315,6 @@ export default function FintrackerApp() {
     return () => { unsubAcc(); unsubCat(); unsubTypes(); unsubDebts(); unsubSubs(); unsubProfile(); };
   }, [user]);
 
-  // Mengubah limit muatan history transaksi default menjadi lebih tinggi untuk Tab Home yang baru
   useEffect(() => {
     if (!user) return;
     const qHistory = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(txLimit));
@@ -338,7 +337,6 @@ export default function FintrackerApp() {
   }, [user, txLimit]);
 
   useEffect(() => {
-    // PERBAIKAN: Izinkan penarikan data transaksi saat membuka tab Laporan, Tab Aset, ATAU Tab Beranda (Home)
     if (!user || (activeTab !== "reports" && activeTab !== "assets" && activeTab !== "home")) return; 
     
     const [y, m] = reportMonth.split("-").map(Number);
@@ -1150,31 +1148,32 @@ export default function FintrackerApp() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
             <div className={`space-y-6 ${(activeTab === "home" || activeTab === "reports" ? "md:col-span-2" : "md:col-span-3")}`}>
               {activeTab === "home" && (
-  <HomeTab 
-    tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
-    tCategory={tCategory} setTCategory={setTCategory} tAccountId={tAccountId} setTAccountId={setTAccountId}
-    tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
-    tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} 
-    tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
-    
-    // Kirimkan fungsi mutasi riwayat dan aksi edit ke HomeTab baru
-    transactions={transactions} onDeleteTransaction={handleDeleteTransaction}
-    onEditTransaction={openEditModal} // <--- BAGIAN INI MENGHUBUNGKAN AKSI EDIT DENGAN AMAN
-    isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode}
+                <HomeTab 
+                  tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
+                  tCategory={tCategory} setTCategory={setTCategory} tAccountId={tAccountId} setTAccountId={setTAccountId}
+                  tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
+                  tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} 
+                  tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
+                  
+                  // MENGGUNAKAN reportTransactions AGAR DATA BULAN MEI TERMUAT DENGAN LENGKAP SECARA INSTAN
+                  transactions={reportTransactions} 
+                  onDeleteTransaction={handleDeleteTransaction}
+                  onEditTransaction={openEditModal} 
+                  isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode}
 
-    // Link state koreksi transaksi
-    editingTransaction={editingTransaction} setEditingTransaction={setEditingTransaction} handleUpdateTransaction={handleUpdateTransaction}
-    editTAmount={editTAmount} setEditTAmount={setEditTAmount}
-    editTType={editTType} setEditTType={setEditTType}
-    editTAccountId={editTAccountId} setEditTAccountId={setEditTAccountId}
-    editTToAccountId={editTToAccountId} setEditTToAccountId={setEditTToAccountId}
-    editTNote={editTNote} setEditTNote={setEditTNote}
-    editTCategory={editTCategory} setEditTCategory={setEditTCategory}
-    editTDate={editTDate} setEditTDate={setEditTDate}
-    editTAdminFee={editTAdminFee} setEditTAdminFee={setEditTAdminFee}
-    editTSplits={editTSplits} setEditTSplits={setEditTSplits}
-  />
-)}
+                  // Link state koreksi transaksi
+                  editingTransaction={editingTransaction} setEditingTransaction={setEditingTransaction} handleUpdateTransaction={handleUpdateTransaction}
+                  editTAmount={editTAmount} setEditTAmount={setEditTAmount}
+                  editTType={editTType} setEditTType={setEditTType}
+                  editTAccountId={editTAccountId} setEditTAccountId={setEditTAccountId}
+                  editTToAccountId={editTToAccountId} setEditTToAccountId={setEditTToAccountId}
+                  editTNote={editTNote} setEditTNote={setEditTNote}
+                  editTCategory={editTCategory} setEditTCategory={setEditTCategory}
+                  editTDate={editTDate} setEditTDate={setEditTDate}
+                  editTAdminFee={editTAdminFee} setEditTAdminFee={setEditTAdminFee}
+                  editTSplits={editTSplits} setEditTSplits={setEditTSplits}
+                />
+              )}
               {activeTab === "reports" && (
                 <ReportsTab 
                   reportMonth={reportMonth} setReportMonth={setReportMonth} handleExportToExcel={handleExportToExcel}
@@ -1244,7 +1243,6 @@ export default function FintrackerApp() {
               )}
             </div>
 
-            {/* Sembunyikan HistoryList di Tab Home karena sudah diintegrasikan langsung ke dalam HomeTab */}
             {activeTab === "reports" && (
               <HistoryList 
                 transactions={transactions} onDelete={handleDeleteTransaction} onEdit={openEditModal} 
