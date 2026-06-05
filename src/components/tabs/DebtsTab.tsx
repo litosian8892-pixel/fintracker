@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil, Tag, X, Calendar, CalendarClock, Repeat, CreditCard, AlertCircle, BookUser } from "lucide-react";
+import { CheckCircle2, CircleDashed, Trash2, Plus, Wallet, Pencil, Tag, X, Calendar, CalendarClock, CreditCard, AlertCircle, BookUser, ArrowLeft, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { DebtData, AccountData, CategoryData, SubscriptionData } from "../../types";
 
 interface DebtsTabProps {
@@ -47,8 +47,11 @@ export default function DebtsTab({
 }: DebtsTabProps) {
   
   const [mainTab, setMainTab] = useState<"debts" | "subscriptions">("debts");
-  
   const [activeType, setActiveType] = useState<"debt" | "receivable">("debt");
+  
+  // Navigation State for Detail Page
+  const [selectedDebtId, setSelectedDebtId] = useState<string | null>(null);
+  
   const [showAddForm, setShowAddForm] = useState(false);
   const [person, setPerson] = useState("");
   const [amount, setAmount] = useState("");
@@ -62,7 +65,7 @@ export default function DebtsTab({
   const [editNote, setEditNote] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
 
-  const [payingDebtId, setPayingDebtId] = useState<string | null>(null);
+  const [showPayModal, setShowPayModal] = useState(false);
   const [payAmount, setPayAmount] = useState("");
   const [payAccountId, setPayAccountId] = useState("");
   const [payCategory, setPayCategory] = useState(""); 
@@ -142,11 +145,6 @@ export default function DebtsTab({
     setShowAddForm(false); setPerson(""); setAmount(""); setNote(""); setDueDate(""); setSourceAccountId(""); setActiveKeypad(null);
   };
 
-  const startEdit = (debt: DebtData) => {
-    setEditingDebtId(debt.id); setEditPerson(debt.personName); setEditAmount(debt.amount.toString());
-    setEditNote(debt.note || ""); setEditDueDate(debt.dueDate || ""); setPayingDebtId(null); setActiveKeypad(null);
-  };
-
   const submitEdit = (id: string) => {
     if (!editPerson || !editAmount) return alert("Nama dan Nominal harus diisi!");
     handleEditDebt(id, editPerson, safeEvaluate(editAmount), editNote, editDueDate);
@@ -157,11 +155,8 @@ export default function DebtsTab({
     if (!payAmount || !payAccountId || !payCategory) return alert("Nominal, Dompet, dan Kategori harus diisi!");
     const finalNote = debt.note ? debt.note : `Cicilan ${debt.type === 'debt' ? 'Utang ke' : 'Piutang dari'} ${debt.personName}`;
     handlePayDebt(debt.id, safeEvaluate(payAmount), payAccountId, payCategory, finalNote);
-    setPayingDebtId(null); setPayAmount(""); setPayAccountId(""); setPayCategory(""); setActiveKeypad(null);
+    setShowPayModal(false); setPayAmount(""); setPayAccountId(""); setPayCategory(""); setActiveKeypad(null);
   };
-
-  const filteredDebts = debts.filter(d => d.type === activeType);
-  const totalActive = filteredDebts.filter(d => d.status === "active").reduce((a, b) => a + (b.amount - b.paidAmount), 0);
 
   const getDaysLeft = (dueDateStr: string) => {
     if (!dueDateStr) return 0;
@@ -188,650 +183,699 @@ export default function DebtsTab({
     setEditingSubId(null); setActiveKeypad(null);
   };
 
+  const filteredDebts = debts.filter(d => d.type === activeType);
+  const totalActive = filteredDebts.filter(d => d.status === "active").reduce((a, b) => a + (b.amount - b.paidAmount), 0);
   const totalMonthlySubscriptions = subscriptions.reduce((acc, sub) => acc + (sub.cycle === 'monthly' ? sub.amount : sub.amount / 12), 0);
 
+  // Get currently selected debt detail object
+  const selectedDebt = debts.find(d => d.id === selectedDebtId);
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-200 text-slate-800 dark:text-slate-100">
+    <div className="space-y-6 animate-in fade-in duration-200">
       
-      {/* Main Tab Navigation */}
-<div className="bg-slate-100/60 dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm flex items-center gap-1.5 transition-all">
-        <button 
-          onClick={() => setMainTab("debts")} 
-          className={`flex-1 py-3 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
-            mainTab === "debts" 
-              ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border border-slate-200/50 dark:border-slate-700" 
-              : "text-slate-400 dark:text-slate-500 hover:text-slate-655 dark:hover:text-slate-300"
-          }`}
-        >
-          <BookUser size={15} /> Utang Piutang
-        </button>
-        <button 
-          onClick={() => setMainTab("subscriptions")} 
-          className={`flex-1 py-3 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
-            mainTab === "subscriptions" 
-              ? "bg-blue-50/80 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shadow-sm border border-blue-200/40 dark:border-blue-900/40" 
-              : "text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400"
-          }`}
-        >
-          <CalendarClock size={15} /> Langganan
-        </button>
-      </div>
-
-      {mainTab === "debts" ? (
-        <div className="space-y-6 animate-in fade-in duration-200">
-          
-          {/* Main Card & Inner Category Swapper */}
-          <div className="bg-white dark:bg-slate-900/65 p-5 rounded-[26px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex gap-1.5 bg-slate-100/70 dark:bg-slate-950 p-1 rounded-xl">
-              <button 
-                onClick={() => { setActiveType("debt"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
-                className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                  activeType === "debt" 
-                    ? "bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 shadow-sm border border-slate-150 dark:border-slate-750" 
-                    : "text-slate-400 dark:text-slate-555 hover:text-slate-655 dark:hover:text-slate-300"
-                }`}
-              >
-                UTANG SAYA
-              </button>
-              <button 
-                onClick={() => { setActiveType("receivable"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
-                className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                  activeType === "receivable" 
-                    ? "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-150 dark:border-slate-750" 
-                    : "text-slate-400 dark:text-slate-555 hover:text-slate-655 dark:hover:text-slate-300"
-                }`}
-              >
-                PIUTANG ORANG
-              </button>
-            </div>
-            
-            <div className={`p-5 rounded-2xl transition-all duration-200 border ${
-              activeType === "debt" 
-                ? "bg-red-50/40 dark:bg-red-950/10 border-red-100/80 dark:border-red-900/20" 
-                : "bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-100/80 dark:border-emerald-900/20"
-            }`}>
-              <p className={`text-[10px] font-black uppercase tracking-wider ${activeType === "debt" ? "text-red-500 dark:text-red-400" : "text-emerald-500 dark:text-emerald-400"}`}>
-                Sisa {activeType === "debt" ? "Utang Saya" : "Uang Saya di Orang"}
-              </p>
-              <h2 className={`text-2xl font-black tracking-tight mt-1 ${activeType === "debt" ? "text-red-650 dark:text-red-300" : "text-emerald-650 dark:text-emerald-300"}`}>
-                {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalActive.toLocaleString('id-ID')}`}
-              </h2>
-            </div>
-
-            {!showAddForm ? (
-              <button 
-                onClick={() => { setShowAddForm(true); setEditingDebtId(null); setActiveKeypad(null); }} 
-                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all active:scale-[0.99]"
-              >
-                <Plus size={16}/> Tambah Catatan Baru
-              </button>
-            ) : (
-              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 space-y-3.5 text-left">
-                <div className="flex justify-between items-center px-1">
-                  <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">
-                    {activeType === "debt" ? "Mencatat Utang Baru" : "Mencatat Piutang Baru"}
-                  </h4>
-                  <button onClick={() => { setShowAddForm(false); setActiveKeypad(null); }} className="text-slate-400 hover:text-slate-655"><X size={15}/></button>
-                </div>
-                
-                <input 
-                  type="text" 
-                  placeholder={activeType === "debt" ? "Utang ke siapa?" : "Siapa yang pinjam?"} 
-                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-slate-100 placeholder-slate-400" 
-                  value={person} 
-                  onChange={e => setPerson(e.target.value)} 
-                />
-                
-                <div className="space-y-1">
-                  <input 
-                    type="text" 
-                    placeholder="Nominal Total (Rp)" 
-                    inputMode={isMobile ? "none" : undefined} 
-                    onFocus={() => { if(isMobile) setActiveKeypad("add"); }} 
-                    className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-slate-100 placeholder-slate-400" 
-                    value={amount} 
-                    onChange={e => setAmount(e.target.value)} 
-                  />
-                  {amount && (
-                    <p className="text-[10px] font-bold text-slate-500 pl-1">
-                      Terbaca: <span className="text-slate-700 dark:text-slate-250 font-black">{formatRupiahTerbaca(amount)}</span>
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 px-1">📅 Jatuh Tempo (Opsional)</label>
-                  <input 
-                    type="date" 
-                    className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-slate-100 cursor-pointer" 
-                    value={dueDate} 
-                    onChange={e => setDueDate(e.target.value)} 
-                    onClick={(e) => (e.target as HTMLInputElement).showPicker && (e.target as HTMLInputElement).showPicker()} 
-                  />
-                </div>
-
-                {activeType === "receivable" && (
-                  <div className="relative">
-                    <Wallet className="absolute left-3 top-3.5 text-slate-400" size={15}/>
-                    <select 
-                      className="w-full pl-9 pr-3 py-3 bg-white dark:bg-slate-900 rounded-xl text-xs font-bold outline-none text-slate-750 dark:text-slate-250 cursor-pointer border border-slate-200 dark:border-slate-800" 
-                      value={sourceAccountId} 
-                      onChange={e => setSourceAccountId(e.target.value)}
-                    >
-                      <option value="" disabled>Kirim dari Dompet...</option>
-                      {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>)}
-                    </select>
-                  </div>
-                )}
-
-                <input 
-                  type="text" 
-                  placeholder="Catatan / Tujuan pinjam" 
-                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-slate-100 placeholder-slate-400" 
-                  value={note} 
-                  onChange={e => setNote(e.target.value)} 
-                />
-
-                <div className="flex gap-2 pt-1.5">
-                  <button onClick={submitAdd} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all active:scale-[0.98]">Simpan</button>
-                  <button onClick={() => { setShowAddForm(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer">Batal</button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* List of Debt/Receivable Cards */}
-          <div className="space-y-3.5">
-            {filteredDebts.length === 0 ? (
-              <p className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150 dark:border-slate-850">
-                Belum ada catatan {activeType === "debt" ? "utang" : "piutang"}.
-              </p>
-            ) : (
-              filteredDebts.map(debt => {
-                const percentage = Math.min((debt.paidAmount / debt.amount) * 100, 100);
-                const isPaid = debt.status === "paid";
-                const overdue = !isPaid && isOverdue(debt.dueDate || "");
-
-                return (
-                  <div 
-                    key={debt.id} 
-                    className={`relative overflow-hidden bg-white dark:bg-slate-900 p-5 rounded-[24px] border shadow-sm transition-all duration-200 ${
-                      isPaid 
-                        ? "border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/20 dark:bg-emerald-950/10 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-emerald-500" 
-                        : "border-slate-200/80 dark:border-slate-800/80 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] " + (activeType === "debt" ? "before:bg-red-500" : "before:bg-emerald-500")
-                    }`}
-                  >
-                    
-                    {editingDebtId === debt.id ? (
-                      <div className="space-y-3 text-left pb-1">
-                        <div className="flex justify-between items-center px-1 mb-1">
-                          <p className="text-[10px] font-black text-blue-600 dark:text-blue-450 uppercase tracking-widest">
-                            Koreksi {activeType === "debt" ? "Utang" : "Piutang"}
-                          </p>
-                          <button onClick={() => { setEditingDebtId(null); setActiveKeypad(null); }} className="text-slate-400"><X size={15}/></button>
-                        </div>
-
-                        <input 
-                          type="text" 
-                          placeholder={activeType === "debt" ? "Utang ke siapa?" : "Siapa yang pinjam?"} 
-                          className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-slate-100" 
-                          value={editPerson} 
-                          onChange={e => setEditPerson(e.target.value)} 
-                        />
-                        
-                        <div className="space-y-1">
-                          <input 
-                            type="text" 
-                            placeholder="Nominal Total (Rp)" 
-                            inputMode={isMobile ? "none" : undefined} 
-                            onFocus={() => { if(isMobile) setActiveKeypad("edit"); }} 
-                            className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-slate-100" 
-                            value={editAmount} 
-                            onChange={e => setEditAmount(e.target.value)} 
-                          />
-                          {editAmount && (
-                            <p className="text-[10px] font-bold text-slate-500 pl-1">
-                              Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(editAmount)}</span>
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 px-1">📅 Jatuh Tempo (Opsional)</label>
-                          <input 
-                            type="date" 
-                            className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-slate-100 cursor-pointer" 
-                            value={editDueDate} 
-                            onChange={e => setEditDueDate(e.target.value)} 
-                            onClick={(e) => (e.target as HTMLInputElement).showPicker && (e.target as HTMLInputElement).showPicker()} 
-                          />
-                        </div>
-
-                        <input 
-                          type="text" 
-                          placeholder="Catatan / Tujuan pinjam" 
-                          className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-slate-100" 
-                          value={editNote} 
-                          onChange={e => setEditNote(e.target.value)} 
-                        />
-
-                        <div className="flex gap-2 pt-2">
-                          <button onClick={() => submitEdit(debt.id)} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-sm">Simpan Koreksi</button>
-                          <button onClick={() => { setEditingDebtId(null); setActiveKeypad(null); }} className="py-3 px-4 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold">Batal</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex justify-between items-start mb-3.5 pl-2">
-                          <div className="flex items-start gap-3.5 text-left">
-                            <div className="pt-0.5">
-                              {isPaid ? (
-                                <CheckCircle2 className="text-emerald-555" size={20}/>
-                              ) : (
-                                <CircleDashed className="text-slate-350 dark:text-slate-600" size={20}/>
-                              )}
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">{debt.personName}</h4>
-                              {debt.note && <p className="text-[10px] text-slate-455 dark:text-slate-400 font-medium mt-0.5 leading-normal">{debt.note}</p>}
-                              {debt.dueDate && (
-                                <p className={`text-[9px] font-black uppercase tracking-wider mt-1.5 ${overdue ? "text-red-550 animate-pulse" : "text-slate-400 dark:text-slate-500"}`}>
-                                  Jatuh Tempo: {new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}
-                                  {overdue && " • Terlewat! ⚠️"}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950/80 p-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
-                            <button onClick={() => startEdit(debt)} className="p-1 text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer transition-all"><Pencil size={13}/></button>
-                            <button onClick={() => handleDeleteDebt(debt.id)} className="p-1 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 cursor-pointer transition-all"><Trash2 size={13}/></button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5 mb-3.5 pl-2">
-                          <div className="flex justify-between text-xs font-black tracking-tight">
-                            <span className="text-slate-400 dark:text-slate-500">
-                              Terkumpul: {isPrivacyMode ? 'Rp •••••••' : `Rp ${debt.paidAmount.toLocaleString('id-ID')}`}
-                            </span>
-                            <span className="text-slate-750 dark:text-slate-250">
-                              Total: {isPrivacyMode ? 'Rp •••••••' : `Rp ${debt.amount.toLocaleString('id-ID')}`}
-                            </span>
-                          </div>
-                          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full transition-all duration-300 ${isPaid ? "bg-emerald-500" : "bg-blue-500"}`} style={{ width: `${percentage}%` }}></div>
-                          </div>
-                        </div>
-
-                        {!isPaid && payingDebtId !== debt.id && (
-                          <div className="pl-2">
-                            <button 
-                              onClick={() => { setPayingDebtId(debt.id); setPayCategory(""); setPayAccountId(""); setPayAmount(""); setActiveKeypad(null); }} 
-                              className="w-full py-2.5 bg-blue-50/50 hover:bg-blue-100/70 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-300 rounded-xl text-xs font-black border border-blue-100/50 dark:border-blue-900/30 transition-all cursor-pointer text-center"
-                            >
-                              Catat Pembayaran / Cicilan
-                            </button>
-                          </div>
-                        )}
-
-                        {payingDebtId === debt.id && (
-                          <div className="mt-3 ml-2 p-4 bg-blue-50/40 dark:bg-blue-950/15 border border-blue-100/60 dark:border-blue-900/30 rounded-2xl space-y-3 animate-in slide-in-from-top-2 duration-200 text-left">
-                            <div className="flex justify-between items-center px-0.5">
-                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">Form Pembayaran</p>
-                              <button onClick={() => { setPayingDebtId(null); setActiveKeypad(null); }} className="text-slate-450"><X size={14}/></button>
-                            </div>
-                            
-                            <div className="space-y-1">
-                              <input 
-                                type="text" 
-                                placeholder="Nominal Bayar (Rp)" 
-                                inputMode={isMobile ? "none" : undefined} 
-                                onFocus={() => { if(isMobile) setActiveKeypad("pay"); }} 
-                                className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 dark:text-slate-100" 
-                                value={payAmount} 
-                                onChange={e => setPayAmount(e.target.value)} 
-                              />
-                              {payAmount && (
-                                <p className="text-[10px] font-bold text-slate-500 pl-1">
-                                  Terbaca: <span className="text-blue-600 dark:text-blue-400 font-black">{formatRupiahTerbaca(payAmount)}</span>
-                                </p>
-                              )}
-                            </div>
-                            
-                            <div className="flex gap-1.5 pt-0.5 flex-wrap">
-                              {[25, 50, 75, 100].map((pct) => {
-                                const remaining = debt.amount - debt.paidAmount;
-                                const calculated = Math.round(remaining * (pct / 100));
-                                return (
-                                  <button 
-                                    key={pct} 
-                                    type="button" 
-                                    onClick={() => { triggerHaptic(); setPayAmount(calculated.toString()); }} 
-                                    className="flex-1 min-w-[65px] py-2 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-[10px] font-black text-blue-600 dark:text-blue-400 rounded-lg border border-slate-200 dark:border-slate-800 cursor-pointer transition-all active:scale-95"
-                                  >
-                                    {pct}% {pct === 100 && "Lunas"}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            
-                            <div className="relative">
-                              <Wallet className="absolute left-3 top-3 text-slate-400" size={15}/>
-                              <select 
-                                className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none text-slate-750 dark:text-slate-200 cursor-pointer" 
-                                value={payAccountId} 
-                                onChange={e => setPayAccountId(e.target.value)}
-                              >
-                                <option value="" disabled>Pilih Dompet...</option>
-                                {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString('id-ID')})</option>)}
-                              </select>
-                            </div>
-                            
-                            <div className="relative">
-                              <Tag className="absolute left-3 top-3 text-slate-400" size={15}/>
-                              <select 
-                                className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none text-slate-750 dark:text-slate-200 cursor-pointer" 
-                                value={payCategory} 
-                                onChange={e => setPayCategory(e.target.value)}
-                              >
-                                <option value="" disabled>Kategori Pembayaran...</option>
-                                {categories.filter(c => c.type === (debt.type === "debt" ? "expense" : "income")).sort((a, b) => a.name.localeCompare(b.name)).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
-                              </select>
-                            </div>
-
-                            <div className="flex gap-2 pt-1">
-                              <button onClick={() => submitPay(debt)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black cursor-pointer transition-all shadow-sm">Konfirmasi</button>
-                              <button onClick={() => { setPayingDebtId(null); setActiveKeypad(null); }} className="py-2.5 px-4 bg-white dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 cursor-pointer">Batal</button>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      ) : (
-
-        <div className="space-y-6 animate-in fade-in duration-200">
-          
-          {/* Main Card Subscription Header */}
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-[26px] shadow-sm text-left relative overflow-hidden border border-blue-500/10">
-            <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none text-white"><CalendarClock size={110} /></div>
-            <p className="text-blue-100 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1 relative z-10">Beban Tagihan Tetap Bulan Ini</p>
-            <h2 className="text-3xl font-black tracking-tight text-white relative z-10 mb-2">
-              {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalMonthlySubscriptions.toLocaleString('id-ID')}`}
-            </h2>
-            <p className="text-[10px] text-blue-100/80 font-medium max-w-[85%] relative z-10 leading-relaxed">
-              Pantau dan bayar kewajiban bulanan Anda dengan aman menggunakan sistem konfirmasi instan 1-Klik.
-            </p>
-          </div>
-
-          {!showAddSubForm ? (
+      {/* Detail screen rendering when a debt row is clicked */}
+      {selectedDebt ? (
+        <div className="space-y-5 animate-in slide-in-from-right duration-250 text-left pb-12">
+          {/* Header Navigation Bar */}
+          <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
             <button 
-              onClick={() => { setShowAddSubForm(true); setEditingSubId(null); setActiveKeypad(null); }} 
-              className="w-full py-3.5 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-all active:scale-[0.99]"
+              onClick={() => { setSelectedDebtId(null); setShowPayModal(false); }} 
+              className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all text-slate-500 dark:text-slate-400 cursor-pointer"
             >
-              <Plus size={16}/> Daftarkan Tagihan Baru
+              <ArrowLeft size={18} />
             </button>
-          ) : (
-            <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-[24px] border border-slate-200 dark:border-slate-800 space-y-3.5 text-left shadow-sm">
-              <div className="flex justify-between items-center px-1 mb-1">
-                <h4 className="text-xs font-black text-slate-850 dark:text-slate-100">📋 Daftarkan Tagihan Baru</h4>
-                <button onClick={() => { setShowAddSubForm(false); setActiveKeypad(null); }} className="text-slate-400 hover:text-slate-655"><X size={15}/></button>
-              </div>
-              
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Nama Layanan</label>
-                <input 
-                  type="text" 
-                  placeholder="Netflix, Wi-Fi, Kosan..." 
-                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white" 
-                  value={subName} 
-                  onChange={e => setSubName(e.target.value)} 
-                />
-              </div>
-              
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Nominal Tetap (Rp)</label>
-                <input 
-                  type="text" 
-                  placeholder="Contoh: 186000" 
-                  inputMode={isMobile ? "none" : undefined} 
-                  onFocus={() => { if(isMobile) setActiveKeypad("add-sub"); }} 
-                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white" 
-                  value={subAmount} 
-                  onChange={e => setSubAmount(e.target.value)} 
-                />
-                {subAmount && (
-                  <p className="text-[10px] font-bold text-slate-500 pl-1">
-                    Terbaca: <span className="text-blue-650 dark:text-blue-400 font-black">{formatRupiahTerbaca(subAmount)}</span>
-                  </p>
-                )}
-              </div>
+            <h3 className="font-black text-sm text-slate-850 dark:text-slate-100">Detail Utang</h3>
+            
+            <div className="flex gap-1">
+              <button 
+                onClick={() => {
+                  setEditPerson(selectedDebt.personName);
+                  setEditAmount(selectedDebt.amount.toString());
+                  setEditNote(selectedDebt.note || "");
+                  setEditDueDate(selectedDebt.dueDate || "");
+                  setEditingDebtId(selectedDebt.id);
+                }}
+                className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all text-blue-600 cursor-pointer"
+              >
+                <Pencil size={16} />
+              </button>
+              <button 
+                onClick={() => {
+                  if (confirm("Apakah Anda yakin ingin menghapus catatan ini secara permanen?")) {
+                    handleDeleteDebt(selectedDebt.id);
+                    setSelectedDebtId(null);
+                  }
+                }}
+                className="p-2 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-all text-red-500 cursor-pointer"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Siklus</label>
-                  <select 
-                    className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
-                    value={subCycle} 
-                    onChange={e => setSubCycle(e.target.value as "monthly"|"yearly")}
-                  >
-                    <option value="monthly">Bulanan</option>
-                    <option value="yearly">Tahunan</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Jatuh Tempo Awal</label>
-                  <input 
-                    type="date" 
-                    className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
-                    value={subDueDate} 
-                    onChange={e => setSubDueDate(e.target.value)} 
-                    onClick={(e) => (e.target as HTMLInputElement).showPicker && (e.target as HTMLInputElement).showPicker()} 
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Sumber Dana (Dompet)</label>
-                <select 
-                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
-                  value={subAccountId} 
-                  onChange={e => setSubAccountId(e.target.value)}
-                >
-                  <option value="" disabled>Pilih dompet...</option>
-                  {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString('id-ID')})</option>)}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Kategori Pengeluaran</label>
-                <select 
-                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
-                  value={subCategory} 
-                  onChange={e => setSubCategory(e.target.value)}
-                >
-                  <option value="" disabled>Pilih kategori...</option>
-                  {categories.filter(c => c.type === "expense").sort((a,b)=>a.name.localeCompare(b.name)).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
-                </select>
-              </div>
-
-              <div className="flex gap-2 pt-2.5">
-                <button onClick={submitAddSub} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-colors active:scale-[0.98]">Simpan Langganan</button>
-                <button onClick={() => { setShowAddSubForm(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer">Batal</button>
+          {/* Edit Inline Box on Detail Page */}
+          {editingDebtId === selectedDebt.id && (
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3.5">
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Koreksi Data Transaksi</p>
+              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold" value={editPerson} onChange={e => setEditPerson(e.target.value)} />
+              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold" value={editAmount} onChange={e => setEditAmount(e.target.value)} />
+              <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold" value={editDueDate} onChange={e => setEditDueDate(e.target.value)} />
+              <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold" value={editNote} onChange={e => setEditNote(e.target.value)} />
+              <div className="flex gap-2">
+                <button onClick={() => submitEdit(selectedDebt.id)} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer">Simpan Perubahan</button>
+                <button onClick={() => setEditingDebtId(null)} className="py-2.5 px-4 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold">Batal</button>
               </div>
             </div>
           )}
 
-          {/* Subscriptions List */}
-          <div className="space-y-3.5">
-            {subscriptions.length === 0 ? (
-              <p className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150 dark:border-slate-855">
-                Belum ada daftar langganan tetap.
-              </p>
+          {/* Premium Overview Card */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-[28px] border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-xl flex items-center justify-center font-black text-lg">
+                  {selectedDebt.personName.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h4 className="font-black text-base text-slate-850 dark:text-slate-100 leading-tight">{selectedDebt.personName}</h4>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold mt-1 uppercase tracking-wider">
+                    {selectedDebt.dueDate ? `Jatuh Tempo: ${new Date(selectedDebt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` : "Tidak Ada Jatuh Tempo"}
+                  </p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-100/50 dark:border-amber-900/30 rounded-full text-[9px] font-black text-amber-600 dark:text-amber-400 tracking-wider">
+                {Math.round((selectedDebt.paidAmount / selectedDebt.amount) * 100)}% lunas
+              </span>
+            </div>
+
+            <div className="space-y-1">
+              <h2 className="text-3xl font-black text-slate-850 dark:text-white">
+                {isPrivacyMode ? 'Rp •••••••' : `Rp ${(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}`}
+              </h2>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Sisa Utang Berjalan</span>
+            </div>
+
+            {/* Progress Bar Progress Indicator */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-[11px] font-black">
+                <span className="text-slate-500">Rp {selectedDebt.paidAmount.toLocaleString('id-ID')} / Rp {selectedDebt.amount.toLocaleString('id-ID')}</span>
+                <span className="text-blue-500">{Math.round((selectedDebt.paidAmount / selectedDebt.amount) * 100)}%</span>
+              </div>
+              <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${Math.min((selectedDebt.paidAmount / selectedDebt.amount) * 100, 100)}%` }}></div>
+              </div>
+            </div>
+
+            {/* Statistics Table List */}
+            <div className="space-y-3.5 pt-4 border-t border-slate-100 dark:border-slate-800/60 text-xs font-bold">
+              <div className="flex justify-between text-slate-450">
+                <span>Total Pinjaman Utama</span>
+                <span className="text-slate-750 dark:text-slate-200">Rp {selectedDebt.amount.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between text-slate-455">
+                <span>Sisa Tagihan Berjalan</span>
+                <span className="text-orange-600 dark:text-orange-400 font-black">Rp {(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between text-slate-455">
+                <span>Total Dana Terbayar</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-black">Rp {selectedDebt.paidAmount.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+
+            {/* Dynamic Status Notification Card */}
+            <div className={`p-4 rounded-2xl border flex items-center justify-between ${
+              selectedDebt.type === "debt" 
+                ? "bg-red-50/50 dark:bg-red-950/10 border-red-100/50 dark:border-red-900/20 text-red-700 dark:text-red-400" 
+                : "bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-100/50 dark:border-emerald-900/20 text-emerald-700 dark:text-emerald-400"
+            }`}>
+              <div className="flex items-center gap-2.5">
+                <div className={`p-1.5 rounded-lg ${selectedDebt.type === "debt" ? "bg-red-100/60 dark:bg-red-900/30" : "bg-emerald-100/60 dark:bg-emerald-900/30"}`}>
+                  {selectedDebt.type === "debt" ? <ArrowDownLeft size={16}/> : <ArrowUpRight size={16}/>}
+                </div>
+                <div className="text-[10px] font-black tracking-wide leading-tight">
+                  <p className="uppercase">{selectedDebt.type === "debt" ? "DIPINJAM" : "DIPINJAMKAN"}</p>
+                  <p className="font-bold opacity-80">{selectedDebt.type === "debt" ? `Anda berkewajiban melunasi sisa Rp ${(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}` : `Pihak luar meminjam dana Rp ${(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')}`}</p>
+                </div>
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider opacity-80">{selectedDebt.type === "debt" ? "Dipinjam" : "Dipinjamkan"}</span>
+            </div>
+          </div>
+
+          {/* Sub-Section payment history: Debt Records */}
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-[26px] border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex justify-between items-center px-1">
+              <h5 className="font-black text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wider">Debt Records</h5>
+              <span className="px-2 py-0.5 bg-blue-100/60 dark:bg-slate-800 text-[9px] font-black rounded-full text-blue-600 dark:text-blue-300">
+                {selectedDebt.paidAmount > 0 ? "1 entries" : "0 entries"}
+              </span>
+            </div>
+
+            {selectedDebt.paidAmount === 0 ? (
+              <p className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs italic">Belum ada mutasi pembayaran yang terekam.</p>
             ) : (
-              subscriptions.slice().sort((a,b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime()).map(sub => {
-                const daysLeft = getDaysLeft(sub.nextDueDate);
-                const isOverdue = daysLeft < 0;
-                const isToday = daysLeft === 0;
-
-                return (
-                  <div 
-                    key={sub.id} 
-                    className={`relative overflow-hidden p-5 rounded-[24px] border shadow-sm transition-all duration-200 text-left before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-blue-500 ${
-                      isOverdue 
-                        ? 'bg-red-50/20 dark:bg-red-950/10 border-red-200/60 dark:border-red-900/30' 
-                        : isToday 
-                          ? 'bg-amber-50/20 dark:bg-amber-950/10 border-amber-200/60 dark:border-amber-900/30' 
-                          : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800/80'
-                    }`}
-                  >
-                    
-                    {editingSubId === sub.id ? (
-                      <div className="space-y-3 pb-1">
-                        <div className="flex justify-between items-center px-1 mb-1">
-                          <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Koreksi Langganan</p>
-                          <button onClick={() => { setEditingSubId(null); setActiveKeypad(null); }} className="text-slate-400"><X size={15}/></button>
-                        </div>
-                        
-                        <input 
-                          type="text" 
-                          placeholder="Nama Layanan" 
-                          className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white" 
-                          value={editSubName} 
-                          onChange={e => setEditSubName(e.target.value)} 
-                        />
-                        
-                        <div className="space-y-1">
-                          <input 
-                            type="text" 
-                            placeholder="Nominal (Rp)" 
-                            inputMode={isMobile ? "none" : undefined} 
-                            onFocus={() => { if(isMobile) setActiveKeypad("edit-sub"); }} 
-                            className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white" 
-                            value={editSubAmount} 
-                            onChange={e => setEditSubAmount(e.target.value)} 
-                          />
-                          {editSubAmount && (
-                            <p className="text-[10px] font-bold text-slate-500 pl-1">
-                              Terbaca: <span className="text-blue-650 dark:text-blue-400 font-black">{formatRupiahTerbaca(editSubAmount)}</span>
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <select 
-                            className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
-                            value={editSubCycle} 
-                            onChange={e => setEditSubCycle(e.target.value as any)}
-                          >
-                            <option value="monthly">Bulanan</option>
-                            <option value="yearly">Tahunan</option>
-                          </select>
-                          <input 
-                            type="date" 
-                            className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
-                            value={editSubDueDate} 
-                            onChange={e => setEditSubDueDate(e.target.value)} 
-                            onClick={(e) => (e.target as HTMLInputElement).showPicker && (e.target as HTMLInputElement).showPicker()} 
-                          />
-                        </div>
-
-                        <select 
-                          className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
-                          value={editSubAccountId} 
-                          onChange={e => setEditSubAccountId(e.target.value)}
-                        >
-                          <option value="" disabled>Pilih dompet...</option>
-                          {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
-                        </select>
-
-                        <select 
-                          className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
-                          value={editSubCategory} 
-                          onChange={e => setEditSubCategory(e.target.value)}
-                        >
-                          <option value="" disabled>Pilih kategori...</option>
-                          {categories.filter(c => c.type === "expense").sort((a,b)=>a.name.localeCompare(b.name)).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
-                        </select>
-
-                        <div className="flex gap-2 pt-2">
-                          <button onClick={() => submitEditSub(sub.id)} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm">Simpan Koreksi</button>
-                          <button onClick={() => { setEditingSubId(null); setActiveKeypad(null); }} className="py-3 px-4 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold">Batal</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex justify-between items-start mb-3.5 pl-2">
-                          <div className="flex items-center gap-3">
-                            <div className={`p-2.5 rounded-xl flex items-center justify-center ${
-                              isOverdue 
-                                ? 'bg-red-100 dark:bg-red-950/40 text-red-500' 
-                                : isToday 
-                                  ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-500' 
-                                  : 'bg-slate-150 dark:bg-slate-800 text-slate-500'
-                            }`}>
-                              <Calendar size={18} />
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight tracking-tight">{sub.name}</h4>
-                              <p className="text-[10px] font-black text-blue-650 dark:text-blue-455 mt-0.5">
-                                {isPrivacyMode ? 'Rp •••••••' : `Rp ${sub.amount.toLocaleString('id-ID')}`} <span className="text-slate-400 dark:text-slate-500 font-medium text-[9px] uppercase tracking-wider">/ {sub.cycle === 'monthly' ? 'Bulan' : 'Tahun'}</span>
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950/80 p-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
-                            <button onClick={() => startEditSub(sub)} className="p-1 text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer transition-all"><Pencil size={13}/></button>
-                            <button onClick={() => handleDeleteSubscription(sub.id)} className="p-1 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 cursor-pointer transition-all"><Trash2 size={13}/></button>
-                          </div>
-                        </div>
-
-                        <div className={`p-2.5 rounded-xl flex items-center justify-between text-[10px] font-bold border mb-3.5 ml-2 ${
-                          isOverdue 
-                            ? 'bg-red-50/50 dark:bg-red-950/15 border-red-200/50 dark:border-red-900/30 text-red-700 dark:text-red-455' 
-                            : isToday 
-                              ? 'bg-amber-50/50 dark:bg-amber-950/15 border-amber-200/50 dark:border-amber-900/30 text-amber-700 dark:text-amber-455' 
-                              : 'bg-slate-50 dark:bg-slate-855 border-slate-200/50 dark:border-slate-750 text-slate-500 dark:text-slate-400'
-                        }`}>
-                          <div className="flex items-center gap-1.5 pl-0.5">
-                            {isOverdue ? <AlertCircle size={14}/> : <CalendarClock size={14}/>}
-                            <span>Tempo: {new Date(sub.nextDueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}</span>
-                          </div>
-                          <span className={`px-2 py-0.5 rounded text-[8.5px] uppercase tracking-widest font-black ${
-                            isOverdue 
-                              ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 animate-pulse' 
-                              : isToday 
-                                ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' 
-                                : 'bg-slate-200 dark:bg-slate-700 text-slate-650 dark:text-slate-300'
-                          }`}>
-                            {isOverdue ? `Lewat ${Math.abs(daysLeft)} Hari` : isToday ? 'HARI INI' : `${daysLeft} Hari Lagi`}
-                          </span>
-                        </div>
-
-                        <div className="flex gap-2 pl-2">
-                          <button 
-                            onClick={() => { if(confirm(`Konfirmasi pembayaran ${sub.name} (Rp ${sub.amount.toLocaleString('id-ID')})?\nSaldo dompet otomatis terpotong dan jatuh tempo diperpanjang.`)) handlePaySubscription(sub); }} 
-                            className={`flex-1 py-3 rounded-xl text-xs font-bold shadow-sm cursor-pointer flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] ${
-                              isOverdue || isToday 
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                                : 'bg-blue-50/40 hover:bg-blue-100/60 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-100/30 dark:border-blue-900/30'
-                            }`}
-                          >
-                            <CreditCard size={14} /> 1-Click Pay
-                          </button>
-                        </div>
-                      </>
-                    )}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center p-3.5 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-100/50 dark:border-slate-800/40 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                      <ArrowDownLeft size={14} />
+                    </div>
+                    <div>
+                      <h6 className="font-black text-xs text-emerald-600 dark:text-emerald-400">-Rp {selectedDebt.paidAmount.toLocaleString('id-ID')}</h6>
+                      <p className="text-[9px] text-slate-400 font-bold mt-0.5">
+  {(() => {
+    const dateVal = selectedDebt.createdAt as any;
+    const d = dateVal?.seconds 
+      ? new Date(dateVal.seconds * 1000) 
+      : new Date(selectedDebt.createdAt || Date.now());
+    return isNaN(d.getTime()) ? "-" : d.toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'});
+  })()}
+</p>
+                    </div>
                   </div>
-                );
-              })
+                  <span className="px-1.5 py-0.5 bg-slate-150 dark:bg-slate-800 text-[8.5px] font-mono text-slate-500 dark:text-slate-450 rounded select-all">
+                    59df7b...
+                  </span>
+                </div>
+              </div>
             )}
           </div>
+
+          {/* Floating Action Button (FAB) inside Detail Screen to Pay/Cicilan */}
+          {selectedDebt.status === "active" && (
+            <button 
+              onClick={() => {
+                setPayAmount((selectedDebt.amount - selectedDebt.paidAmount).toString());
+                setPayAccountId("");
+                setPayCategory("");
+                setShowPayModal(true);
+              }}
+              className="fixed bottom-6 right-6 z-50 p-4 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white rounded-full shadow-2xl transition-all cursor-pointer border border-blue-500/10"
+            >
+              <Plus size={24} />
+            </button>
+          )}
+
+          {/* Inline Payment Modal Panel overlay */}
+          {showPayModal && (
+            <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 mt-3 animate-in fade-in duration-200">
+              <div className="flex justify-between items-center">
+                <h5 className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Catat Cicilan / Pelunasan</h5>
+                <button onClick={() => { setShowPayModal(false); setActiveKeypad(null); }} className="text-slate-400"><X size={15}/></button>
+              </div>
+
+              <div className="space-y-1">
+                <input 
+                  type="text" 
+                  placeholder="Nominal Pembayaran (Rp)" 
+                  inputMode={isMobile ? "none" : undefined} 
+                  onFocus={() => { if(isMobile) setActiveKeypad("pay"); }} 
+                  className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none text-slate-750" 
+                  value={payAmount} 
+                  onChange={e => setPayAmount(e.target.value)} 
+                />
+                {payAmount && <p className="text-[10px] font-bold text-slate-450 pl-1">Terbaca: <span className="font-black text-blue-600">{formatRupiahTerbaca(payAmount)}</span></p>}
+              </div>
+
+              <div className="flex gap-1.5 flex-wrap">
+                <button 
+                  type="button" 
+                  onClick={() => { triggerHaptic(); setPayAmount((selectedDebt.amount - selectedDebt.paidAmount).toString()); }} 
+                  className="flex-1 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-[10px] font-black text-blue-700 dark:text-blue-300 rounded-lg border border-transparent cursor-pointer transition-all active:scale-95 text-center"
+                >
+                  🚀 Bayar Lunas (Sisa Rp {(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')})
+                </button>
+              </div>
+
+              <div className="relative">
+                <Wallet className="absolute left-3 top-3 text-slate-400" size={15}/>
+                <select 
+                  className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer" 
+                  value={payAccountId} 
+                  onChange={e => setPayAccountId(e.target.value)}
+                >
+                  <option value="" disabled>Pilih Dompet Pengeluaran...</option>
+                  {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>)}
+                </select>
+              </div>
+
+              <div className="relative">
+                <Tag className="absolute left-3 top-3 text-slate-400" size={15}/>
+                <select 
+                  className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer" 
+                  value={payCategory} 
+                  onChange={e => setPayCategory(e.target.value)}
+                >
+                  <option value="" disabled>Pilih Kategori...</option>
+                  {categories.filter(c => c.type === (selectedDebt.type === "debt" ? "expense" : "income")).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
+                </select>
+              </div>
+
+              <div className="flex gap-2">
+                <button onClick={() => submitPay(selectedDebt)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer">Konfirmasi Pembayaran</button>
+                <button onClick={() => { setShowPayModal(false); setActiveKeypad(null); }} className="py-2.5 px-4 bg-white dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800">Batal</button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Standard / Old style listing with visually upgraded layout switcher */
+        <div className="space-y-6 animate-in fade-in duration-200">
+          
+          <div className="bg-slate-100/60 dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm flex items-center gap-1.5 transition-all">
+            <button 
+              onClick={() => setMainTab("debts")} 
+              className={`flex-1 py-3 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                mainTab === "debts" 
+                  ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" 
+                  : "text-slate-400 dark:text-slate-500 hover:text-slate-655"
+              }`}
+            >
+              <BookUser size={15} /> Utang Piutang
+            </button>
+            <button 
+              onClick={() => setMainTab("subscriptions")} 
+              className={`flex-1 py-3 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                mainTab === "subscriptions" 
+                  ? "bg-blue-50/80 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shadow-sm" 
+                  : "text-slate-400 dark:text-slate-500 hover:text-blue-600"
+              }`}
+            >
+              <CalendarClock size={15} /> Langganan
+            </button>
+          </div>
+
+          {mainTab === "debts" ? (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              
+              {/* Refined Tab Swapper inside Utang (UTANG SAYA / PIUTANG ORANG) */}
+              <div className="bg-white dark:bg-slate-900/65 p-5 rounded-[26px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div className="flex gap-1.5 bg-slate-100/70 dark:bg-slate-950 p-1 rounded-xl">
+                  <button 
+                    onClick={() => { setActiveType("debt"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                      activeType === "debt" 
+                        ? "bg-white dark:bg-slate-800 text-red-650 dark:text-red-400 shadow-sm border border-slate-150" 
+                        : "text-slate-455 hover:text-slate-650 dark:text-slate-500"
+                    }`}
+                  >
+                    UTANG SAYA
+                  </button>
+                  <button 
+                    onClick={() => { setActiveType("receivable"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                      activeType === "receivable" 
+                        ? "bg-white dark:bg-slate-800 text-emerald-650 dark:text-emerald-400 shadow-sm border border-slate-150" 
+                        : "text-slate-455 hover:text-slate-650 dark:text-slate-500"
+                    }`}
+                  >
+                    PIUTANG ORANG
+                  </button>
+                </div>
+                
+                <div className={`p-5 rounded-2xl transition-all duration-200 border text-left ${
+                  activeType === "debt" 
+                    ? "bg-red-50/40 dark:bg-red-950/10 border-red-100/80 dark:border-red-900/20" 
+                    : "bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-100/80 dark:border-emerald-900/20"
+                }`}>
+                  <p className={`text-[10px] font-black uppercase tracking-wider ${activeType === "debt" ? "text-red-550" : "text-emerald-550"}`}>
+                    Sisa {activeType === "debt" ? "Utang Saya" : "Uang Saya di Orang"}
+                  </p>
+                  <h2 className={`text-2xl font-black tracking-tight mt-1 ${activeType === "debt" ? "text-red-650 dark:text-red-300" : "text-emerald-650 dark:text-emerald-300"}`}>
+                    {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalActive.toLocaleString('id-ID')}`}
+                  </h2>
+                </div>
+
+                {!showAddForm ? (
+                  <button 
+                    onClick={() => { setShowAddForm(true); setEditingDebtId(null); setActiveKeypad(null); }} 
+                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all active:scale-[0.99]"
+                  >
+                    <Plus size={16}/> Tambah Catatan Baru
+                  </button>
+                ) : (
+                  <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-left">
+                    <div className="flex justify-between items-center px-1">
+                      <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">
+                        {activeType === "debt" ? "Mencatat Utang Baru" : "Mencatat Piutang Baru"}
+                      </h4>
+                      <button onClick={() => { setShowAddForm(false); setActiveKeypad(null); }} className="text-slate-400"><X size={15}/></button>
+                    </div>
+                    
+                    <input 
+                      type="text" 
+                      placeholder={activeType === "debt" ? "Utang ke siapa?" : "Siapa yang pinjam?"} 
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 placeholder-slate-400" 
+                      value={person} 
+                      onChange={e => setPerson(e.target.value)} 
+                    />
+                    
+                    <div className="space-y-1">
+                      <input 
+                        type="text" 
+                        placeholder="Nominal Total (Rp)" 
+                        inputMode={isMobile ? "none" : undefined} 
+                        onFocus={() => { if(isMobile) setActiveKeypad("add"); }} 
+                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 placeholder-slate-400" 
+                        value={amount} 
+                        onChange={e => setAmount(e.target.value)} 
+                      />
+                      {amount && (
+                        <p className="text-[10px] font-bold text-slate-500 pl-1">
+                          Terbaca: <span className="text-slate-700 dark:text-slate-250 font-black">{formatRupiahTerbaca(amount)}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 px-1">📅 Jatuh Tempo (Opsional)</label>
+                      <input 
+                        type="date" 
+                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 cursor-pointer" 
+                        value={dueDate} 
+                        onChange={e => setDueDate(e.target.value)} 
+                      />
+                    </div>
+
+                    {activeType === "receivable" && (
+                      <div className="relative">
+                        <Wallet className="absolute left-3 top-3.5 text-slate-400" size={15}/>
+                        <select 
+                          className="w-full pl-9 pr-3 py-3 bg-white dark:bg-slate-900 rounded-xl text-xs font-bold outline-none text-slate-755 cursor-pointer border border-slate-200 dark:border-slate-800" 
+                          value={sourceAccountId} 
+                          onChange={e => setSourceAccountId(e.target.value)}
+                        >
+                          <option value="" disabled>Kirim dari Dompet...</option>
+                          {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>)}
+                        </select>
+                      </div>
+                    )}
+
+                    <input 
+                      type="text" 
+                      placeholder="Catatan / Tujuan pinjam" 
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-750 placeholder-slate-400" 
+                      value={note} 
+                      onChange={e => setNote(e.target.value)} 
+                    />
+
+                    <div className="flex gap-2 pt-1.5">
+                      <button onClick={submitAdd} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all active:scale-[0.98]">Simpan</button>
+                      <button onClick={() => { setShowAddForm(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 text-slate-600 rounded-xl text-xs font-bold">Batal</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Grid listing of active category */}
+              <div className="space-y-3.5">
+                {filteredDebts.length === 0 ? (
+                  <p className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150">
+                    Belum ada catatan {activeType === "debt" ? "utang" : "piutang"}.
+                  </p>
+                ) : (
+                  filteredDebts.map(debt => {
+                    const percentage = Math.min((debt.paidAmount / debt.amount) * 100, 100);
+                    const isPaid = debt.status === "paid";
+                    const overdue = !isPaid && isOverdue(debt.dueDate || "");
+
+                    return (
+                      <div 
+                        key={debt.id} 
+                        onClick={() => setSelectedDebtId(debt.id)}
+                        className={`relative overflow-hidden bg-white dark:bg-slate-900 p-5 rounded-[24px] border shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md cursor-pointer text-left ${
+                          isPaid 
+                            ? "border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/20 dark:bg-emerald-950/10 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-emerald-500" 
+                            : "border-slate-200 dark:border-slate-800/80 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] " + (activeType === "debt" ? "before:bg-red-500" : "before:bg-emerald-500")
+                        }`}
+                      >
+                        <div className="flex justify-between items-start pl-2">
+                          <div>
+                            <h4 className="font-bold text-slate-850 dark:text-slate-100 text-sm tracking-tight">{debt.personName}</h4>
+                            {debt.note && <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5 leading-normal">{debt.note}</p>}
+                            {debt.dueDate && (
+                              <p className={`text-[9px] font-black uppercase tracking-wider mt-1.5 ${overdue ? "text-red-500 animate-pulse" : "text-slate-400 dark:text-slate-500"}`}>
+                                Tempo: {new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}
+                                {overdue && " • Overdue! ⚠️"}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="text-right">
+                            <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                              {isPrivacyMode ? 'Rp •••••' : `Rp ${(debt.amount - debt.paidAmount).toLocaleString('id-ID')}`}
+                            </span>
+                            <p className="text-[9px] font-bold text-slate-400 mt-0.5">{Math.round(percentage)}% lunas</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 pl-2">
+                          <div className="w-full h-1 bg-slate-100 dark:bg-slate-800/80 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${isPaid ? "bg-emerald-500" : "bg-blue-500"}`} style={{ width: `${percentage}%` }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Subscriptions Tab rendering */
+            <div className="space-y-6 animate-in fade-in duration-200">
+              
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-[26px] shadow-sm text-left relative overflow-hidden border border-blue-500/10">
+                <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none text-white"><CalendarClock size={110} /></div>
+                <p className="text-blue-100 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1 relative z-10">Beban Tagihan Tetap Bulan Ini</p>
+                <h2 className="text-3xl font-black tracking-tight text-white relative z-10 mb-2">
+                  {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalMonthlySubscriptions.toLocaleString('id-ID')}`}
+                </h2>
+                <p className="text-[10px] text-blue-100/80 font-medium max-w-[85%] relative z-10 leading-relaxed">
+                  Pantau dan bayar kewajiban bulanan Anda dengan aman menggunakan sistem konfirmasi instan 1-Klik.
+                </p>
+              </div>
+
+              {!showAddSubForm ? (
+                <button 
+                  onClick={() => { setShowAddSubForm(true); setEditingSubId(null); setActiveKeypad(null); }} 
+                  className="w-full py-3.5 bg-white hover:bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-all active:scale-[0.99]"
+                >
+                  <Plus size={16}/> Daftarkan Tagihan Baru
+                </button>
+              ) : (
+                <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-[24px] border border-slate-200 dark:border-slate-800 space-y-3.5 text-left shadow-sm">
+                  <div className="flex justify-between items-center px-1 mb-1">
+                    <h4 className="text-xs font-black text-slate-855 dark:text-slate-100">📋 Daftarkan Tagihan Baru</h4>
+                    <button onClick={() => { setShowAddSubForm(false); setActiveKeypad(null); }} className="text-slate-400"><X size={15}/></button>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Nama Layanan</label>
+                    <input 
+                      type="text" 
+                      placeholder="Netflix, Wi-Fi, Kosan..." 
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white" 
+                      value={subName} 
+                      onChange={e => setSubName(e.target.value)} 
+                    />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Nominal Tetap (Rp)</label>
+                    <input 
+                      type="text" 
+                      placeholder="Contoh: 186000" 
+                      inputMode={isMobile ? "none" : undefined} 
+                      onFocus={() => { if(isMobile) setActiveKeypad("add-sub"); }} 
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white" 
+                      value={subAmount} 
+                      onChange={e => setSubAmount(e.target.value)} 
+                    />
+                    {subAmount && (
+                      <p className="text-[10px] font-bold text-slate-500 pl-1">
+                        Terbaca: <span className="text-blue-655 dark:text-blue-400 font-black">{formatRupiahTerbaca(subAmount)}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Siklus</label>
+                      <select 
+                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
+                        value={subCycle} 
+                        onChange={e => setSubCycle(e.target.value as "monthly"|"yearly")}
+                      >
+                        <option value="monthly">Bulanan</option>
+                        <option value="yearly">Tahunan</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Jatuh Tempo Awal</label>
+                      <input 
+                        type="date" 
+                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
+                        value={subDueDate} 
+                        onChange={e => setSubDueDate(e.target.value)} 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Sumber Dana (Dompet)</label>
+                    <select 
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
+                      value={subAccountId} 
+                      onChange={e => setSubAccountId(e.target.value)}
+                    >
+                      <option value="" disabled>Pilih dompet...</option>
+                      {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString('id-ID')})</option>)}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Kategori Pengeluaran</label>
+                    <select 
+                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer" 
+                      value={subCategory} 
+                      onChange={e => setSubCategory(e.target.value)}
+                    >
+                      <option value="" disabled>Pilih kategori...</option>
+                      {categories.filter(c => c.type === "expense").sort((a,b)=>a.name.localeCompare(b.name)).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="flex gap-2 pt-2.5">
+                    <button onClick={submitAddSub} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-colors active:scale-[0.98]">Simpan Langganan</button>
+                    <button onClick={() => { setShowAddSubForm(false); setActiveKeypad(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 text-slate-650 rounded-xl text-xs font-bold">Batal</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Subscriptions Grid List */}
+              <div className="space-y-3.5">
+                {subscriptions.length === 0 ? (
+                  <p className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-150">
+                    Belum ada daftar langganan tetap.
+                  </p>
+                ) : (
+                  subscriptions.slice().sort((a,b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime()).map(sub => {
+                    const daysLeft = getDaysLeft(sub.nextDueDate);
+                    const isOverdue = daysLeft < 0;
+                    const isToday = daysLeft === 0;
+
+                    return (
+                      <div 
+                        key={sub.id} 
+                        className={`relative overflow-hidden p-5 rounded-[24px] border shadow-sm transition-all duration-200 text-left before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-blue-500 ${
+                          isOverdue 
+                            ? 'bg-red-50/20 dark:bg-red-955/10 border-red-200/60 dark:border-red-900/30' 
+                            : isToday 
+                              ? 'bg-amber-50/20 dark:bg-amber-955/10 border-amber-200/60 dark:border-amber-900/30' 
+                              : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800/80'
+                        }`}
+                      >
+                        {editingSubId === sub.id ? (
+                          <div className="space-y-3 pb-1">
+                            <div className="flex justify-between items-center px-1 mb-1">
+                              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Koreksi Langganan</p>
+                              <button onClick={() => { setEditingSubId(null); setActiveKeypad(null); }} className="text-slate-400"><X size={15}/></button>
+                            </div>
+                            
+                            <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editSubName} onChange={e => setEditSubName(e.target.value)} />
+                            <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={editSubAmount} onChange={e => setEditSubAmount(e.target.value)} />
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold" value={editSubCycle} onChange={e => setEditSubCycle(e.target.value as any)}>
+                                <option value="monthly">Bulanan</option>
+                                <option value="yearly">Tahunan</option>
+                              </select>
+                              <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer" value={editSubDueDate} onChange={e => setEditSubDueDate(e.target.value)} />
+                            </div>
+
+                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer" value={editSubAccountId} onChange={e => setEditSubAccountId(e.target.value)}>
+                              <option value="" disabled>Pilih dompet...</option>
+                              {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+                            </select>
+
+                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer" value={editSubCategory} onChange={e => setEditSubCategory(e.target.value)}>
+                              <option value="" disabled>Pilih kategori...</option>
+                              {categories.filter(c => c.type === "expense").sort((a,b)=>a.name.localeCompare(b.name)).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
+                            </select>
+
+                            <div className="flex gap-2 pt-2">
+                              <button onClick={() => submitEditSub(sub.id)} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm">Simpan Koreksi</button>
+                              <button onClick={() => { setEditingSubId(null); setActiveKeypad(null); }} className="py-3 px-4 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-bold">Batal</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex justify-between items-start mb-3.5 pl-2">
+                              <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl flex items-center justify-center ${
+                                  isOverdue 
+                                    ? 'bg-red-100 dark:bg-red-955/40 text-red-500' 
+                                    : isToday 
+                                      ? 'bg-amber-100 dark:bg-amber-955/40 text-amber-500' 
+                                      : 'bg-slate-150 dark:bg-slate-800 text-slate-500'
+                                }`}>
+                                  <Calendar size={18} />
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight tracking-tight">{sub.name}</h4>
+                                  <p className="text-[10px] font-black text-blue-655 dark:text-blue-455 mt-0.5">
+                                    {isPrivacyMode ? 'Rp •••••••' : `Rp ${sub.amount.toLocaleString('id-ID')}`} <span className="text-slate-400 dark:text-slate-500 font-medium text-[9px] uppercase tracking-wider">/ {sub.cycle === 'monthly' ? 'Bulan' : 'Tahun'}</span>
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950/80 p-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
+                                <button onClick={() => startEditSub(sub)} className="p-1 text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer transition-all"><Pencil size={13}/></button>
+                                <button onClick={() => handleDeleteSubscription(sub.id)} className="p-1 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 cursor-pointer transition-all"><Trash2 size={13}/></button>
+                              </div>
+                            </div>
+
+                            <div className={`p-2.5 rounded-xl flex items-center justify-between text-[10px] font-bold border mb-3.5 ml-2 ${
+                              isOverdue 
+                                ? 'bg-red-50/50 dark:bg-red-955/15 border-red-200/50 dark:border-red-900/30 text-red-700 dark:text-red-455' 
+                                : isToday 
+                                  ? 'bg-amber-50/50 dark:bg-amber-955/15 border-amber-200/50 dark:border-amber-900/30 text-amber-700 dark:text-amber-455' 
+                                  : 'bg-slate-50 dark:bg-slate-855 border-slate-200/50 dark:border-slate-750 text-slate-500 dark:text-slate-400'
+                            }`}>
+                              <div className="flex items-center gap-1.5 pl-0.5">
+                                {isOverdue ? <AlertCircle size={14}/> : <CalendarClock size={14}/>}
+                                <span>Tempo: {new Date(sub.nextDueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}</span>
+                              </div>
+                              <span className={`px-2 py-0.5 rounded text-[8.5px] uppercase tracking-widest font-black ${
+                                isOverdue 
+                                  ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 animate-pulse' 
+                                  : isToday 
+                                    ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' 
+                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-650 dark:text-slate-300'
+                              }`}>
+                                {isOverdue ? `Lewat ${Math.abs(daysLeft)} Hari` : isToday ? 'HARI INI' : `${daysLeft} Hari Lagi`}
+                              </span>
+                            </div>
+
+                            <div className="flex gap-2 pl-2">
+                              <button 
+                                onClick={() => { if(confirm(`Konfirmasi pembayaran ${sub.name} (Rp ${sub.amount.toLocaleString('id-ID')})?\nSaldo dompet otomatis terpotong dan jatuh tempo diperpanjang.`)) handlePaySubscription(sub); }} 
+                                className={`flex-1 py-3 rounded-xl text-xs font-bold shadow-sm cursor-pointer flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] ${
+                                  isOverdue || isToday 
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                    : 'bg-blue-50/40 hover:bg-blue-100/60 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-300 border border-blue-100/30 dark:border-blue-900/30'
+                                }`}
+                              >
+                                <CreditCard size={14} /> 1-Click Pay
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
