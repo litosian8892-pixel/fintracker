@@ -69,6 +69,7 @@ interface HomeTabProps {
   setEditTAdminFee: (fee: string) => void;
   editTSplits: SplitItemData[];
   setEditTSplits: (splits: SplitItemData[]) => void;
+  updateCategory?: (id: string, newName: string, newBudget: number | null, expenseType: "fixed" | "variable", newIcon?: string) => Promise<void>;
 }
 
 const safeEvaluate = (expr: string): number => {
@@ -124,7 +125,8 @@ export default function HomeTab({
   tType, setTType, tDate, setTDate, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction,
   transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode,
   editingTransaction, setEditingTransaction, handleUpdateTransaction,
-  editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits
+  editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits,
+  updateCategory
 }: HomeTabProps) {
   
   // Filter bulan aktif bergaya Gambar 3
@@ -134,6 +136,11 @@ export default function HomeTab({
   const [searchQuery, setSearchQuery] = useState("");
   const [activeKeypad, setActiveKeypad] = useState<"amount" | "adminFee" | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+
+  // States Baru untuk Edit Logo / Emoji Kategori di Tempat
+  const [editingCat, setEditingCat] = useState<CategoryData | null>(null);
+  const [editCatName, setEditCatName] = useState("");
+  const [editCatIcon, setEditCatIcon] = useState("");
 
   // States baru pencarian dan penyaringan dompet
   const [searchQueryInput, setSearchQueryInput] = useState("");
@@ -291,6 +298,7 @@ export default function HomeTab({
     setActiveSplitIndex(null);
   };
 
+  // FUNGSI BARU: Mengubah kategori rincian pecahan khusus mode edit
   const handleSelectEditSplitCategory = (catName: string) => {
     if (activeEditSplitIndex !== null) {
       const updated = [...editTSplits];
@@ -414,6 +422,23 @@ export default function HomeTab({
     setActiveKeypad(null);
   };
 
+  // Cari objek kategori aktif pilihan pengguna untuk merender logo besar secara dinamis di header
+  const activeCategoryObject = useMemo(() => {
+    const activeName = editingTransaction ? editTCategory : tCategory;
+    return categories.find(c => c.name === activeName);
+  }, [categories, tCategory, editTCategory, editingTransaction]);
+
+  const renderActiveCategoryIcon = () => {
+    if (activeCategoryObject?.icon) return activeCategoryObject.icon;
+    const activeName = editingTransaction ? editTCategory : tCategory;
+    return getCategoryIcon(activeName || "");
+  };
+
+  const getRowIcon = (item: TransactionData) => {
+    const catObj = categories.find(c => c.name === item.category);
+    return catObj?.icon || getCategoryIcon(item.category);
+  };
+
   return (
     <div className="space-y-6 text-left relative min-h-[calc(100vh-120px)] transition-colors duration-200">
       
@@ -481,16 +506,16 @@ export default function HomeTab({
                       type="button"
                       onClick={() => { setSelectedAccountIdFilter(acc.id); setShowAccountFilterDropdown(false); }}
                       className={`w-full text-left px-4 py-2 text-xs font-bold ${selectedAccountIdFilter === acc.id ? "text-blue-600 bg-blue-50 dark:bg-blue-950/30" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
-                    >
-                      {acc.name}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+                  >
+                    {acc.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
+    </div>
 
       {/* HORIZONTAL MONTH SCROLLING PILLS */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 scroll-smooth -mx-4 px-4 md:mx-0 md:px-0">
@@ -591,7 +616,7 @@ export default function HomeTab({
                       <div key={t.id} className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl flex items-center justify-between hover:border-blue-100 dark:hover:border-blue-900/30 transition-all group">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg shrink-0">
-                            {getCategoryIcon(t.category)}
+                            {getRowIcon(t)}
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate flex items-center gap-1">
@@ -672,9 +697,24 @@ export default function HomeTab({
                 <button type="button" onClick={closeMainDrawer} className="absolute top-4 left-4 p-1.5 hover:bg-white/10 text-white rounded-full"><X size={16} /></button>
                 <div className="flex items-center justify-between mt-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white/20 text-white rounded-full flex items-center justify-center text-2xl shrink-0">
-                      {getCategoryIcon(editTCategory)}
-                    </div>
+                    {/* Mengubah logo agar bisa diklik untuk edit logo instan */}
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        if (activeCategoryObject) {
+                          triggerHaptic();
+                          setEditingCat(activeCategoryObject);
+                          setEditCatName(activeCategoryObject.name);
+                          setEditCatIcon(activeCategoryObject.icon || "");
+                        } else {
+                          alert("Pilih kategori terlebih dahulu untuk mengubah logonya!");
+                        }
+                      }}
+                      className="w-12 h-12 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center text-2xl shrink-0 transition-all cursor-pointer active:scale-90"
+                      title="Klik untuk ubah logo/emoji"
+                    >
+                      {renderActiveCategoryIcon()}
+                    </button>
                     <div>
                       {/* Header besar Gambar 4 */}
                       <span className="text-[10px] font-black text-white/70 uppercase tracking-widest leading-none block mb-1">Koreksi Transaksi</span>
@@ -691,9 +731,24 @@ export default function HomeTab({
                 <button type="button" onClick={closeMainDrawer} className="absolute top-4 left-4 p-1.5 hover:bg-white/10 text-white rounded-full"><X size={16} /></button>
                 <div className="flex items-center justify-between mt-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white/20 text-white rounded-full flex items-center justify-center text-2xl shrink-0">
-                      {getCategoryIcon(tCategory)}
-                    </div>
+                    {/* Mengubah logo agar bisa diklik untuk edit logo instan */}
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        if (activeCategoryObject) {
+                          triggerHaptic();
+                          setEditingCat(activeCategoryObject);
+                          setEditCatName(activeCategoryObject.name);
+                          setEditCatIcon(activeCategoryObject.icon || "");
+                        } else {
+                          alert("Pilih kategori terlebih dahulu untuk mengubah logonya!");
+                        }
+                      }}
+                      className="w-12 h-12 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center text-2xl shrink-0 transition-all cursor-pointer active:scale-90"
+                      title="Klik untuk ubah logo/emoji"
+                    >
+                      {renderActiveCategoryIcon()}
+                    </button>
                     <div>
                       {/* Header besar Gambar 4 */}
                       <span className="text-[10px] font-black text-white/70 uppercase tracking-widest leading-none block mb-1">Catat Baru</span>
@@ -858,7 +913,7 @@ export default function HomeTab({
               {/* INPUT CATATAN / MEMO */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan</label>
-                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
+                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-850 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
               </div>
 
               {/* EDITING SPLITS SECTION (Untuk Koreksi Splits Langsung di Form Laci) */}
@@ -866,7 +921,7 @@ export default function HomeTab({
                 <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                   <div className="flex justify-between items-center"><p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">✂️ Rincian Pecahan Koreksi</p><span className="text-[10px] font-black text-emerald-600">Total: Rp {editTSplits.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}</span></div>
                   {editTSplits.map((item, i) => (
-                    <div key={i} className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 text-left">
+                    <div key={i} className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 text-left">
                       <div className="flex justify-between items-center">
                         <span className="text-[10px] font-black text-slate-400">Pecahan #{i + 1}</span>
                         {editTSplits.length > 1 && (
@@ -939,27 +994,45 @@ export default function HomeTab({
             <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900 text-left">
               {tType === "expense" ? (
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                  <div className="space-y-2 animate-in fade-in duration-150">
                     <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-orange-100 dark:border-orange-950/30 z-10"><p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel</p></div>
                     <div className="flex flex-col gap-1.5">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").map(cat => (
-                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-orange-500 text-white" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-orange-50/50"}`}>{cat.name}</button>
+                        <div key={cat.id} className="flex gap-1.5 items-center w-full">
+                          <button type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-red-600 text-white border-red-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"}`}>
+                            <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
+                            <span className="truncate">{cat.name}</span>
+                          </button>
+                          <button type="button" onClick={() => { triggerHaptic(); setEditingCat(cat); setEditCatName(cat.name); setEditCatIcon(cat.icon || ""); }} className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 cursor-pointer transition-all active:scale-90"><Edit3 size={12} /></button>
+                        </div>
                       ))}
                     </div>
                   </div>
-                  <div className="space-y-2 border-l border-slate-100 dark:border-slate-800 pl-4">
+                  <div className="space-y-2 border-l border-slate-100 dark:border-slate-800 pl-4 animate-in fade-in duration-150">
                     <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-purple-100 dark:border-purple-950/30 z-10"><p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">🟣 Tetap</p></div>
                     <div className="flex flex-col gap-1.5">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType === "fixed").map(cat => (
-                        <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-purple-500 text-white" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-purple-50/50"}`}>{cat.name}</button>
+                        <div key={cat.id} className="flex gap-1.5 items-center w-full">
+                          <button type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-purple-600 text-white border-purple-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"}`}>
+                            <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
+                            <span className="truncate">{cat.name}</span>
+                          </button>
+                          <button type="button" onClick={() => { triggerHaptic(); setEditingCat(cat); setEditCatName(cat.name); setEditCatIcon(cat.icon || ""); }} className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 cursor-pointer transition-all active:scale-90"><Edit3 size={12} /></button>
+                        </div>
                       ))}
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-2 animate-in fade-in duration-150">
                   {filteredCategories.filter(c => c.type === "income").map(cat => (
-                    <button key={cat.id} type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${tCategory === cat.name ? "bg-green-500 text-white" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-green-50/50"}`}>{cat.name}</button>
+                    <div key={cat.id} className="flex gap-1.5 items-center w-full">
+                      <button type="button" onClick={() => { setTCategory(cat.name); setShowCatModal(false); }} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-green-600 text-white border-green-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"}`}>
+                        <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
+                        <span className="truncate">{cat.name}</span>
+                      </button>
+                      <button type="button" onClick={() => { triggerHaptic(); setEditingCat(cat); setEditCatName(cat.name); setEditCatIcon(cat.icon || ""); }} className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-400 shrink-0 cursor-pointer transition-all active:scale-90"><Edit3 size={12} /></button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -1126,6 +1199,64 @@ export default function HomeTab({
             </div>
           </div>
         </>
+      )}
+
+      {/* MINI MODAL: EDIT NAMA & LOGO EMOJI KATEGORI SECARA INSTAN */}
+      {editingCat && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-[28px] w-full max-w-xs shadow-2xl p-6 border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200 text-left">
+            <h4 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-1">🔧 Atur Logo & Kategori</h4>
+            
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400">Emoji / Logo Kustom (Satu Karakter)</label>
+                <input 
+                  type="text" 
+                  maxLength={2} // Mengizinkan input emoji penuh
+                  placeholder="Ketik satu emoji (misal: 💈, 🍛)" 
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-center text-xl font-black outline-blue-500 text-slate-800 dark:text-white"
+                  value={editCatIcon}
+                  onChange={(e) => setEditCatIcon(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400">Nama Kategori</label>
+                <input 
+                  type="text" 
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white"
+                  value={editCatName}
+                  onChange={(e) => setEditCatName(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button 
+                type="button" 
+                onClick={async () => {
+                  if (updateCategory && editingCat) {
+                    triggerHaptic();
+                    await updateCategory(editingCat.id, editCatName, editingCat.budgetLimit || null, editingCat.expenseType || "variable", editCatIcon);
+                    setEditingCat(null);
+                    setShowCatModal(false); // Tutup modal luar agar perubahan termuat penuh
+                    alert("Kategori berhasil diperbarui!");
+                  }
+                }} 
+                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer"
+              >
+                Simpan
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setEditingCat(null)} 
+                className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-bold"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

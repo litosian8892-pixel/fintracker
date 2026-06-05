@@ -426,12 +426,19 @@ export default function FintrackerApp() {
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
-  const handleEditCategory = async (id: string, newName: string, newBudget: number, expenseType: "fixed" | "variable") => {
+  const handleEditCategory = async (id: string, newName: string, newBudget: number | null, expenseType: "fixed" | "variable", newIcon?: string) => {
     if (isSubmittingRef.current) return; 
     if (!user) return;
     isSubmittingRef.current = true;
     setIsSubmitting(true);
-    try { await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { name: newName, budgetLimit: newBudget, expenseType: expenseType }); } 
+    try { 
+      await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { 
+        name: newName, 
+        budgetLimit: newBudget, 
+        expenseType: expenseType,
+        icon: newIcon || "" // Menyimpan emoji kustom ke database
+      }); 
+    } 
     catch (e) { alert("Gagal memperbarui kategori!"); }
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
@@ -1172,6 +1179,7 @@ export default function FintrackerApp() {
                   editTDate={editTDate} setEditTDate={setEditTDate}
                   editTAdminFee={editTAdminFee} setEditTAdminFee={setEditTAdminFee}
                   editTSplits={editTSplits} setEditTSplits={setEditTSplits}
+                  updateCategory={handleEditCategory}
                 />
               )}
               {activeTab === "reports" && (
