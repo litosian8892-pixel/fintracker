@@ -346,6 +346,10 @@ export default function HomeTab({
     return d.toISOString().split('T')[0];
   };
 
+  const getTodayDateString = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
   // --- LOGIKA GENERASI BULAN REAKTIF (6 Bulan Terakhir) ---
   const recentMonths = useMemo(() => {
     const months = [];
@@ -492,6 +496,33 @@ export default function HomeTab({
     setShowCatModal(false);
   };
 
+  // Menentukan secara reaktif apakah tanggal aktif merupakan hari Kemarin
+  const isDateYesterday = useMemo(() => {
+    const activeDateValue = editingTransaction ? editTDate : tDate;
+    return activeDateValue === getYesterdayDateString();
+  }, [editingTransaction, editTDate, tDate]);
+
+  // Handler cerdas toggle bolak-balik kemarin vs hari ini (Yesterday/Today Toggler)
+  const toggleYesterdayToday = () => {
+    triggerHaptic();
+    const today = getTodayDateString();
+    const yesterday = getYesterdayDateString();
+    
+    if (editingTransaction) {
+      if (editTDate === yesterday) {
+        setEditTDate(today);
+      } else {
+        setEditTDate(yesterday);
+      }
+    } else {
+      if (tDate === yesterday) {
+        setTDate(today);
+      } else {
+        setTDate(yesterday);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6 text-left relative min-h-[calc(100vh-120px)] transition-colors duration-200">
       
@@ -582,7 +613,7 @@ export default function HomeTab({
               className={`px-4 py-2 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shrink-0 border ${
                 isActive 
                   ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/10" 
-                  : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100"
+                  : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-855 dark:hover:text-slate-100"
               }`}
             >
               {m.label}
@@ -817,7 +848,7 @@ export default function HomeTab({
             )}
 
             {/* Input Form Fields (Scrollable) */}
-            <div className="p-6 space-y-4 overflow-y-auto bg-white dark:bg-slate-950 flex-1">
+            <div className="p-6 space-y-4 overflow-y-auto bg-white dark:bg-slate-955 flex-1">
               
               {/* TABS SELECTOR (Untuk Transaksi Baru) */}
               {!editingTransaction && (
@@ -904,16 +935,25 @@ export default function HomeTab({
                 )}
               </div>
 
-              {/* INPUT TANGGAL PENUH (Hanya jika transfer aktif) */}
-              {((editingTransaction ? editTType : tType) === "transfer") && (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center justify-between px-1">
-                    <span>Tanggal</span>
-                    <button type="button" onClick={() => { triggerHaptic(); const yes = getYesterdayDateString(); if (editingTransaction) setEditTDate(yes); else setTDate(yes); }} className="text-[9px] font-black text-blue-600 dark:text-blue-400 hover:underline">Kemarin?</button>
-                  </label>
-                  <input type="date" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" value={editingTransaction ? editTDate : tDate} onChange={(e) => editingTransaction ? setEditTDate(e.target.value) : setTDate(e.target.value)} />
-                </div>
-              )}
+              {/* INPUT TANGGAL MANDIRI (BERJALAN UNTUK SEMUA MODE TRANSAKSI) */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center justify-between px-1">
+                  <span>Tanggal</span>
+                  <button 
+                    type="button" 
+                    onClick={toggleYesterdayToday} 
+                    className="text-[9px] font-black text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                  >
+                    {isDateYesterday ? "Hari Ini?" : "Kemarin?"}
+                  </button>
+                </label>
+                <input 
+                  type="date" 
+                  className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" 
+                  value={editingTransaction ? editTDate : tDate} 
+                  onChange={(e) => editingTransaction ? setEditTDate(e.target.value) : setTDate(e.target.value)} 
+                />
+              </div>
 
               {/* INPUT KATEGORI (GAMBAR 4 ROW STYLE - SINKRON 100% UNTUK BARU & EDIT) */}
               {((editingTransaction ? editTType : tType) !== "transfer") && (
@@ -976,7 +1016,7 @@ export default function HomeTab({
               {/* INPUT CATATAN / MEMO */}
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan</label>
-                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
+                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-850 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
               </div>
 
               {/* EDITING SPLITS SECTION (Untuk Koreksi Splits Langsung di Form Laci) */}
@@ -984,7 +1024,7 @@ export default function HomeTab({
                 <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                   <div className="flex justify-between items-center"><p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">✂️ Rincian Pecahan Koreksi</p><span className="text-[10px] font-black text-emerald-600">Total: Rp {editTSplits.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}</span></div>
                   {editTSplits.map((item, i) => (
-                    <div key={i} className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 text-left">
+                    <div key={i} className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 text-left">
                       <div className="flex justify-between items-center">
                         <span className="text-[10px] font-black text-slate-400">Pecahan #{i + 1}</span>
                         {editTSplits.length > 1 && (
@@ -994,13 +1034,13 @@ export default function HomeTab({
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-400 uppercase">Kategori</label>
-                          <div onClick={() => { setActiveEditSplitIndex(i); setShowEditSplitCatModal(true); }} className="p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between hover:bg-slate-50 truncate">
+                          <div onClick={() => { setActiveEditSplitIndex(i); setShowEditSplitCatModal(true); }} className="p-3 bg-white border border-slate-200 dark:bg-slate-955 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between hover:bg-slate-50 truncate">
                             <span className="truncate">{item.category || "Pilih..."}</span><ChevronDown size={14} className="text-slate-400 shrink-0" />
                           </div>
                         </div>
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-400">Nominal</label>
-                          <input type="text" className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.amount === 0 ? "" : item.amount} onChange={(e) => {
+                          <input type="text" className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-955 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-blue-500" value={item.amount === 0 ? "" : item.amount} onChange={(e) => {
                             const val = e.target.value.replace(/[^0-9]/g, "");
                             const updated = [...editTSplits];
                             updated[i].amount = val ? Number(val) : 0;
@@ -1008,7 +1048,7 @@ export default function HomeTab({
                           }} />
                         </div>
                       </div>
-                      <input type="text" placeholder="Catatan Pecahan..." className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={item.note || ""} onChange={(e) => {
+                      <input type="text" placeholder="Catatan Pecahan..." className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-955 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white" value={item.note || ""} onChange={(e) => {
                         const updated = [...editTSplits];
                         updated[i].note = e.target.value;
                         setEditTSplits(updated);
@@ -1062,7 +1102,7 @@ export default function HomeTab({
                     <div className="flex flex-col gap-1.5">
                       {filteredCategories.filter(c => c.type === "expense" && c.expenseType !== "fixed").map(cat => (
                         <div key={cat.id} className="flex gap-1.5 items-center w-full">
-                          <button type="button" onClick={() => handleSelectCategory(cat.name)} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-red-600 text-white border-red-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"}`}>
+                          <button type="button" onClick={() => handleSelectCategory(cat.name)} className={`flex-1 text-left px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${tCategory === cat.name ? "bg-red-600 text-white border-red-700" : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-755"}`}>
                             <span className="shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
                             <span className="truncate">{cat.name}</span>
                           </button>
@@ -1208,9 +1248,9 @@ export default function HomeTab({
             <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-white font-black text-base">
               {["+", "-", "*", "/"].map((op) => (<button key={op} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(op) : handleKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl select-none">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>))}
               {["7", "8", "9"].map((num) => (<button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
-              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("C") : handleEditKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-950/40 text-red-600 rounded-xl select-none">C</button>
+              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("C") : handleKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-950/40 text-red-600 rounded-xl select-none">C</button>
               {["4", "5", "6"].map((num) => (<button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
-              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("⌫") : handleKeypadPress("5")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl text-slate-500 flex items-center justify-center select-none">⌫</button>
+              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("⌫") : handleKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl text-slate-500 flex items-center justify-center select-none">⌫</button>
               {["1", "2", "3"].map((num) => (<button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50 dark:bg-slate-800 active:bg-slate-100 rounded-xl select-none">{num}</button>))}
               <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress(".") : handleKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 rounded-xl select-none">.</button>
               {["(", "0", ")"].map((char) => (<button key={char} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(char) : handleKeypadPress(char)} className="bg-slate-50 dark:bg-slate-800 py-3.5 rounded-xl select-none">{char}</button>))}
@@ -1262,7 +1302,7 @@ export default function HomeTab({
               <button 
                 type="button" 
                 onClick={() => setActiveAccSelector(null)} 
-                className="p-1.5 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-500 rounded-full transition-colors cursor-pointer"
+                className="p-1.5 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-755 text-slate-500 rounded-full transition-colors cursor-pointer"
               >
                 <X size={14} />
               </button>
@@ -1283,7 +1323,7 @@ export default function HomeTab({
                       className={`p-4 rounded-2xl border text-left flex flex-col justify-between relative transition-all active:scale-95 cursor-pointer h-28 ${
                         isSelected 
                           ? "border-blue-600 bg-blue-50/50 dark:bg-blue-950/20 shadow-md shadow-blue-500/5" 
-                          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-855"
+                          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850"
                       }`}
                     >
                       {/* Logo / Icon */}
