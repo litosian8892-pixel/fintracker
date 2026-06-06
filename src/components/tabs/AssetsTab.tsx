@@ -114,7 +114,7 @@ const getGoalStatus = (percentage: number) => {
 };
 
 const formatCurrencyTerbaca = (val: string | number, currencyCode?: string) => {
-  if (!val) return `${getCurrencySymbol(currencyCode)} 0`;
+  if (!val && val !== 0) return `${getCurrencySymbol(currencyCode)} 0`;
   const parsed = typeof val === 'string' ? parseFloat(val) : val;
   if (isNaN(parsed)) return `${getCurrencySymbol(currencyCode)} 0`;
   const code = currencyCode || "IDR";
@@ -869,8 +869,8 @@ export default function AssetsTab({
               {editingAccId ? (
                 <div className="space-y-3 bg-slate-50 dark:bg-slate-900 p-5 rounded-[24px] border border-slate-100 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ubah Nama Dompet</label>
-                    <input className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} />
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Nama Dompet</label>
+                    <input type="text" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccName} onChange={(e) => setEditAccName(e.target.value)} />
                   </div>
                   
                   <div className="space-y-1 text-left">
@@ -903,9 +903,13 @@ export default function AssetsTab({
 
                   {editAccIsSavings && (
                     <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
-                      <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
-                      <div>
-                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Nama Impian</label>
+                        <input type="text" placeholder="Contoh: DP Rumah" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Target Nominal Tabungan</label>
+                        <input type="number" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
                         {editAccTargetBalance && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editAccTargetBalance, editCurrency)}</span></p>}
                       </div>
                     </div>
@@ -929,22 +933,32 @@ export default function AssetsTab({
               ) : (
                 <>
                   <div className="space-y-3 bg-slate-50 dark:bg-slate-900 p-5 rounded-[24px] border border-slate-100 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
-                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 mb-2">Tambah Dompet Baru</h4>
+                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 mb-4">Tambah Dompet Baru</h4>
                     
-                    <select className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={accCurrency || localAccCurrency} onChange={(e) => setAccCurrency ? setAccCurrency(e.target.value) : setLocalAccCurrency(e.target.value)}>
-                      <option value="IDR">🇮🇩 Rupiah (IDR)</option><option value="USD">🇺🇸 Dollar (USD)</option><option value="SGD">🇸🇬 Dollar (SGD)</option><option value="EUR">🇪🇺 Euro (EUR)</option><option value="JPY">🇯🇵 Yen (JPY)</option><option value="CNY">🇨🇳 Yuan (CNY)</option><option value="GBP">🇬🇧 Pound (GBP)</option><option value="AUD">🇦🇺 Dollar (AUD)</option><option value="MYR">🇲🇾 Ringgit (MYR)</option><option value="SAR">🇸🇦 Riyal (SAR)</option>
-                    </select>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Mata Uang Dompet</label>
+                      <select className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={accCurrency || localAccCurrency} onChange={(e) => setAccCurrency ? setAccCurrency(e.target.value) : setLocalAccCurrency(e.target.value)}>
+                        <option value="IDR">🇮🇩 Rupiah (IDR)</option><option value="USD">🇺🇸 Dollar (USD)</option><option value="SGD">🇸🇬 Dollar (SGD)</option><option value="EUR">🇪🇺 Euro (EUR)</option><option value="JPY">🇯🇵 Yen (JPY)</option><option value="CNY">🇨🇳 Yuan (CNY)</option><option value="GBP">🇬🇧 Pound (GBP)</option><option value="AUD">🇦🇺 Dollar (AUD)</option><option value="MYR">🇲🇾 Ringgit (MYR)</option><option value="SAR">🇸🇦 Riyal (SAR)</option>
+                      </select>
+                    </div>
 
-                    <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" value={accName} onChange={(e) => setAccName(e.target.value)} />
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Nama Dompet</label>
+                      <input type="text" placeholder="Contoh: BCA, Gopay, Tunai" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" value={accName} onChange={(e) => setAccName(e.target.value)} />
+                    </div>
                     
-                    <div>
-                      <input type="number" placeholder="Saldo Aktual" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Saldo Aktual</label>
+                      <input type="number" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
                       {accBalance && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(accBalance, accCurrency || localAccCurrency)}</span></p>}
                     </div>
 
-                    <select className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
-                        {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
-                    </select>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Tipe Dompet</label>
+                      <select className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
+                          {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
+                      </select>
+                    </div>
 
                     <div className="flex flex-col gap-2 pt-2">
                       <label className="flex items-center gap-2 cursor-pointer text-[10px] font-bold text-slate-600 dark:text-slate-300"><input type="checkbox" checked={accIsBusiness} onChange={() => setAccIsBusiness(!accIsBusiness)} className="rounded text-blue-600 focus:ring-blue-500 bg-slate-900 border-slate-700" />Jadikan Dompet Bisnis</label>
@@ -954,9 +968,13 @@ export default function AssetsTab({
 
                     {accIsSavings && (
                       <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
-                        <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white" value={accSavingsGoalTitle} onChange={(e) => setAccSavingsGoalTitle(e.target.value)} />
-                        <div>
-                          <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Nama Impian</label>
+                          <input type="text" placeholder="Contoh: DP Rumah" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white" value={accSavingsGoalTitle} onChange={(e) => setAccSavingsGoalTitle(e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Target Nominal Tabungan</label>
+                          <input type="number" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
                           {accTargetBalance && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(accTargetBalance, accCurrency || localAccCurrency)}</span></p>}
                         </div>
                       </div>
