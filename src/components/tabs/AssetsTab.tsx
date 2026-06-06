@@ -112,23 +112,18 @@ const getGoalStatus = (percentage: number) => {
   if (percentage >= 40) return { label: "🔥 On Track", color: "text-amber-600 bg-amber-50 dark:bg-amber-900/40 border-amber-200 dark:border-amber-800/50" };
   return { label: "🌱 Berjuang!", color: "text-slate-500 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50" };
 };
-const formatDisplayNumber = (val: string | number) => {
-  if (!val && val !== 0) return "";
-  let cleaned = val.toString().replace(/[^0-9.,]/g, "").replace(/,/g, ".");
-  const parts = cleaned.split(".");
-  const integerPart = parseInt(parts[0] || "0", 10);
-  if (isNaN(integerPart)) return "";
-  let formatted = integerPart.toLocaleString("id-ID");
-  if (parts.length > 1) {
-    formatted += "," + parts[1];
-  } else if (cleaned.endsWith(".")) {
-    formatted += ",";
-  }
-  return formatted;
-};
 
-const parseRawNumber = (val: string) => {
-  return val.replace(/[^0-9.,]/g, "").replace(/,/g, ".");
+const formatCurrencyTerbaca = (val: string | number, currencyCode?: string) => {
+  if (!val) return `${getCurrencySymbol(currencyCode)} 0`;
+  const parsed = typeof val === 'string' ? parseFloat(val) : val;
+  if (isNaN(parsed)) return `${getCurrencySymbol(currencyCode)} 0`;
+  const code = currencyCode || "IDR";
+  return new Intl.NumberFormat("id-ID", { 
+    style: "currency", 
+    currency: code.toUpperCase() === "IDR" ? "IDR" : code.toUpperCase(), 
+    minimumFractionDigits: 0, 
+    maximumFractionDigits: code.toUpperCase() === "IDR" ? 0 : 2 
+  }).format(parsed);
 };
 
 const generateGradientStops = (data: any[], dataKey: string) => {
@@ -887,7 +882,8 @@ export default function AssetsTab({
 
                   <div className={`space-y-1 p-3 rounded-xl border ${currentTheme.auditBox}`}>
                     <label className={`text-[9px] font-black uppercase tracking-widest ${currentTheme.text}`}>Audit Saldo Nyata (Real - {editCurrency})</label>
-                    <input type="text" inputMode="decimal" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={formatDisplayNumber(editAccBalance)} onChange={(e) => setEditAccBalance(parseRawNumber(e.target.value))} />
+                    <input type="number" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
+                    {editAccBalance && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editAccBalance, editCurrency)}</span></p>}
                   </div>
                   
                   <div className="flex flex-col gap-2 pt-2">
@@ -906,11 +902,14 @@ export default function AssetsTab({
                   </div>
 
                   {editAccIsSavings && (
-  <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-    <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
-    <input type="text" inputMode="decimal" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={formatDisplayNumber(editAccTargetBalance)} onChange={(e) => setEditAccTargetBalance(parseRawNumber(e.target.value))} />
-  </div>
-)}
+                    <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                      <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
+                      <div>
+                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+                        {editAccTargetBalance && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editAccTargetBalance, editCurrency)}</span></p>}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex flex-col gap-1 pt-1 text-left">
                     <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Ubah Logo Dompet (Opsional)</label>
@@ -937,8 +936,12 @@ export default function AssetsTab({
                     </select>
 
                     <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" value={accName} onChange={(e) => setAccName(e.target.value)} />
-                    <input type="text" inputMode="decimal" placeholder="Saldo Aktual" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" value={formatDisplayNumber(accBalance)} onChange={(e) => setAccBalance(parseRawNumber(e.target.value))} />
                     
+                    <div>
+                      <input type="number" placeholder="Saldo Aktual" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
+                      {accBalance && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(accBalance, accCurrency || localAccCurrency)}</span></p>}
+                    </div>
+
                     <select className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
                         {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
@@ -950,9 +953,12 @@ export default function AssetsTab({
                     </div>
 
                     {accIsSavings && (
-                      <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                      <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                         <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white" value={accSavingsGoalTitle} onChange={(e) => setAccSavingsGoalTitle(e.target.value)} />
-                        <input type="text" inputMode="decimal" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white" value={formatDisplayNumber(accTargetBalance)} onChange={(e) => setAccTargetBalance(parseRawNumber(e.target.value))} />
+                        <div>
+                          <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
+                          {accTargetBalance && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(accTargetBalance, accCurrency || localAccCurrency)}</span></p>}
+                        </div>
                       </div>
                     )}
 
