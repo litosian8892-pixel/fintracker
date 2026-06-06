@@ -695,7 +695,10 @@ export default function AssetsTab({
                             </div>
 
                             <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-3 truncate">{acc.name}</p>
-                            <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none mt-1">
+                            {/* --- BARIS BARU UNTUK MENAMPILKAN TIPE DOMPET --- */}
+                            <p className="text-[9px] font-bold text-slate-400 uppercase leading-none mt-0.5">{acc.currency || "IDR"} • {acc.type}</p>
+                            
+                            <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none mt-1.5">
                               {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
                             </p>
                           </div>
@@ -822,7 +825,14 @@ export default function AssetsTab({
                         <div>
                           <p className={`text-[10px] font-black uppercase mb-0.5 ${currentTheme.text}`}>{acc.savingsGoalTitle || "Dana Darurat"}</p>
                           <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1">{acc.name}</p>
-                          <p className="text-lg font-black text-slate-800 dark:text-slate-100">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
+                          <div className="flex items-baseline gap-1.5">
+                            <p className="text-lg font-black text-slate-800 dark:text-slate-100">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
+                            {hasTarget && (
+                              <p className="text-[10px] font-bold text-slate-400">
+                                / {isPrivacyMode ? '•••••••' : acc.targetBalance!.toLocaleString('id-ID')}
+                              </p>
+                            )}
+                          </div>
                         </div>
                         {hasTarget && (
                           <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-3"><div className={`h-full ${currentTheme.progressActive}`} style={{ width: `${percentage}%` }}></div></div>
