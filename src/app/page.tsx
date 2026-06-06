@@ -1287,7 +1287,7 @@ export default function FintrackerApp() {
                 handleUpdateInvestmentRate={handleUpdateInvestmentRate}
               />
             )}
-            
+              
             {activeTab === "settings" && (
               <SettingsTab 
                 user={user} onLogout={() => signOut(auth)} tType={tType} setTType={setTType}
