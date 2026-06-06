@@ -218,6 +218,9 @@ export default function FintrackerApp() {
   const [accIsBusiness, setAccIsBusiness] = useState(false); 
   const [accSavingsGoalTitle, setAccSavingsGoalTitle] = useState(""); 
   const [accCurrency, setAccCurrency] = useState("IDR");
+  const [accIsInvestment, setAccIsInvestment] = useState(false);
+  const [accAverageBuyPrice, setAccAverageBuyPrice] = useState("");
+  const [accLastExchangeRate, setAccLastExchangeRate] = useState("");
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [editAccName, setEditAccName] = useState("");
@@ -229,6 +232,9 @@ export default function FintrackerApp() {
   const [editAccIsBusiness, setEditAccIsBusiness] = useState(false); 
   const [editAccSavingsGoalTitle, setEditAccSavingsGoalTitle] = useState(""); 
   const [editAccCurrency, setEditAccCurrency] = useState("IDR");
+  const [editAccIsInvestment, setEditAccIsInvestment] = useState(false);
+  const [editAccAverageBuyPrice, setEditAccAverageBuyPrice] = useState("");
+  const [editAccLastExchangeRate, setEditAccLastExchangeRate] = useState("");
 
   const [tAmount, setTAmount] = useState("");
   const [tAdminFee, setTAdminFee] = useState(""); 
@@ -714,17 +720,19 @@ export default function FintrackerApp() {
         type: accType, 
         logo: accLogo, 
         order: accounts.length, 
-        isSavings: accIsSavings, 
-        targetBalance: accIsSavings && accTargetBalance ? safeEvaluate(accTargetBalance) : null, 
+        isSavings: accIsSavings && !accIsInvestment, 
+        targetBalance: accIsSavings && accTargetBalance && !accIsInvestment ? safeEvaluate(accTargetBalance) : null, 
         excludeFromTotal: accExcludeFromTotal, 
-        isBusiness: accIsBusiness, 
-        savingsGoalTitle: accIsSavings && accSavingsGoalTitle ? accSavingsGoalTitle : null, 
+        isBusiness: accIsBusiness && !accIsInvestment, 
+        savingsGoalTitle: accIsSavings && accSavingsGoalTitle && !accIsInvestment ? accSavingsGoalTitle : null, 
         currency: accCurrency,
-        lastExchangeRate: accCurrency === "IDR" ? 1 : exchangeRates[accCurrency] || 1, 
+        isInvestment: accIsInvestment,
+        averageBuyPrice: accIsInvestment && accAverageBuyPrice ? safeEvaluate(accAverageBuyPrice) : null,
+        lastExchangeRate: accIsInvestment && accLastExchangeRate ? safeEvaluate(accLastExchangeRate) : (accCurrency === "IDR" ? 1 : exchangeRates[accCurrency] || 1), 
         createdAt: serverTimestamp() 
       });
       setAccName(""); setAccBalance(""); setAccLogo(""); setAccTargetBalance(""); setAccIsSavings(false); setAccExcludeFromTotal(false); setAccIsBusiness(false); setAccSavingsGoalTitle("");
-      setAccCurrency("IDR"); 
+      setAccCurrency("IDR"); setAccIsInvestment(false); setAccAverageBuyPrice(""); setAccLastExchangeRate("");
     } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
@@ -773,20 +781,31 @@ export default function FintrackerApp() {
         name: editAccName, 
         balance: newBalance, 
         logo: editAccLogo, 
-        isSavings: editAccIsSavings, 
-        targetBalance: editAccIsSavings && editAccTargetBalance ? safeEvaluate(editAccTargetBalance) : null, 
+        isSavings: editAccIsSavings && !editAccIsInvestment, 
+        targetBalance: editAccIsSavings && editAccTargetBalance && !editAccIsInvestment ? safeEvaluate(editAccTargetBalance) : null, 
         excludeFromTotal: editAccExcludeFromTotal,
-        isBusiness: editAccIsBusiness, 
-        savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle ? editAccSavingsGoalTitle : null,
+        isBusiness: editAccIsBusiness && !editAccIsInvestment, 
+        savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle && !editAccIsInvestment ? editAccSavingsGoalTitle : null,
         currency: targetCurrency,
-        lastExchangeRate: targetRate 
+        isInvestment: editAccIsInvestment,
+        averageBuyPrice: editAccIsInvestment && editAccAverageBuyPrice ? safeEvaluate(editAccAverageBuyPrice) : null,
+        lastExchangeRate: editAccIsInvestment && editAccLastExchangeRate ? safeEvaluate(editAccLastExchangeRate) : targetRate 
       });
       
       setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false); setEditAccIsBusiness(false); setEditAccSavingsGoalTitle("");
-      setEditAccCurrency("IDR");
+      setEditAccCurrency("IDR"); setEditAccIsInvestment(false); setEditAccAverageBuyPrice(""); setEditAccLastExchangeRate("");
       alert("Dompet berhasil diperbarui & riwayat audit otomatis dicatat!");
     } catch (e) { alert("Gagal memperbarui"); }
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+  };
+
+  const handleUpdateInvestmentRate = async (id: string, newRate: number) => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), {
+        lastExchangeRate: newRate
+      });
+    } catch (error) { console.error("Gagal update rate:", error); }
   };
 
   const moveAccountOrder = async (index: number, direction: "up" | "down") => {
@@ -1259,8 +1278,16 @@ export default function FintrackerApp() {
                 editAccSavingsGoalTitle={editAccSavingsGoalTitle} setEditAccSavingsGoalTitle={setEditAccSavingsGoalTitle}
                 isPrivacyMode={isPrivacyMode} accCurrency={accCurrency} setAccCurrency={setAccCurrency} editAccCurrency={editAccCurrency} setEditAccCurrency={setEditAccCurrency}
                 exchangeRates={exchangeRates} handleUpdateGlobalRates={handleUpdateGlobalRates} reportTransactions={reportTransactions} reportMonth={reportMonth} setReportMonth={setReportMonth}
+                accIsInvestment={accIsInvestment} setAccIsInvestment={setAccIsInvestment}
+                editAccIsInvestment={editAccIsInvestment} setEditAccIsInvestment={setEditAccIsInvestment}
+                accAverageBuyPrice={accAverageBuyPrice} setAccAverageBuyPrice={setAccAverageBuyPrice}
+                editAccAverageBuyPrice={editAccAverageBuyPrice} setEditAccAverageBuyPrice={setEditAccAverageBuyPrice}
+                accLastExchangeRate={accLastExchangeRate} setAccLastExchangeRate={setAccLastExchangeRate}
+                editAccLastExchangeRate={editAccLastExchangeRate} setEditAccLastExchangeRate={setEditAccLastExchangeRate}
+                handleUpdateInvestmentRate={handleUpdateInvestmentRate}
               />
             )}
+            
             {activeTab === "settings" && (
               <SettingsTab 
                 user={user} onLogout={() => signOut(auth)} tType={tType} setTType={setTType}
