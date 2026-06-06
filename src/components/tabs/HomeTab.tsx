@@ -213,6 +213,9 @@ export default function HomeTab({
   const monthScrollRef = useRef<HTMLDivElement>(null);
   const [accent, setAccent] = useState<keyof typeof themeMap>("blue");
 
+  // State untuk Fitur Smart Autocomplete Catatan Transaksi
+  const [noteSuggestions, setNoteSuggestions] = useState<{note: string, category: string, amount: number}[]>([]);
+
   // Perbaikan Auto-scroll & Sinkronisasi Warna Aksen Dinamis
   useEffect(() => {
     if (monthScrollRef.current) {
@@ -356,6 +359,50 @@ export default function HomeTab({
 
   const triggerHaptic = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
   
+  // HANDLER SMART AUTOCOMPLETE PENCATATAN CATATAN (NEW)
+  const handleNoteChange = (val: string) => {
+    if (editingTransaction) setEditTNote(val);
+    else setTNote(val);
+    
+    // Cari saran histori jika ketikan >= 2 huruf
+    if (val.trim().length >= 2) {
+      const currentType = editingTransaction ? editTType : tType;
+      const matches: Record<string, {note: string, category: string, amount: number}> = {};
+      
+      // Ambil transaksi terbaru (berdasarkan tanggal) untuk prioritas utama
+      const sortedTx = [...transactions].sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime());
+      
+      for (const tx of sortedTx) {
+        if (tx.type === currentType && tx.note && tx.note.toLowerCase().includes(val.toLowerCase())) {
+          const key = tx.note.toLowerCase();
+          // Simpan hanya yang paling baru
+          if (!matches[key]) {
+            matches[key] = { note: tx.note, category: tx.category, amount: tx.amount };
+          }
+        }
+      }
+      
+      // Tampilkan maksimal 4 saran teratas
+      setNoteSuggestions(Object.values(matches).slice(0, 4));
+    } else {
+      setNoteSuggestions([]);
+    }
+  };
+
+  const handleSelectSuggestion = (sug: {note: string, category: string, amount: number}) => {
+    triggerHaptic();
+    if (editingTransaction) {
+      setEditTNote(sug.note);
+      if (editTType !== "transfer") setEditTCategory(sug.category);
+      setEditTAmount(sug.amount.toString());
+    } else {
+      setTNote(sug.note);
+      if (tType !== "transfer") setTCategory(sug.category);
+      setTAmount(sug.amount.toString());
+    }
+    setNoteSuggestions([]);
+  };
+
   const handleKeypadPress = (key: string) => {
     triggerHaptic();
     const currentVal = activeKeypad === "amount" ? tAmount : tAdminFee;
@@ -542,6 +589,7 @@ export default function HomeTab({
     setIsDrawerOpen(false);
     setEditingTransaction(null);
     setActiveKeypad(null);
+    setNoteSuggestions([]); // Bersihkan saran saat drawer ditutup
   };
 
   const activeCategoryObject = useMemo(() => {
@@ -1151,9 +1199,47 @@ export default function HomeTab({
                 </div>
               )}
 
-              <div className="space-y-1">
+              {/* INPUT CATATAN DENGAN FITUR SMART AUTOCOMPLETE */}
+              <div className="space-y-1 relative z-20">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan</label>
-                <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100" placeholder="Tulis keterangan transaksi..." value={editingTransaction ? editTNote : tNote} onChange={(e) => editingTransaction ? setEditTNote(e.target.value) : setTNote(e.target.value)} />
+                <input 
+                  type="text" 
+                  className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100 relative z-30" 
+                  placeholder="Ketik 2 huruf untuk saran otomatis..." 
+                  value={editingTransaction ? editTNote : tNote} 
+                  onChange={(e) => handleNoteChange(e.target.value)}
+                  onFocus={() => { if(isMobile) setActiveKeypad(null); }}
+                  autoComplete="off"
+                />
+                
+                {/* AUTOCOMPLETE DROPDOWN */}
+                {noteSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-40 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                      <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Saran Riwayat Transaksi</span>
+                      <button type="button" onClick={() => setNoteSuggestions([])} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 bg-slate-100 dark:bg-slate-800 rounded-full cursor-pointer"><X size={10}/></button>
+                    </div>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {noteSuggestions.map((sug, idx) => (
+                        <div 
+                          key={idx} 
+                          onClick={() => handleSelectSuggestion(sug)}
+                          className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors flex justify-between items-center group"
+                        >
+                          <div className="flex flex-col text-left">
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{sug.note}</span>
+                            <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1.5 mt-0.5">
+                              <span className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{getCategoryIcon(sug.category)}</span> {sug.category}
+                            </span>
+                          </div>
+                          <span className={`text-xs font-black ${currentTheme.text} bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-800`}>
+                            {formatCurrencyTerbaca(sug.amount.toString(), selectedSourceAcc?.currency)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {editingTransaction && editTSplits && editTSplits.length > 0 && (
