@@ -112,6 +112,24 @@ const getGoalStatus = (percentage: number) => {
   if (percentage >= 40) return { label: "🔥 On Track", color: "text-amber-600 bg-amber-50 dark:bg-amber-900/40 border-amber-200 dark:border-amber-800/50" };
   return { label: "🌱 Berjuang!", color: "text-slate-500 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700/50" };
 };
+const formatDisplayNumber = (val: string | number) => {
+  if (!val && val !== 0) return "";
+  let cleaned = val.toString().replace(/[^0-9.,]/g, "").replace(/,/g, ".");
+  const parts = cleaned.split(".");
+  const integerPart = parseInt(parts[0] || "0", 10);
+  if (isNaN(integerPart)) return "";
+  let formatted = integerPart.toLocaleString("id-ID");
+  if (parts.length > 1) {
+    formatted += "," + parts[1];
+  } else if (cleaned.endsWith(".")) {
+    formatted += ",";
+  }
+  return formatted;
+};
+
+const parseRawNumber = (val: string) => {
+  return val.replace(/[^0-9.,]/g, "").replace(/,/g, ".");
+};
 
 const generateGradientStops = (data: any[], dataKey: string) => {
   if (!data || data.length < 2) return [];
@@ -869,7 +887,7 @@ export default function AssetsTab({
 
                   <div className={`space-y-1 p-3 rounded-xl border ${currentTheme.auditBox}`}>
                     <label className={`text-[9px] font-black uppercase tracking-widest ${currentTheme.text}`}>Audit Saldo Nyata (Real - {editCurrency})</label>
-                    <input type="number" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
+                    <input type="text" inputMode="decimal" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={formatDisplayNumber(editAccBalance)} onChange={(e) => setEditAccBalance(parseRawNumber(e.target.value))} />
                   </div>
                   
                   <div className="flex flex-col gap-2 pt-2">
@@ -890,7 +908,7 @@ export default function AssetsTab({
                   {editAccIsSavings && (
   <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
     <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
-    <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+    <input type="text" inputMode="decimal" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={formatDisplayNumber(editAccTargetBalance)} onChange={(e) => setEditAccTargetBalance(parseRawNumber(e.target.value))} />
   </div>
 )}
 
@@ -919,7 +937,7 @@ export default function AssetsTab({
                     </select>
 
                     <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" value={accName} onChange={(e) => setAccName(e.target.value)} />
-                    <input type="number" placeholder="Saldo Aktual" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
+                    <input type="text" inputMode="decimal" placeholder="Saldo Aktual" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" value={formatDisplayNumber(accBalance)} onChange={(e) => setAccBalance(parseRawNumber(e.target.value))} />
                     
                     <select className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
                         {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
@@ -934,7 +952,7 @@ export default function AssetsTab({
                     {accIsSavings && (
                       <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                         <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white" value={accSavingsGoalTitle} onChange={(e) => setAccSavingsGoalTitle(e.target.value)} />
-                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
+                        <input type="text" inputMode="decimal" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white" value={formatDisplayNumber(accTargetBalance)} onChange={(e) => setAccTargetBalance(parseRawNumber(e.target.value))} />
                       </div>
                     )}
 
