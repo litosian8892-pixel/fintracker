@@ -862,7 +862,7 @@ export default function AssetsTab({
                   
                   <div className="space-y-1 text-left">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Mata Uang Dompet</label>
-                    <select className="w-full p-3.5 bg-white dark:bg-slate-955 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
+                    <select className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
                       <option value="IDR">🇮🇩 Rupiah (IDR)</option><option value="USD">🇺🇸 Dollar (USD)</option><option value="SGD">🇸🇬 Dollar (SGD)</option><option value="EUR">🇪🇺 Euro (EUR)</option><option value="JPY">🇯🇵 Yen (JPY)</option><option value="CNY">🇨🇳 Yuan (CNY)</option><option value="GBP">🇬🇧 Pound (GBP)</option><option value="AUD">🇦🇺 Dollar (AUD)</option><option value="MYR">🇲🇾 Ringgit (MYR)</option><option value="SAR">🇸🇦 Riyal (SAR)</option>
                     </select>
                   </div>
@@ -888,11 +888,11 @@ export default function AssetsTab({
                   </div>
 
                   {editAccIsSavings && (
-                    <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                      <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-955 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
-                      <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-955 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
-                    </div>
-                  )}
+  <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+    <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
+    <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+  </div>
+)}
 
                   <div className="flex flex-col gap-1 pt-1 text-left">
                     <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Ubah Logo Dompet (Opsional)</label>
