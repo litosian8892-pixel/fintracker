@@ -378,7 +378,28 @@ export default function AssetsTab({
     }
     return data;
   }, [totalPersonal, totalBusiness, activeAccountIds, assetAccountIds, reportTransactions]);
+const historicalAssetsData = useMemo(() => {
+    let runningBalance = totalAssets;
+    const data = [];
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      const dayName = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+      data.unshift({ name: dayName, dateStr, Balance: runningBalance });
 
+      const dayTxs = reportTransactions.filter(t => t.tDate === dateStr);
+      const dayInc = dayTxs.filter(t => t.type === 'income' && assetAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0);
+      const dayExp = dayTxs.filter(t => t.type === 'expense' && assetAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0);
+      const transfersFromActive = dayTxs.filter(t => t.type === 'transfer' && activeAccountIds.has(t.accountId) && assetAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0);
+      const transfersToActive = dayTxs.filter(t => t.type === 'transfer' && assetAccountIds.has(t.accountId) && activeAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0);
+
+      runningBalance = runningBalance - dayInc + dayExp - transfersFromActive + transfersToActive;
+    }
+    return data;
+  }, [totalAssets, activeAccountIds, assetAccountIds, reportTransactions]);
+  
   const detailTxs = useMemo(() => {
     return reportTransactions.filter(t => t.tDate?.startsWith(reportMonth || "") && (t.accountId === detailAccId || t.toAccountId === detailAccId));
   }, [reportTransactions, reportMonth, detailAccId]);
@@ -671,25 +692,82 @@ export default function AssetsTab({
             </div>
           )}
 
-          {/* TAB 4: ASET (DANA DARURAT & IMPIAN) - Sama Persis seperti Kode Awal */}
+          {/* SELEKTOR BULAN HISTORIS (Muncul di Tab Aset untuk cek mutasi) */}
+          {activeSubTab === "aset" && setReportMonth && (
+            <div ref={monthScrollRef} className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-track-transparent dark:scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark] scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 animate-in fade-in duration-200">
+              {[11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((i) => {
+                const d = new Date(); d.setMonth(d.getMonth() - i);
+                const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" });
+                return (
+                  <button key={value} type="button" onClick={() => { triggerHaptic(); setReportMonth(value); }}
+                    className={`px-4 py-1.5 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shrink-0 border ${
+                      reportMonth === value ? `${currentTheme.activePill}` : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-500 dark:text-slate-400"
+                    }`}>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* TAB 4: ASET (DANA DARURAT & IMPIAN) YANG KINI SUDAH KEMBALI 100% */}
           {activeSubTab === "aset" && (
             <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+              
+              {/* Grafik Area Chart */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
                 <h2 className="text-3xl font-black text-slate-800 dark:text-white text-center mb-1">{isPrivacyMode ? 'Rp •••••••' : `Rp ${totalAssets.toLocaleString('id-ID')}`}</h2>
                 <p className="text-[10px] font-bold text-slate-500 text-center mb-6">Total Nilai Aset Tabungan Fisik & Impian</p>
+                {renderAreaChart(historicalAssetsData, "#10b981", "Balance")}
               </div>
 
+              {/* KARTU ALIRAN MUTASI TABUNGAN BULANAN */}
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-[24px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 text-left">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="border-r border-slate-200 dark:border-slate-800 pr-2">
+                    <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Menabung ({reportMonth?.split("-")[1]})
+                    </p>
+                    <p className="text-sm font-black text-slate-800 dark:text-white mt-1">Rp {monthlySavingsSummary.totalDeposit.toLocaleString('id-ID')}</p>
+                    <span className="text-[8px] text-slate-400 font-bold block mt-0.5">Disimpan ke Aset</span>
+                  </div>
+                  <div className="pl-2">
+                    <p className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Penarikan ({reportMonth?.split("-")[1]})
+                    </p>
+                    <p className="text-sm font-black text-slate-800 dark:text-white mt-1">Rp {monthlySavingsSummary.totalWithdraw.toLocaleString('id-ID')}</p>
+                    <span className="text-[8px] text-slate-400 font-bold block mt-0.5">Ditarik ke Dompet</span>
+                  </div>
+                </div>
+                <div className="pt-3.5 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                  <div>
+                    <p className={`text-[9px] font-black uppercase tracking-widest ${currentTheme.text}`}>Total Menabung Bersih</p>
+                    <span className="text-[8px] text-slate-400 font-bold">(Menabung dikurangi Penarikan)</span>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-base font-black ${monthlySavingsSummary.totalDeposit - monthlySavingsSummary.totalWithdraw >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
+                      Rp {(monthlySavingsSummary.totalDeposit - monthlySavingsSummary.totalWithdraw).toLocaleString('id-ID')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid List Kartu Aset / Impian */}
               {(emergencyAccounts.length === 0 && dreamGoals.length === 0) ? (
                 <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm p-10 flex flex-col items-center justify-center text-center">
                   <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mb-4"><Activity size={32} className="text-emerald-500 dark:text-emerald-400"/></div>
-                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-1">Belum Ada Tabungan</h3>
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-1">Belum Ada Aset</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">Lacak investasi dan tabungan Anda dengan menekan tombol + di bawah.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[...emergencyAccounts, ...dreamGoals].map((acc) => {
-                    const design = getCardDesign(acc.type); const symbol = getCurrencySymbol(acc.currency);
+                    const design = getCardDesign(acc.type);
+                    const symbol = getCurrencySymbol(acc.currency);
                     const hasTarget = acc.targetBalance && acc.targetBalance > 0;
                     const percentage = hasTarget ? Math.min((acc.balance / acc.targetBalance!) * 100, 100) : 0;
+                    
                     return (
                       <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="bg-white dark:bg-slate-900 p-5 rounded-[24px] shadow-sm cursor-pointer hover:shadow-md transition-all group border border-slate-100 dark:border-slate-800 text-left">
                         <div className="flex justify-between items-start mb-4">
