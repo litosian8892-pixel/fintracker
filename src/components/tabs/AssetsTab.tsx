@@ -546,7 +546,7 @@ export default function AssetsTab({
             <h2 className={`font-black text-2xl tracking-tight mb-4 ${currentTheme.text}`}>Akun</h2>
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-full border border-slate-200 dark:border-slate-800 shadow-inner w-max mx-auto">
               {[ { id: "net_worth", label: "Nilai Bersih" }, { id: "akun", label: "Akun" }, { id: "aset", label: "Aset" } ].map(tab => (
-                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveSubTab(tab.id as any); }} className={`px-5 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${activeSubTab === tab.id ? `${currentTheme.activeBg}` : "text-slate-505 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}>
+                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveSubTab(tab.id as any); }} className={`px-5 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${activeSubTab === tab.id ? `${currentTheme.activeBg}` : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}>
                   {tab.label}
                 </button>
               ))}
@@ -927,7 +927,7 @@ export default function AssetsTab({
 
                   <div className="flex gap-2 pt-3">
                     <button onClick={async () => { triggerHaptic(); if (editingAccId) { setLocalBalanceOverride(p => ({ ...p, [editingAccId]: Number(editAccBalance) })); setLocalNameOverride(p => ({ ...p, [editingAccId]: editAccName })); } await handleEditAccount(editingAccId!); setIsManageOpen(false); setEditingAccId(null); }} className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95">Simpan Perubahan</button>
-                    <button onClick={() => { setEditingAccId(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer active:scale-95">Batal</button>
+                    <button onClick={() => { setEditingAccId(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer active:scale-95">Batal</button>
                   </div>
                 </div>
               ) : (
@@ -981,7 +981,7 @@ export default function AssetsTab({
                     )}
 
                     <div className="flex flex-col gap-1 pt-1 text-left">
-                      <label className="text-[9px] font-black text-slate-505 dark:text-slate-400 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
+                      <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
                       <div className="flex items-center gap-3 bg-white dark:bg-slate-950 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                         <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, false)} className="hidden" id="custom-logo-file" />
                         <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
@@ -1023,7 +1023,7 @@ export default function AssetsTab({
             <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full"></div></div>
             <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">🪙 Pengaturan Kurs Global</h3>
-              <button onClick={() => setShowRatesModal(false)} className="p-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-505 rounded-full cursor-pointer transition-colors"><X size={16} className="text-slate-700 dark:text-slate-300"/></button>
+              <button onClick={() => setShowRatesModal(false)} className="p-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={16} className="text-slate-700 dark:text-slate-300"/></button>
             </div>
             
             <div className="p-6 overflow-y-auto space-y-4">
