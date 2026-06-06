@@ -1151,7 +1151,7 @@ export default function FintrackerApp() {
   }
 
   if (isPremium === false) {
-    const waNumber = "6281234567890"; 
+    const waNumber = "6282271312559"; 
     const waMessage = `Halo Admin Fintracker! 🚀\nSaya ingin mengaktifkan Lisensi Premium (Lifetime).\n\n📧 Email akun saya: ${user.email}`;
     const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(waMessage)}`;
 
