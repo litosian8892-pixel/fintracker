@@ -462,7 +462,7 @@ export default function AssetsTab({
 
           {/* Month Navigation Pills (Fixed Scrollbar & Theme Sync) */}
           <div ref={detailMonthScrollRef} className="flex overflow-x-auto gap-2 px-2 pb-2 -mx-2 snap-x scrollbar-thin scrollbar-track-transparent dark:scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark] scroll-smooth">
-            {[4,3,2,1,0,-1].map(i => {
+            {[11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map(i => {
               const d = new Date(); d.setMonth(d.getMonth() - i);
               const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
               const isActive = mStr === reportMonth;
