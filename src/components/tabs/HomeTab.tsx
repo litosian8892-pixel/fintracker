@@ -394,11 +394,11 @@ export default function HomeTab({
     if (editingTransaction) {
       setEditTNote(sug.note);
       if (editTType !== "transfer") setEditTCategory(sug.category);
-      setEditTAmount(sug.amount.toString());
+      // NOTE: Tidak meng-autofill nominal agar pengguna bisa memasukkan nominal baru
     } else {
       setTNote(sug.note);
       if (tType !== "transfer") setTCategory(sug.category);
-      setTAmount(sug.amount.toString());
+      // NOTE: Tidak meng-autofill nominal agar pengguna bisa memasukkan nominal baru
     }
     setNoteSuggestions([]);
   };
@@ -549,7 +549,7 @@ export default function HomeTab({
     return { income, expense };
   }, [monthlyTransactions]);
 
-    // LOGIKA SMART FINANCIAL INSIGHTS (ASISTEN AI)
+  // LOGIKA SMART FINANCIAL INSIGHTS (ASISTEN AI)
   const smartInsight = useMemo(() => {
     if (monthlyTransactions.length === 0) return { text: "Belum ada catatan bulan ini. Yuk, mulai mencatat transaksi pertamamu!", icon: "✨", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
 
@@ -875,7 +875,8 @@ export default function HomeTab({
           </div>
         </div>
       </div>
-{/* WIDGET SMART FINANCIAL INSIGHTS (ASISTEN AI) */}
+
+      {/* WIDGET SMART FINANCIAL INSIGHTS (ASISTEN AI) */}
       <div className={`p-4 rounded-[20px] border ${smartInsight.bg} ${smartInsight.border} flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700`}>
         <div className="text-xl shrink-0 leading-none pt-0.5">{smartInsight.icon}</div>
         <div className="min-w-0">
@@ -885,7 +886,7 @@ export default function HomeTab({
           </p>
         </div>
       </div>
-      
+
       {/* DAILY GROUPED TRANSACTION HISTORY LIST */}
       <div className="space-y-4">
         {groupedTransactionsByDay.length === 0 ? (
@@ -1021,6 +1022,7 @@ export default function HomeTab({
       </button>
 
       {/* --- BATAS BAGIAN 1 --- */}
+
       {/* UNIFIED SLIDE-UP BOTTOM DRAWER */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1111,16 +1113,62 @@ export default function HomeTab({
                 </div>
               )}
 
+              {/* INPUT CATATAN DENGAN FITUR SMART AUTOCOMPLETE (DIPINDAH KE ATAS) */}
+              <div className="space-y-1 relative z-[60] mb-2 animate-in slide-in-from-top-2 duration-300">
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan (Beli Apa?)</label>
+                <input 
+                  type="text" 
+                  className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100 relative z-[70]" 
+                  placeholder="Ketik 2 huruf untuk saran otomatis..." 
+                  value={editingTransaction ? editTNote : tNote} 
+                  onChange={(e) => handleNoteChange(e.target.value)}
+                  onFocus={() => { if(isMobile) setActiveKeypad(null); }}
+                  autoComplete="off"
+                />
+                
+                {/* AUTOCOMPLETE DROPDOWN */}
+                {noteSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-[80] overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                      <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Saran Riwayat Transaksi</span>
+                      <button type="button" onClick={() => setNoteSuggestions([])} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 bg-slate-100 dark:bg-slate-800 rounded-full cursor-pointer"><X size={10}/></button>
+                    </div>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {noteSuggestions.map((sug, idx) => (
+                        <div 
+                          key={idx} 
+                          onClick={() => handleSelectSuggestion(sug)}
+                          className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors flex justify-between items-center group"
+                        >
+                          <div className="flex flex-col text-left">
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{sug.note}</span>
+                            <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1.5 mt-0.5">
+                              <span className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{getCategoryIcon(sug.category)}</span> {sug.category}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <span className="text-[8px] font-bold text-slate-400 mb-0.5">Harga Terakhir</span>
+                            <span className={`text-xs font-black ${currentTheme.text} bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-800`}>
+                              {formatCurrencyTerbaca(sug.amount.toString(), selectedSourceAcc?.currency)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {editingTransaction ? (
                 editTSplits.length === 0 && (
-                  <div className="space-y-1">
+                  <div className="space-y-1 relative z-10">
                     <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
                     <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("amount"); setActiveSplitKeypadIndex(null); } }} className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-slate-100 focus:border-blue-500" placeholder="0" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
                     {editTAmount && <p className="text-[10px] font-bold text-slate-400 pl-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editTAmount, selectedSourceAcc?.currency)}</span></p>}
                   </div>
                 )
               ) : (
-                <div className="space-y-1">
+                <div className="space-y-1 relative z-10">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
                   <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("amount"); setActiveSplitKeypadIndex(null); } }} className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-slate-100 focus:border-blue-500" placeholder="0" value={tAmount} onChange={(e) => setTAmount(e.target.value)} />
                   {tAmount && <p className="text-[10px] font-bold text-slate-400 pl-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(tAmount, selectedSourceAcc?.currency)}</span></p>}
@@ -1196,7 +1244,7 @@ export default function HomeTab({
               </div>
 
               {((editingTransaction ? editTType : tType) !== "transfer") && (
-                <div className="space-y-1">
+                <div className="space-y-1 relative z-10">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Kategori</label>
                   {editingTransaction ? (
                     editTSplits.length > 0 ? (
@@ -1251,49 +1299,6 @@ export default function HomeTab({
                   )}
                 </div>
               )}
-
-              {/* INPUT CATATAN DENGAN FITUR SMART AUTOCOMPLETE */}
-              <div className="space-y-1 relative z-20">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan</label>
-                <input 
-                  type="text" 
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100 relative z-30" 
-                  placeholder="Ketik 2 huruf untuk saran otomatis..." 
-                  value={editingTransaction ? editTNote : tNote} 
-                  onChange={(e) => handleNoteChange(e.target.value)}
-                  onFocus={() => { if(isMobile) setActiveKeypad(null); }}
-                  autoComplete="off"
-                />
-                
-                {/* AUTOCOMPLETE DROPDOWN */}
-                {noteSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-40 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                    <div className="px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                      <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Saran Riwayat Transaksi</span>
-                      <button type="button" onClick={() => setNoteSuggestions([])} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 bg-slate-100 dark:bg-slate-800 rounded-full cursor-pointer"><X size={10}/></button>
-                    </div>
-                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {noteSuggestions.map((sug, idx) => (
-                        <div 
-                          key={idx} 
-                          onClick={() => handleSelectSuggestion(sug)}
-                          className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors flex justify-between items-center group"
-                        >
-                          <div className="flex flex-col text-left">
-                            <span className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{sug.note}</span>
-                            <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1.5 mt-0.5">
-                              <span className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{getCategoryIcon(sug.category)}</span> {sug.category}
-                            </span>
-                          </div>
-                          <span className={`text-xs font-black ${currentTheme.text} bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-800`}>
-                            {formatCurrencyTerbaca(sug.amount.toString(), selectedSourceAcc?.currency)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
 
               {editingTransaction && editTSplits && editTSplits.length > 0 && (
                 <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
