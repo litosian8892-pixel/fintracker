@@ -549,6 +549,49 @@ export default function HomeTab({
     return { income, expense };
   }, [monthlyTransactions]);
 
+    // LOGIKA SMART FINANCIAL INSIGHTS (ASISTEN AI)
+  const smartInsight = useMemo(() => {
+    if (monthlyTransactions.length === 0) return { text: "Belum ada catatan bulan ini. Yuk, mulai mencatat transaksi pertamamu!", icon: "✨", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
+
+    // 1. Cek Peringatan Limit Budget
+    let budgetWarning = null;
+    const expenseByCategory: Record<string, number> = {};
+    monthlyTransactions.filter(t => t.type === 'expense').forEach(t => {
+      expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount;
+    });
+
+    for (const cat of categories) {
+      if (cat.type === 'expense' && cat.budgetLimit && cat.budgetLimit > 0) {
+        const spent = expenseByCategory[cat.name] || 0;
+        const percentage = (spent / cat.budgetLimit) * 100;
+        if (percentage >= 100) {
+          budgetWarning = { text: `Gawat! Pengeluaran '${cat.name}' sudah melebihi batas budget bulan ini.`, icon: "🚨", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30", border: "border-rose-100 dark:border-rose-900/30" };
+          break;
+        } else if (percentage >= 80) {
+          budgetWarning = { text: `Hati-hati, pengeluaran '${cat.name}' sudah mencapai ${percentage.toFixed(0)}% dari batas budgetmu!`, icon: "⚠️", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-100 dark:border-amber-900/30" };
+        }
+      }
+    }
+    if (budgetWarning) return budgetWarning;
+
+    // 2. Cek Peringatan Defisit (Besar pasak daripada tiang)
+    if (monthlySummary.income > 0 && monthlySummary.expense > monthlySummary.income) {
+      return { text: "Pengeluaranmu sudah melebihi total pemasukan bulan ini. Waktunya mengerem jajan variabel!", icon: "📉", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" };
+    }
+
+    // 3. Info Kategori Pengeluaran Terbesar (Top Spending)
+    if (monthlySummary.expense > 0) {
+      const sortedCats = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1]);
+      if (sortedCats.length > 0) {
+        const [topCat, topAmount] = sortedCats[0];
+        return { text: `Sejauh ini, uangmu paling banyak tersedot untuk kategori '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}).`, icon: "💡", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30", border: "border-indigo-100 dark:border-indigo-900/30" };
+      }
+    }
+
+    // 4. Kondisi Ideal & Sehat
+    return { text: "Arus kas bulan ini terlihat sangat sehat dan aman. Terus pertahankan kebiasaan baik ini!", icon: "🌟", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-100 dark:border-emerald-900/30" };
+  }, [monthlyTransactions, monthlySummary, categories]);
+
   const groupedTransactionsByDay = useMemo(() => {
     const groups: Record<string, TransactionData[]> = {};
     monthlyTransactions.forEach(t => {
@@ -832,7 +875,17 @@ export default function HomeTab({
           </div>
         </div>
       </div>
-
+{/* WIDGET SMART FINANCIAL INSIGHTS (ASISTEN AI) */}
+      <div className={`p-4 rounded-[20px] border ${smartInsight.bg} ${smartInsight.border} flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700`}>
+        <div className="text-xl shrink-0 leading-none pt-0.5">{smartInsight.icon}</div>
+        <div className="min-w-0">
+          <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${smartInsight.color}`}>Fintracker Assistant</p>
+          <p className="text-xs font-bold text-slate-700 dark:text-slate-300 leading-relaxed pr-2">
+            {smartInsight.text}
+          </p>
+        </div>
+      </div>
+      
       {/* DAILY GROUPED TRANSACTION HISTORY LIST */}
       <div className="space-y-4">
         {groupedTransactionsByDay.length === 0 ? (
