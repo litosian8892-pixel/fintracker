@@ -530,7 +530,7 @@ export default function AssetsTab({
         // =============================================================
         <>
           <div className="text-center mb-2">
-            <h2 className="font-black text-2xl text-[#064e3b] dark:text-emerald-400 tracking-tight mb-4">Akun</h2>
+            <h2 className={`font-black text-2xl tracking-tight mb-4 ${currentTheme.text}`}>Akun</h2>
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-full border border-slate-200 dark:border-slate-800 shadow-inner w-max mx-auto">
               {[ { id: "net_worth", label: "Nilai Bersih" }, { id: "akun", label: "Akun" }, { id: "aset", label: "Aset" } ].map(tab => (
                 <button key={tab.id} onClick={() => { triggerHaptic(); setActiveSubTab(tab.id as any); }} className={`px-5 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${activeSubTab === tab.id ? `${currentTheme.activeBg}` : "text-slate-505 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}>

@@ -472,7 +472,7 @@ export default function ReportsTab({
         {/* HEADER & FILTER */}
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center px-2">
-            <h2 className="font-black text-2xl text-[#064e3b] dark:text-emerald-400 tracking-tight">Ringkasan</h2>
+            <h2 className={`font-black text-2xl tracking-tight ${currentTheme.text}`}>Ringkasan</h2>
             <button onClick={() => { triggerHaptic(); setShowAccountFilter(true); }} className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold text-xs flex items-center gap-2 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all">
               <Filter size={14} className={currentTheme.text} /> 
               {selectedAccount === "All" ? "Semua Akun" : selectedAccount} 
