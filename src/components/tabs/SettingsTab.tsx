@@ -296,7 +296,7 @@ export default function SettingsTab({
       {/* TAMPILAN UTAMA (MENU PENGATURAN) */}
       {/* ========================================== */}
       <div className={`transition-all duration-300 ${activeMenu !== "main" ? "opacity-0 -translate-x-full h-0 overflow-hidden" : "opacity-100 translate-x-0"}`}>
-        <h2 className="font-black text-2xl text-[#064e3b] dark:text-emerald-400 tracking-tight mb-6">Pengaturan</h2>
+        <h2 className={`font-black text-2xl tracking-tight mb-6 ${accentThemes[accent].text}`}>Pengaturan</h2>
 
         {/* SECTION 1: PROFIL & AKUN */}
         <div className="mb-6 text-left">
@@ -310,11 +310,11 @@ export default function SettingsTab({
               </div>
               <ChevronRight size={18} className="text-slate-300 dark:text-slate-600 group-hover:text-slate-400 transition-colors shrink-0" />
             </div>
-            <MenuItem 
-              icon={LogOut} iconBg="bg-red-50 dark:bg-red-905" iconColor="text-red-500" 
-              title="Keluar / Logout" subtitle="Akhiri sesi Anda saat ini" 
-              rightElement={<div/>} isDestructive={true} onClick={onLogout} 
-            />
+           <MenuItem 
+  icon={LogOut} iconBg="bg-red-50 dark:bg-red-900/30" iconColor="text-red-500" 
+  title="Keluar / Logout" subtitle="Akhiri sesi Anda saat ini" 
+  rightElement={<div/>} isDestructive={true} onClick={onLogout} 
+/>
           </div>
         </div>
 
