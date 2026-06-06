@@ -624,7 +624,7 @@ export default function HomeTab({
     const d = new Date(dateStr);
     const dayNum = d.getDate();
     const dayName = d.toLocaleDateString("id-ID", { weekday: "short" });
-    const monthYear = d.toLocaleDateString("id-ID", { month: "2-digit", year: "2-digit" }).replace(/\//g, "/");
+    const monthYear = d.toLocaleDateString("id-ID", { month: "2-digit", year: "numeric" }).replace(/\//g, "/");
     return { dayNum, dayName, monthYear };
   };
 
