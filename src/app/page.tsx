@@ -1206,7 +1206,7 @@ export default function FintrackerApp() {
                 tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
                 tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} 
                 tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
-                transactions={transactions} 
+                transactions={reportTransactions} 
                 onDeleteTransaction={handleDeleteTransaction}
                 onEditTransaction={openEditModal} 
                 isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode}
