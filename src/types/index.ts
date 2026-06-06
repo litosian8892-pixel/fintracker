@@ -11,8 +11,11 @@ export interface AccountData {
   isBusiness?: boolean;
   savingsGoalTitle?: string;  
   // --- BARU: MULTI-CURRENCY UNTUK AKUN/DOMPET ---
-  currency?: string;          // Kode mata uang dompet (misal: "IDR", "USD", "SGD")
-  lastExchangeRate?: number;  // Nilai tukar manual terakhir terhadap IDR (misal: 16000)
+  currency?: string;          // Kode mata uang dompet (misal: "IDR", "USD", "BTC", "GRAM")
+  lastExchangeRate?: number;  // Nilai tukar / Harga Pasar saat ini per Unit terhadap IDR
+  // --- BARU: FITUR INVESTASI & PORTOFOLIO (FASE 14) ---
+  isInvestment?: boolean;     // Menandai apakah dompet ini adalah aset fluktuatif (Investasi)
+  averageBuyPrice?: number;   // Harga modal beli rata-rata per Unit (Untuk hitung Cuan/Rugi / PnL)
 }
 
 export interface SplitItemData {
@@ -37,8 +40,8 @@ export interface TransactionData {
   splits?: SplitItemData[]; 
   // --- BARU: MULTI-CURRENCY UNTUK AUDIT TRANSAKSI ---
   originalAmount?: number;    // Nominal asli dalam mata uang asing (misal: 10)
-  originalCurrency?: string;  // Simbol/kode mata uang asing (misal: "USD")
-  exchangeRate?: number;      // Nilai tukar yang digunakan saat transaksi (misal: 16000)
+  originalCurrency?: string;  // Simbol/kode mata uang asing (misal: "USD", "BTC")
+  exchangeRate?: number;      // Nilai tukar/Harga yang digunakan saat transaksi
 }
 
 export interface CategoryData { 
@@ -68,7 +71,6 @@ export interface DebtData {
   createdAt?: string;
 }
 
-// --- BARU: STRUKTUR DATA UNTUK LANGGANAN (SUBSCRIPTIONS) ---
 export interface SubscriptionData {
   id: string;
   name: string;             // Nama layanan (Netflix, Spotify, Kosan)
