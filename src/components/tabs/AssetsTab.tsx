@@ -6,6 +6,65 @@ import { AccountData, WalletTypeData, TransactionData } from "../../types";
 
 const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#0ea5e9', '#6366f1', '#d946ef', '#f43f5e'];
 
+// PEMETAAN SEMANTIK WARNA AKSEN TAB ASET & AKUN (100% Standar Tailwind v4 & Bebas Bocor)
+const themeMap = {
+  blue: {
+    activeBg: "bg-blue-900 text-white shadow-sm",
+    text: "text-blue-600 dark:text-blue-400",
+    bgLight: "bg-blue-50 dark:bg-blue-900/30",
+    border: "border-blue-100 dark:border-blue-900/40",
+    activePill: "bg-blue-600 border-blue-600 text-white shadow-blue-500/10",
+    fab: "bg-blue-900 text-white shadow-[0_10px_25px_rgba(30,58,138,0.5)] border-blue-800/30",
+    progressActive: "bg-blue-900 dark:bg-blue-500",
+    payAccSelected: "border-blue-600 bg-blue-50/50 dark:bg-blue-900/20 shadow-blue-500/5",
+    auditBox: "bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30"
+  },
+  emerald: {
+    activeBg: "bg-emerald-600 text-white shadow-sm",
+    text: "text-emerald-600 dark:text-emerald-400",
+    bgLight: "bg-emerald-50 dark:bg-emerald-900/30",
+    border: "border-emerald-100 dark:border-emerald-900/40",
+    activePill: "bg-emerald-600 border-emerald-600 text-white shadow-emerald-500/10",
+    fab: "bg-emerald-600 text-white shadow-[0_10px_25px_rgba(16,185,129,0.5)] border-emerald-500/30",
+    progressActive: "bg-emerald-600 dark:bg-emerald-500",
+    payAccSelected: "border-emerald-600 bg-emerald-50/50 dark:bg-emerald-900/20 shadow-emerald-500/5",
+    auditBox: "bg-emerald-50/50 dark:bg-emerald-900/20 p-3 rounded-xl border border-emerald-100 dark:border-emerald-900/30"
+  },
+  purple: {
+    activeBg: "bg-purple-600 text-white shadow-sm",
+    text: "text-purple-600 dark:text-purple-400",
+    bgLight: "bg-purple-50 dark:bg-purple-900/30",
+    border: "border-purple-100 dark:border-purple-900/40",
+    activePill: "bg-purple-600 border-purple-600 text-white shadow-purple-500/10",
+    fab: "bg-purple-600 text-white shadow-[0_10px_25px_rgba(168,85,247,0.5)] border-purple-500/30",
+    progressActive: "bg-purple-600 dark:bg-purple-500",
+    payAccSelected: "border-purple-600 bg-purple-50/50 dark:bg-purple-900/20 shadow-purple-500/5",
+    auditBox: "bg-purple-50/50 dark:bg-purple-900/20 p-3 rounded-xl border border-purple-100 dark:border-purple-900/30"
+  },
+  amber: {
+    activeBg: "bg-amber-600 text-white shadow-sm",
+    text: "text-amber-600 dark:text-amber-400",
+    bgLight: "bg-amber-50 dark:bg-amber-900/30",
+    border: "border-amber-100 dark:border-amber-900/40",
+    activePill: "bg-amber-600 border-amber-600 text-white shadow-amber-500/10",
+    fab: "bg-amber-600 text-white shadow-[0_10px_25px_rgba(217,119,6,0.5)] border-amber-500/30",
+    progressActive: "bg-amber-600 dark:bg-amber-500",
+    payAccSelected: "border-amber-600 bg-amber-50/50 dark:bg-amber-900/20 shadow-amber-500/5",
+    auditBox: "bg-amber-50/50 dark:bg-amber-900/20 p-3 rounded-xl border border-amber-100 dark:border-amber-900/30"
+  },
+  rose: {
+    activeBg: "bg-rose-600 text-white shadow-sm",
+    text: "text-rose-600 dark:text-rose-400",
+    bgLight: "bg-rose-50 dark:bg-rose-900/30",
+    border: "border-rose-100 dark:border-rose-900/40",
+    activePill: "bg-rose-600 border-rose-600 text-white shadow-rose-500/10",
+    fab: "bg-rose-600 text-white shadow-[0_10px_25px_rgba(244,63,94,0.5)] border-rose-500/30",
+    progressActive: "bg-rose-600 dark:bg-rose-500",
+    payAccSelected: "border-rose-600 bg-rose-50/50 dark:bg-rose-900/20 shadow-rose-500/5",
+    auditBox: "bg-rose-50/50 dark:bg-rose-900/20 p-3 rounded-xl border border-rose-100 dark:border-rose-900/30"
+  }
+} as const;
+
 const getCardDesign = (type: string) => {
   const t = type.toLowerCase();
   if (t.includes("bank") || t.includes("kartu") || t.includes("credit") || t.includes("savings")) {
@@ -45,22 +104,6 @@ const getCardDesign = (type: string) => {
 
 const getCurrencySymbol = (cur?: string) => {
   switch (cur?.toUpperCase()) { case "USD": return "$"; case "SGD": return "S$"; case "EUR": return "€"; case "JPY": case "CNY": return "¥"; case "GBP": return "£"; case "AUD": return "A$"; case "MYR": return "RM"; case "SAR": return "SR"; default: return "Rp"; }
-};
-
-const safeEvaluate = (expr: string): number => {
-  if (!expr) return 0;
-  let sanitized = expr.replace(/[^0-9+\-*/().]/g, "");
-  if (!sanitized) return 0;
-  sanitized = sanitized.replace(/[+\-*/(.]*$/, "");
-  if (!sanitized) return 0;
-  try {
-    const result = new Function(`"use strict"; return (${sanitized});`)();
-    if (typeof result === "number" && isFinite(result)) return result;
-    return 0;
-  } catch {
-    const fallback = parseFloat(sanitized);
-    return isNaN(fallback) ? 0 : fallback;
-  }
 };
 
 const getGoalStatus = (percentage: number) => {
@@ -113,6 +156,7 @@ export default function AssetsTab({
   exchangeRates, handleUpdateGlobalRates, reportTransactions = [], reportMonth, setReportMonth
 }: AssetsTabProps) {
   
+  // STATE NAVIGASI VIEW & FALLBACK INTERN
   const [activeSubTab, setActiveSubTab] = useState<"net_worth" | "akun" | "aset">("akun"); 
   const [detailAccId, setDetailAccId] = useState<string | null>(null);
   const [isManageOpen, setIsManageOpen] = useState(false);
@@ -130,6 +174,9 @@ export default function AssetsTab({
 
   const detailMonthScrollRef = useRef<HTMLDivElement>(null);
   const monthScrollRef = useRef<HTMLDivElement>(null);
+
+  // STATE BARU: TEMA WARNA AKSEN DINAMIS
+  const [accent, setAccent] = useState<keyof typeof themeMap>("blue");
 
   useEffect(() => {
     if (detailAccId) {
@@ -152,6 +199,19 @@ export default function AssetsTab({
       return () => clearTimeout(timer);
     }
   }, [activeSubTab]);
+
+  // Memuat warna aksen dari localStorage secara reaktif [1]
+  useEffect(() => {
+    const updateAccent = () => {
+      const stored = localStorage.getItem("fintracker_accent") as any;
+      if (stored && ["blue", "emerald", "purple", "amber", "rose"].includes(stored)) {
+        setAccent(stored);
+      }
+    };
+    updateAccent();
+    window.addEventListener("accent_color_changed", updateAccent);
+    return () => window.removeEventListener("accent_color_changed", updateAccent);
+  }, []);
 
   const triggerHaptic = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
 
@@ -362,6 +422,7 @@ export default function AssetsTab({
   }, [reportTransactions, reportMonth, accounts]);
 
   const activeWalletsToRender = walletGroup === "pribadi" ? personalActiveAccounts : businessActiveAccounts;
+  const currentTheme = themeMap[accent];
 
   return (
     <div className="space-y-6 animate-in fade-in pb-20">
@@ -375,7 +436,7 @@ export default function AssetsTab({
         <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
           <div className="flex justify-between items-center px-2 animate-in fade-in duration-200">
             <div className="flex items-center gap-3">
-              <button onClick={() => { triggerHaptic(); setDetailAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center cursor-pointer"><ChevronLeft size={20} className="text-slate-800 dark:text-slate-200"/></button>
+              <button onClick={() => { triggerHaptic(); setDetailAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 transition-colors flex items-center justify-center cursor-pointer"><ChevronLeft size={20} className="text-slate-800 dark:text-slate-200"/></button>
               <h2 className="font-black text-xl text-slate-800 dark:text-white">{detailAcc.name}</h2>
             </div>
             
@@ -394,19 +455,19 @@ export default function AssetsTab({
               setEditCurrency(detailAcc.currency || "IDR");
               if (setEditAccCurrency) setEditAccCurrency(detailAcc.currency || "IDR");
               setIsManageOpen(true);
-            }} className="p-2.5 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full cursor-pointer transition-colors active:scale-95 flex items-center justify-center">
+            }} className={`p-2.5 rounded-full cursor-pointer transition-colors active:scale-95 flex items-center justify-center ${currentTheme.bgLight} ${currentTheme.text}`} border-transparent>
               <Edit2 size={16}/>
             </button>
           </div>
 
-          {/* Month Navigation Pills */}
-          <div ref={detailMonthScrollRef} className="flex overflow-x-auto hide-scrollbar gap-2 px-2 pb-2 -mx-2 snap-x">
+          {/* Month Navigation Pills (Fixed Scrollbar & Theme Sync) */}
+          <div ref={detailMonthScrollRef} className="flex overflow-x-auto gap-2 px-2 pb-2 -mx-2 snap-x scrollbar-thin scrollbar-track-transparent dark:scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark] scroll-smooth">
             {[4,3,2,1,0,-1].map(i => {
               const d = new Date(); d.setMonth(d.getMonth() - i);
               const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
               const isActive = mStr === reportMonth;
               return (
-                <button key={mStr} onClick={() => { triggerHaptic(); setReportMonth?.(mStr); }} className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${isActive ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                <button key={mStr} onClick={() => { triggerHaptic(); setReportMonth?.(mStr); }} className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${isActive ? `${currentTheme.activePill}` : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                   {d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}
                 </button>
               );
@@ -470,17 +531,18 @@ export default function AssetsTab({
         <>
           <div className="text-center mb-2">
             <h2 className="font-black text-2xl text-[#064e3b] dark:text-emerald-400 tracking-tight mb-4">Akun</h2>
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-inner w-max mx-auto">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-full border border-slate-200 dark:border-slate-800 shadow-inner w-max mx-auto">
               {[ { id: "net_worth", label: "Nilai Bersih" }, { id: "akun", label: "Akun" }, { id: "aset", label: "Aset" } ].map(tab => (
-                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveSubTab(tab.id as any); }} className={`px-5 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${activeSubTab === tab.id ? "bg-blue-900 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}>
+                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveSubTab(tab.id as any); }} className={`px-5 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${activeSubTab === tab.id ? `${currentTheme.activeBg}` : "text-slate-505 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}>
                   {tab.label}
                 </button>
               ))}
             </div>
           </div>
 
+          {/* SELEKTOR BULAN HISTORIS (Fixed Scrollbar & Theme Sync) */}
           {activeSubTab === "aset" && setReportMonth && (
-            <div ref={monthScrollRef} className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 animate-in fade-in duration-200">
+            <div ref={monthScrollRef} className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-track-transparent dark:scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark] scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 animate-in fade-in duration-200">
               {[11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((i) => {
                 const d = new Date();
                 d.setMonth(d.getMonth() - i);
@@ -494,8 +556,8 @@ export default function AssetsTab({
                     onClick={() => { triggerHaptic(); setReportMonth(value); }}
                     className={`px-4 py-1.5 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shrink-0 border ${
                       isActive 
-                        ? "bg-blue-600 border-blue-600 text-white shadow-sm" 
-                        : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"
+                        ? `${currentTheme.activePill}` 
+                        : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-655 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"
                     }`}
                   >
                     {label}
@@ -554,7 +616,7 @@ export default function AssetsTab({
                         className={`px-3 py-1 rounded-md text-[9px] font-black transition-all cursor-pointer ${
                           walletGroup === "pribadi" 
                             ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" 
-                            : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                            : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-350"
                         }`}
                       >
                         Pribadi
@@ -564,7 +626,7 @@ export default function AssetsTab({
                         className={`px-3 py-1 rounded-md text-[9px] font-black transition-all cursor-pointer ${
                           walletGroup === "bisnis" 
                             ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 shadow-sm font-black" 
-                            : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                            : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-350"
                         }`}
                       >
                         Bisnis
@@ -572,16 +634,17 @@ export default function AssetsTab({
                     </div>
 
                     <div className="flex bg-slate-200/50 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800">
-                      <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("grid"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "grid" ? "bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}>
+                      <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("grid"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "grid" ? `bg-white dark:bg-slate-800 shadow-sm ${currentTheme.text}` : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}>
                         <LayoutGrid size={14} />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("list"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "list" ? "bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}>
+                      <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("list"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "list" ? `bg-white dark:bg-slate-800 shadow-sm ${currentTheme.text}` : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}>
                         <List size={14} />
                       </button>
                     </div>
                   </div>
                 </div>
 
+                {/* RENDERING DOMPET AKTIF BERDASARKAN TOGGLE GRUP */}
                 {activeWalletsToRender.length === 0 ? (
                   <div className="p-12 text-center animate-in fade-in duration-300">
                     <p className="text-slate-400 dark:text-slate-500 text-xs italic">
@@ -610,7 +673,7 @@ export default function AssetsTab({
                                   {[1,2,3,4].map((block) => {
                                     const filled = pct >= block * 25 - 10;
                                     return (
-                                      <div key={block} className={`w-3.5 h-1.5 rounded-sm ${filled ? (walletGroup === 'pribadi' ? 'bg-blue-600 dark:bg-blue-500' : 'bg-amber-600 dark:bg-amber-500') : 'bg-slate-100 dark:bg-slate-800'}`} />
+                                      <div key={block} className={`w-3.5 h-1.5 rounded-sm ${filled ? (walletGroup === 'pribadi' ? `${currentTheme.progressActive}` : 'bg-amber-600 dark:bg-amber-500') : 'bg-slate-100 dark:bg-slate-800'}`} />
                                     );
                                   })}
                                 </div>
@@ -659,7 +722,7 @@ export default function AssetsTab({
                           </div>
                           <div className="text-right flex items-center gap-3">
                             <p className="text-sm font-black text-slate-800 dark:text-slate-100">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
-                            <ChevronRight size={16} className="text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ChevronRight size={16} className="text-slate-350 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
                         </div>
                       );
@@ -678,9 +741,10 @@ export default function AssetsTab({
                 {renderAreaChart(historicalAssetsData, "#10b981", "Balance")}
               </div>
 
+              {/* KARTU ALIRAN MUTASI TABUNGAN BULANAN */}
               <div className="bg-white dark:bg-slate-900 p-5 rounded-[24px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 text-left">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="border-r border-slate-100 dark:border-slate-800 pr-2">
+                  <div className="border-r border-slate-200 dark:border-slate-800 pr-2">
                     <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Menabung ({reportMonth?.split("-")[1]})
                     </p>
@@ -703,7 +767,7 @@ export default function AssetsTab({
 
                 <div className="pt-3.5 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
                   <div>
-                    <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                    <p className={`text-[9px] font-black uppercase tracking-widest ${currentTheme.text}`}>
                       Total Menabung Bersih
                     </p>
                     <span className="text-[8px] text-slate-400 font-bold">
@@ -740,15 +804,15 @@ export default function AssetsTab({
                       <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="bg-white dark:bg-slate-900 p-5 rounded-[24px] shadow-sm cursor-pointer hover:shadow-md transition-all group border border-slate-100 dark:border-slate-800 text-left">
                         <div className="flex justify-between items-start mb-4">
                           {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-cover" alt="logo" /> ) : ( <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
-                          {hasTarget && <span className="text-[10px] font-black px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">{percentage.toFixed(0)}%</span>}
+                          {hasTarget && <span className={`text-[10px] font-black px-2 py-1 rounded border border-transparent ${currentTheme.bgLight} ${currentTheme.text}`}>{percentage.toFixed(0)}%</span>}
                         </div>
                         <div>
-                          <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase mb-0.5">{acc.savingsGoalTitle || "Dana Darurat"}</p>
+                          <p className={`text-[10px] font-black uppercase mb-0.5 ${currentTheme.text}`}>{acc.savingsGoalTitle || "Dana Darurat"}</p>
                           <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1">{acc.name}</p>
                           <p className="text-lg font-black text-slate-800 dark:text-slate-100">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
                         </div>
                         {hasTarget && (
-                          <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-3"><div className="h-full bg-emerald-500" style={{ width: `${percentage}%` }}></div></div>
+                          <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-3"><div className={`h-full ${currentTheme.progressActive}`} style={{ width: `${percentage}%` }}></div></div>
                         )}
                       </div>
                     )
@@ -758,6 +822,7 @@ export default function AssetsTab({
             </div>
           )}
 
+          {/* BUTTON KURS GLOBAL STANDALONE */}
           <div className="px-2 mt-4 animate-in fade-in duration-300">
             <button onClick={() => { triggerHaptic(); setShowRatesModal(true); }} className="w-full bg-white dark:bg-slate-900 p-4 rounded-[24px] flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border border-slate-100 dark:border-slate-800">
               <span className="flex items-center gap-2">🪙 Pengaturan Kurs Global</span>
@@ -765,12 +830,18 @@ export default function AssetsTab({
             </button>
           </div>
 
-          <button onClick={() => { triggerHaptic(); setIsManageOpen(true); }} className="fixed bottom-24 md:bottom-10 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-blue-500/20 active:scale-95 transition-all z-40 cursor-pointer">
+          {/* FLOATING ACTION BUTTON (+) */}
+          <button onClick={() => { triggerHaptic(); setIsManageOpen(true); }} className={`fixed bottom-24 md:bottom-10 right-6 w-14 h-14 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40 cursor-pointer ${currentTheme.fab}`}>
             <Plus size={28} strokeWidth={2.5} />
           </button>
         </>
       )}
 
+      {/* =============================================================
+          LACI-LACI DI RENDER GLOBAL DI BAWAH 
+          ============================================================= */}
+
+      {/* LACI BAWAH 1: KELOLA AKUN & DOMPET */}
       {isManageOpen && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => { setIsManageOpen(false); setEditingAccId(null); }}>
           <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800" onClick={e => e.stopPropagation()}>
@@ -791,13 +862,13 @@ export default function AssetsTab({
                   
                   <div className="space-y-1 text-left">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Mata Uang Dompet</label>
-                    <select className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
+                    <select className="w-full p-3.5 bg-white dark:bg-slate-955 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={editCurrency} onChange={(e) => setEditCurrency(e.target.value)}>
                       <option value="IDR">🇮🇩 Rupiah (IDR)</option><option value="USD">🇺🇸 Dollar (USD)</option><option value="SGD">🇸🇬 Dollar (SGD)</option><option value="EUR">🇪🇺 Euro (EUR)</option><option value="JPY">🇯🇵 Yen (JPY)</option><option value="CNY">🇨🇳 Yuan (CNY)</option><option value="GBP">🇬🇧 Pound (GBP)</option><option value="AUD">🇦🇺 Dollar (AUD)</option><option value="MYR">🇲🇾 Ringgit (MYR)</option><option value="SAR">🇸🇦 Riyal (SAR)</option>
                     </select>
                   </div>
 
-                  <div className="space-y-1 bg-blue-50/50 dark:bg-blue-950/40 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">
-                    <label className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Audit Saldo Nyata (Real - {editCurrency})</label>
+                  <div className={`space-y-1 p-3 rounded-xl border ${currentTheme.auditBox}`}>
+                    <label className={`text-[9px] font-black uppercase tracking-widest ${currentTheme.text}`}>Audit Saldo Nyata (Real - {editCurrency})</label>
                     <input type="number" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccBalance} onChange={(e) => setEditAccBalance(e.target.value)} />
                   </div>
                   
@@ -818,8 +889,8 @@ export default function AssetsTab({
 
                   {editAccIsSavings && (
                     <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                      <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
-                      <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
+                      <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-955 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={editAccSavingsGoalTitle} onChange={(e) => setEditAccSavingsGoalTitle(e.target.value)} />
+                      <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-955 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editAccTargetBalance} onChange={(e) => setEditAccTargetBalance(e.target.value)} />
                     </div>
                   )}
 
@@ -835,7 +906,7 @@ export default function AssetsTab({
 
                   <div className="flex gap-2 pt-3">
                     <button onClick={async () => { triggerHaptic(); if (editingAccId) { setLocalBalanceOverride(p => ({ ...p, [editingAccId]: Number(editAccBalance) })); setLocalNameOverride(p => ({ ...p, [editingAccId]: editAccName })); } await handleEditAccount(editingAccId!); setIsManageOpen(false); setEditingAccId(null); }} className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95">Simpan Perubahan</button>
-                    <button onClick={() => { setEditingAccId(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer active:scale-95">Batal</button>
+                    <button onClick={() => { setEditingAccId(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer active:scale-95">Batal</button>
                   </div>
                 </div>
               ) : (
@@ -847,10 +918,10 @@ export default function AssetsTab({
                       <option value="IDR">🇮🇩 Rupiah (IDR)</option><option value="USD">🇺🇸 Dollar (USD)</option><option value="SGD">🇸🇬 Dollar (SGD)</option><option value="EUR">🇪🇺 Euro (EUR)</option><option value="JPY">🇯🇵 Yen (JPY)</option><option value="CNY">🇨🇳 Yuan (CNY)</option><option value="GBP">🇬🇧 Pound (GBP)</option><option value="AUD">🇦🇺 Dollar (AUD)</option><option value="MYR">🇲🇾 Ringgit (MYR)</option><option value="SAR">🇸🇦 Riyal (SAR)</option>
                     </select>
 
-                    <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={accName} onChange={(e) => setAccName(e.target.value)} />
-                    <input type="number" placeholder="Saldo Aktual" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
+                    <input type="text" placeholder="Nama Dompet (BCA, Gopay, dll)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" value={accName} onChange={(e) => setAccName(e.target.value)} />
+                    <input type="number" placeholder="Saldo Aktual" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400" value={accBalance} onChange={(e) => setAccBalance(e.target.value)} />
                     
-                    <select className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200 cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
+                    <select className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white cursor-pointer" value={accType} onChange={(e) => setAccType(e.target.value)}>
                         {walletTypes.map((t: WalletTypeData) => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
 
@@ -862,13 +933,13 @@ export default function AssetsTab({
 
                     {accIsSavings && (
                       <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                        <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={accSavingsGoalTitle} onChange={(e) => setAccSavingsGoalTitle(e.target.value)} />
-                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-200" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
+                        <input type="text" placeholder="Nama Impian (Contoh: DP Rumah)" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white" value={accSavingsGoalTitle} onChange={(e) => setAccSavingsGoalTitle(e.target.value)} />
+                        <input type="number" placeholder="Target Nominal Tabungan" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-white" value={accTargetBalance} onChange={(e) => setAccTargetBalance(e.target.value)} />
                       </div>
                     )}
 
                     <div className="flex flex-col gap-1 pt-1 text-left">
-                      <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
+                      <label className="text-[9px] font-black text-slate-505 dark:text-slate-400 uppercase tracking-widest px-1">Upload Logo Dompet (Opsional)</label>
                       <div className="flex items-center gap-3 bg-white dark:bg-slate-950 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                         <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, false)} className="hidden" id="custom-logo-file" />
                         <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih File</label>
@@ -888,7 +959,7 @@ export default function AssetsTab({
                           <p className="text-[10px] text-slate-500 dark:text-slate-400">{acc.currency || "IDR"} • {acc.balance.toLocaleString('id-ID')}</p>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button disabled={index===0} onClick={()=>moveAccountOrder(index, "up")} className="p-1.5 bg-slate-200/50 dark:bg-slate-800 rounded text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 cursor-pointer disabled:opacity-30"><ArrowUp size={12}/></button>
+                          <button disabled={index===0} onClick={()=>moveAccountOrder(index, "up")} className="p-1.5 bg-slate-200/50 dark:bg-slate-800 rounded text-slate-500 hover:text-slate-800 dark:hover:text-slate-350 cursor-pointer disabled:opacity-30"><ArrowUp size={12}/></button>
                           <button disabled={index===accounts.length-1} onClick={()=>moveAccountOrder(index, "down")} className="p-1.5 bg-slate-200/50 dark:bg-slate-800 rounded text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 cursor-pointer disabled:opacity-30"><ArrowDown size={12}/></button>
                           <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccIsSavings(!!acc.isSavings); setEditAccIsBusiness(!!acc.isBusiness); setEditAccTargetBalance(acc.targetBalance?.toString()||""); setEditAccExcludeFromTotal(!!acc.excludeFromTotal); setEditAccSavingsGoalTitle(acc.savingsGoalTitle||""); if(setEditAccCurrency)setEditAccCurrency(acc.currency||"IDR"); else setLocalEditAccCurrency(acc.currency||"IDR"); }} className="p-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded ml-1 cursor-pointer hover:bg-blue-100"><Edit2 size={12}/></button>
                           <button onClick={() => deleteAccount(acc.id, acc.name)} className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 hover:text-red-400 rounded cursor-pointer hover:bg-red-100"><Trash2 size={12}/></button>
@@ -910,7 +981,7 @@ export default function AssetsTab({
             <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full"></div></div>
             <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">🪙 Pengaturan Kurs Global</h3>
-              <button onClick={() => setShowRatesModal(false)} className="p-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={16} className="text-slate-700 dark:text-slate-300"/></button>
+              <button onClick={() => setShowRatesModal(false)} className="p-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-505 rounded-full cursor-pointer transition-colors"><X size={16} className="text-slate-700 dark:text-slate-300"/></button>
             </div>
             
             <div className="p-6 overflow-y-auto space-y-4">

@@ -4,7 +4,8 @@ import { User, updateProfile } from "firebase/auth";
 import { 
   LogOut, Tag, CreditCard, X, Edit2, Check, Sun, Moon, 
   Monitor, ChevronDown, ChevronUp, Trash2, Lock, Fingerprint, 
-  ChevronRight, ChevronLeft, ShieldCheck, Palette, Bell, Smartphone
+  ChevronRight, ChevronLeft, ShieldCheck, Palette, Bell, Smartphone,
+  LayoutTemplate
 } from "lucide-react";
 import { CategoryData, WalletTypeData } from "../../types";
 
@@ -21,6 +22,45 @@ interface SettingsTabProps {
   theme: "light" | "dark" | "system"; setTheme: (theme: "light" | "dark" | "system") => void;
   appPin: string | null; setAppPin: (val: string | null) => void;
 }
+
+// PEMETAAN WARNA AKSEN RESMI TAILWIND V4 (Sangat Aman Kontras & Bebas Bug)
+const accentThemes = {
+  blue: {
+    name: "Ocean Blue",
+    dotBg: "bg-blue-600",
+    text: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-50/80 dark:bg-blue-900/30",
+    border: "border-blue-100 dark:border-blue-900/40",
+  },
+  emerald: {
+    name: "Emerald Green",
+    dotBg: "bg-emerald-600",
+    text: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-50/80 dark:bg-emerald-900/30",
+    border: "border-emerald-100 dark:border-emerald-900/40",
+  },
+  purple: {
+    name: "Royal Purple",
+    dotBg: "bg-purple-600",
+    text: "text-purple-600 dark:text-purple-400",
+    bg: "bg-purple-50/80 dark:bg-purple-900/30",
+    border: "border-purple-100 dark:border-purple-900/40",
+  },
+  amber: {
+    name: "Sunset Gold",
+    dotBg: "bg-amber-600",
+    text: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-50/80 dark:bg-amber-900/30",
+    border: "border-amber-100 dark:border-amber-900/40",
+  },
+  rose: {
+    name: "Rose Gold",
+    dotBg: "bg-rose-600",
+    text: "text-rose-600 dark:text-rose-400",
+    bg: "bg-rose-50/80 dark:bg-rose-900/30",
+    border: "border-rose-100 dark:border-rose-900/40",
+  }
+} as const;
 
 const getCategoryIcon = (catName: string) => {
   const name = catName.toLowerCase();
@@ -42,9 +82,11 @@ export default function SettingsTab({
   theme, setTheme, appPin, setAppPin
 }: SettingsTabProps) {
   
-  const [activeMenu, setActiveMenu] = useState<"main" | "categories" | "wallets" | "profile">("main");
+  // STATE NAVIGASI SUB-MENU (DITAMBAHKAN "accents")
+  const [activeMenu, setActiveMenu] = useState<"main" | "categories" | "wallets" | "profile" | "accents">("main");
   const [showThemeModal, setShowThemeModal] = useState(false);
 
+  // STATE KATEGORI
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [editCatName, setEditCatName] = useState("");
   const [editCatBudget, setEditCatBudget] = useState("");
@@ -54,6 +96,7 @@ export default function SettingsTab({
   const [showAllFixed, setShowAllFixed] = useState(false);
   const [showAllIncome, setShowAllIncome] = useState(false);
 
+  // STATE FITUR & KEAMANAN
   const [pinModalMode, setPinModalMode] = useState<"setup" | "confirm" | "disable" | null>(null);
   const [tempPin, setTempPin] = useState("");
   const [inputPin, setInputPin] = useState("");
@@ -63,13 +106,21 @@ export default function SettingsTab({
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [editProfileName, setEditProfileName] = useState(user?.displayName || "");
 
+  // STATE BARU: WARNA AKSEN TEMA
+  const [accent, setAccent] = useState<keyof typeof accentThemes>("blue");
+
+  // INISIALISASI PREFERENSI DARI PENYIMPANAN LOKAL
   useEffect(() => {
     setBiometricEnabled(localStorage.getItem("fintracker_biometric_enabled") === "true");
     setHapticEnabled(localStorage.getItem("fintracker_haptic") !== "false");
     setReminderEnabled(localStorage.getItem("fintracker_reminder") === "true");
     setEditProfileName(user?.displayName || "");
+    
+    // Inisialisasi warna aksen default
+    setAccent((localStorage.getItem("fintracker_accent") as any) || "blue");
   }, [user]);
 
+  // FUNGSI GETAR CERDAS
   const triggerHaptic = () => { 
     if (typeof window !== "undefined" && navigator.vibrate) {
       if (localStorage.getItem("fintracker_haptic") !== "false") {
@@ -218,7 +269,7 @@ export default function SettingsTab({
               <span className="text-xl shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
               <span className="text-sm font-black text-slate-800 dark:text-slate-100 leading-none truncate">{cat.name}</span>
               {tType === 'expense' && (
-                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded shrink-0 ${cat.expenseType === 'fixed' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400' : 'bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400'}`}>
+                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded shrink-0 ${cat.expenseType === 'fixed' ? 'bg-purple-100 dark:bg-purple-905 text-purple-600 dark:text-purple-400' : 'bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400'}`}>
                   {cat.expenseType === 'fixed' ? 'FIXED' : 'VAR'}
                 </span>
               )}
@@ -260,7 +311,7 @@ export default function SettingsTab({
               <ChevronRight size={18} className="text-slate-300 dark:text-slate-600 group-hover:text-slate-400 transition-colors shrink-0" />
             </div>
             <MenuItem 
-              icon={LogOut} iconBg="bg-red-50 dark:bg-red-950/30" iconColor="text-red-500" 
+              icon={LogOut} iconBg="bg-red-50 dark:bg-red-905" iconColor="text-red-500" 
               title="Keluar / Logout" subtitle="Akhiri sesi Anda saat ini" 
               rightElement={<div/>} isDestructive={true} onClick={onLogout} 
             />
@@ -272,18 +323,30 @@ export default function SettingsTab({
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-4 mb-2">Personalisasi & Data</p>
           <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
             <MenuItem 
-              icon={Palette} iconBg="bg-indigo-50 dark:bg-indigo-950/30" iconColor="text-indigo-600 dark:text-indigo-400" 
+              icon={LayoutTemplate} iconBg="bg-slate-50 dark:bg-slate-800" iconColor="text-slate-600 dark:text-slate-300" 
               title="Tema Visual" subtitle="Terang, Gelap, atau Otomatis" 
               onClick={() => setShowThemeModal(true)}
               rightElement={<div className="flex items-center gap-1.5"><span className="text-xs font-bold text-slate-400 uppercase">{theme === 'system' ? 'Auto' : theme}</span><ChevronRight size={16} className="text-slate-300 dark:text-slate-600"/></div>}
             />
+            {/* ROW BARU: WARNA AKSEN TEMA PREMIUM */}
             <MenuItem 
-              icon={Tag} iconBg="bg-orange-50 dark:bg-orange-950/30" iconColor="text-orange-600 dark:text-orange-400" 
+              icon={Palette} iconBg="bg-indigo-50 dark:bg-indigo-900/30" iconColor="text-indigo-600 dark:text-indigo-400" 
+              title="Warna Tema" subtitle="Sesuaikan warna utama aplikasi Anda" 
+              onClick={() => setActiveMenu("accents")}
+              rightElement={
+                <div className="flex items-center gap-2">
+                  <div className={`w-4 h-4 rounded-full ${accentThemes[accent].dotBg} border border-white dark:border-slate-800 shadow-sm`} />
+                  <ChevronRight size={18} className="text-slate-300 dark:text-slate-600" />
+                </div>
+              }
+            />
+            <MenuItem 
+              icon={Tag} iconBg="bg-orange-50 dark:bg-orange-900/30" iconColor="text-orange-600 dark:text-orange-400" 
               title="Kategori Transaksi" subtitle="Kelola pemasukan & pengeluaran" 
               onClick={() => setActiveMenu("categories")}
             />
             <MenuItem 
-              icon={CreditCard} iconBg="bg-blue-50 dark:bg-blue-950/30" iconColor="text-blue-600 dark:text-blue-400" 
+              icon={CreditCard} iconBg="bg-blue-50 dark:bg-blue-900/30" iconColor="text-blue-600 dark:text-blue-400" 
               title="Tipe Dompet Aset" subtitle="Kelola jenis-jenis sumber dana" 
               onClick={() => setActiveMenu("wallets")}
             />
@@ -295,7 +358,7 @@ export default function SettingsTab({
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-4 mb-2">Preferensi Sistem</p>
           <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
             <MenuItem 
-              icon={Bell} iconBg="bg-amber-50 dark:bg-amber-950/30" iconColor="text-amber-500" 
+              icon={Bell} iconBg="bg-amber-50 dark:bg-amber-900/30" iconColor="text-amber-500" 
               title="Pengingat Harian" subtitle="Notifikasi pencatatan pengeluaran rutin" 
               onClick={toggleReminder}
               rightElement={
@@ -305,7 +368,7 @@ export default function SettingsTab({
               }
             />
             <MenuItem 
-              icon={Smartphone} iconBg="bg-pink-50 dark:bg-pink-950/30" iconColor="text-pink-500" 
+              icon={Smartphone} iconBg="bg-pink-50 dark:bg-pink-900/30" iconColor="text-pink-500" 
               title="Getaran (Haptic)" subtitle="Umpan balik saat menekan tombol" 
               onClick={toggleHaptic}
               rightElement={
@@ -342,6 +405,44 @@ export default function SettingsTab({
               }
             />
           </div>
+        </div>
+      </div>
+
+      {/* ========================================== */}
+      {/* SUB-MENU: ACCENT COLOR SELECTION (NEW) */}
+      {/* ========================================== */}
+      <div className={`absolute top-0 left-0 w-full transition-all duration-300 ${activeMenu === "accents" ? "opacity-100 translate-x-0 relative" : "opacity-0 translate-x-full pointer-events-none absolute"}`}>
+        <div className="flex items-center justify-between mb-6">
+          <button onClick={() => { triggerHaptic(); setActiveMenu("main"); }} className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm cursor-pointer text-slate-800 dark:text-slate-100">
+            <ChevronLeft size={20} />
+          </button>
+          <h2 className="font-black text-xl text-slate-800 dark:text-white tracking-tight">Warna Tema</h2>
+          <div className="w-10"></div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-[28px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+          {Object.entries(accentThemes).map(([key, opt]) => {
+            const isSelected = accent === key;
+            return (
+              <div 
+                key={key} 
+                onClick={() => {
+                  triggerHaptic();
+                  localStorage.setItem("fintracker_accent", key);
+                  setAccent(key as any);
+                  window.dispatchEvent(new Event("accent_color_changed"));
+                  setActiveMenu("main");
+                }} 
+                className={`flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all border ${isSelected ? `${opt.border} ${opt.bg} shadow-sm` : "bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-8 h-8 rounded-full ${opt.dotBg} border-2 border-white dark:border-slate-800 shadow-sm`} />
+                  <p className="text-sm font-black text-slate-800 dark:text-slate-100">{opt.name}</p>
+                </div>
+                {isSelected && <Check size={20} className={opt.text} strokeWidth={3} />}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -430,7 +531,7 @@ export default function SettingsTab({
 
         {tType === "expense" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start text-left">
-            <div className="space-y-3 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-3xl border border-slate-100 dark:border-slate-800">
+            <div className="space-y-3 bg-slate-50 dark:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-800">
               <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest flex items-center justify-between pb-2 border-b border-orange-100 dark:border-orange-900/30">
                 <span>🟠 Kebutuhan Variabel</span><span className="text-slate-500 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-full shadow-sm">{varCats.length}</span>
               </p>
@@ -442,7 +543,7 @@ export default function SettingsTab({
               )}
             </div>
 
-            <div className="space-y-3 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-3xl border border-slate-100 dark:border-slate-800">
+            <div className="space-y-3 bg-slate-50 dark:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-800">
               <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest flex items-center justify-between pb-2 border-b border-purple-100 dark:border-purple-900/30">
                 <span>🟣 Kebutuhan Tetap</span><span className="text-slate-500 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-full shadow-sm">{fixedCats.length}</span>
               </p>
@@ -455,7 +556,7 @@ export default function SettingsTab({
             </div>
           </div>
         ) : (
-          <div className="max-w-xl mx-auto space-y-3 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 text-left">
+          <div className="max-w-xl mx-auto space-y-3 bg-slate-50 dark:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 text-left">
              <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center justify-between pb-2 border-b border-emerald-100 dark:border-emerald-900/30">
                 <span>🟢 Sumber Pemasukan</span><span className="text-slate-500 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-full shadow-sm">{incomeCats.length}</span>
              </p>
@@ -484,7 +585,7 @@ export default function SettingsTab({
         <div className="flex flex-col sm:flex-row gap-2 bg-white dark:bg-slate-900 p-3 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm mb-6 text-left">
           <input 
             type="text" placeholder="Tambah tipe baru (Misal: Investasi)" 
-            className="w-full sm:flex-1 p-3 bg-slate-50 dark:bg-slate-950 border border-transparent rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400" 
+            className="w-full sm:flex-1 p-3 bg-slate-50 dark:bg-slate-955 border border-transparent rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400" 
             value={newWalletTypeName} onChange={(e) => setNewWalletTypeName(e.target.value)} 
           />
           <button onClick={addCustomWalletType} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95 shadow-md shadow-blue-500/20">
@@ -553,7 +654,7 @@ export default function SettingsTab({
             
             <input 
               autoFocus type="password" inputMode="numeric" maxLength={6} 
-              className="w-full text-center tracking-[0.8em] text-3xl font-black p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-2xl outline-blue-500 text-slate-800 dark:text-white transition-all shadow-sm focus:bg-white dark:focus:bg-slate-900 focus:border-blue-500" 
+              className="w-full text-center tracking-[0.8em] text-3xl font-black p-4 bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-700 rounded-2xl outline-blue-500 text-slate-800 dark:text-white transition-all shadow-sm focus:bg-white dark:focus:bg-slate-900 focus:border-blue-500" 
               value={inputPin} onChange={e => setInputPin(e.target.value.replace(/[^0-9]/g, ''))} 
             />
             
