@@ -683,8 +683,8 @@ export default function AssetsTab({
 
                             <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-3 truncate">{acc.name}</p>
                             <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none mt-1">
-  {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
-</p>
+                              {isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}
+                            </p>
                           </div>
 
                           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-start gap-1.5 text-left">
