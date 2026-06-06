@@ -487,7 +487,7 @@ export default function ReportsTab({
               const dateObj = new Date(month + "-01");
               const label = dateObj.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
               return (
-                <button key={month} onClick={() => { triggerHaptic(); setReportMonth(month); }} className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${isActive ? `${currentTheme.activePill}` : "bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"}`}>
+                <button key={month} onClick={() => { triggerHaptic(); setReportMonth(month); }} className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${isActive ? `${currentTheme.activePill}` : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"}`}>
                   {label}
                 </button>
               );
@@ -501,7 +501,7 @@ export default function ReportsTab({
                 { id: "laporan", label: "Laporan", icon: Activity },
                 { id: "kalender", label: "Kalender", icon: CalendarDays }
               ].map(tab => (
-                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveView(tab.id as any); }} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${activeView === tab.id ? `${currentTheme.activeBg}` : "text-slate-505 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"}`}>
+                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveView(tab.id as any); }} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${activeView === tab.id ? `${currentTheme.activeBg}` : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"}`}>
                   <tab.icon size={14} /> {tab.label}
                 </button>
               ))}
@@ -690,7 +690,7 @@ export default function ReportsTab({
                       return (
                         <div key={key} className="border-b border-slate-50 dark:border-slate-800 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
                           <div onClick={() => { triggerHaptic(); toggleExpand(key); }} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 p-1.5 -mx-1.5 rounded-xl transition-all">
-                            <span className="text-slate-605 dark:text-slate-300 font-bold flex items-center gap-1.5">
+                            <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1.5">
                               <span className="bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black">{data.items[0]?.category?.charAt(0).toUpperCase()}</span>
                               {key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">( {data.items.length}x )</span>
                             </span>
@@ -756,8 +756,8 @@ export default function ReportsTab({
                               {data.items.sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime()).map((item) => (
                                 <div key={item.id} className="flex justify-between items-center text-[10px] pb-2 last:pb-0 border-b border-slate-200 dark:border-slate-700 last:border-none">
                                   <div className="flex flex-col text-left">
-                                    <span className="text-slate-400 dark:text-slate-505 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
-                                    <span className="text-slate-605 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
+                                    <span className="text-slate-400 dark:text-slate-500 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
+                                    <span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
                                   </div>
                                   <span className="text-slate-700 dark:text-slate-200 font-black">Rp {item.amount.toLocaleString('id-ID')}</span>
                                 </div>
@@ -993,7 +993,7 @@ export default function ReportsTab({
               <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-750 rounded-full"></div></div>
               <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
                 <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Filter by Account</h3>
-                <button onClick={() => setShowAccountFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-505 rounded-full transition-colors"><X size={16}/></button>
+                <button onClick={() => setShowAccountFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
               </div>
               <div className="p-4 overflow-y-auto space-y-2">
                 <div onClick={() => { triggerHaptic(); setSelectedAccount("All"); setShowAccountFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedAccount === "All" ? `${currentTheme.bgLight} ${currentTheme.border} shadow-sm` : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent"}`}>
@@ -1021,7 +1021,7 @@ export default function ReportsTab({
                   <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{selectedCategoryDetail.name}</h3>
                   <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Rincian riwayat kategori bulan ini</p>
                 </div>
-                <button onClick={() => setSelectedCategoryDetail(null)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-505 rounded-full transition-colors"><X size={16}/></button>
+                <button onClick={() => setSelectedCategoryDetail(null)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
               </div>
               <div className="p-6 overflow-y-auto space-y-3">
                 {(() => {
@@ -1035,7 +1035,7 @@ export default function ReportsTab({
                     <div key={t.id} className="flex justify-between items-center text-xs p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                       <div className="flex flex-col text-left">
                         <span className="font-bold text-slate-800 dark:text-slate-200 mb-1">{new Date(t.tDate).toLocaleDateString('id-ID', {weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'})}</span>
-                        <span className="text-[10px] font-bold text-slate-505 truncate max-w-[180px]">{t.accountName} {t.note ? `• ${t.note}` : ''}</span>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate max-w-[180px]">{t.accountName} {t.note ? `• ${t.note}` : ''}</span>
                       </div>
                       <span className={`font-black shrink-0 ${selectedCategoryDetail.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
                         {selectedCategoryDetail.type === 'income' ? '+' : '-'}Rp {t.amount.toLocaleString('id-ID')}
