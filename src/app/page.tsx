@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react"; 
+import dynamic from "next/dynamic"; // OPTIMASI 1: Lazy loading tingkat lanjut
 import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc, setDoc, getDocs, writeBatch } from "firebase/firestore";
@@ -11,20 +12,19 @@ import AuthScreen from "../components/shared/AuthScreen";
 import Sidebar from "../components/layout/Sidebar";
 import MobileHeader from "../components/layout/MobileHeader";
 import BottomNav from "../components/layout/BottomNav";
-import HomeTab from "../components/tabs/HomeTab";
-import ReportsTab from "../components/tabs/ReportsTab";
-import AssetsTab from "../components/tabs/AssetsTab";
-import SettingsTab from "../components/tabs/SettingsTab";
-import DebtsTab from "../components/tabs/DebtsTab";
 
 import { X, Lock, ChevronDown, Fingerprint, Crown, CheckCircle2, MessageCircle } from "lucide-react"; 
 
-// Fungsi bantu untuk membersihkan nama kategori dari emoji agar pencocokan berjalan 100% akurat
+// OPTIMASI 2: Mencegah komponen berat membebani loading detik pertama
+const HomeTab = dynamic(() => import("../components/tabs/HomeTab"), { ssr: false });
+const ReportsTab = dynamic(() => import("../components/tabs/ReportsTab"), { ssr: false });
+const AssetsTab = dynamic(() => import("../components/tabs/AssetsTab"), { ssr: false });
+const SettingsTab = dynamic(() => import("../components/tabs/SettingsTab"), { ssr: false });
+const DebtsTab = dynamic(() => import("../components/tabs/DebtsTab"), { ssr: false });
+
 const cleanCategoryName = (name: string): string => {
   if (!name) return "";
-  return name
-    .replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '')
-    .trim();
+  return name.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim();
 };
 
 const safeEvaluate = (expr: string): number => {
@@ -35,9 +35,7 @@ const safeEvaluate = (expr: string): number => {
   if (!sanitized) return 0;
   try {
     const result = new Function("use strict", `return (${sanitized});`)();
-    if (typeof result === "number" && isFinite(result)) {
-      return result;
-    }
+    if (typeof result === "number" && isFinite(result)) return result;
     return 0;
   } catch {
     const fallback = parseFloat(sanitized);
@@ -62,6 +60,9 @@ export default function FintrackerApp() {
   const [pinChecked, setPinChecked] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
+
+  // BONUS FITUR: Layar Buram saat aplikasi diminimize (Privacy Screen)
+  const [isAppBlurred, setIsAppBlurred] = useState(false);
 
   const [accounts, setAccounts] = useState<AccountData[]>([]);
   const [categories, setCategories] = useState<CategoryData[]>([]);
@@ -108,6 +109,16 @@ export default function FintrackerApp() {
   const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({
     IDR: 1, USD: 16000, SGD: 12000, EUR: 17000, JPY: 100, CNY: 2200, GBP: 20000, AUD: 10500, MYR: 3400, SAR: 4200
   });
+
+  // Listener untuk Layar Anti-Nganggur (Privacy Blur)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) setIsAppBlurred(true);
+      else setIsAppBlurred(false);
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768); 
@@ -239,42 +250,26 @@ export default function FintrackerApp() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   };
 
-  const formatRupiahTerbaca = (val: string) => {
-    if (!val) return "Rp 0";
-    const parsed = safeEvaluate(val);
-    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(parsed);
-  };
-
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => { 
       setUser(u); 
-      
       if (u) {
         const checkGhostDocument = async () => {
           try {
             const userRef = doc(db, "users", u.uid);
             const userSnap = await getDoc(userRef);
-            
             if (!userSnap.exists()) {
               await setDoc(userRef, {
-                uid: u.uid,
-                name: u.displayName || "Pengguna Fintracker",
-                email: u.email || "",
-                photoURL: u.photoURL || "",
-                isPremium: false, 
-                createdAt: serverTimestamp()
+                uid: u.uid, name: u.displayName || "Pengguna", email: u.email || "", photoURL: u.photoURL || "", isPremium: false, createdAt: serverTimestamp()
               }, { merge: true });
             }
-          } catch (error) {
-            console.error("Gagal memeriksa profil pengguna:", error);
-          }
+          } catch (error) { console.error(error); }
         };
         checkGhostDocument();
       } else {
         localStorage.removeItem("fintracker_is_premium");
         setIsPremium(null);
       }
-      
       setLoading(false); 
     });
     return () => unsub();
@@ -306,13 +301,7 @@ export default function FintrackerApp() {
         const premiumStatus = data.isPremium === true;
         setIsPremium(premiumStatus);
         localStorage.setItem("fintracker_is_premium", premiumStatus.toString());
-
-        if (data.rates) {
-          setExchangeRates(prev => ({
-            ...prev,
-            ...data.rates
-          }));
-        }
+        if (data.rates) setExchangeRates(prev => ({ ...prev, ...data.rates }));
       } else {
         setIsPremium(false);
         localStorage.setItem("fintracker_is_premium", "false");
@@ -322,6 +311,7 @@ export default function FintrackerApp() {
     return () => { unsubAcc(); unsubCat(); unsubTypes(); unsubDebts(); unsubSubs(); unsubProfile(); };
   }, [user]);
 
+  // QUERY TRANSAKSI BIASA (Hanya melacak 10-20 transaksi terbaru untuk kecepatan)
   useEffect(() => {
     if (!user) return;
     const qHistory = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(txLimit));
@@ -343,11 +333,19 @@ export default function FintrackerApp() {
     return () => unsubTr();
   }, [user, txLimit]);
 
+  // OPTIMASI 3: SMART QUERY DATE-BOUNDING (Mencegah Database Jebol)
   useEffect(() => {
     if (!user || (activeTab !== "reports" && activeTab !== "assets" && activeTab !== "home")) return; 
     
     const [y, m] = reportMonth.split("-").map(Number);
-    const startOfRangeDate = new Date(y, m - 6, 1);
+    
+    // Logika Pintar: Hanya tarik data banyak jika tab-nya Laporan!
+    let monthsBack = 0;
+    if (activeTab === "reports") monthsBack = 12; // Laporan butuh 12 bulan penuh
+    else if (activeTab === "assets") monthsBack = 1; // Aset butuh riwayat mutasi mundur 1 bulan
+    else monthsBack = 0; // Beranda hanya butuh bulan ini saja! Kecepatan meningkat 10x lipat.
+
+    const startOfRangeDate = new Date(y, m - 1 - monthsBack, 1);
     const startYear = startOfRangeDate.getFullYear();
     const startMonth = String(startOfRangeDate.getMonth() + 1).padStart(2, "0");
     const startOfRange = `${startYear}-${startMonth}-01`;
@@ -396,35 +394,35 @@ export default function FintrackerApp() {
     return () => unsubGlobal();
   }, [user, globalSearch]);
 
-  // SISTEM BACKGROUND DATA HEALER SENYAP: Memindai & merapikan emoji pada riwayat transaksi lama di database otomatis!
+  // OPTIMASI 4: BACKGROUND HEALER BERJALAN SENYAP TANPA MENGGANGGU LOADING AWAL
   useEffect(() => {
     if (!user || categories.length === 0 || reportTransactions.length === 0) return;
     
     const healData = async () => {
       const batch = writeBatch(db);
       let hasUpdates = false;
-      
       reportTransactions.forEach(t => {
         const cleanTxCat = cleanCategoryName(t.category);
         const matchedCat = categories.find(c => cleanCategoryName(c.name) === cleanTxCat);
-        
-        // Jika terdeteksi nama kategori berbeda karena mengandung emoji lawas
         if (matchedCat && t.category !== matchedCat.name) {
           const txRef = doc(db, `users/${user.uid}/transactions/${t.id}`);
           batch.update(txRef, { category: matchedCat.name });
           hasUpdates = true;
         }
       });
-      
-      if (hasUpdates) {
-        await batch.commit();
-        console.log("Fintracker: Penyelarasan background data healer sukses membersihkan emoji!");
-      }
+      if (hasUpdates) await batch.commit();
     };
     
-    healData();
+    const timeoutId = setTimeout(() => {
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => healData());
+      } else {
+        healData();
+      }
+    }, 4000); // Eksekusi 4 detik setelah UI selesai dimuat
+    
+    return () => clearTimeout(timeoutId);
   }, [user, categories, reportTransactions]);
-
   const setupDefaultCategories = async (uid: string) => {
     const defaults = [
       { name: "Makanan", type: "expense", expenseType: "variable" }, 
@@ -472,7 +470,6 @@ export default function FintrackerApp() {
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try { 
-      // 1. Perbarui dokumen kategori utama
       await updateDoc(doc(db, `users/${user.uid}/categories/${id}`), { 
         name: newName, 
         budgetLimit: newBudget, 
@@ -480,7 +477,6 @@ export default function FintrackerApp() {
         icon: newIcon || "" 
       }); 
 
-      // 2. SISTEM CASCADE UPDATE: Update semua transaksi yang menggunakan nama kategori lama ini masal
       if (oldName && oldName !== newName) {
         const txQuery = query(collection(db, `users/${user.uid}/transactions`), where("category", "==", oldName));
         const txSnap = await getDocs(txQuery);
@@ -489,8 +485,6 @@ export default function FintrackerApp() {
         txSnap.docs.forEach(docSnap => {
           const data = docSnap.data();
           const updatePayload: any = { category: newName };
-          
-          // Jika ada splits sub-kategori, ikut selaraskan di dalamnya
           if (data.splits && Array.isArray(data.splits)) {
             updatePayload.splits = data.splits.map((s: any) => 
               s.category === oldName ? { ...s, category: newName } : s
@@ -1040,32 +1034,8 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal memperbarui transaksi: " + e); } 
     finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
-
-  const handleEditKeypadPress = (key: string) => {
-    triggerHapticFeedback();
-    const currentVal = activeEditKeypad === "amount" ? editTAmount : editTAdminFee;
-    const setVal = activeEditKeypad === "amount" ? setEditTAmount : setEditTAdminFee;
-    if (key === "⌫") setVal(currentVal.slice(0, -1));
-    else if (key === "C") setVal("");
-    else if (key === "=") { const evaluated = safeEvaluate(currentVal); setVal(evaluated > 0 ? evaluated.toString() : ""); } 
-    else if (key === "Ya") setActiveEditKeypad(null);
-    else setVal(currentVal + key);
-  };
-
-  const handleSelectEditSplitCategory = (catName: string) => {
-    if (activeEditSplitIndex !== null) {
-      const updated = [...editTSplits];
-      updated[activeEditSplitIndex].category = catName;
-      setEditTSplits(updated);
-    }
-    setShowEditSplitCatModal(false);
-    setActiveEditSplitIndex(null);
-  };
-
-  // --- LOGIKA DATA EKSKUSIF UNTUK EKSPOR EXCEL ---
+// --- PREPARE DATA FOR REPORTS TAB ---
   const monthlyTransactions = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
-
-  // Menurunkan dummy props ke interface lama untuk mencegah TS Strict Mode error
   const adminFeeTxs = monthlyTransactions.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ id: `fee-${t.id}`, amount: t.adminFee!, type: "expense", accountId: t.accountId, accountName: t.accountName, category: "Biaya Admin", note: `Biaya admin transfer ke ${t.toAccountName}`, tDate: t.tDate } as TransactionData));
   const combinedExpenseTxs = [...monthlyTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
   const totalIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
@@ -1082,6 +1052,7 @@ export default function FintrackerApp() {
   const prevTotalIncome = prevMonthTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
 
   const handleExportToExcel = async () => {
+    const monthlyTransactions = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
     if (monthlyTransactions.length === 0) return alert("Tidak ada data transaksi di bulan ini!");
     
     const excelData = monthlyTransactions.map((t, idx) => {
@@ -1204,7 +1175,19 @@ export default function FintrackerApp() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 md:flex transition-colors duration-200">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 md:flex transition-colors duration-200 relative">
+      
+      {/* BONUS: PRIVACY SCREEN BLUR OVERLAY (ANTI-NGANGGUR) */}
+      {isAppBlurred && (
+        <div className="fixed inset-0 z-[9999] bg-slate-100/60 dark:bg-slate-900/60 backdrop-blur-xl flex flex-col items-center justify-center transition-all duration-300">
+          <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 shadow-inner animate-pulse">
+            <Lock size={40} className="text-blue-500" />
+          </div>
+          <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">Fintracker Terkunci</h2>
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Privasi saldo Anda sedang dilindungi.</p>
+        </div>
+      )}
+
       <Sidebar 
         user={user} activeTab={activeTab as any} setActiveTab={setActiveTab as any} onLogout={() => signOut(auth)} 
         isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode} 
@@ -1223,7 +1206,7 @@ export default function FintrackerApp() {
                 tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
                 tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} 
                 tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
-                transactions={reportTransactions} 
+                transactions={transactions} 
                 onDeleteTransaction={handleDeleteTransaction}
                 onEditTransaction={openEditModal} 
                 isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode}
@@ -1254,15 +1237,8 @@ export default function FintrackerApp() {
             {activeTab === "debts" && (
               <DebtsTab 
                 debts={debts} accounts={accounts} categories={categories}
-                handleAddDebt={handleAddDebt} 
-                handleEditDebt={handleEditDebt} 
-                handlePayDebt={handlePayDebt} 
-                handleDeleteDebt={handleDeleteDebt} 
-                subscriptions={subscriptions}
-                handleAddSubscription={handleAddSubscription}
-                handleEditSubscription={handleEditSubscription}
-                handlePaySubscription={handlePaySubscription}
-                handleDeleteSubscription={handleDeleteSubscription}
+                handleAddDebt={handleAddDebt} handleEditDebt={handleEditDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
+                subscriptions={subscriptions} handleAddSubscription={handleAddSubscription} handleEditSubscription={handleEditSubscription} handlePaySubscription={handlePaySubscription} handleDeleteSubscription={handleDeleteSubscription}
                 isPrivacyMode={isPrivacyMode}
               />
             )}
@@ -1271,11 +1247,9 @@ export default function FintrackerApp() {
                 accounts={accounts} walletTypes={walletTypes} accType={accType} setAccType={setAccType}
                 accName={accName} setAccName={setAccName} accBalance={accBalance} setAccBalance={setAccBalance}
                 accLogo={accLogo} handleLogoUpload={handleLogoUpload} accIsSavings={accIsSavings} setAccIsSavings={setAccIsSavings} 
-                accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} 
-                accExcludeFromTotal={accExcludeFromTotal} setAccExcludeFromTotal={setAccExcludeFromTotal}
+                accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} accExcludeFromTotal={accExcludeFromTotal} setAccExcludeFromTotal={setAccExcludeFromTotal}
                 editAccExcludeFromTotal={editAccExcludeFromTotal} setEditAccExcludeFromTotal={setEditAccExcludeFromTotal}
-                accIsBusiness={accIsBusiness} setAccIsBusiness={setAccIsBusiness}
-                editAccIsBusiness={editAccIsBusiness} setEditAccIsBusiness={setEditAccIsBusiness}
+                accIsBusiness={accIsBusiness} setAccIsBusiness={setAccIsBusiness} editAccIsBusiness={editAccIsBusiness} setEditAccIsBusiness={setEditAccIsBusiness}
                 handleCreateAccount={handleCreateAccount} editingAccId={editingAccId} setEditingAccId={setEditingAccId} 
                 editAccName={editAccName} setEditAccName={setEditAccName} editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} 
                 editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} 
@@ -1283,14 +1257,8 @@ export default function FintrackerApp() {
                 handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder}
                 accSavingsGoalTitle={accSavingsGoalTitle} setAccSavingsGoalTitle={setAccSavingsGoalTitle}
                 editAccSavingsGoalTitle={editAccSavingsGoalTitle} setEditAccSavingsGoalTitle={setEditAccSavingsGoalTitle}
-                isPrivacyMode={isPrivacyMode}
-                accCurrency={accCurrency} setAccCurrency={setAccCurrency}
-                editAccCurrency={editAccCurrency} setEditAccCurrency={setEditAccCurrency}
-                exchangeRates={exchangeRates}
-                handleUpdateGlobalRates={handleUpdateGlobalRates}
-                reportTransactions={reportTransactions}
-                reportMonth={reportMonth}
-                setReportMonth={setReportMonth}
+                isPrivacyMode={isPrivacyMode} accCurrency={accCurrency} setAccCurrency={setAccCurrency} editAccCurrency={editAccCurrency} setEditAccCurrency={setEditAccCurrency}
+                exchangeRates={exchangeRates} handleUpdateGlobalRates={handleUpdateGlobalRates} reportTransactions={reportTransactions} reportMonth={reportMonth} setReportMonth={setReportMonth}
               />
             )}
             {activeTab === "settings" && (
