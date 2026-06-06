@@ -585,7 +585,7 @@ export default function SettingsTab({
         <div className="flex flex-col sm:flex-row gap-2 bg-white dark:bg-slate-900 p-3 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm mb-6 text-left">
           <input 
             type="text" placeholder="Tambah tipe baru (Misal: Investasi)" 
-            className="w-full sm:flex-1 p-3 bg-slate-50 dark:bg-slate-955 border border-transparent rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400" 
+            className="w-full sm:flex-1 p-3 bg-slate-50 dark:bg-slate-950 border border-transparent rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400" 
             value={newWalletTypeName} onChange={(e) => setNewWalletTypeName(e.target.value)} 
           />
           <button onClick={addCustomWalletType} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95 shadow-md shadow-blue-500/20">
