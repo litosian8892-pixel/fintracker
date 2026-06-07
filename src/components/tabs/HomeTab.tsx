@@ -268,7 +268,13 @@ export default function HomeTab({
   useEffect(() => { if (editTType === "transfer") { setEditTCategory("Transfer"); } else { const matchingCats = categories.filter((cat) => cat.type === editTType); if (editTCategory && !matchingCats.some(c => c.name === editTCategory) && editTCategory !== "Split Transaksi") { setEditTCategory(""); } } }, [editTType, categories, editTCategory, setEditTCategory]);
 
   const filteredCategories = categories.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name));
-  const triggerHaptic = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
+  const triggerHaptic = () => { 
+    if (typeof window !== "undefined" && navigator.vibrate) {
+      if (localStorage.getItem("fintracker_haptic") !== "false") {
+        navigator.vibrate(10); 
+      }
+    }
+  };
   
   const handleNoteChange = (val: string) => {
     if (editingTransaction) setEditTNote(val); else setTNote(val);

@@ -143,7 +143,13 @@ export default function FintrackerApp() {
     return () => mediaQuery.removeEventListener("change", applyTheme);
   }, [theme]);
 
-  const triggerHapticFeedback = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
+  const triggerHapticFeedback = () => { 
+    if (typeof window !== "undefined" && navigator.vibrate) {
+      if (localStorage.getItem("fintracker_haptic") !== "false") {
+        navigator.vibrate(10); 
+      }
+    }
+  };
 
   const togglePrivacyMode = () => {
     triggerHapticFeedback();
