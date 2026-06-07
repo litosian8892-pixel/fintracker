@@ -757,20 +757,22 @@ export default function HomeTab({
                 )}
               </div>
 
-              {/* INPUT TANGGAL & JAM BERDAMPINGAN */}
-              <div className="grid grid-cols-2 gap-3 relative z-10">
+              {/* LAYOUT RESPONSIF: VERTIKAL DI HP, BERSANDING DI LAYAR LEBAR (BEBAS SQUASH) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center justify-between px-1">
                     <span>Tanggal</span>
                     <button type="button" onClick={toggleYesterdayToday} className={`text-[9px] font-black hover:underline cursor-pointer ${currentTheme.text}`}>{isDateYesterday ? "Hari Ini?" : "Kemarin?"}</button>
                   </label>
-                  <input type="date" style={{ colorScheme: isDark ? "dark" : "light" }} className="w-full m-0 box-border p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" value={editingTransaction ? editTDate : tDate} onChange={(e) => editingTransaction ? setEditTDate(e.target.value) : setTDate(e.target.value)} />
+                  {/* SET TINGGI PERSISI H-[50px] AGAR SEJAJAR SAAT BERDAMPINGAN */}
+                  <input type="date" style={{ colorScheme: isDark ? "dark" : "light" }} className="w-full h-[50px] m-0 box-border p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" value={editingTransaction ? editTDate : tDate} onChange={(e) => editingTransaction ? setEditTDate(e.target.value) : setTDate(e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 block">Jam</label>
-                  <div className="flex gap-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 items-center h-[50px] box-border">
-                    {/* Selector Jam (1-12) - Berhenti jika di-scroll */}
+                  <div className="flex gap-1 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-3 items-center h-[50px] box-border">
+                    {/* SELECTOR JAM DENGAN EMULASI COLOR SCHEME AGAR TOMBOL PANAH MENJADI PUTIH DI MODE GELAP */}
                     <select 
+                      style={{ colorScheme: isDark ? "dark" : "light" }}
                       className="flex-1 bg-transparent text-xs font-bold outline-none text-slate-800 dark:text-white cursor-pointer text-center"
                       value={parseTime12(editingTransaction ? editTTime : tTime).hour12}
                       onChange={(e) => {
@@ -783,11 +785,11 @@ export default function HomeTab({
                         <option key={h} value={h} className="dark:bg-slate-950 text-slate-800 dark:text-white">{h}</option>
                       ))}
                     </select>
-                    
                     <span className="text-slate-400 font-bold shrink-0">:</span>
                     
-                    {/* Selector Menit (00-59) - Berhenti jika di-scroll */}
+                    {/* SELECTOR MENIT DENGAN EMULASI COLOR SCHEME */}
                     <select 
+                      style={{ colorScheme: isDark ? "dark" : "light" }}
                       className="flex-1 bg-transparent text-xs font-bold outline-none text-slate-800 dark:text-white cursor-pointer text-center"
                       value={parseTime12(editingTransaction ? editTTime : tTime).minute}
                       onChange={(e) => {
@@ -801,8 +803,9 @@ export default function HomeTab({
                       ))}
                     </select>
 
-                    {/* Selector AM/PM */}
+                    {/* SELECTOR AM/PM DENGAN EMULASI COLOR SCHEME */}
                     <select 
+                      style={{ colorScheme: isDark ? "dark" : "light" }}
                       className={`px-2 py-1 rounded-xl text-[10px] font-black outline-none border cursor-pointer shrink-0 ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}
                       value={parseTime12(editingTransaction ? editTTime : tTime).period}
                       onChange={(e) => {
