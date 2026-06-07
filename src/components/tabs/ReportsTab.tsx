@@ -99,7 +99,6 @@ export default function ReportsTab({
   const monthScrollRef = useRef<HTMLDivElement>(null);
   const [accent, setAccent] = useState<keyof typeof themeMap>("blue");
 
-  // Perbaikan Auto-scroll & Sinkronisasi Warna Aksen Dinamis
   useEffect(() => {
     if (monthScrollRef.current) {
       const timer = setTimeout(() => {
@@ -124,6 +123,7 @@ export default function ReportsTab({
   }, []);
 
   const [activeView, setActiveView] = useState<"statistik" | "laporan" | "kalender">("statistik");
+  const [cashFlowMode, setCashFlowMode] = useState<"minggu" | "bulan">("bulan"); // STATE BARU: MINGGU / BULAN
   const [selectedHeatmapDate, setSelectedHeatmapDate] = useState<string | null>(null);
   
   const [selectedAccount, setSelectedAccount] = useState<string>("All");
@@ -277,6 +277,35 @@ export default function ReportsTab({
   if (healthScore >= 80) healthStatus = { text: "Excellent", color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/30", stroke: "#10b981" };
   else if (healthScore >= 50) healthStatus = { text: "Good", color: "text-amber-500", bg: "bg-amber-100 dark:bg-amber-900/30", stroke: "#f59e0b" };
 
+  // LOGIKA BARU: HITUNG ARUS KAS MINGGUAN DINAMIS UNTUK BULAN BERJALAN (FASE 14)
+  const weeklyCashFlowData = useMemo(() => {
+    const weeks = [
+      { name: "Minggu 1", start: 1, end: 7 },
+      { name: "Minggu 2", start: 8, end: 14 },
+      { name: "Minggu 3", start: 15, end: 21 },
+      { name: "Minggu 4", start: 22, end: daysInMonth }
+    ];
+
+    return weeks.map(w => {
+      const weekTxs = currentMonthTxs.filter(t => {
+        const day = parseInt(t.tDate.split("-")[2], 10);
+        return day >= w.start && day <= w.end;
+      });
+
+      const inc = weekTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.splits?.reduce((s, split) => s + split.amount, 0) || t.amount), 0);
+      const adminFees = weekTxs.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).reduce((sum, t) => sum + t.adminFee!, 0);
+      const exp = weekTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.splits?.reduce((s, split) => s + split.amount, 0) || t.amount), 0) + adminFees;
+
+      return {
+        month: reportMonth,
+        name: w.name,
+        Pemasukan: inc,
+        Pengeluaran: exp,
+        Net: inc - exp
+      };
+    });
+  }, [currentMonthTxs, reportMonth, daysInMonth]);
+
   const generatePrintHTML = () => {
     const tableRows = currentMonthTxs.map(t => `
       <tr style="border-bottom: 1px solid #e2e8f0;">
@@ -376,7 +405,6 @@ export default function ReportsTab({
       </html>
     `;
   };
-
   const RenderDonutList = ({ data, colors, total, title, type, showAll, setShowAll }: { data: any[], colors: string[], total: number, title: string, type: 'income' | 'expense', showAll: boolean, setShowAll: (val: boolean) => void }) => {
     const displayedProgressBars = showAll ? data : data.slice(0, 5);
     return (
@@ -467,6 +495,17 @@ export default function ReportsTab({
 
   return (
     <>
+      {/* SUNTIKAN ATURAN CSS UNTUK MENYEMBUNYIKAN BATANG SCROLLBAR SECARA LOKAL */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .no-scrollbar::-webkit-scrollbar {
+          display: none !important;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+        }
+      `}} />
+
       <div className="space-y-6 animate-in print:hidden">
         
         {/* HEADER & FILTER */}
@@ -480,8 +519,8 @@ export default function ReportsTab({
             </button>
           </div>
 
-          {/* Menambahkan scrollbar skema gelap agar tidak bocor putih */}
-          <div ref={monthScrollRef} className="flex overflow-x-auto gap-2 px-2 pb-2 -mx-2 snap-x scrollbar-thin scrollbar-track-transparent dark:scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark] scroll-smooth">
+          {/* Navigasi Bulan */}
+          <div ref={monthScrollRef} className="flex overflow-x-auto gap-2 px-2 pb-2 -mx-2 snap-x no-scrollbar scroll-smooth">
             {monthNavPills.map(month => {
               const isActive = month === reportMonth;
               const dateObj = new Date(month + "-01");
@@ -501,7 +540,7 @@ export default function ReportsTab({
                 { id: "laporan", label: "Laporan", icon: Activity },
                 { id: "kalender", label: "Kalender", icon: CalendarDays }
               ].map(tab => (
-                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveView(tab.id as any); }} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${activeView === tab.id ? `${currentTheme.activeBg}` : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"}`}>
+                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveView(tab.id as any); }} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${activeView === tab.id ? `${currentTheme.activeBg}` : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-105"}`}>
                   <tab.icon size={14} /> {tab.label}
                 </button>
               ))}
@@ -512,7 +551,6 @@ export default function ReportsTab({
             <button onClick={handleExportToExcel} className="flex-1 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer active:scale-95">
               <Download size={14}/> Export Excel
             </button>
-            
             <button 
               onClick={() => {
                 triggerHaptic();
@@ -560,35 +598,71 @@ export default function ReportsTab({
             <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Arus Kas</h3>
-                <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg"><span className="px-3 py-1 rounded-md text-[10px] font-bold text-slate-500 dark:text-slate-400">Minggu</span><span className={`px-3 py-1 rounded-md text-[10px] font-bold ${currentTheme.activeBg} shadow-sm`}>Bulan</span></div>
+                
+                {/* BUTTONS SWITCHER INTERAKTIF (AKTIF MINGGU & BULAN) */}
+                <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
+                  <button 
+                    type="button"
+                    onClick={() => { triggerHaptic(); setCashFlowMode("minggu"); }}
+                    className={`px-3 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-all ${
+                      cashFlowMode === "minggu" 
+                        ? `${currentTheme.activeBg} shadow-sm` 
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
+                    }`}
+                  >
+                    Minggu
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => { triggerHaptic(); setCashFlowMode("bulan"); }}
+                    className={`px-3 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-all ${
+                      cashFlowMode === "bulan" 
+                        ? `${currentTheme.activeBg} shadow-sm` 
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
+                    }`}
+                  >
+                    Bulan
+                  </button>
+                </div>
               </div>
               
               <div className="h-32 w-full pt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  {/* PENYELESAIAN BUG VISUAL: Cursor dibuat transparan halus di mode gelap */}
-                  <ReBarChart data={trendData.slice(-12)} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barGap={0} barCategoryGap="20%">
+                  <ReBarChart 
+                    data={cashFlowMode === "bulan" ? trendData.slice(-12) : weeklyCashFlowData} 
+                    margin={{ top: 10, right: 0, left: 0, bottom: 0 }} 
+                    barGap={0} 
+                    barCategoryGap="20%"
+                  >
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} dy={10} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} />
-                    <Bar dataKey="Net" radius={[4, 4, 4, 4]}>{trendData.slice(-12).map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.month === reportMonth ? (entry.Net >= 0 ? '#10b981' : '#ef4444') : '#64748b'} />))}</Bar>
+                    <Bar dataKey="Net" radius={[4, 4, 4, 4]}>
+                      {(cashFlowMode === "bulan" ? trendData.slice(-12) : weeklyCashFlowData).map((entry, index) => {
+                        let fill = '#64748b';
+                        if (cashFlowMode === "bulan") {
+                          fill = entry.month === reportMonth ? (entry.Net >= 0 ? '#10b981' : '#ef4444') : '#64748b';
+                        } else {
+                          fill = entry.Net >= 0 ? '#10b981' : '#ef4444';
+                        }
+                        return <Cell key={`cell-${index}`} fill={fill} />;
+                      })}
+                    </Bar>
                   </ReBarChart>
                 </ResponsiveContainer>
               </div>
 
               <div className="bg-orange-50/50 dark:bg-orange-950/20 p-4 rounded-2xl flex items-center gap-4 border border-orange-100 dark:border-orange-900/30">
-                <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-500">{localTotalIncome - localTotalExpense >= 0 ? <TrendingUp size={20}/> : <TrendingDown size={20}/>}</div>
+                <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-500">
+                  {localTotalIncome - localTotalExpense >= 0 ? <TrendingUp size={20}/> : <TrendingDown size={20}/>}
+                </div>
                 <div><p className="text-xs font-black text-slate-800 dark:text-slate-200">Periode terakhir tren {localTotalIncome - localTotalExpense >= 0 ? "positif" : "menurun"}</p><p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">perubahan Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}</p></div>
               </div>
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Tren Pengeluaran</h3>
-                <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-600 dark:text-slate-300">Rata-rata: Rp {Math.round(trendData.reduce((a,b)=>a+b.Pengeluaran,0)/12).toLocaleString('id-ID')}/bln</span>
-              </div>
-              
+              <div className="flex justify-between items-center mb-2"><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Tren Pengeluaran</h3><span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-600 dark:text-slate-300">Rata-rata: Rp {Math.round(trendData.reduce((a,b)=>a+b.Pengeluaran,0)/12).toLocaleString('id-ID')}/bln</span></div>
               <div className="h-32 w-full pt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  {/* PENYELESAIAN BUG VISUAL: Cursor dibuat transparan halus di mode gelap */}
                   <ReBarChart data={trendData.slice(-12)} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barCategoryGap="20%">
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} dy={10} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} />
@@ -596,7 +670,6 @@ export default function ReportsTab({
                   </ReBarChart>
                 </ResponsiveContainer>
               </div>
-
               <div className="flex items-center gap-2 pt-2">
                 <div className="flex-1 bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800"><p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1"><ArrowDown size={12}/> Bulan Lalu</p><p className="text-sm font-black text-slate-800 dark:text-slate-200 mt-1">Rp {localPrevTotalExpense.toLocaleString('id-ID')}</p></div>
                 <div className="text-slate-400">→</div>
@@ -605,14 +678,9 @@ export default function ReportsTab({
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Tren Pemasukan</h3>
-                <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-600 dark:text-slate-300">Rata-rata: Rp {Math.round(trendData.reduce((a,b)=>a+b.Pemasukan,0)/12).toLocaleString('id-ID')}/bln</span>
-              </div>
-              
+              <div className="flex justify-between items-center mb-2"><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Tren Pemasukan</h3><span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-600 dark:text-slate-300">Rata-rata: Rp {Math.round(trendData.reduce((a,b)=>a+b.Pemasukan,0)/12).toLocaleString('id-ID')}/bln</span></div>
               <div className="h-32 w-full pt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  {/* PENYELESAIAN BUG VISUAL: Cursor dibuat transparan halus di mode gelap */}
                   <ReBarChart data={trendData.slice(-12)} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barCategoryGap="20%">
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} dy={10} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} />
@@ -620,7 +688,6 @@ export default function ReportsTab({
                   </ReBarChart>
                 </ResponsiveContainer>
               </div>
-
               <div className="flex items-center gap-2 pt-2">
                 <div className="flex-1 bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800"><p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1"><ArrowDown size={12}/> Bulan Lalu</p><p className="text-sm font-black text-slate-800 dark:text-slate-200 mt-1">Rp {localPrevTotalIncome.toLocaleString('id-ID')}</p></div>
                 <div className="text-slate-400">→</div>
@@ -880,7 +947,6 @@ export default function ReportsTab({
               <div><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Spending by Day of Week</h3><p className="text-[10px] font-bold text-slate-500">Peak spending day: <span className="text-red-500">{dowFullNames[peakDayIdx]}</span></p></div>
               <div className="h-40 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  {/* PENYELESAIAN BUG VISUAL: Cursor dibuat transparan halus di mode gelap */}
                   <ReBarChart data={dowChartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: "bold", fill: "#94a3b8" }} dy={10} /><Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} content={<CustomTooltip />} /><Bar dataKey="Pengeluaran" radius={[6, 6, 6, 6]}>{dowChartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.fill} />))}</Bar></ReBarChart>
                 </ResponsiveContainer>
               </div>
