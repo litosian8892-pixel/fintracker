@@ -84,7 +84,6 @@ export default function SettingsTab({
   
   // STATE NAVIGASI SUB-MENU (DITAMBAHKAN "accents")
   const [activeMenu, setActiveMenu] = useState<"main" | "categories" | "wallets" | "profile" | "accents">("main");
-  const [showThemeModal, setShowThemeModal] = useState(false);
 
   // STATE KATEGORI
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
@@ -323,10 +322,19 @@ export default function SettingsTab({
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-4 mb-2">Personalisasi & Data</p>
           <div className="bg-white dark:bg-slate-900 rounded-[28px] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
             <MenuItem 
-              icon={LayoutTemplate} iconBg="bg-slate-50 dark:bg-slate-800" iconColor="text-slate-600 dark:text-slate-300" 
-              title="Tema Visual" subtitle="Terang, Gelap, atau Otomatis" 
-              onClick={() => setShowThemeModal(true)}
-              rightElement={<div className="flex items-center gap-1.5"><span className="text-xs font-bold text-slate-400 uppercase">{theme === 'system' ? 'Auto' : theme}</span><ChevronRight size={16} className="text-slate-300 dark:text-slate-600"/></div>}
+              icon={Moon} iconBg="bg-indigo-50 dark:bg-indigo-900/30" iconColor="text-indigo-500" 
+              title="Mode Gelap (Dark Mode)" subtitle="Matikan untuk mode terang" 
+              onClick={() => {
+                triggerHaptic();
+                const newTheme = theme === "dark" ? "light" : "dark";
+                setTheme(newTheme);
+                localStorage.setItem("theme", newTheme);
+              }}
+              rightElement={
+                <div className={`w-11 h-6 rounded-full flex items-center p-1 cursor-pointer transition-colors shadow-inner ${theme === 'dark' ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-800'}`}>
+                  <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-300 ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'}`} />
+                </div>
+              }
             />
             {/* ROW BARU: WARNA AKSEN TEMA PREMIUM */}
             <MenuItem 
@@ -608,35 +616,6 @@ export default function SettingsTab({
         </div>
       </div>
 
-      {/* ========================================== */}
-      {/* BOTTOM SHEET: TEMA APLIKASI */}
-      {/* ========================================== */}
-      {showThemeModal && (
-        <div className="fixed inset-0 z-[150] flex items-end justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setShowThemeModal(false)}>
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 border-t border-slate-200 dark:border-slate-800 pb-8" onClick={e => e.stopPropagation()}>
-            <div className="w-full flex justify-center pt-3 pb-2"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
-            <div className="px-6 pb-4 pt-2 flex justify-between items-center shrink-0">
-              <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Pilih Tema</h3>
-              <button onClick={() => setShowThemeModal(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={16}/></button>
-            </div>
-            <div className="p-6 pt-2 space-y-3">
-              {[
-                { id: "light", label: "Terang (Light)", icon: Sun, color: "text-amber-500", bg: "bg-amber-100 dark:bg-amber-900/30" },
-                { id: "dark", label: "Gelap (Dark)", icon: Moon, color: "text-indigo-500", bg: "bg-indigo-100 dark:bg-indigo-900/30" },
-                { id: "system", label: "Ikuti Sistem (Auto)", icon: Monitor, color: "text-slate-500", bg: "bg-slate-100 dark:bg-slate-800" },
-              ].map(opt => (
-                <div key={opt.id} onClick={() => { triggerHaptic(); setTheme(opt.id as "light"|"dark"|"system"); localStorage.setItem("theme", opt.id); setShowThemeModal(false); }} className={`flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all border ${theme === opt.id ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 shadow-sm" : "bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"}`}>
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${opt.bg} ${opt.color}`}><opt.icon size={18} strokeWidth={2.5}/></div>
-                    <p className="text-sm font-black text-slate-800 dark:text-slate-100">{opt.label}</p>
-                  </div>
-                  {theme === opt.id && <Check size={20} className="text-blue-600 dark:text-blue-400" strokeWidth={3} />}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* POPUP MODAL SETUP & DISABLE PIN */}
       {pinModalMode && (
