@@ -909,17 +909,14 @@ export default function HomeTab({
                       </span>
                     </div>
                     {/* INFO SISA UNTUK EDIT PECAHAN */}
-                    {(() => {
-  const remaining = safeEvaluate(editTAmount) - editTSplits.reduce((sum, s) => sum + s.amount, 0);
-  return (
-    <div className="flex justify-between items-center text-[10px] font-bold">
-      <span className="text-slate-500">{remaining < 0 ? "Kelebihan Alokasi:" : "Sisa Belum Dialokasi:"}</span>
-      <span className={remaining === 0 ? 'text-emerald-500' : 'text-rose-500'}>
-        {currentSymbol} {Math.abs(remaining).toLocaleString('id-ID')}
-      </span>
-    </div>
-  );
-})()}
+                    <div className="flex justify-between items-center text-[10px] font-bold">
+                      <span className="text-slate-500">
+                        {safeEvaluate(editTAmount) - editTSplits.reduce((sum, s) => sum + s.amount, 0) < 0 ? "Kelebihan Alokasi:" : "Sisa Belum Dialokasi:"}
+                      </span>
+                      <span className={safeEvaluate(editTAmount) - editTSplits.reduce((sum, s) => sum + s.amount, 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}>
+                        {currentSymbol} {Math.abs(safeEvaluate(editTAmount) - editTSplits.reduce((sum, s) => sum + s.amount, 0)).toLocaleString('id-ID')}
+                      </span>
+                    </div>
                   </div>
                   
                   {editTSplits.map((item, i) => (
@@ -1098,19 +1095,16 @@ export default function HomeTab({
                     {currentSymbol} {tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0).toLocaleString('id-ID')}
                   </span>
                 </div>
-                {/* INFO SISA BELUM DIALOKASI (BARU) */}
-                {/* INFO SISA BELUM DIALOKASI (BARU) */}
-              {(() => {
-                const remainingNew = safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0);
-                return (
-                  <div className="flex justify-between items-center text-xs font-bold mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
-                    <span className="text-slate-600 dark:text-slate-300">{remainingNew < 0 ? "Kelebihan Alokasi:" : "Sisa Belum Dialokasi:"}</span>
-                    <span className={`font-black ${remainingNew === 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                      {currentSymbol} {Math.abs(remainingNew).toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                );
-              })()}
+      
+               {/* INFO SISA BELUM DIALOKASI (BARU) */}
+              <div className="flex justify-between items-center text-xs font-bold mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                <span className="text-slate-600 dark:text-slate-300">
+                  {safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0) < 0 ? "Kelebihan Alokasi:" : "Sisa Belum Dialokasi:"}
+                </span>
+                <span className={`font-black ${safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  {currentSymbol} {Math.abs(safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0)).toLocaleString('id-ID')}
+                </span>
+              </div>
 
               <div className="space-y-3">
                 {tempSplits.map((item, i) => (
