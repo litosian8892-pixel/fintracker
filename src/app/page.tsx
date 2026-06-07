@@ -295,9 +295,17 @@ export default function FintrackerApp() {
     const qHistory = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(txLimit));
     const unsubTr = onSnapshot(qHistory, (sn) => {
       const data = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
+      
+      // OPTIMASI: Mengurutkan kronologis berdasarkan tanggal, jam input (tTime), dan waktu pembuatan dokumen (createdAt)
       data.sort((a, b) => {
         const dateCompare = b.tDate.localeCompare(a.tDate);
         if (dateCompare !== 0) return dateCompare;
+        
+        const timeA = a.tTime || "00:00";
+        const timeB = b.tTime || "00:00";
+        const timeCompare = timeB.localeCompare(timeA);
+        if (timeCompare !== 0) return timeCompare;
+
         const getMillis = (t: any) => {
           if (!t) return Date.now(); 
           if (typeof t.toMillis === 'function') return t.toMillis();
@@ -326,7 +334,25 @@ export default function FintrackerApp() {
     const qReport = query(collection(db, `users/${user.uid}/transactions`), where("tDate", ">=", startOfRange), where("tDate", "<=", endOfRange));
     const unsubReport = onSnapshot(qReport, (sn) => {
       const data = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
-      data.sort((a, b) => b.tDate.localeCompare(a.tDate)); 
+      
+      // OPTIMASI: Mengurutkan berjenjang per tanggal, jam input (tTime), dan pembuatan dokumen (createdAt) agar tampilan Beranda sinkron
+      data.sort((a, b) => {
+        const dateCompare = b.tDate.localeCompare(a.tDate);
+        if (dateCompare !== 0) return dateCompare;
+
+        const timeA = a.tTime || "00:00";
+        const timeB = b.tTime || "00:00";
+        const timeCompare = timeB.localeCompare(timeA);
+        if (timeCompare !== 0) return timeCompare;
+
+        const getMillis = (t: any) => {
+          if (!t) return Date.now(); 
+          if (typeof t.toMillis === 'function') return t.toMillis();
+          if (t.seconds) return t.seconds * 1000;
+          return new Date(t).getTime();
+        };
+        return getMillis(b.createdAt) - getMillis(a.createdAt);
+      }); 
       setReportTransactions(data);
     });
     return () => unsubReport();
