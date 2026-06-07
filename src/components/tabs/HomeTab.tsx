@@ -757,20 +757,20 @@ export default function HomeTab({
                 )}
               </div>
 
-              {/* INPUT TANGGAL & JAM BERSANDINGAN (FIX OVERFLOW & KESEIMBANGAN VISUAL) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10 w-full">
+              {/* INPUT TANGGAL & JAM BERSANDINGAN SECARA PERMANEN (SELALU 2 KOLOM DI HP) */}
+              <div className="grid grid-cols-2 gap-2 relative z-10 w-full">
                 
                 {/* KOTAK TANGGAL */}
-                <div className="space-y-1 flex-1 min-w-0">
+                <div className="space-y-1 min-w-0">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center justify-between px-1">
                     <span>Tanggal</span>
                     <button type="button" onClick={toggleYesterdayToday} className={`text-[9px] font-black hover:underline cursor-pointer ${currentTheme.text}`}>{isDateYesterday ? "Hari Ini?" : "Kemarin?"}</button>
                   </label>
-                  <div className="w-full h-12 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl flex items-center px-2 overflow-hidden">
+                  <div className="w-full h-12 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl flex items-center px-1 sm:px-2 overflow-hidden">
                     <input 
                       type="date" 
                       style={{ colorScheme: isDark ? "dark" : "light" }} 
-                      className="w-full bg-transparent text-sm font-black outline-none text-slate-800 dark:text-white cursor-pointer appearance-none min-w-0 text-center" 
+                      className="w-full bg-transparent text-xs sm:text-sm font-black outline-none text-slate-800 dark:text-white cursor-pointer appearance-none text-center" 
                       value={editingTransaction ? editTDate : tDate} 
                       onChange={(e) => editingTransaction ? setEditTDate(e.target.value) : setTDate(e.target.value)} 
                     />
@@ -778,17 +778,17 @@ export default function HomeTab({
                 </div>
 
                 {/* KOTAK JAM */}
-                <div className="space-y-1 flex-1 min-w-0">
+                <div className="space-y-1 min-w-0">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 block">
                     Jam
                   </label>
-                  <div className="w-full h-12 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl flex items-center justify-between px-3 overflow-hidden">
+                  <div className="w-full h-12 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl flex items-center justify-between px-1.5 overflow-hidden">
                     
-                    <div className="flex items-center justify-center flex-1 pl-6">
-                      {/* JAM (FONT DIPERBESAR) */}
+                    {/* AREA ANGKA JAM DI TENGAH */}
+                    <div className="flex items-center justify-center flex-1">
                       <select 
                         style={{ colorScheme: isDark ? "dark" : "light" }}
-                        className="bg-transparent text-sm font-black outline-none text-slate-800 dark:text-white cursor-pointer text-center appearance-none"
+                        className="bg-transparent text-xs sm:text-sm font-black outline-none text-slate-800 dark:text-white cursor-pointer text-center appearance-none"
                         value={parseTime12(editingTransaction ? editTTime : tTime).hour12}
                         onChange={(e) => {
                           const current = parseTime12(editingTransaction ? editTTime : tTime);
@@ -801,12 +801,11 @@ export default function HomeTab({
                         ))}
                       </select>
                       
-                      <span className="text-slate-400 font-black shrink-0 px-1 -mt-0.5">:</span>
+                      <span className="text-slate-400 font-black shrink-0 px-0.5 -mt-0.5">:</span>
                       
-                      {/* MENIT (FONT DIPERBESAR) */}
                       <select 
                         style={{ colorScheme: isDark ? "dark" : "light" }}
-                        className="bg-transparent text-sm font-black outline-none text-slate-800 dark:text-white cursor-pointer text-center appearance-none"
+                        className="bg-transparent text-xs sm:text-sm font-black outline-none text-slate-800 dark:text-white cursor-pointer text-center appearance-none"
                         value={parseTime12(editingTransaction ? editTTime : tTime).minute}
                         onChange={(e) => {
                           const current = parseTime12(editingTransaction ? editTTime : tTime);
@@ -820,10 +819,10 @@ export default function HomeTab({
                       </select>
                     </div>
 
-                    {/* AM / PM (DIDORONG KE KANAN AGAR SEIMBANG) */}
+                    {/* KAPSUL AM/PM DI KANAN */}
                     <select 
                       style={{ colorScheme: isDark ? "dark" : "light" }}
-                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black outline-none border cursor-pointer shrink-0 ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border} appearance-none text-center shadow-sm`}
+                      className={`px-1.5 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black outline-none border cursor-pointer shrink-0 ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border} appearance-none text-center shadow-sm`}
                       value={parseTime12(editingTransaction ? editTTime : tTime).period}
                       onChange={(e) => {
                         const current = parseTime12(editingTransaction ? editTTime : tTime);
