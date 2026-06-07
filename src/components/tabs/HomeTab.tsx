@@ -1414,6 +1414,30 @@ export default function HomeTab({
         </div>
       )}
 
+{/* POP-UP CATEGORY MODAL FOR NEW SPLIT / PECAHAN BARU */}
+      {showSplitCatModal && (
+        <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-100 dark:border-slate-800">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
+              <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm"><span>🏷️</span> Pilih Kategori Pecahan</h3>
+              <button type="button" onClick={() => { setShowSplitCatModal(false); setActiveSplitIndex(null); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full cursor-pointer"><X size={14}/></button>
+            </div>
+            <div className="p-4 bg-white dark:bg-slate-900 shrink-0">
+              <input type="text" placeholder="Cari kategori..." className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            </div>
+            <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900 text-left">
+              <div className="grid grid-cols-2 gap-3">
+                {categories.filter(c => c.type === tType && c.name.toLowerCase().includes(searchQuery.toLowerCase())).map(cat => (
+                  <button key={cat.id} type="button" onClick={() => handleSelectSplitCategory(cat.name)} className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <span className="mr-2">{cat.icon || getCategoryIcon(cat.name)}</span>{cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* POP-UP CATEGORY MODAL FOR EDIT / KOREKSI PECAHAN */}
       {showEditSplitCatModal && (
         <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
