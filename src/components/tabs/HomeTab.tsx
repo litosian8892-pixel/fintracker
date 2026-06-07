@@ -1299,7 +1299,22 @@ export default function HomeTab({
 
               {editingTransaction && editTSplits && editTSplits.length > 0 && (
                 <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex justify-between items-center"><p className={`text-[10px] font-black uppercase tracking-widest ${currentTheme.text}`}>✂️ Rincian Pecahan Koreksi</p><span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">Total: Rp {editTSplits.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}</span></div>
+                  <div className="flex flex-col gap-1 mb-2">
+                    <div className="flex justify-between items-center">
+                      <p className={`text-[10px] font-black uppercase tracking-widest ${currentTheme.text}`}>✂️ Rincian Pecahan Koreksi</p>
+                      <span className={`text-[10px] font-black ${editTSplits.reduce((sum, s) => sum + s.amount, 0) === safeEvaluate(editTAmount) ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'}`}>
+                        Total Alokasi: {currentSymbol} {editTSplits.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    {/* INFO BARU: SISA BELUM DIALOKASI (KOREKSI) */}
+                    <div className="flex justify-between items-center text-[10px] font-bold">
+                      <span className="text-slate-500">Sisa Belum Dialokasi:</span>
+                      <span className={safeEvaluate(editTAmount) - editTSplits.reduce((sum, s) => sum + s.amount, 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}>
+                        {currentSymbol} {Math.max(0, safeEvaluate(editTAmount) - editTSplits.reduce((sum, s) => sum + s.amount, 0)).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+                  
                   {editTSplits.map((item, i) => (
                     <div key={i} className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 text-left">
                       <div className="flex justify-between items-center">
@@ -1312,20 +1327,22 @@ export default function HomeTab({
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-400 uppercase">Kategori</label>
                           <div onClick={() => { setActiveEditSplitIndex(i); setShowEditSplitCatModal(true); }} className="p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between hover:bg-slate-50 truncate">
-                            <span className="truncate">{item.category || "Pilih..."}</span><ChevronDown size={14} className="text-slate-400" />
+                            <span className="truncate">{item.category || "Pilih..."}</span><ChevronDown size={14} className="text-slate-400 shrink-0" />
                           </div>
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[9px] font-black text-slate-400">Nominal</label>
+                          <label className="text-[9px] font-black text-slate-400">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
                           <input type="text" className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" value={item.amount === 0 ? "" : item.amount} onChange={(e) => {
                             const val = e.target.value.replace(/[^0-9]/g, "");
                             const updated = [...editTSplits];
                             updated[i].amount = val ? Number(val) : 0;
                             setEditTSplits(updated);
                           }} />
+                          {/* FITUR BARU: TERBACA UNTUK KOREKSI */}
+                          {item.amount > 0 && <p className="text-[9px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(item.amount.toString(), selectedSourceAcc?.currency)}</span></p>}
                         </div>
                       </div>
-                      <input type="text" placeholder="Catatan Pecahan..." className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" value={item.note || ""} onChange={(e) => {
+                      <input type="text" placeholder="Catatan Pecahan (Opsional)..." className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" value={item.note || ""} onChange={(e) => {
                         const updated = [...editTSplits];
                         updated[i].note = e.target.value;
                         setEditTSplits(updated);
@@ -1333,9 +1350,8 @@ export default function HomeTab({
                     </div>
                   ))}
                   <button type="button" onClick={() => {
-                    const totalSoFar = editTSplits.reduce((sum, s) => sum + s.amount, 0);
-                    const diff = Math.max(0, safeEvaluate(editTAmount) - totalSoFar);
-                    setEditTSplits([...editTSplits, { category: "", amount: diff, note: "" }]);
+                    // FITUR BARU: NOMINAL KOSONG SAAT NAMBAH PECAHAN (Bukan Autofill)
+                    setEditTSplits([...editTSplits, { category: "", amount: 0, note: "" }]);
                   }} className={`w-full py-2.5 border border-dashed rounded-xl text-xs font-black cursor-pointer transition-colors ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>+ Tambah Pecahan Koreksi</button>
                 </div>
               )}
