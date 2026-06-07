@@ -74,13 +74,13 @@ interface HomeTabProps {
   updateCategory?: (id: string, newName: string, newBudget: number | null, expenseType: "fixed" | "variable", newIcon?: string) => Promise<void>;
 }
 
-// STRUKTUR TEMA WARNA DINAMIS BERDASARKAN localStorage
+// PEMETAAN SEMANTIK WARNA AKSEN TAB BERANDA (KOREKSI TYPO 955 -> 950)
 const themeMap = {
   blue: {
     cardBg: "from-blue-700 via-blue-800 to-indigo-900",
     text: "text-blue-600 dark:text-blue-400",
     textHover: "hover:text-blue-600 dark:hover:text-blue-400",
-    bgLight: "bg-blue-50 dark:bg-blue-955/40",
+    bgLight: "bg-blue-50 dark:bg-blue-950/40", // KOREKSI: 955 -> 950
     border: "border-blue-100/20 dark:border-blue-900/30",
     fab: "bg-blue-600 hover:bg-blue-700 border-blue-500",
     activePill: "bg-blue-600 border-blue-600 shadow-blue-500/10 text-white",
@@ -91,7 +91,7 @@ const themeMap = {
     cardBg: "from-emerald-700 via-emerald-800 to-teal-900",
     text: "text-emerald-600 dark:text-emerald-400",
     textHover: "hover:text-emerald-600 dark:hover:text-emerald-400",
-    bgLight: "bg-emerald-50 dark:bg-emerald-955/40",
+    bgLight: "bg-emerald-50 dark:bg-emerald-950/40",
     border: "border-emerald-100/20 dark:border-emerald-900/30",
     fab: "bg-emerald-600 hover:bg-emerald-700 border-emerald-500",
     activePill: "bg-emerald-600 border-emerald-600 shadow-emerald-500/10 text-white",
@@ -102,7 +102,7 @@ const themeMap = {
     cardBg: "from-purple-700 via-purple-800 to-fuchsia-900",
     text: "text-purple-600 dark:text-purple-400",
     textHover: "hover:text-purple-600 dark:hover:text-purple-400",
-    bgLight: "bg-purple-50 dark:bg-purple-955/40",
+    bgLight: "bg-purple-50 dark:bg-purple-950/40",
     border: "border-purple-100/20 dark:border-purple-900/30",
     fab: "bg-purple-600 hover:bg-purple-700 border-purple-500",
     activePill: "bg-purple-600 border-purple-600 shadow-purple-500/10 text-white",
@@ -113,7 +113,7 @@ const themeMap = {
     cardBg: "from-amber-600 via-amber-700 to-orange-900",
     text: "text-amber-600 dark:text-amber-400",
     textHover: "hover:text-amber-600 dark:hover:text-amber-400",
-    bgLight: "bg-amber-50 dark:bg-amber-955/40",
+    bgLight: "bg-amber-50 dark:bg-amber-900/40", // KOREKSI: 955 -> 900
     border: "border-amber-100/20 dark:border-amber-900/30",
     fab: "bg-amber-600 hover:bg-amber-700 border-amber-500",
     activePill: "bg-amber-600 border-amber-600 shadow-amber-500/10 text-white",
@@ -124,7 +124,7 @@ const themeMap = {
     cardBg: "from-rose-600 via-rose-700 to-pink-900",
     text: "text-rose-600 dark:text-rose-400",
     textHover: "hover:text-rose-600 dark:hover:text-rose-400",
-    bgLight: "bg-rose-50 dark:bg-rose-955/40",
+    bgLight: "bg-rose-50 dark:bg-rose-900/40", // KOREKSI: 955 -> 900
     border: "border-rose-100/20 dark:border-rose-900/30",
     fab: "bg-rose-600 hover:bg-rose-700 border-rose-500",
     activePill: "bg-rose-600 border-rose-600 shadow-rose-500/10 text-white",
@@ -390,6 +390,16 @@ export default function HomeTab({
 
   return (
     <div className="space-y-6 text-left relative min-h-[calc(100vh-120px)] transition-colors duration-200">
+      {/* SUNTIKAN ATURAN CSS UNTUK MENYEMBUNYIKAN BATANG SCROLLBAR SECARA LOKAL */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .no-scrollbar::-webkit-scrollbar {
+          display: none !important;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+        }
+      `}} />
       
       {/* HEADER TAB TRANSAKSI */}
       <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
