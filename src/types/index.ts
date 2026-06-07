@@ -10,12 +10,10 @@ export interface AccountData {
   excludeFromTotal?: boolean; 
   isBusiness?: boolean;
   savingsGoalTitle?: string;  
-  // --- BARU: MULTI-CURRENCY UNTUK AKUN/DOMPET ---
-  currency?: string;          // Kode mata uang dompet (misal: "IDR", "USD", "BTC", "GRAM")
-  lastExchangeRate?: number;  // Nilai tukar / Harga Pasar saat ini per Unit terhadap IDR
-  // --- BARU: FITUR INVESTASI & PORTOFOLIO (FASE 14) ---
-  isInvestment?: boolean;     // Menandai apakah dompet ini adalah aset fluktuatif (Investasi)
-  averageBuyPrice?: number;   // Harga modal beli rata-rata per Unit (Untuk hitung Cuan/Rugi / PnL)
+  currency?: string;          
+  lastExchangeRate?: number;  
+  isInvestment?: boolean;     
+  averageBuyPrice?: number;   
 }
 
 export interface SplitItemData {
@@ -35,13 +33,13 @@ export interface TransactionData {
   note: string; 
   category: string; 
   tDate: string; 
+  tTime?: string;             // FITUR BARU: JAM TRANSAKSI
   adminFee?: number;
   createdAt?: any; 
   splits?: SplitItemData[]; 
-  // --- BARU: MULTI-CURRENCY UNTUK AUDIT TRANSAKSI ---
-  originalAmount?: number;    // Nominal asli dalam mata uang asing (misal: 10)
-  originalCurrency?: string;  // Simbol/kode mata uang asing (misal: "USD", "BTC")
-  exchangeRate?: number;      // Nilai tukar/Harga yang digunakan saat transaksi
+  originalAmount?: number;    
+  originalCurrency?: string;  
+  exchangeRate?: number;      
 }
 
 export interface CategoryData { 
@@ -73,12 +71,12 @@ export interface DebtData {
 
 export interface SubscriptionData {
   id: string;
-  name: string;             // Nama layanan (Netflix, Spotify, Kosan)
-  amount: number;           // Nominal tagihan
-  cycle: "monthly" | "yearly"; // Siklus penagihan
-  nextDueDate: string;      // Tanggal jatuh tempo berikutnya (YYYY-MM-DD)
-  accountId: string;        // ID Dompet yang akan dipotong
-  accountName: string;      // Nama dompet (untuk UI)
-  category: string;         // Kategori pengeluaran (misal: Tagihan Bulanan)
+  name: string;             
+  amount: number;           
+  cycle: "monthly" | "yearly"; 
+  nextDueDate: string;      
+  accountId: string;        
+  accountName: string;      
+  category: string;         
   createdAt?: string;
 }
