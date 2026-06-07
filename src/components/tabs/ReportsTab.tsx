@@ -224,6 +224,7 @@ export default function ReportsTab({
 
   const lastTwelveMonthsList = getTwelveMonthsList(reportMonth);
   
+  
   const monthNavPills = useMemo(() => {
     const [year, month] = reportMonth.split("-").map(Number);
     const pills = [];
@@ -241,6 +242,8 @@ export default function ReportsTab({
     const exp = monthTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.splits?.reduce((s, split) => s + split.amount, 0) || t.amount), 0) + adminFees;
     return { month, name: new Date(month + "-01").toLocaleDateString('id-ID', { month: 'short' }), Pemasukan: inc, Pengeluaran: exp, Net: inc - exp };
   });
+
+  const activeMonthsCount = trendData.filter(d => d.Pemasukan > 0 || d.Pengeluaran > 0).length || 1;
 
   const daysInMonth = new Date(y, m, 0).getDate();
   const firstDayOfWeek = new Date(y, m - 1, 1).getDay(); 
@@ -660,7 +663,7 @@ export default function ReportsTab({
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <div className="flex justify-between items-center mb-2"><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Tren Pengeluaran</h3><span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-600 dark:text-slate-300">Rata-rata: Rp {Math.round(trendData.reduce((a,b)=>a+b.Pengeluaran,0)/12).toLocaleString('id-ID')}/bln</span></div>
+              <div className="flex justify-between items-center mb-2"><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Tren Pengeluaran</h3><span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-600 dark:text-slate-300">Rata-rata: Rp {Math.round(trendData.reduce((a,b)=>a+b.Pengeluaran,0)/activeMonthsCount).toLocaleString('id-ID')}/bln</span></div>
               <div className="h-32 w-full pt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <ReBarChart data={trendData.slice(-12)} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barCategoryGap="20%">
@@ -678,7 +681,7 @@ export default function ReportsTab({
             </div>
 
             <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <div className="flex justify-between items-center mb-2"><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Tren Pemasukan</h3><span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-600 dark:text-slate-300">Rata-rata: Rp {Math.round(trendData.reduce((a,b)=>a+b.Pemasukan,0)/12).toLocaleString('id-ID')}/bln</span></div>
+              <div className="flex justify-between items-center mb-2"><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Tren Pemasukan</h3><span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-600 dark:text-slate-300">Rata-rata: Rp {Math.round(trendData.reduce((a,b)=>a+b.Pemasukan,0)/activeMonthsCount).toLocaleString('id-ID')}/bln</span></div>
               <div className="h-32 w-full pt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <ReBarChart data={trendData.slice(-12)} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barCategoryGap="20%">
