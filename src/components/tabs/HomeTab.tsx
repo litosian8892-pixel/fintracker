@@ -331,7 +331,7 @@ export default function HomeTab({
       const sortedList = [...list].sort((a, b) => {
         const timeA = (a.tTime || formatTime(a.createdAt)).replace('.', ':');
         const timeB = (b.tTime || formatTime(b.createdAt)).replace('.', ':');
-        return timeA.localeCompare(timeB); // Urutan Ascending (Pagi ke Malam)
+        return timeB.localeCompare(timeA); // Urutan Descending (Terbaru paling atas)
       });
       let dailyNet = 0;
       sortedList.forEach(t => { if (t.type === "income") dailyNet += t.amount; else if (t.type === "expense") dailyNet -= t.amount; });
@@ -1177,3 +1177,5 @@ export default function HomeTab({
     </div>
   );
 }
+
+

@@ -91,7 +91,7 @@ export default function FintrackerApp() {
   const [editTNote, setEditTNote] = useState("");
   const [editTCategory, setEditTCategory] = useState("");
   const [editTDate, setEditTDate] = useState("");
-  const [editTTime, setEditTTime] = useState(""); // STATE BARU: EDIT JAM
+  const [editTTime, setEditTTime] = useState(""); 
   const [editTAdminFee, setEditTAdminFee] = useState(""); 
   const [activeEditKeypad, setActiveEditKeypad] = useState<"amount" | "adminFee" | null>(null);
   
@@ -239,7 +239,7 @@ export default function FintrackerApp() {
   const [tNote, setTNote] = useState("");
   const [tCategory, setTCategory] = useState("");
   const [tDate, setTDate] = useState(new Date().toISOString().split('T')[0]);
-  const [tTime, setTTime] = useState(() => { const now = new Date(); return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`; }); // STATE BARU: JAM
+  const [tTime, setTTime] = useState(() => { const now = new Date(); return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`; });
 
   const [newCatName, setNewCatName] = useState("");
   const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("variable"); 
