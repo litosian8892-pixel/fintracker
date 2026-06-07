@@ -445,11 +445,8 @@ export default function HomeTab({
     setTempSplits(updated);
   };
 
-  const handleAddSplitItem = () => {
-    const targetAmount = safeEvaluate(tAmount);
-    const currentSum = tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0);
-    const remaining = Math.max(0, targetAmount - currentSum);
-    setTempSplits([...tempSplits, { category: tCategory || "", amountStr: remaining > 0 ? remaining.toString() : "", note: "" }]);
+ const handleAddSplitItem = () => {
+    setTempSplits([...tempSplits, { category: "", amountStr: "", note: "" }]);
   };
 
   const handleSelectSplitCategory = (catName: string) => {
@@ -1437,7 +1434,7 @@ export default function HomeTab({
           </div>
         </div>
       )}
-      
+
       {/* POP-UP CATEGORY MODAL FOR EDIT / KOREKSI PECAHAN */}
       {showEditSplitCatModal && (
         <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1470,15 +1467,23 @@ export default function HomeTab({
             </div>
 
             <div className="p-5 overflow-y-auto space-y-4 bg-white dark:bg-slate-950 flex-1">
+              {/* SUMMARY BOX: SISA DAN TOTAL */}
               <div className={`p-4 rounded-2xl border ${currentTheme.bgLight} ${currentTheme.border}`}>
                 <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-300">
                   <span>Nominal Transaksi:</span>
                   <span className="font-black text-slate-800 dark:text-white">{formatCurrencyTerbaca(tAmount, selectedSourceAcc?.currency)}</span>
                 </div>
-                <div className="flex justify-between items-center text-xs font-bold mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-300 mt-2">
                   <span>Total Alokasi:</span>
                   <span className={`font-black ${tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0) === safeEvaluate(tAmount) ? 'text-emerald-500' : 'text-amber-500'}`}>
                     {currentSymbol} {tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0).toLocaleString('id-ID')}
+                  </span>
+                </div>
+                {/* INFO BARU: SISA BELUM DIALOKASI */}
+                <div className="flex justify-between items-center text-xs font-bold mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                  <span className="text-slate-600 dark:text-slate-300">Sisa Belum Dialokasi:</span>
+                  <span className={`font-black ${safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {currentSymbol} {Math.max(0, safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0)).toLocaleString('id-ID')}
                   </span>
                 </div>
               </div>
@@ -1497,7 +1502,7 @@ export default function HomeTab({
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400">Kategori</label>
                         <div onClick={() => { setActiveSplitIndex(i); setShowSplitCatModal(true); setSearchQuery(""); }} className="p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between truncate hover:bg-slate-100 dark:hover:bg-slate-800">
-                          <span className="truncate">{item.category || "Pilih..."}</span><ChevronDown size={14} className="text-slate-400" />
+                          <span className="truncate">{item.category || "Pilih..."}</span><ChevronDown size={14} className="text-slate-400 shrink-0" />
                         </div>
                       </div>
 
@@ -1508,6 +1513,8 @@ export default function HomeTab({
                           updated[i].amountStr = e.target.value;
                           setTempSplits(updated);
                         }} />
+                        {/* FITUR BARU: TERBACA */}
+                        {item.amountStr && <p className="text-[9px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(item.amountStr, selectedSourceAcc?.currency)}</span></p>}
                       </div>
                     </div>
                     <input type="text" placeholder="Catatan Pecahan (Opsional)..." className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" value={item.note || ""} onChange={(e) => {
