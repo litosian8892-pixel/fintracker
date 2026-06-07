@@ -422,7 +422,10 @@ export default function HomeTab({
       </div>
 
       {/* HORIZONTAL MONTH SCROLLING PILLS */}
-      <div ref={monthScrollRef} className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-track-transparent dark:scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark] scroll-smooth -mx-4 px-4 md:mx-0 md:px-0">
+      <div 
+        ref={monthScrollRef}
+        className="flex items-center gap-2 overflow-x-auto pb-1.5 no-scrollbar scroll-smooth -mx-4 px-4 md:mx-0 md:px-0"
+      >
         {recentMonths.map((m) => { const isActive = selectedMonth === m.value; return (<button key={m.value} type="button" onClick={() => setSelectedMonth(m.value)} className={`px-4 py-2 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shrink-0 border ${isActive ? currentTheme.activePill : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"}`}>{m.label}</button>); })}
       </div>
 
@@ -477,7 +480,7 @@ export default function HomeTab({
                 <div className="flex items-center justify-between px-2 pt-2 pb-1 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-baseline gap-2">
                     <span className="text-lg font-black text-slate-800 dark:text-slate-100">{dayNum}</span>
-                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase">{dayName}</span>
+                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-900/60 px-1.5 py-0.5 rounded uppercase">{dayName}</span>
                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-600">{monthYear}</span>
                   </div>
                   <span className={`text-xs font-black ${dailyNet > 0 ? "text-emerald-500" : dailyNet < 0 ? "text-rose-500" : "text-slate-400"}`}>{isPrivacyMode ? "Rp ••" : `${dailyNet > 0 ? "+" : ""}${dailyNet.toLocaleString("id-ID")}`}</span>
@@ -499,7 +502,7 @@ export default function HomeTab({
                                 {(() => {
                                   const formattedTime = (t.tTime || formatTime(t.createdAt)).replace(':', '.');
                                   if (!formattedTime) return null;
-                                  return (<span className="text-[9px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-200/30 dark:border-slate-700/30 flex items-center gap-0.5">🕒 {formattedTime}</span>);
+                                  return (<span className="text-[9px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-950/40 px-1.5 py-0.5 rounded-md border border-slate-200/30 dark:border-slate-700/30 flex items-center gap-0.5">🕒 {formattedTime}</span>);
                                 })()}
                               </div>
                             </div>
