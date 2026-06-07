@@ -24,6 +24,8 @@ interface HomeTabProps {
   setTType: (type: "income" | "expense" | "transfer") => void;
   tDate: string;
   setTDate: (date: string) => void;
+  tTime: string;                  // PROPS BARU: JAM TRANSAKSI BARU
+  setTTime: (time: string) => void; // PROPS BARU: JAM TRANSAKSI BARU
   tCategory: string;
   setTCategory: (cat: string) => void;
   tAccountId: string;
@@ -39,8 +41,6 @@ interface HomeTabProps {
   categories: CategoryData[];
   accounts: AccountData[];
   handleTransaction: (customSplits?: SplitItemData[]) => void;
-  
-  // States tambahan hasil sinkronisasi dengan page.tsx
   transactions: TransactionData[];
   onDeleteTransaction: (t: TransactionData) => void;
   onEditTransaction: (t: TransactionData) => void;
@@ -65,6 +65,8 @@ interface HomeTabProps {
   setEditTCategory: (cat: string) => void;
   editTDate: string;
   setEditTDate: (date: string) => void;
+  editTTime: string;                  // PROPS BARU: JAM TRANSAKSI KOREKSI
+  setEditTTime: (time: string) => void; // PROPS BARU: JAM TRANSAKSI KOREKSI
   editTAdminFee: string;
   setEditTAdminFee: (fee: string) => void;
   editTSplits: SplitItemData[];
@@ -72,13 +74,13 @@ interface HomeTabProps {
   updateCategory?: (id: string, newName: string, newBudget: number | null, expenseType: "fixed" | "variable", newIcon?: string) => Promise<void>;
 }
 
-// STRUKTUR TEMA WARNA DINAMIS BERDASARKAN localStorage (100% Kontras Tinggi & Bebas Bocor)
+// STRUKTUR TEMA WARNA DINAMIS BERDASARKAN localStorage
 const themeMap = {
   blue: {
     cardBg: "from-blue-700 via-blue-800 to-indigo-900",
     text: "text-blue-600 dark:text-blue-400",
     textHover: "hover:text-blue-600 dark:hover:text-blue-400",
-    bgLight: "bg-blue-50 dark:bg-blue-950/40",
+    bgLight: "bg-blue-50 dark:bg-blue-955/40",
     border: "border-blue-100/20 dark:border-blue-900/30",
     fab: "bg-blue-600 hover:bg-blue-700 border-blue-500",
     activePill: "bg-blue-600 border-blue-600 shadow-blue-500/10 text-white",
@@ -89,7 +91,7 @@ const themeMap = {
     cardBg: "from-emerald-700 via-emerald-800 to-teal-900",
     text: "text-emerald-600 dark:text-emerald-400",
     textHover: "hover:text-emerald-600 dark:hover:text-emerald-400",
-    bgLight: "bg-emerald-50 dark:bg-emerald-950/40",
+    bgLight: "bg-emerald-50 dark:bg-emerald-955/40",
     border: "border-emerald-100/20 dark:border-emerald-900/30",
     fab: "bg-emerald-600 hover:bg-emerald-700 border-emerald-500",
     activePill: "bg-emerald-600 border-emerald-600 shadow-emerald-500/10 text-white",
@@ -100,7 +102,7 @@ const themeMap = {
     cardBg: "from-purple-700 via-purple-800 to-fuchsia-900",
     text: "text-purple-600 dark:text-purple-400",
     textHover: "hover:text-purple-600 dark:hover:text-purple-400",
-    bgLight: "bg-purple-50 dark:bg-purple-950/40",
+    bgLight: "bg-purple-50 dark:bg-purple-955/40",
     border: "border-purple-100/20 dark:border-purple-900/30",
     fab: "bg-purple-600 hover:bg-purple-700 border-purple-500",
     activePill: "bg-purple-600 border-purple-600 shadow-purple-500/10 text-white",
@@ -111,7 +113,7 @@ const themeMap = {
     cardBg: "from-amber-600 via-amber-700 to-orange-900",
     text: "text-amber-600 dark:text-amber-400",
     textHover: "hover:text-amber-600 dark:hover:text-amber-400",
-    bgLight: "bg-amber-50 dark:bg-amber-950/40",
+    bgLight: "bg-amber-50 dark:bg-amber-955/40",
     border: "border-amber-100/20 dark:border-amber-900/30",
     fab: "bg-amber-600 hover:bg-amber-700 border-amber-500",
     activePill: "bg-amber-600 border-amber-600 shadow-amber-500/10 text-white",
@@ -131,12 +133,9 @@ const themeMap = {
   }
 } as const;
 
-// FUNGSI-FUNGSI PEMBANTU (HELPERS) WAJIB
 const cleanCategoryName = (name: string): string => {
   if (!name) return "";
-  return name
-    .replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '')
-    .trim();
+  return name.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '').trim();
 };
 
 const safeEvaluate = (expr: string): number => {
@@ -147,9 +146,7 @@ const safeEvaluate = (expr: string): number => {
   if (!sanitized) return 0;
   try {
     const result = new Function(`"use strict"; return (${sanitized});`)();
-    if (typeof result === "number" && isFinite(result)) {
-      return result;
-    }
+    if (typeof result === "number" && isFinite(result)) return result;
     return 0;
   } catch {
     const fallback = parseFloat(sanitized);
@@ -160,17 +157,9 @@ const safeEvaluate = (expr: string): number => {
 const getCurrencySymbol = (currency?: string) => {
   if (!currency) return "Rp";
   switch (currency.toUpperCase()) {
-    case "IDR": return "Rp";
-    case "USD": return "$";
-    case "SGD": return "S$";
-    case "EUR": return "€";
-    case "JPY": return "¥";
-    case "CNY": return "¥";
-    case "GBP": return "£";
-    case "AUD": return "A$";
-    case "MYR": return "RM";
-    case "SAR": return "SR";
-    default: return currency;
+    case "IDR": return "Rp"; case "USD": return "$"; case "SGD": return "S$"; case "EUR": return "€";
+    case "JPY": case "CNY": return "¥"; case "GBP": return "£"; case "AUD": return "A$";
+    case "MYR": return "RM"; case "SAR": return "SR"; default: return currency;
   }
 };
 
@@ -203,42 +192,15 @@ const formatTime = (createdAt: any) => {
 };
 
 export default function HomeTab({
-  tType, setTType, tDate, setTDate, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction,
-  transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode,
-  editingTransaction, setEditingTransaction, handleUpdateTransaction,
-  editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits,
-  updateCategory
+  tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory
 }: HomeTabProps) {
   
   const monthScrollRef = useRef<HTMLDivElement>(null);
   const [accent, setAccent] = useState<keyof typeof themeMap>("blue");
-
-  // State untuk Fitur Smart Autocomplete Catatan Transaksi
   const [noteSuggestions, setNoteSuggestions] = useState<{note: string, category: string, amount: number}[]>([]);
 
-  // Perbaikan Auto-scroll & Sinkronisasi Warna Aksen Dinamis
-  useEffect(() => {
-    if (monthScrollRef.current) {
-      const timer = setTimeout(() => {
-        if (monthScrollRef.current) {
-          monthScrollRef.current.scrollLeft = monthScrollRef.current.scrollWidth;
-        }
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  useEffect(() => {
-    const updateAccent = () => {
-      const stored = localStorage.getItem("fintracker_accent") as any;
-      if (stored && ["blue", "emerald", "purple", "amber", "rose"].includes(stored)) {
-        setAccent(stored);
-      }
-    };
-    updateAccent();
-    window.addEventListener("accent_color_changed", updateAccent);
-    return () => window.removeEventListener("accent_color_changed", updateAccent);
-  }, []);
+  useEffect(() => { if (monthScrollRef.current) { const timer = setTimeout(() => { if (monthScrollRef.current) { monthScrollRef.current.scrollLeft = monthScrollRef.current.scrollWidth; } }, 50); return () => clearTimeout(timer); } }, []);
+  useEffect(() => { const updateAccent = () => { const stored = localStorage.getItem("fintracker_accent") as any; if (stored && ["blue", "emerald", "purple", "amber", "rose"].includes(stored)) { setAccent(stored); } }; updateAccent(); window.addEventListener("accent_color_changed", updateAccent); return () => window.removeEventListener("accent_color_changed", updateAccent); }, []);
 
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -258,17 +220,9 @@ export default function HomeTab({
   const [searchAllMonths, setSearchAllMonths] = useState(false);
 
   const [activeAccSelector, setActiveAccSelector] = useState<"source" | "dest" | null>(null);
-
   const [isDark, setIsDark] = useState(false);
-  useEffect(() => {
-    const checkDark = () => {
-      setIsDark(document.documentElement.classList.contains("dark"));
-    };
-    checkDark();
-    const observer = new MutationObserver(checkDark);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
+  
+  useEffect(() => { const checkDark = () => { setIsDark(document.documentElement.classList.contains("dark")); }; checkDark(); const observer = new MutationObserver(checkDark); observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] }); return () => observer.disconnect(); }, []);
 
   const [splits, setSplits] = useState<SplitItemData[]>([]);
   const [showSplitModal, setShowSplitModal] = useState(false);
@@ -280,438 +234,140 @@ export default function HomeTab({
   const [showEditSplitCatModal, setShowEditSplitCatModal] = useState(false);
   const [activeEditSplitIndex, setActiveEditSplitIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768); 
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (editingTransaction) {
-      setIsDrawerOpen(true);
-    }
-  }, [editingTransaction]);
-
-  useEffect(() => {
-    if (!tAmount || safeEvaluate(tAmount) === 0) {
-      setSplits([]);
-    }
-  }, [tAmount]);
+  useEffect(() => { const handleResize = () => setIsMobile(window.innerWidth < 768); handleResize(); window.addEventListener("resize", handleResize); return () => window.removeEventListener("resize", handleResize); }, []);
+  useEffect(() => { if (editingTransaction) { setIsDrawerOpen(true); } }, [editingTransaction]);
+  useEffect(() => { if (!tAmount || safeEvaluate(tAmount) === 0) { setSplits([]); } }, [tAmount]);
 
   const availableSourceAccounts = tType === "transfer" ? accounts : accounts.filter(acc => !acc.isSavings);
   const selectedSourceAcc = accounts.find(a => a.id === tAccountId);
   const currentSymbol = getCurrencySymbol(selectedSourceAcc?.currency);
 
-  const formatCurrencyTerbaca = (val: string, currencyCode?: string) => {
-    if (!val) return `${getCurrencySymbol(currencyCode)} 0`;
-    const parsed = safeEvaluate(val);
-    const code = currencyCode || "IDR";
-    return new Intl.NumberFormat("id-ID", { 
-      style: "currency", 
-      currency: code.toUpperCase() === "IDR" ? "IDR" : code.toUpperCase(), 
-      minimumFractionDigits: 0, 
-      maximumFractionDigits: code.toUpperCase() === "IDR" ? 0 : 2 
-    }).format(parsed);
-  };
+  const formatCurrencyTerbaca = (val: string, currencyCode?: string) => { if (!val) return `${getCurrencySymbol(currencyCode)} 0`; const parsed = safeEvaluate(val); const code = currencyCode || "IDR"; return new Intl.NumberFormat("id-ID", { style: "currency", currency: code.toUpperCase() === "IDR" ? "IDR" : code.toUpperCase(), minimumFractionDigits: 0, maximumFractionDigits: code.toUpperCase() === "IDR" ? 0 : 2 }).format(parsed); };
 
-  const handleTypeChange = (newType: "income" | "expense" | "transfer") => {
-    setTType(newType);
-    setTAccountId("");
-    setTToAccountId("");
-    setSplits([]);
-    if (newType !== "transfer") setTCategory("");
-  };
+  const handleTypeChange = (newType: "income" | "expense" | "transfer") => { setTType(newType); setTAccountId(""); setTToAccountId(""); setSplits([]); if (newType !== "transfer") setTCategory(""); };
+  const handleEditTypeChange = (newType: "income" | "expense" | "transfer") => { setEditTType(newType); setEditTAccountId(""); setEditTToAccountId(""); setEditTSplits([]); if (newType !== "transfer") setEditTCategory(""); };
 
-  const handleEditTypeChange = (newType: "income" | "expense" | "transfer") => {
-    setEditTType(newType);
-    setEditTAccountId("");
-    setEditTToAccountId("");
-    setEditTSplits([]);
-    if (newType !== "transfer") setEditTCategory("");
-  };
+  useEffect(() => { if (tType === "transfer") { setTCategory("Transfer"); } else { const matchingCats = categories.filter((cat) => cat.type === tType); if (tCategory && !matchingCats.some(c => c.name === tCategory) && tCategory !== "Split Transaksi") { setTCategory(""); } } }, [tType, categories, tCategory, setTCategory]);
+  useEffect(() => { if (editTType === "transfer") { setEditTCategory("Transfer"); } else { const matchingCats = categories.filter((cat) => cat.type === editTType); if (editTCategory && !matchingCats.some(c => c.name === editTCategory) && editTCategory !== "Split Transaksi") { setEditTCategory(""); } } }, [editTType, categories, editTCategory, setEditTCategory]);
 
-  useEffect(() => {
-    if (tType === "transfer") {
-      setTCategory("Transfer");
-    } else {
-      const matchingCats = categories.filter((cat) => cat.type === tType);
-      if (tCategory && !matchingCats.some(c => c.name === tCategory) && tCategory !== "Split Transaksi") {
-        setTCategory("");
-      }
-    }
-  }, [tType, categories, tCategory, setTCategory]);
-
-  useEffect(() => {
-    if (editTType === "transfer") {
-      setEditTCategory("Transfer");
-    } else {
-      const matchingCats = categories.filter((cat) => cat.type === editTType);
-      if (editTCategory && !matchingCats.some(c => c.name === editTCategory) && editTCategory !== "Split Transaksi") {
-        setEditTCategory("");
-      }
-    }
-  }, [editTType, categories, editTCategory, setEditTCategory]);
-
-  const filteredCategories = categories
-    .filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => a.name.localeCompare(b.name));
-
+  const filteredCategories = categories.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name));
   const triggerHaptic = () => { if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10); };
   
-  // HANDLER SMART AUTOCOMPLETE PENCATATAN CATATAN (NEW)
   const handleNoteChange = (val: string) => {
-    if (editingTransaction) setEditTNote(val);
-    else setTNote(val);
-    
-    // Cari saran histori jika ketikan >= 2 huruf
+    if (editingTransaction) setEditTNote(val); else setTNote(val);
     if (val.trim().length >= 2) {
       const currentType = editingTransaction ? editTType : tType;
       const matches: Record<string, {note: string, category: string, amount: number}> = {};
-      
-      // Ambil transaksi terbaru (berdasarkan tanggal) untuk prioritas utama
       const sortedTx = [...transactions].sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime());
-      
-      for (const tx of sortedTx) {
-        if (tx.type === currentType && tx.note && tx.note.toLowerCase().includes(val.toLowerCase())) {
-          const key = tx.note.toLowerCase();
-          // Simpan hanya yang paling baru
-          if (!matches[key]) {
-            matches[key] = { note: tx.note, category: tx.category, amount: tx.amount };
-          }
-        }
-      }
-      
-      // Tampilkan maksimal 4 saran teratas
+      for (const tx of sortedTx) { if (tx.type === currentType && tx.note && tx.note.toLowerCase().includes(val.toLowerCase())) { const key = tx.note.toLowerCase(); if (!matches[key]) { matches[key] = { note: tx.note, category: tx.category, amount: tx.amount }; } } }
       setNoteSuggestions(Object.values(matches).slice(0, 4));
-    } else {
-      setNoteSuggestions([]);
-    }
+    } else { setNoteSuggestions([]); }
   };
 
   const handleSelectSuggestion = (sug: {note: string, category: string, amount: number}) => {
     triggerHaptic();
-    if (editingTransaction) {
-      setEditTNote(sug.note);
-      if (editTType !== "transfer") setEditTCategory(sug.category);
-      // NOTE: Tidak meng-autofill nominal agar pengguna bisa memasukkan nominal baru
-    } else {
-      setTNote(sug.note);
-      if (tType !== "transfer") setTCategory(sug.category);
-      // NOTE: Tidak meng-autofill nominal agar pengguna bisa memasukkan nominal baru
-    }
+    if (editingTransaction) { setEditTNote(sug.note); if (editTType !== "transfer") setEditTCategory(sug.category); } 
+    else { setTNote(sug.note); if (tType !== "transfer") setTCategory(sug.category); }
     setNoteSuggestions([]);
   };
 
-  const handleKeypadPress = (key: string) => {
-    triggerHaptic();
-    const currentVal = activeKeypad === "amount" ? tAmount : tAdminFee;
-    const setVal = activeKeypad === "amount" ? setTAmount : setTAdminFee;
-    if (key === "⌫") setVal(currentVal.slice(0, -1));
-    else if (key === "C") setVal("");
-    else if (key === "=") { const evaluated = safeEvaluate(currentVal); setVal(evaluated > 0 ? evaluated.toString() : ""); } 
-    else if (key === "Ya") setActiveKeypad(null);
-    else setVal(currentVal + key);
-  };
+  const handleKeypadPress = (key: string) => { triggerHaptic(); const currentVal = activeKeypad === "amount" ? tAmount : tAdminFee; const setVal = activeKeypad === "amount" ? setTAmount : setTAdminFee; if (key === "⌫") setVal(currentVal.slice(0, -1)); else if (key === "C") setVal(""); else if (key === "=") { const evaluated = safeEvaluate(currentVal); setVal(evaluated > 0 ? evaluated.toString() : ""); } else if (key === "Ya") setActiveKeypad(null); else setVal(currentVal + key); };
+  const handleEditKeypadPress = (key: string) => { triggerHaptic(); const currentVal = activeKeypad === "amount" ? editTAmount : editTAdminFee; const setVal = activeKeypad === "amount" ? setEditTAmount : setEditTAdminFee; if (key === "⌫") setVal(currentVal.slice(0, -1)); else if (key === "C") setVal(""); else if (key === "=") { const evaluated = safeEvaluate(currentVal); setVal(evaluated > 0 ? evaluated.toString() : ""); } else if (key === "Ya") setActiveKeypad(null); else setVal(currentVal + key); };
+  const handleSplitKeypadPress = (key: string) => { triggerHaptic(); if (activeSplitKeypadIndex === null) return; const currentVal = tempSplits[activeSplitKeypadIndex].amountStr || ""; const updated = [...tempSplits]; if (key === "⌫") updated[activeSplitKeypadIndex].amountStr = currentVal.slice(0, -1); else if (key === "C") updated[activeSplitKeypadIndex].amountStr = ""; else if (key === "=") { const evaluated = safeEvaluate(currentVal); updated[activeSplitKeypadIndex].amountStr = evaluated > 0 ? evaluated.toString() : ""; } else if (key === "Ya") { setActiveSplitKeypadIndex(null); return; } else updated[activeSplitKeypadIndex].amountStr = currentVal + key; setTempSplits(updated); };
 
-  const handleEditKeypadPress = (key: string) => {
-    triggerHaptic();
-    const currentVal = activeKeypad === "amount" ? editTAmount : editTAdminFee;
-    const setVal = activeKeypad === "amount" ? setEditTAmount : setEditTAdminFee;
-    if (key === "⌫") setVal(currentVal.slice(0, -1));
-    else if (key === "C") setVal("");
-    else if (key === "=") { const evaluated = safeEvaluate(currentVal); setVal(evaluated > 0 ? evaluated.toString() : ""); } 
-    else if (key === "Ya") setActiveKeypad(null);
-    else setVal(currentVal + key);
-  };
-
-  const handleSplitKeypadPress = (key: string) => {
-    triggerHaptic();
-    if (activeSplitKeypadIndex === null) return;
-    const currentVal = tempSplits[activeSplitKeypadIndex].amountStr || "";
-    const updated = [...tempSplits];
-    
-    if (key === "⌫") updated[activeSplitKeypadIndex].amountStr = currentVal.slice(0, -1);
-    else if (key === "C") updated[activeSplitKeypadIndex].amountStr = "";
-    else if (key === "=") {
-                const evaluated = safeEvaluate(currentVal);
-                updated[activeSplitKeypadIndex].amountStr = evaluated > 0 ? evaluated.toString() : "";
-              }
-
-    else if (key === "Ya") {
-      setActiveSplitKeypadIndex(null);
-      return;
-    } else updated[activeSplitKeypadIndex].amountStr = currentVal + key;
-    setTempSplits(updated);
-  };
-
- const handleAddSplitItem = () => {
-    setTempSplits([...tempSplits, { category: "", amountStr: "", note: "" }]);
-  };
-
-  const handleSelectSplitCategory = (catName: string) => {
-    if (activeSplitIndex !== null) {
-      const updated = [...tempSplits];
-      updated[activeSplitIndex].category = catName;
-      setTempSplits(updated);
-    }
-    setShowSplitCatModal(false);
-    setActiveSplitIndex(null);
-  };
-
-  const handleSelectEditSplitCategory = (catName: string) => {
-    if (activeEditSplitIndex !== null) {
-      const updated = [...editTSplits];
-      updated[activeEditSplitIndex].category = catName;
-      setEditTSplits(updated);
-    }
-    setShowEditSplitCatModal(false);
-    setActiveEditSplitIndex(null);
-  };
+  const handleAddSplitItem = () => { setTempSplits([...tempSplits, { category: "", amountStr: "", note: "" }]); };
+  const handleSelectSplitCategory = (catName: string) => { if (activeSplitIndex !== null) { const updated = [...tempSplits]; updated[activeSplitIndex].category = catName; setTempSplits(updated); } setShowSplitCatModal(false); setActiveSplitIndex(null); };
+  const handleSelectEditSplitCategory = (catName: string) => { if (activeEditSplitIndex !== null) { const updated = [...editTSplits]; updated[activeEditSplitIndex].category = catName; setEditTSplits(updated); } setShowEditSplitCatModal(false); setActiveEditSplitIndex(null); };
 
   const handleConfirmSplits = () => {
-    const targetAmount = safeEvaluate(tAmount);
-    const evaluatedSplits = tempSplits.map(s => ({
-      category: s.category,
-      amount: safeEvaluate(s.amountStr),
-      note: s.note
-    }));
+    const targetAmount = safeEvaluate(tAmount); const evaluatedSplits = tempSplits.map(s => ({ category: s.category, amount: safeEvaluate(s.amountStr), note: s.note }));
     const currentSum = evaluatedSplits.reduce((sum, s) => sum + s.amount, 0);
-    
     if (evaluatedSplits.some(s => !s.category)) return alert("Seluruh pecahan wajib dipilih kategorinya!");
     if (evaluatedSplits.some(s => s.amount <= 0)) return alert("Nominal pecahan tidak boleh kosong!");
-    if (currentSum !== targetAmount) {
-      return alert(`Total alokasi pecahan (${currentSymbol} ${currentSum.toLocaleString('id-ID')}) harus sama persis dengan nominal utama (${currentSymbol} ${targetAmount.toLocaleString('id-ID')})!`);
-    }
-
-    setSplits(evaluatedSplits);
-    setTCategory("Split Transaksi");
-    setShowSplitModal(false);
+    if (currentSum !== targetAmount) { return alert(`Total alokasi pecahan (${currentSymbol} ${currentSum.toLocaleString('id-ID')}) harus sama persis dengan nominal utama (${currentSymbol} ${targetAmount.toLocaleString('id-ID')})!`); }
+    setSplits(evaluatedSplits); setTCategory("Split Transaksi"); setShowSplitModal(false);
   };
 
-  const getYesterdayDateString = () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
-  };
-
-  const getTodayDateString = () => {
-    return new Date().toISOString().split('T')[0];
-  };
-
-  const recentMonths = useMemo(() => {
-    const months = [];
-    const now = new Date();
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" });
-      months.push({ value, label });
-    }
-    return months;
-  }, []);
-
-  const totalBalanceCalculated = useMemo(() => {
-    return accounts
-      .filter(acc => !acc.isSavings && !acc.excludeFromTotal)
-      .reduce((sum, acc) => sum + (acc.balance * (acc.lastExchangeRate || 1)), 0);
-  }, [accounts]);
+  const getYesterdayDateString = () => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; };
+  const getTodayDateString = () => { return new Date().toISOString().split('T')[0]; };
+  const recentMonths = useMemo(() => { const months = []; const now = new Date(); for (let i = 11; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" }); months.push({ value, label }); } return months; }, []);
+  const totalBalanceCalculated = useMemo(() => { return accounts.filter(acc => !acc.isSavings && !acc.excludeFromTotal).reduce((sum, acc) => sum + (acc.balance * (acc.lastExchangeRate || 1)), 0); }, [accounts]);
 
   const monthlyTransactions = useMemo(() => {
     let filtered = transactions;
-    if (!searchQueryInput.trim() || !searchAllMonths) {
-      filtered = filtered.filter(t => t.tDate && t.tDate.startsWith(selectedMonth));
-    }
-    if (selectedAccountIdFilter !== "all") {
-      filtered = filtered.filter(t => t.accountId === selectedAccountIdFilter || t.toAccountId === selectedAccountIdFilter);
-    }
-    if (searchQueryInput.trim()) {
-      const q = searchQueryInput.toLowerCase();
-      filtered = filtered.filter(t => 
-        (t.note && t.note.toLowerCase().includes(q)) || 
-        t.category.toLowerCase().includes(q)
-      );
-    }
+    if (!searchQueryInput.trim() || !searchAllMonths) { filtered = filtered.filter(t => t.tDate && t.tDate.startsWith(selectedMonth)); }
+    if (selectedAccountIdFilter !== "all") { filtered = filtered.filter(t => t.accountId === selectedAccountIdFilter || t.toAccountId === selectedAccountIdFilter); }
+    if (searchQueryInput.trim()) { const q = searchQueryInput.toLowerCase(); filtered = filtered.filter(t => (t.note && t.note.toLowerCase().includes(q)) || t.category.toLowerCase().includes(q)); }
     return filtered;
   }, [transactions, selectedMonth, selectedAccountIdFilter, searchQueryInput, searchAllMonths]);
 
-  const monthlySummary = useMemo(() => {
-    let income = 0;
-    let expense = 0;
-    monthlyTransactions.forEach(t => {
-      if (t.type === "income") income += t.amount;
-      else if (t.type === "expense") expense += t.amount;
-      if (t.type === "transfer" && t.adminFee) expense += t.adminFee;
-    });
-    return { income, expense };
-  }, [monthlyTransactions]);
+  const monthlySummary = useMemo(() => { let income = 0; let expense = 0; monthlyTransactions.forEach(t => { if (t.type === "income") income += t.amount; else if (t.type === "expense") expense += t.amount; if (t.type === "transfer" && t.adminFee) expense += t.adminFee; }); return { income, expense }; }, [monthlyTransactions]);
 
-  // LOGIKA SMART FINANCIAL INSIGHTS (ASISTEN AI)
   const smartInsight = useMemo(() => {
     if (monthlyTransactions.length === 0) return { text: "Belum ada catatan bulan ini. Yuk, mulai mencatat transaksi pertamamu!", icon: "✨", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
-
-    // 1. Cek Peringatan Limit Budget
-    let budgetWarning = null;
-    const expenseByCategory: Record<string, number> = {};
-    monthlyTransactions.filter(t => t.type === 'expense').forEach(t => {
-      expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount;
-    });
-
+    let budgetWarning = null; const expenseByCategory: Record<string, number> = {};
+    monthlyTransactions.filter(t => t.type === 'expense').forEach(t => { expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount; });
     for (const cat of categories) {
       if (cat.type === 'expense' && cat.budgetLimit && cat.budgetLimit > 0) {
-        const spent = expenseByCategory[cat.name] || 0;
-        const percentage = (spent / cat.budgetLimit) * 100;
-        if (percentage >= 100) {
-          budgetWarning = { text: `Gawat! Pengeluaran '${cat.name}' sudah melebihi batas budget bulan ini.`, icon: "🚨", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30", border: "border-rose-100 dark:border-rose-900/30" };
-          break;
-        } else if (percentage >= 80) {
-          budgetWarning = { text: `Hati-hati, pengeluaran '${cat.name}' sudah mencapai ${percentage.toFixed(0)}% dari batas budgetmu!`, icon: "⚠️", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-100 dark:border-amber-900/30" };
-        }
+        const spent = expenseByCategory[cat.name] || 0; const percentage = (spent / cat.budgetLimit) * 100;
+        if (percentage >= 100) { budgetWarning = { text: `Gawat! Pengeluaran '${cat.name}' sudah melebihi batas budget bulan ini.`, icon: "🚨", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30", border: "border-rose-100 dark:border-rose-900/30" }; break; } else if (percentage >= 80) { budgetWarning = { text: `Hati-hati, pengeluaran '${cat.name}' sudah mencapai ${percentage.toFixed(0)}% dari batas budgetmu!`, icon: "⚠️", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-100 dark:border-amber-900/30" }; }
       }
     }
     if (budgetWarning) return budgetWarning;
-
-    // 2. Cek Peringatan Defisit (Besar pasak daripada tiang)
-    if (monthlySummary.income > 0 && monthlySummary.expense > monthlySummary.income) {
-      return { text: "Pengeluaranmu sudah melebihi total pemasukan bulan ini. Waktunya mengerem jajan variabel!", icon: "📉", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" };
-    }
-
-    // 3. Info Kategori Pengeluaran Terbesar (Top Spending)
+    if (monthlySummary.income > 0 && monthlySummary.expense > monthlySummary.income) { return { text: "Pengeluaranmu sudah melebihi total pemasukan bulan ini. Waktunya mengerem jajan variabel!", icon: "📉", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" }; }
     if (monthlySummary.expense > 0) {
       const sortedCats = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1]);
-      if (sortedCats.length > 0) {
-        const [topCat, topAmount] = sortedCats[0];
-        return { text: `Sejauh ini, uangmu paling banyak tersedot untuk kategori '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}).`, icon: "💡", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30", border: "border-indigo-100 dark:border-indigo-900/30" };
-      }
+      if (sortedCats.length > 0) { const [topCat, topAmount] = sortedCats[0]; return { text: `Sejauh ini, uangmu paling banyak tersedot untuk kategori '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}).`, icon: "💡", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30", border: "border-indigo-100 dark:border-indigo-900/30" }; }
     }
-
-    // 4. Kondisi Ideal & Sehat
-    return { text: "Arus kas bulan ini terlihat sangat sehat dan aman. Terus pertahankan kebiasaan baik ini!", icon: "🌟", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-100 dark:border-emerald-900/30" };
+    return { text: "Arus kas bulan ini terlihat sangat sehat and aman. Terus pertahankan kebiasaan baik ini!", icon: "🌟", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-100 dark:border-emerald-900/30" };
   }, [monthlyTransactions, monthlySummary, categories]);
 
+  // LOGIKA PENGURUTAN TRANSAKSI (SORTING) TERBARU: KRONOLOGIS PAGI KE MALAM
   const groupedTransactionsByDay = useMemo(() => {
     const groups: Record<string, TransactionData[]> = {};
-    monthlyTransactions.forEach(t => {
-      if (!groups[t.tDate]) groups[t.tDate] = [];
-      groups[t.tDate].push(t);
-    });
-    return Object.keys(groups)
-      .sort((a, b) => b.localeCompare(a))
-      .map(dateStr => {
-        const list = groups[dateStr];
-        const sortedList = [...list].sort((a, b) => {
-          const getMs = (val: any) => {
-            if (!val) return 0;
-            if (typeof val === "object" && "seconds" in val) return val.seconds * 1000;
-            if (typeof val === "object" && "_seconds" in val) return (val as any)._seconds * 1000;
-            return new Date(val).getTime();
-          };
-          return getMs(b.createdAt) - getMs(a.createdAt);
-        });
-        let dailyNet = 0;
-        sortedList.forEach(t => {
-          if (t.type === "income") dailyNet += t.amount;
-          else if (t.type === "expense") dailyNet -= t.amount;
-        });
-        return { dateStr, list: sortedList, dailyNet };
+    monthlyTransactions.forEach(t => { if (!groups[t.tDate]) groups[t.tDate] = []; groups[t.tDate].push(t); });
+    return Object.keys(groups).sort((a, b) => b.localeCompare(a)).map(dateStr => {
+      const list = groups[dateStr];
+      const sortedList = [...list].sort((a, b) => {
+        const timeA = (a.tTime || formatTime(a.createdAt)).replace('.', ':');
+        const timeB = (b.tTime || formatTime(b.createdAt)).replace('.', ':');
+        return timeA.localeCompare(timeB); // Urutan Ascending (Pagi ke Malam)
       });
+      let dailyNet = 0;
+      sortedList.forEach(t => { if (t.type === "income") dailyNet += t.amount; else if (t.type === "expense") dailyNet -= t.amount; });
+      return { dateStr, list: sortedList, dailyNet };
+    });
   }, [monthlyTransactions]);
 
-  const formatDayHeader = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const dayNum = d.getDate();
-    const dayName = d.toLocaleDateString("id-ID", { weekday: "short" });
-    const monthYear = d.toLocaleDateString("id-ID", { month: "2-digit", year: "numeric" }).replace(/\//g, "/");
-    return { dayNum, dayName, monthYear };
-  };
-
-  const closeMainDrawer = () => {
-    setIsDrawerOpen(false);
-    setEditingTransaction(null);
-    setActiveKeypad(null);
-    setNoteSuggestions([]); // Bersihkan saran saat drawer ditutup
-  };
+  const formatDayHeader = (dateStr: string) => { const d = new Date(dateStr); const dayNum = d.getDate(); const dayName = d.toLocaleDateString("id-ID", { weekday: "short" }); const monthYear = d.toLocaleDateString("id-ID", { month: "2-digit", year: "numeric" }).replace(/\//g, "/"); return { dayNum, dayName, monthYear }; };
+  const closeMainDrawer = () => { setIsDrawerOpen(false); setEditingTransaction(null); setActiveKeypad(null); setNoteSuggestions([]); };
 
   const activeCategoryObject = useMemo(() => {
-    const activeName = editingTransaction ? editTCategory : tCategory;
-    if (!activeName) return null;
-    const cleanActive = cleanCategoryName(activeName);
-    return categories.find(c => cleanCategoryName(c.name) === cleanActive);
+    const activeName = editingTransaction ? editTCategory : tCategory; if (!activeName) return null;
+    const cleanActive = cleanCategoryName(activeName); return categories.find(c => cleanCategoryName(c.name) === cleanActive);
   }, [categories, tCategory, editTCategory, editingTransaction]);
 
   useEffect(() => {
     if (editingTransaction && editTCategory && categories.length > 0) {
-      const cleanActive = cleanCategoryName(editTCategory);
-      const matched = categories.find(c => cleanCategoryName(c.name) === cleanActive);
-      if (matched && matched.name !== editTCategory) {
-        setEditTCategory(matched.name);
-      }
+      const cleanActive = cleanCategoryName(editTCategory); const matched = categories.find(c => cleanCategoryName(c.name) === cleanActive);
+      if (matched && matched.name !== editTCategory) { setEditTCategory(matched.name); }
     }
   }, [editingTransaction, editTCategory, categories]);
 
-  const renderActiveCategoryIcon = () => {
-    if (activeCategoryObject?.icon) return activeCategoryObject.icon;
-    const activeName = editingTransaction ? editTCategory : tCategory;
-    return getCategoryIcon(activeName || "");
-  };
-
-  const getRowIcon = (item: TransactionData) => {
-    const catObj = categories.find(c => cleanCategoryName(c.name) === cleanCategoryName(item.category));
-    return catObj?.icon || getCategoryIcon(item.category);
-  };
+  const renderActiveCategoryIcon = () => { if (activeCategoryObject?.icon) return activeCategoryObject.icon; const activeName = editingTransaction ? editTCategory : tCategory; return getCategoryIcon(activeName || ""); };
+  const getRowIcon = (item: TransactionData) => { const catObj = categories.find(c => cleanCategoryName(c.name) === cleanCategoryName(item.category)); return catObj?.icon || getCategoryIcon(item.category); };
 
   const handleSelectAccount = (accId: string) => {
-    if (activeAccSelector === "source") {
-      if (editingTransaction) {
-        setEditTAccountId(accId);
-      } else {
-        setTAccountId(accId);
-      }
-    } else if (activeAccSelector === "dest") {
-      if (editingTransaction) {
-        setEditTToAccountId(accId);
-      } else {
-        setTToAccountId(accId);
-      }
-    }
+    if (activeAccSelector === "source") { if (editingTransaction) { setEditTAccountId(accId); } else { setTAccountId(accId); } } 
+    else if (activeAccSelector === "dest") { if (editingTransaction) { setEditTToAccountId(accId); } else { setTToAccountId(accId); } }
     setActiveAccSelector(null);
   };
 
   const activeType = editingTransaction ? editTType : tType;
+  const handleSelectCategory = (catName: string) => { if (editingTransaction) { setEditTCategory(catName); } else { setTCategory(catName); } setShowCatModal(false); };
 
-  const handleSelectCategory = (catName: string) => {
-    if (editingTransaction) {
-      setEditTCategory(catName);
-    } else {
-      setTCategory(catName);
-    }
-    setShowCatModal(false);
-  };
-
-  const isDateYesterday = useMemo(() => {
-    const activeDateValue = editingTransaction ? editTDate : tDate;
-    return activeDateValue === getYesterdayDateString();
-  }, [editingTransaction, editTDate, tDate]);
-
-  const toggleYesterdayToday = () => {
-    triggerHaptic();
-    const today = getTodayDateString();
-    const yesterday = getYesterdayDateString();
-    
-    if (editingTransaction) {
-      if (editTDate === yesterday) {
-        setEditTDate(today);
-      } else {
-        setEditTDate(yesterday);
-      }
-    } else {
-      if (tDate === yesterday) {
-        setTDate(today);
-      } else {
-        setTDate(yesterday);
-      }
-    }
-  };
+  const isDateYesterday = useMemo(() => { const activeDateValue = editingTransaction ? editTDate : tDate; return activeDateValue === getYesterdayDateString(); }, [editingTransaction, editTDate, tDate]);
+  const toggleYesterdayToday = () => { triggerHaptic(); const today = getTodayDateString(); const yesterday = getYesterdayDateString(); if (editingTransaction) { if (editTDate === yesterday) { setEditTDate(today); } else { setEditTDate(yesterday); } } else { if (tDate === yesterday) { setTDate(today); } else { setTDate(yesterday); } } };
 
   const currentTheme = themeMap[accent];
 
@@ -721,81 +377,25 @@ export default function HomeTab({
       {/* HEADER TAB TRANSAKSI */}
       <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          {!isSearchExpanded ? (
-            <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight truncate">Transaksi</h2>
-          ) : (
+          {!isSearchExpanded ? ( <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight truncate">Transaksi</h2> ) : (
             <div className="flex items-center gap-2 w-full pr-2 animate-in slide-in-from-left-2 duration-150">
-              <input 
-                type="text" 
-                placeholder={searchAllMonths ? "Cari semua bulan..." : "Cari bulan ini..."} 
-                className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100"
-                value={searchQueryInput}
-                onChange={(e) => setSearchQueryInput(e.target.value)}
-                autoFocus
-              />
-              
-              <button
-                type="button"
-                onClick={() => { triggerHaptic(); setSearchAllMonths(!searchAllMonths); }}
-                className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black shrink-0 border transition-all cursor-pointer active:scale-95 ${
-                  searchAllMonths 
-                    ? "bg-blue-600 border-blue-600 text-white shadow" 
-                    : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                }`}
-              >
-                Semua Bulan
-              </button>
-
-              <button 
-                type="button" 
-                onClick={() => { setSearchQueryInput(""); setIsSearchExpanded(false); setSearchAllMonths(false); }} 
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 shrink-0 cursor-pointer"
-              >
-                <X size={14} />
-              </button>
+              <input type="text" placeholder={searchAllMonths ? "Cari semua bulan..." : "Cari bulan ini..."} className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100" value={searchQueryInput} onChange={(e) => setSearchQueryInput(e.target.value)} autoFocus />
+              <button type="button" onClick={() => { triggerHaptic(); setSearchAllMonths(!searchAllMonths); }} className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black shrink-0 border transition-all active:scale-95 ${searchAllMonths ? "bg-blue-600 border-blue-600 text-white shadow" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"}`}>Semua Bulan</button>
+              <button type="button" onClick={() => { setSearchQueryInput(""); setIsSearchExpanded(false); setSearchAllMonths(false); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 shrink-0 cursor-pointer"><X size={14} /></button>
             </div>
           )}
         </div>
-
         <div className="flex items-center gap-2.5 shrink-0 ml-2">
-          <button 
-            type="button" 
-            onClick={() => { triggerHaptic(); setIsSearchExpanded(!isSearchExpanded); }}
-            className={`p-2 rounded-xl transition-colors cursor-pointer ${isSearchExpanded ? 'text-blue-600 bg-blue-50 dark:bg-blue-950/30' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-          >
-            <Search size={18} />
-          </button>
-
+          <button type="button" onClick={() => { triggerHaptic(); setIsSearchExpanded(!isSearchExpanded); }} className={`p-2 rounded-xl transition-colors cursor-pointer ${isSearchExpanded ? 'text-blue-600 bg-blue-50 dark:bg-blue-950/30' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}><Search size={18} /></button>
           <div className="relative">
-            <button 
-              type="button" 
-              onClick={() => setShowAccountFilterDropdown(!showAccountFilterDropdown)}
-              className={`text-[10px] font-black px-2.5 py-1.5 rounded-lg border flex items-center gap-1 cursor-pointer select-none ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}
-            >
-              {selectedAccountIdFilter === "all" ? "All" : accounts.find(a => a.id === selectedAccountIdFilter)?.name || "All"}
-              <ChevronDown size={10} />
-            </button>
-            
+            <button type="button" onClick={() => setShowAccountFilterDropdown(!showAccountFilterDropdown)} className={`text-[10px] font-black px-2.5 py-1.5 rounded-lg border flex items-center gap-1 cursor-pointer select-none ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>{selectedAccountIdFilter === "all" ? "All" : accounts.find(a => a.id === selectedAccountIdFilter)?.name || "All"}<ChevronDown size={10} /></button>
             {showAccountFilterDropdown && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowAccountFilterDropdown(false)}></div>
                 <div className="absolute right-0 mt-1.5 w-48 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                  <button
-                    type="button"
-                    onClick={() => { setSelectedAccountIdFilter("all"); setShowAccountFilterDropdown(false); }}
-                    className={`w-full text-left px-4 py-2 text-xs font-bold ${selectedAccountIdFilter === "all" ? `${currentTheme.bgLight} ${currentTheme.text}` : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
-                  >
-                    Semua Dompet (All)
-                  </button>
+                  <button type="button" onClick={() => { setSelectedAccountIdFilter("all"); setShowAccountFilterDropdown(false); }} className={`w-full text-left px-4 py-2 text-xs font-bold ${selectedAccountIdFilter === "all" ? `${currentTheme.bgLight} ${currentTheme.text}` : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>Semua Dompet (All)</button>
                   {accounts.map(acc => (
-                    <button
-                      key={acc.id}
-                      type="button"
-                      onClick={() => { setSelectedAccountIdFilter(acc.id); setShowAccountFilterDropdown(false); }}
-                      className={`w-full text-left px-4 py-2 text-xs font-bold ${selectedAccountIdFilter === acc.id ? `${currentTheme.bgLight} ${currentTheme.text}` : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
-                    >
-                      {acc.name}
-                    </button>
+                    <button key={acc.id} type="button" onClick={() => { setSelectedAccountIdFilter(acc.id); setShowAccountFilterDropdown(false); }} className={`w-full text-left px-4 py-2 text-xs font-bold ${selectedAccountIdFilter === acc.id ? `${currentTheme.bgLight} ${currentTheme.text}` : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>{acc.name}</button>
                   ))}
                 </div>
               </>
@@ -805,91 +405,53 @@ export default function HomeTab({
       </div>
 
       {/* HORIZONTAL MONTH SCROLLING PILLS */}
-      <div 
-        ref={monthScrollRef}
-        className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-track-transparent dark:scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark] scroll-smooth -mx-4 px-4 md:mx-0 md:px-0"
-      >
-        {recentMonths.map((m) => {
-          const isActive = selectedMonth === m.value;
-          return (
-            <button 
-              key={m.value}
-              type="button" 
-              onClick={() => setSelectedMonth(m.value)}
-              className={`px-4 py-2 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shrink-0 border ${
-                isActive 
-                  ? currentTheme.activePill 
-                  : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"
-              }`}
-            >
-              {m.label}
-            </button>
-          );
-        })}
+      <div ref={monthScrollRef} className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-track-transparent dark:scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark] scroll-smooth -mx-4 px-4 md:mx-0 md:px-0">
+        {recentMonths.map((m) => { const isActive = selectedMonth === m.value; return (<button key={m.value} type="button" onClick={() => setSelectedMonth(m.value)} className={`px-4 py-2 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shrink-0 border ${isActive ? currentTheme.activePill : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"}`}>{m.label}</button>); })}
       </div>
 
       {/* PREMIUM TOTAL SALDO SUMMARY CARD */}
       <div className={`p-6 rounded-[28px] bg-gradient-to-br ${currentTheme.cardBg} text-white shadow-xl relative overflow-hidden transition-all duration-300`}>
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-3xl rounded-full pointer-events-none"></div>
-        
         <div className="flex justify-between items-start mb-1 relative z-10">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black text-white/80 tracking-wider uppercase">Total Saldo</span>
             <button type="button" className="p-1 text-white/50 hover:text-white rounded-full transition-colors"><Trophy size={12} className="text-yellow-400" /></button>
             <span className="text-[9px] font-black bg-black/20 px-1.5 py-0.5 rounded border border-white/20 text-white flex items-center gap-0.5"><Receipt size={10} /> {monthlyTransactions.length}</span>
           </div>
-          <button 
-            type="button" 
-            onClick={togglePrivacyMode} 
-            className="p-1.5 bg-white/10 active:bg-white/20 text-white rounded-full transition-all duration-200 cursor-pointer hover:scale-105"
-          >
-            {isPrivacyMode ? <EyeOff size={14} /> : <Eye size={14} />}
-          </button>
+          <button type="button" onClick={togglePrivacyMode} className="p-1.5 bg-white/10 active:bg-white/20 text-white rounded-full transition-all duration-200 cursor-pointer hover:scale-105">{isPrivacyMode ? <EyeOff size={14} /> : <Eye size={14} />}</button>
         </div>
-
-        <div className="text-3xl font-black tracking-tight mb-6 relative z-10">
-          {isPrivacyMode ? "Rp •••••••" : `Rp ${totalBalanceCalculated.toLocaleString("id-ID")}`}
-        </div>
-
+        <div className="text-3xl font-black tracking-tight mb-6 relative z-10">{isPrivacyMode ? "Rp •••••••" : `Rp ${totalBalanceCalculated.toLocaleString("id-ID")}`}</div>
         <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-4 relative z-10">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center shrink-0"><ArrowUpRight size={18} strokeWidth={2.5} /></div>
             <div>
               <p className="text-[9px] font-black text-white/70 uppercase tracking-widest leading-none mb-1">Pemasukan ({selectedMonth.split("-")[1]})</p>
-              <p className="text-sm font-extrabold tracking-tight">
-                {isPrivacyMode ? "Rp •••••" : `Rp ${monthlySummary.income.toLocaleString("id-ID")}`}
-              </p>
+              <p className="text-sm font-extrabold tracking-tight">{isPrivacyMode ? "Rp •••••" : `Rp ${monthlySummary.income.toLocaleString("id-ID")}`}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 border-l border-white/10 pl-4">
             <div className="w-9 h-9 bg-rose-500/20 text-rose-400 rounded-full flex items-center justify-center shrink-0"><ArrowDownRight size={18} strokeWidth={2.5} /></div>
             <div>
               <p className="text-[9px] font-black text-white/70 uppercase tracking-widest leading-none mb-1">Pengeluaran ({selectedMonth.split("-")[1]})</p>
-              <p className="text-sm font-extrabold tracking-tight text-rose-200">
-                {isPrivacyMode ? "Rp •••••" : `Rp ${monthlySummary.expense.toLocaleString("id-ID")}`}
-              </p>
+              <p className="text-sm font-extrabold tracking-tight text-rose-200">{isPrivacyMode ? "Rp •••••" : `Rp ${monthlySummary.expense.toLocaleString("id-ID")}`}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* WIDGET SMART FINANCIAL INSIGHTS (ASISTEN AI) */}
+      {/* WIDGET SMART FINANCIAL INSIGHTS */}
       <div className={`p-4 rounded-[20px] border ${smartInsight.bg} ${smartInsight.border} flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700`}>
         <div className="text-xl shrink-0 leading-none pt-0.5">{smartInsight.icon}</div>
         <div className="min-w-0">
           <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${smartInsight.color}`}>Fintracker Assistant</p>
-          <p className="text-xs font-bold text-slate-700 dark:text-slate-300 leading-relaxed pr-2">
-            {smartInsight.text}
-          </p>
+          <p className="text-xs font-bold text-slate-700 dark:text-slate-300 leading-relaxed pr-2">{smartInsight.text}</p>
         </div>
       </div>
 
       {/* DAILY GROUPED TRANSACTION HISTORY LIST */}
       <div className="space-y-4">
         {groupedTransactionsByDay.length === 0 ? (
-          <div className="p-12 text-center bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-[28px]">
-            <p className="text-slate-400 dark:text-slate-500 text-xs font-bold">Tidak ada transaksi tercatat di bulan ini.</p>
-          </div>
+          <div className="p-12 text-center bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-[28px]"><p className="text-slate-400 dark:text-slate-500 text-xs font-bold">Tidak ada transaksi tercatat di bulan ini.</p></div>
         ) : (
           groupedTransactionsByDay.map(({ dateStr, list, dailyNet }) => {
             const { dayNum, dayName, monthYear } = formatDayHeader(dateStr);
@@ -901,104 +463,51 @@ export default function HomeTab({
                     <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase">{dayName}</span>
                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-600">{monthYear}</span>
                   </div>
-                  <span className={`text-xs font-black ${dailyNet > 0 ? "text-emerald-500" : dailyNet < 0 ? "text-rose-500" : "text-slate-400"}`}>
-                    {isPrivacyMode ? "Rp ••" : `${dailyNet > 0 ? "+" : ""}${dailyNet.toLocaleString("id-ID")}`}
-                  </span>
+                  <span className={`text-xs font-black ${dailyNet > 0 ? "text-emerald-500" : dailyNet < 0 ? "text-rose-500" : "text-slate-400"}`}>{isPrivacyMode ? "Rp ••" : `${dailyNet > 0 ? "+" : ""}${dailyNet.toLocaleString("id-ID")}`}</span>
                 </div>
 
                 <div className="space-y-2">
                   {list.map((t) => {
-                    const isTransfer = t.type === "transfer";
-                    const symbol = isPrivacyMode ? "" : "-";
-                    const isIncome = t.type === "income";
+                    const isTransfer = t.type === "transfer"; const isIncome = t.type === "income";
                     return (
                       <div key={t.id} className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl flex flex-col hover:border-blue-100 dark:hover:border-blue-900/30 transition-all group">
-                        
                         <div className="flex items-center justify-between w-full">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg shrink-0">
-                              {getRowIcon(t)}
-                            </div>
+                            <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg shrink-0">{getRowIcon(t)}</div>
                             <div className="min-w-0 text-left">
-                              <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate flex items-center gap-1">
-                                {t.category} 
-                                {t.splits && t.splits.length > 0 && <span className={`text-[8px] px-1 rounded font-bold ${currentTheme.bgLight} ${currentTheme.text}`}>✂️ {t.splits.length} Pecahan</span>}
-                              </p>
-                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate mt-0.5">
-                                {t.note || (isTransfer ? "Transfer Dana" : "-")}
-                              </p>
-                              
+                              <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate flex items-center gap-1">{t.category} {t.splits && t.splits.length > 0 && <span className={`text-[8px] px-1 rounded font-bold ${currentTheme.bgLight} ${currentTheme.text}`}>✂️ {t.splits.length} Pecahan</span>}</p>
+                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate mt-0.5">{t.note || (isTransfer ? "Transfer Dana" : "-")}</p>
                               <div className="flex flex-wrap gap-1.5 mt-1">
-                                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border flex items-center gap-0.5 uppercase ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>
-                                  <Wallet size={8} /> {isTransfer ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName}
-                                </span>
+                                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border flex items-center gap-0.5 uppercase ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}><Wallet size={8} /> {isTransfer ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName}</span>
                                 {(() => {
-                                  const formattedTime = formatTime(t.createdAt);
+                                  const formattedTime = (t.tTime || formatTime(t.createdAt)).replace(':', '.');
                                   if (!formattedTime) return null;
-                                  return (
-                                    <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-200/30 dark:border-slate-700/30 flex items-center gap-0.5">
-                                      🕒 {formattedTime}
-                                    </span>
-                                  );
+                                  return (<span className="text-[9px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-200/30 dark:border-slate-700/30 flex items-center gap-0.5">🕒 {formattedTime}</span>);
                                 })()}
                               </div>
-
                             </div>
                           </div>
-
                           <div className="flex items-center gap-4 shrink-0 text-right">
                             <div>
-                              <p className={`text-xs font-black ${isIncome ? "text-emerald-500" : isTransfer ? "text-blue-500" : "text-rose-500"}`}>
-                                {isPrivacyMode ? "Rp •••••" : `${isIncome ? "+" : "-"}${t.amount.toLocaleString("id-ID")}`}
-                              </p>
-                              {t.adminFee && t.adminFee > 0 ? (
-                                <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 mt-0.5">
-                                  Admin: Rp {t.adminFee.toLocaleString("id-ID")}
-                                </p>
-                              ) : null}
+                              <p className={`text-xs font-black ${isIncome ? "text-emerald-500" : isTransfer ? "text-blue-500" : "text-rose-500"}`}>{isPrivacyMode ? "Rp •••••" : `${isIncome ? "+" : "-"}${t.amount.toLocaleString("id-ID")}`}</p>
+                              {t.adminFee && t.adminFee > 0 ? (<p className="text-[8px] font-black text-slate-400 dark:text-slate-500 mt-0.5">Admin: Rp {t.adminFee.toLocaleString("id-ID")}</p>) : null}
                             </div>
-
                             <div className="flex items-center gap-1.5 shrink-0 opacity-100">
-                              <button 
-                                type="button" 
-                                onClick={() => { triggerHaptic(); onEditTransaction(t); }} 
-                                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${currentTheme.text} hover:bg-slate-100 dark:hover:bg-slate-800`}
-                              >
-                                <Edit3 size={13} />
-                              </button>
-                              <button 
-                                type="button" 
-                                onClick={() => { triggerHaptic(); onDeleteTransaction(t); }} 
-                                className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                              >
-                                <Trash2 size={13} />
-                              </button>
+                              <button type="button" onClick={() => { triggerHaptic(); onEditTransaction(t); }} className={`p-1.5 rounded-lg transition-colors cursor-pointer ${currentTheme.text} hover:bg-slate-100 dark:hover:bg-slate-800`}><Edit3 size={13} /></button>
+                              <button type="button" onClick={() => { triggerHaptic(); onDeleteTransaction(t); }} className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"><Trash2 size={13} /></button>
                             </div>
                           </div>
                         </div>
-
                         {t.splits && t.splits.length > 0 && (
                           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2 text-left pl-13 animate-in fade-in duration-200">
-                            <p className={`text-[9px] font-black uppercase tracking-widest leading-none flex items-center gap-1 ${currentTheme.text}`}>
-                              <span>✂️</span> Detail Alokasi Pecahan:
-                            </p>
+                            <p className={`text-[9px] font-black uppercase tracking-widest leading-none flex items-center gap-1 ${currentTheme.text}`}><span>✂️</span> Detail Alokasi Pecahan:</p>
                             <div className="space-y-1.5">
                               {t.splits.map((s, idx) => (
-                                <div key={idx} className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-                                  <span className="font-extrabold text-slate-800 dark:text-slate-300">{s.category}:</span>
-                                  <span className="text-slate-700 dark:text-slate-500 font-extrabold">Rp {s.amount.toLocaleString('id-ID')}</span>
-                                  {s.note && (
-                                    <span className="text-[9px] font-medium italic text-slate-400 dark:text-slate-500 leading-none">
-                                      ({s.note})
-                                    </span>
-                                  )}
-                                </div>
+                                <div key={idx} className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" /><span className="font-extrabold text-slate-800 dark:text-slate-300">{s.category}:</span><span className="text-slate-700 dark:text-slate-500 font-extrabold">Rp {s.amount.toLocaleString('id-ID')}</span>{s.note && (<span className="text-[9px] font-medium italic text-slate-400 dark:text-slate-500 leading-none">({s.note})</span>)}</div>
                               ))}
                             </div>
                           </div>
                         )}
-
                       </div>
                     );
                   })}
@@ -1009,18 +518,10 @@ export default function HomeTab({
         )}
       </div>
 
-      {/* FLOATING ACTION BUTTON (FAB) */}
-      <button 
-        type="button"
-        onClick={() => { triggerHaptic(); setIsDrawerOpen(true); }}
-        className={`fixed bottom-24 right-6 md:bottom-8 md:right-8 z-40 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-lg transition-all cursor-pointer border ${currentTheme.fab}`}
-      >
+      <button type="button" onClick={() => { triggerHaptic(); setIsDrawerOpen(true); }} className={`fixed bottom-24 right-6 md:bottom-8 md:right-8 z-40 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-lg transition-all cursor-pointer border ${currentTheme.fab}`}>
         <Plus size={28} strokeWidth={2.5} />
       </button>
-
-      {/* --- BATAS BAGIAN 1 --- */}
-
-      {/* UNIFIED SLIDE-UP BOTTOM DRAWER */}
+      {/* UNIFIED SLIDE-UP BOTTOM DRAWER DENGAN INPUT JAM */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="absolute inset-0 z-0" onClick={closeMainDrawer}></div>
@@ -1110,7 +611,7 @@ export default function HomeTab({
                 </div>
               )}
 
-              {/* INPUT CATATAN DENGAN FITUR SMART AUTOCOMPLETE (DIPINDAH KE ATAS) */}
+              {/* INPUT CATATAN DENGAN AUTOCOMPLETE */}
               <div className="space-y-1 relative z-[60] mb-2 animate-in slide-in-from-top-2 duration-300">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan (Beli Apa?)</label>
                 <input 
@@ -1220,24 +721,19 @@ export default function HomeTab({
                 )}
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center justify-between px-1">
-                  <span>Tanggal</span>
-                  <button 
-                    type="button" 
-                    onClick={toggleYesterdayToday} 
-                    className={`text-[9px] font-black hover:underline cursor-pointer ${currentTheme.text}`}
-                  >
-                    {isDateYesterday ? "Hari Ini?" : "Kemarin?"}
-                  </button>
-                </label>
-                <input 
-                  type="date" 
-                  style={{ colorScheme: isDark ? "dark" : "light" }}
-                  className="w-full m-0 box-border p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" 
-                  value={editingTransaction ? editTDate : tDate} 
-                  onChange={(e) => editingTransaction ? setEditTDate(e.target.value) : setTDate(e.target.value)} 
-                />
+              {/* INPUT TANGGAL & JAM BERDAMPINGAN */}
+              <div className="grid grid-cols-2 gap-3 relative z-10">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center justify-between px-1">
+                    <span>Tanggal</span>
+                    <button type="button" onClick={toggleYesterdayToday} className={`text-[9px] font-black hover:underline cursor-pointer ${currentTheme.text}`}>{isDateYesterday ? "Hari Ini?" : "Kemarin?"}</button>
+                  </label>
+                  <input type="date" style={{ colorScheme: isDark ? "dark" : "light" }} className="w-full m-0 box-border p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" value={editingTransaction ? editTDate : tDate} onChange={(e) => editingTransaction ? setEditTDate(e.target.value) : setTDate(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 block">Jam</label>
+                  <input type="time" style={{ colorScheme: isDark ? "dark" : "light" }} className="w-full m-0 box-border p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" value={editingTransaction ? editTTime : tTime} onChange={(e) => editingTransaction ? setEditTTime(e.target.value) : setTTime(e.target.value)} />
+                </div>
               </div>
 
               {((editingTransaction ? editTType : tType) !== "transfer") && (
@@ -1297,6 +793,7 @@ export default function HomeTab({
                 </div>
               )}
 
+              {/* TAMPILAN RINCIAN KOREKSI PECAHAN (SUDAH DIKOREKSI SISA BELUM DIALOKASI & NOMINAL KOSONG) */}
               {editingTransaction && editTSplits && editTSplits.length > 0 && (
                 <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                   <div className="flex flex-col gap-1 mb-2">
@@ -1306,7 +803,7 @@ export default function HomeTab({
                         Total Alokasi: {currentSymbol} {editTSplits.reduce((sum, s) => sum + s.amount, 0).toLocaleString('id-ID')}
                       </span>
                     </div>
-                    {/* INFO BARU: SISA BELUM DIALOKASI (KOREKSI) */}
+                    {/* INFO SISA UNTUK EDIT PECAHAN */}
                     <div className="flex justify-between items-center text-[10px] font-bold">
                       <span className="text-slate-500">Sisa Belum Dialokasi:</span>
                       <span className={safeEvaluate(editTAmount) - editTSplits.reduce((sum, s) => sum + s.amount, 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}>
@@ -1338,7 +835,6 @@ export default function HomeTab({
                             updated[i].amount = val ? Number(val) : 0;
                             setEditTSplits(updated);
                           }} />
-                          {/* FITUR BARU: TERBACA UNTUK KOREKSI */}
                           {item.amount > 0 && <p className="text-[9px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(item.amount.toString(), selectedSourceAcc?.currency)}</span></p>}
                         </div>
                       </div>
@@ -1350,7 +846,6 @@ export default function HomeTab({
                     </div>
                   ))}
                   <button type="button" onClick={() => {
-                    // FITUR BARU: NOMINAL KOSONG SAAT NAMBAH PECAHAN (Bukan Autofill)
                     setEditTSplits([...editTSplits, { category: "", amount: 0, note: "" }]);
                   }} className={`w-full py-2.5 border border-dashed rounded-xl text-xs font-black cursor-pointer transition-colors ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>+ Tambah Pecahan Koreksi</button>
                 </div>
@@ -1385,7 +880,6 @@ export default function HomeTab({
                 <input type="text" placeholder="Cari kategori..." className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
             </div>
-            
             <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900 text-left">
               {activeType === "expense" ? (
                 <div className="grid grid-cols-2 gap-4">
@@ -1427,7 +921,7 @@ export default function HomeTab({
         </div>
       )}
 
-{/* POP-UP CATEGORY MODAL FOR NEW SPLIT / PECAHAN BARU */}
+      {/* POP-UP CATEGORY MODAL UNTUK PECAHAN BARU */}
       {showSplitCatModal && (
         <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-100 dark:border-slate-800">
@@ -1471,7 +965,7 @@ export default function HomeTab({
         </div>
       )}
 
-      {/* DETIL SPLIT MODAL (NEW TRANSACTIONS SPLITS) */}
+      {/* DETIL SPLIT MODAL (NEW TRANSACTIONS SPLITS) DENGAN FORMAT TERBACA & SISA BELUM DIALOKASI */}
       {showSplitModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-950 rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh] border border-slate-200 dark:border-slate-800">
@@ -1483,7 +977,6 @@ export default function HomeTab({
             </div>
 
             <div className="p-5 overflow-y-auto space-y-4 bg-white dark:bg-slate-950 flex-1">
-              {/* SUMMARY BOX: SISA DAN TOTAL */}
               <div className={`p-4 rounded-2xl border ${currentTheme.bgLight} ${currentTheme.border}`}>
                 <div className="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-300">
                   <span>Nominal Transaksi:</span>
@@ -1495,7 +988,7 @@ export default function HomeTab({
                     {currentSymbol} {tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0).toLocaleString('id-ID')}
                   </span>
                 </div>
-                {/* INFO BARU: SISA BELUM DIALOKASI */}
+                {/* INFO SISA BELUM DIALOKASI (BARU) */}
                 <div className="flex justify-between items-center text-xs font-bold mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
                   <span className="text-slate-600 dark:text-slate-300">Sisa Belum Dialokasi:</span>
                   <span className={`font-black ${safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -1529,7 +1022,7 @@ export default function HomeTab({
                           updated[i].amountStr = e.target.value;
                           setTempSplits(updated);
                         }} />
-                        {/* FITUR BARU: TERBACA */}
+                        {/* FORMAT TERBACA */}
                         {item.amountStr && <p className="text-[9px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(item.amountStr, selectedSourceAcc?.currency)}</span></p>}
                       </div>
                     </div>
@@ -1564,90 +1057,24 @@ export default function HomeTab({
             </div>
             <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-slate-100 font-black text-sm">
               {["+", "-", "*", "/"].map((op) => (
-                <button 
-                  key={op} 
-                  type="button" 
-                  onClick={() => editingTransaction ? handleEditKeypadPress(op) : handleKeypadPress(op)} 
-                  className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/20"
-                >
-                  {op === "*" ? "×" : op === "/" ? "÷" : op}
-                </button>
+                <button key={op} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(op) : handleKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/20">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>
               ))}
-              
               {["7", "8", "9"].map((num) => (
-                <button 
-                  key={num} 
-                  type="button" 
-                  onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} 
-                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10"
-                >
-                  {num}
-                </button>
+                <button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
               ))}
-              
-              <button 
-                type="button" 
-                onClick={() => editingTransaction ? handleEditKeypadPress("C") : handleKeypadPress("C")} 
-                className="py-3.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold"
-              >
-                C
-              </button>
-              
+              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("C") : handleKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold">C</button>
               {["4", "5", "6"].map((num) => (
-                <button 
-                  key={num} 
-                  type="button" 
-                  onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} 
-                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10"
-                >
-                  {num}
-                </button>
+                <button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
               ))}
-              
-              <button 
-                type="button" 
-                onClick={() => editingTransaction ? handleEditKeypadPress("⌫") : handleKeypadPress("⌫")} 
-                className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 flex items-center justify-center transition-all select-none"
-              >
-                ⌫
-              </button>
-              
+              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("⌫") : handleKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 flex items-center justify-center transition-all select-none">⌫</button>
               {["1", "2", "3"].map((num) => (
-                <button 
-                  key={num} 
-                  type="button" 
-                  onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} 
-                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10"
-                >
-                  {num}
-                </button>
+                <button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/45 dark:border-slate-800/10">{num}</button>
               ))}
-              
-              <button 
-                type="button" 
-                onClick={() => editingTransaction ? handleEditKeypadPress(".") : handleKeypadPress(".")} 
-                className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none"
-              >
-                .
-              </button>
-              
+              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress(".") : handleKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
               {["(", "0", ")"].map((char) => (
-                <button 
-                  key={char} 
-                  type="button" 
-                  onClick={() => editingTransaction ? handleEditKeypadPress(char) : handleKeypadPress(char)} 
-                  className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/10`}
-                >
-                  {char}
-                </button>
+                <button key={char} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(char) : handleKeypadPress(char)} className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/10`}>{char}</button>
               ))}
-              <button 
-                type="button" 
-                onClick={() => editingTransaction ? handleEditKeypadPress("Ya") : handleKeypadPress("Ya")} 
-                className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}
-              >
-                Ya
-              </button>
+              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("Ya") : handleKeypadPress("Ya")} className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}>Ya</button>
             </div>
           </div>
         </>
@@ -1664,158 +1091,56 @@ export default function HomeTab({
             </div>
             <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-slate-100 font-black text-sm">
               {["+", "-", "*", "/"].map((op) => (
-                <button 
-                  key={op} 
-                  type="button" 
-                  onClick={() => handleSplitKeypadPress(op)} 
-                  className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/20"
-                >
-                  {op === "*" ? "×" : op === "/" ? "÷" : op}
-                </button>
+                <button key={op} type="button" onClick={() => handleSplitKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/20">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>
               ))}
-              
               {["7", "8", "9"].map((num) => (
-                <button 
-                  key={num} 
-                  type="button" 
-                  onClick={() => handleSplitKeypadPress(num)} 
-                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10"
-                >
-                  {num}
-                </button>
+                <button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
               ))}
-              
-              <button 
-                type="button" 
-                onClick={() => handleSplitKeypadPress("C")} 
-                className="py-3.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold"
-              >
-                C
-              </button>
-              
+              <button type="button" onClick={() => handleSplitKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold">C</button>
               {["4", "5", "6"].map((num) => (
-                <button 
-                  key={num} 
-                  type="button" 
-                  onClick={() => handleSplitKeypadPress(num)} 
-                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10"
-                >
-                  {num}
-                </button>
+                <button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
               ))}
-              
-              <button 
-                type="button" 
-                onClick={() => handleSplitKeypadPress("⌫")} 
-                className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 flex items-center justify-center transition-all select-none"
-              >
-                ⌫
-              </button>
-              
+              <button type="button" onClick={() => handleSplitKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 flex items-center justify-center transition-all select-none">⌫</button>
               {["1", "2", "3"].map((num) => (
-                <button 
-                  key={num} 
-                  type="button" 
-                  onClick={() => handleSplitKeypadPress(num)} 
-                  className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/45 dark:border-slate-800/10"
-                >
-                  {num}
-                </button>
+                <button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/45 dark:border-slate-800/10">{num}</button>
               ))}
-              
-              <button 
-                type="button" 
-                onClick={() => handleSplitKeypadPress(".")} 
-                className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none"
-              >
-                .
-              </button>
-              
+              <button type="button" onClick={() => handleSplitKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
               {["(", "0", ")"].map((char) => (
-                <button 
-                  key={char} 
-                  type="button" 
-                  onClick={() => handleSplitKeypadPress(char)} 
-                  className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/10`}
-                >
-                  {char}
-                </button>
+                <button key={char} type="button" onClick={() => handleSplitKeypadPress(char)} className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/10`}>{char}</button>
               ))}
-              <button 
-                type="button" 
-                onClick={() => handleSplitKeypadPress("Ya")} 
-                className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}
-              >
-                Ya
-              </button>
+              <button type="button" onClick={() => handleSplitKeypadPress("Ya")} className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}>Ya</button>
             </div>
           </div>
         </>
       )}
 
-      {/* ========================================== */}
       {/* BOTTOM SHEET: PILIH DOMPET */}
-      {/* ========================================== */}
       {activeAccSelector && (
         <div className="fixed inset-0 z-[190] flex items-end justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="absolute inset-0 z-0" onClick={() => setActiveAccSelector(null)}></div>
-          
           <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[32px] shadow-2xl p-6 pb-8 overflow-hidden animate-in slide-in-from-bottom duration-300 z-10 flex flex-col max-h-[85vh] border-t border-slate-200 dark:border-slate-800">
             <div className="w-full flex justify-center pb-2"><div className="w-12 h-1 bg-slate-200 dark:bg-slate-800 rounded-full"></div></div>
-            
             <div className="flex justify-between items-center mb-6 pt-2">
               <div className="flex items-center gap-2">
                 <Wallet size={18} className={currentTheme.text} />
                 <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Select From Account</h3>
               </div>
-              <button 
-                type="button" 
-                onClick={() => setActiveAccSelector(null)} 
-                className="p-1.5 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 rounded-full transition-colors cursor-pointer"
-              >
-                <X size={14} className="text-slate-700 dark:text-slate-300" />
-              </button>
+              <button type="button" onClick={() => setActiveAccSelector(null)} className="p-1.5 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 rounded-full transition-colors cursor-pointer"><X size={14} className="text-slate-700 dark:text-slate-300" /></button>
             </div>
-
             <div className="overflow-y-auto pr-1 text-left">
               <div className="grid grid-cols-2 gap-3">
                 {(activeAccSelector === "source" ? availableSourceAccounts : accounts).map(acc => {
-                  const activeId = activeAccSelector === "source" 
-                    ? (editingTransaction ? editTAccountId : tAccountId) 
-                    : (editingTransaction ? editTToAccountId : tToAccountId);
+                  const activeId = activeAccSelector === "source" ? (editingTransaction ? editTAccountId : tAccountId) : (editingTransaction ? editTToAccountId : tToAccountId);
                   const isSelected = activeId === acc.id;
-                  
                   return (
-                    <div 
-                      key={acc.id}
-                      onClick={() => { triggerHaptic(); handleSelectAccount(acc.id); }}
-                      className={`p-4 rounded-2xl border text-left flex flex-col justify-between relative transition-all active:scale-95 cursor-pointer h-28 ${
-                        isSelected 
-                          ? currentTheme.activeAccCard
-                          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
-                      }`}
-                    >
+                    <div key={acc.id} onClick={() => { triggerHaptic(); handleSelectAccount(acc.id); }} className={`p-4 rounded-2xl border text-left flex flex-col justify-between relative transition-all active:scale-95 cursor-pointer h-28 ${isSelected ? currentTheme.activeAccCard : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
                       <div className="flex justify-between items-start">
-                        {acc.logo ? (
-                          <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
-                            <Wallet size={16} />
-                          </div>
-                        )}
-                        
-                        {isSelected && (
-                          <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow ${currentTheme.checkCircle}`}>
-                            ✓
-                          </div>
-                        )}
+                        {acc.logo ? ( <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white" /> ) : ( <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500"><Wallet size={16} /></div> )}
+                        {isSelected && ( <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow ${currentTheme.checkCircle}`}>✓</div> )}
                       </div>
-
                       <div className="mt-2 min-w-0">
                         <p className="text-xs font-black text-slate-800 dark:text-white truncate leading-none mb-1">{acc.name}</p>
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate leading-none">
-                          {getCurrencySymbol(acc.currency)} {acc.balance.toLocaleString("id-ID")}
-                        </p>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate leading-none">{getCurrencySymbol(acc.currency)} {acc.balance.toLocaleString("id-ID")}</p>
                       </div>
                     </div>
                   );
@@ -1826,63 +1151,29 @@ export default function HomeTab({
         </div>
       )}
 
-      {/* MINI MODAL: EDIT NAMA & LOGO EMOJI KATEGORI SECARA INSTAN */}
+      {/* MINI MODAL: EDIT KATEGORI INSTAN */}
       {editingCat && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-[28px] w-full max-w-xs shadow-2xl p-6 border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 text-left">
             <h4 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-1">🔧 Atur Logo & Kategori</h4>
-            
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400">Emoji / Logo Kustom (Satu Karakter)</label>
-                <input 
-                  type="text" 
-                  maxLength={2} 
-                  placeholder="Ketik satu emoji (misal: 💈, 🍛)" 
-                  className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-center text-xl font-black outline-blue-500 text-slate-800 dark:text-white focus:border-blue-500"
-                  value={editCatIcon}
-                  onChange={(e) => setEditCatIcon(e.target.value)}
-                />
+                <input type="text" maxLength={2} placeholder="Ketik satu emoji (misal: 💈, 🍛)" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-center text-xl font-black outline-blue-500 text-slate-800 dark:text-white focus:border-blue-500" value={editCatIcon} onChange={(e) => setEditCatIcon(e.target.value)} />
               </div>
-
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400">Nama Kategori</label>
-                <input 
-                  type="text" 
-                  className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white focus:border-blue-500"
-                  value={editCatName}
-                  onChange={(e) => setEditCatName(e.target.value)}
-                />
+                <input type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white focus:border-blue-500" value={editCatName} onChange={(e) => setEditCatName(e.target.value)} />
               </div>
             </div>
-
             <div className="flex gap-2 mt-6">
-              <button 
-                type="button" 
-                onClick={async () => {
-                  if (updateCategory && editingCat) {
-                    triggerHaptic();
-                    await updateCategory(editingCat.id, editCatName, editingCat.budgetLimit || null, editingCat.expenseType || "variable", editCatIcon);
-                    setEditingCat(null);
-                    setShowCatModal(false); 
-                    alert("Kategori berhasil diperbarui!");
-                  }
-                }} 
-                className={`flex-1 py-2.5 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer border ${currentTheme.fab}`}
-              >
-                Simpan
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setEditingCat(null)} 
-                className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer transition-colors"
-              >
-                Batal
-              </button>
+              <button type="button" onClick={async () => { if (updateCategory && editingCat) { triggerHaptic(); await updateCategory(editingCat.id, editCatName, editingCat.budgetLimit || null, editingCat.expenseType || "variable", editCatIcon); setEditingCat(null); setShowCatModal(false); alert("Kategori berhasil diperbarui!"); } }} className={`flex-1 py-2.5 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer border ${currentTheme.fab}`}>Simpan</button>
+              <button type="button" onClick={() => setEditingCat(null)} className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer transition-colors">Batal</button>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }
