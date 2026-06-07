@@ -194,7 +194,24 @@ const formatTime = (createdAt: any) => {
 export default function HomeTab({
   tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory
 }: HomeTabProps) {
-  
+  // FUNGSI PEMBANTU KONVERSI FORMAT JAM 12 KE 24 (UNTUK CUSTOM SELECTOR)
+  const parseTime12 = (timeStr: string) => {
+    if (!timeStr) return { hour12: "12", minute: "00", period: "PM" };
+    const [hStr, mStr] = timeStr.split(":");
+    const h = parseInt(hStr, 10) || 0;
+    const m = mStr || "00";
+    const period = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 === 0 ? "12" : String(h % 12).padStart(2, "0");
+    return { hour12: h12, minute: m, period };
+  };
+
+  const formatTime24 = (h12: string, m: string, period: string) => {
+    let h = parseInt(h12, 10) || 12;
+    if (period === "PM" && h < 12) h += 12;
+    if (period === "AM" && h === 12) h = 0;
+    return `${String(h).padStart(2, "0")}:${m}`;
+  };
+
   const monthScrollRef = useRef<HTMLDivElement>(null);
   const [accent, setAccent] = useState<keyof typeof themeMap>("blue");
   const [noteSuggestions, setNoteSuggestions] = useState<{note: string, category: string, amount: number}[]>([]);
@@ -732,7 +749,53 @@ export default function HomeTab({
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 block">Jam</label>
-                  <input type="time" style={{ colorScheme: isDark ? "dark" : "light" }} className="w-full m-0 box-border p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-blue-500 text-slate-800 dark:text-white cursor-pointer" value={editingTransaction ? editTTime : tTime} onChange={(e) => editingTransaction ? setEditTTime(e.target.value) : setTTime(e.target.value)} />
+                  <div className="flex gap-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 items-center h-[50px] box-border">
+                    {/* Selector Jam (1-12) - Berhenti jika di-scroll */}
+                    <select 
+                      className="flex-1 bg-transparent text-xs font-bold outline-none text-slate-800 dark:text-white cursor-pointer text-center"
+                      value={parseTime12(editingTransaction ? editTTime : tTime).hour12}
+                      onChange={(e) => {
+                        const current = parseTime12(editingTransaction ? editTTime : tTime);
+                        const newTime = formatTime24(e.target.value, current.minute, current.period);
+                        editingTransaction ? setEditTTime(newTime) : setTTime(newTime);
+                      }}
+                    >
+                      {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map(h => (
+                        <option key={h} value={h} className="dark:bg-slate-950 text-slate-800 dark:text-white">{h}</option>
+                      ))}
+                    </select>
+                    
+                    <span className="text-slate-400 font-bold shrink-0">:</span>
+                    
+                    {/* Selector Menit (00-59) - Berhenti jika di-scroll */}
+                    <select 
+                      className="flex-1 bg-transparent text-xs font-bold outline-none text-slate-800 dark:text-white cursor-pointer text-center"
+                      value={parseTime12(editingTransaction ? editTTime : tTime).minute}
+                      onChange={(e) => {
+                        const current = parseTime12(editingTransaction ? editTTime : tTime);
+                        const newTime = formatTime24(current.hour12, e.target.value, current.period);
+                        editingTransaction ? setEditTTime(newTime) : setTTime(newTime);
+                      }}
+                    >
+                      {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map(m => (
+                        <option key={m} value={m} className="dark:bg-slate-950 text-slate-800 dark:text-white">{m}</option>
+                      ))}
+                    </select>
+
+                    {/* Selector AM/PM */}
+                    <select 
+                      className={`px-2 py-1 rounded-xl text-[10px] font-black outline-none border cursor-pointer shrink-0 ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}
+                      value={parseTime12(editingTransaction ? editTTime : tTime).period}
+                      onChange={(e) => {
+                        const current = parseTime12(editingTransaction ? editTTime : tTime);
+                        const newTime = formatTime24(current.hour12, current.minute, e.target.value);
+                        editingTransaction ? setEditTTime(newTime) : setTTime(newTime);
+                      }}
+                    >
+                      <option value="AM" className="dark:bg-slate-950 text-slate-800 dark:text-white">AM</option>
+                      <option value="PM" className="dark:bg-slate-950 text-slate-800 dark:text-white">PM</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
