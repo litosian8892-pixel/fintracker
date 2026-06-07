@@ -33,7 +33,8 @@ const safeEvaluate = (expr: string): number => {
   sanitized = sanitized.replace(/[+\-*/(.]*$/, "");
   if (!sanitized) return 0;
   try {
-    const result = new Function("use strict", `return (${sanitized});`)();
+    // BUG FIX: Memperbaiki eksekusi matematika yang sebelumnya terblokir oleh SyntaxError
+    const result = new Function(`"use strict"; return (${sanitized});`)();
     if (typeof result === "number" && isFinite(result)) return result;
     return 0;
   } catch {
@@ -109,12 +110,23 @@ export default function FintrackerApp() {
   });
 
   useEffect(() => {
+    const handleBlur = () => setIsAppBlurred(true);
+    const handleFocus = () => setIsAppBlurred(false);
     const handleVisibilityChange = () => {
       if (document.hidden) setIsAppBlurred(true);
       else setIsAppBlurred(false);
     };
+    
+    // Deteksi agresif untuk iOS App Switcher & browser desktop
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {
