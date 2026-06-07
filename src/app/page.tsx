@@ -110,22 +110,37 @@ export default function FintrackerApp() {
   });
 
   useEffect(() => {
-    const handleBlur = () => setIsAppBlurred(true);
-    const handleFocus = () => setIsAppBlurred(false);
-    const handleVisibilityChange = () => {
-      if (document.hidden) setIsAppBlurred(true);
-      else setIsAppBlurred(false);
+    const overlay = document.getElementById("privacy-overlay");
+
+    const enableBlur = () => {
+      setIsAppBlurred(true);
+      if (overlay) {
+        overlay.classList.remove("opacity-0", "pointer-events-none");
+        overlay.classList.add("opacity-100", "pointer-events-auto");
+      }
     };
-    
-    // Deteksi agresif untuk iOS App Switcher & browser desktop
-    window.addEventListener("blur", handleBlur);
-    window.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    
+
+    const disableBlur = () => {
+      setIsAppBlurred(false);
+      if (overlay) {
+        overlay.classList.remove("opacity-100", "pointer-events-auto");
+        overlay.classList.add("opacity-0", "pointer-events-none");
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden || document.visibilityState === "hidden") enableBlur();
+      else disableBlur();
+    };
+
+    window.addEventListener("pagehide", enableBlur);
+    window.addEventListener("pageshow", disableBlur);
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
-      window.removeEventListener("blur", handleBlur);
-      window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", enableBlur);
+      window.removeEventListener("pageshow", disableBlur);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
 
@@ -790,12 +805,14 @@ export default function FintrackerApp() {
 
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 md:flex transition-colors duration-200 relative">
-      {isAppBlurred && (
-        <div className="fixed inset-0 z-[9999] bg-slate-100/60 dark:bg-slate-900/60 backdrop-blur-xl flex flex-col items-center justify-center transition-all duration-300">
-          <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 shadow-inner animate-pulse"><Lock size={40} className="text-blue-500" /></div>
-          <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">Fintracker Terkunci</h2><p className="text-sm font-bold text-slate-500 dark:text-slate-400">Privasi saldo Anda sedang dilindungi.</p>
-        </div>
-      )}
+      {/* PRIVACY SCREEN BLUR OVERLAY (PERSISTENT DOM UNTUK MENGALAHKAN SCREENSHOT IOS) */}
+      <div 
+        id="privacy-overlay"
+        className={`fixed inset-0 z-[9999] bg-slate-100/60 dark:bg-slate-900/60 backdrop-blur-2xl flex flex-col items-center justify-center transition-opacity duration-150 ${isAppBlurred ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+      >
+        <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 shadow-inner animate-pulse"><Lock size={40} className="text-blue-500" /></div>
+        <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">Fintracker Terkunci</h2><p className="text-sm font-bold text-slate-500 dark:text-slate-400">Privasi saldo Anda sedang dilindungi.</p>
+      </div>
 
       <Sidebar user={user} activeTab={activeTab as any} setActiveTab={setActiveTab as any} onLogout={() => signOut(auth)} isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode} />
       <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
