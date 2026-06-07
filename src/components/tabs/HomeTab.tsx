@@ -178,7 +178,7 @@ const getCategoryIcon = (catName: string) => {
 };
 
 const formatTime = (createdAt: any) => {
-  if (!createdAt) return "";
+  if (!createdAt) return "00:00";
   let d: Date;
   if (typeof createdAt === "object" && createdAt !== null && "seconds" in createdAt) {
     d = new Date(createdAt.seconds * 1000);
@@ -187,8 +187,10 @@ const formatTime = (createdAt: any) => {
   } else {
     d = new Date(createdAt);
   }
-  if (isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  if (isNaN(d.getTime())) return "00:00";
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
 };
 
 export default function HomeTab({
@@ -197,7 +199,8 @@ export default function HomeTab({
   // FUNGSI PEMBANTU KONVERSI FORMAT JAM 12 KE 24 (UNTUK CUSTOM SELECTOR)
   const parseTime12 = (timeStr: string) => {
     if (!timeStr) return { hour12: "12", minute: "00", period: "PM" };
-    const [hStr, mStr] = timeStr.split(":");
+    const normalized = timeStr.replace(".", ":");
+    const [hStr, mStr] = normalized.split(":");
     const h = parseInt(hStr, 10) || 0;
     const m = mStr || "00";
     const period = h >= 12 ? "PM" : "AM";
@@ -906,12 +909,17 @@ export default function HomeTab({
                       </span>
                     </div>
                     {/* INFO SISA UNTUK EDIT PECAHAN */}
-                    <div className="flex justify-between items-center text-[10px] font-bold">
-                      <span className="text-slate-500">Sisa Belum Dialokasi:</span>
-                      <span className={safeEvaluate(editTAmount) - editTSplits.reduce((sum, s) => sum + s.amount, 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}>
-                        {currentSymbol} {Math.max(0, safeEvaluate(editTAmount) - editTSplits.reduce((sum, s) => sum + s.amount, 0)).toLocaleString('id-ID')}
-                      </span>
-                    </div>
+                    {(() => {
+  const remaining = safeEvaluate(editTAmount) - editTSplits.reduce((sum, s) => sum + s.amount, 0);
+  return (
+    <div className="flex justify-between items-center text-[10px] font-bold">
+      <span className="text-slate-500">{remaining < 0 ? "Kelebihan Alokasi:" : "Sisa Belum Dialokasi:"}</span>
+      <span className={remaining === 0 ? 'text-emerald-500' : 'text-rose-500'}>
+        {currentSymbol} {Math.abs(remaining).toLocaleString('id-ID')}
+      </span>
+    </div>
+  );
+})()}
                   </div>
                   
                   {editTSplits.map((item, i) => (
@@ -1091,13 +1099,18 @@ export default function HomeTab({
                   </span>
                 </div>
                 {/* INFO SISA BELUM DIALOKASI (BARU) */}
-                <div className="flex justify-between items-center text-xs font-bold mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
-                  <span className="text-slate-600 dark:text-slate-300">Sisa Belum Dialokasi:</span>
-                  <span className={`font-black ${safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0) === 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    {currentSymbol} {Math.max(0, safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0)).toLocaleString('id-ID')}
-                  </span>
-                </div>
-              </div>
+                {/* INFO SISA BELUM DIALOKASI (BARU) */}
+              {(() => {
+                const remainingNew = safeEvaluate(tAmount) - tempSplits.reduce((sum, s) => sum + safeEvaluate(s.amountStr), 0);
+                return (
+                  <div className="flex justify-between items-center text-xs font-bold mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                    <span className="text-slate-600 dark:text-slate-300">{remainingNew < 0 ? "Kelebihan Alokasi:" : "Sisa Belum Dialokasi:"}</span>
+                    <span className={`font-black ${remainingNew === 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      {currentSymbol} {Math.abs(remainingNew).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                );
+              })()}
 
               <div className="space-y-3">
                 {tempSplits.map((item, i) => (
