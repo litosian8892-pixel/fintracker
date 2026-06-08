@@ -246,14 +246,17 @@ export default function ReportsTab({
   
   
   const monthNavPills = useMemo(() => {
-    const [year, month] = reportMonth.split("-").map(Number);
+    // Kunci kalkulasi ke waktu saat ini, bukan ke state reportMonth
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
     const pills = [];
     for (let i = 11; i >= 0; i--) { 
       const d = new Date(year, month - 1 - i, 1);
       pills.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
     }
     return pills;
-  }, [reportMonth]);
+  }, []); // Kosongkan array dependency agar tidak render ulang saat diklik
 
   const trendData = lastTwelveMonthsList.map(month => {
     const monthTxs = filteredGlobalTxs.filter(t => t.tDate && t.tDate.startsWith(month) && (selectedAccount === "All" || t.accountName === selectedAccount));
