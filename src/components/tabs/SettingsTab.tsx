@@ -240,7 +240,16 @@ export default function SettingsTab({
             </div>
             <div className="w-20 space-y-1">
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Emoji</label>
-          <input type="text" maxLength={8} className="w-full p-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-lg outline-blue-500 font-black text-center text-slate-800 dark:text-slate-100" value={editCatIcon} onChange={e => setEditCatIcon(e.target.value)} />
+          <input 
+            type="text" 
+            maxLength={8} 
+            autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore
+            className="w-full p-2.5 !bg-slate-50 dark:!bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-lg outline-blue-500 font-black text-center text-slate-800 dark:text-slate-100" 
+            value={editCatIcon} 
+            onChange={e => setEditCatIcon(e.target.value)} 
+          />
         </div>
           </div>
           {tType === 'expense' && (
@@ -525,10 +534,16 @@ export default function SettingsTab({
       />
       {/* KOLOM INPUT EMOJI BARU (MENDUKUNG PASTE EMOJI KOMPLEKS) */}
       <input 
-        type="text" maxLength={8} placeholder="Emoji" 
-        className="w-full sm:w-16 p-3 bg-slate-50 dark:bg-slate-950 border border-transparent rounded-xl text-xs outline-blue-500 font-bold text-center text-slate-800 dark:text-slate-100 placeholder-slate-400 shrink-0" 
-        value={newCatIcon} onChange={(e) => setNewCatIcon(e.target.value)} 
-      />
+            type="text" 
+            maxLength={8} 
+            placeholder="Emoji" 
+            autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore
+            className="w-full sm:w-16 p-3 !bg-slate-50 dark:!bg-slate-950 border border-transparent rounded-xl text-xs outline-blue-500 font-bold text-center text-slate-800 dark:text-slate-100 placeholder-slate-400 shrink-0" 
+            value={newCatIcon} 
+            onChange={(e) => setNewCatIcon(e.target.value)} 
+          />
       <div className="flex gap-2 w-full sm:w-auto">
             {tType === "expense" && (
               <select 
