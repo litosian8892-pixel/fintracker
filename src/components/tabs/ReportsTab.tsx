@@ -63,16 +63,16 @@ const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const label = payload[0].payload.name || payload[0].payload.date || payload[0].name || payload[0].payload.dayName;
     return (
-      <div className="bg-white dark:bg-slate-800 p-3 rounded-[18px] shadow-xl border border-slate-200 dark:border-slate-700 space-y-1.5 min-w-[150px] text-left">
-        <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-wider leading-none">{label}</p>
+      <div className="bg-white dark:bg-slate-800 p-3 rounded-[18px] shadow-xl border border-slate-200 dark:border-slate-700 space-y-1.5 min-w-[150px] max-w-[250px] text-left relative z-50">
+        <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-wider leading-relaxed break-words">{label}</p>
         <div className="space-y-1.5 pt-1">
           {payload.map((item: any, idx: number) => (
-            <div key={idx} className="flex items-center justify-between gap-4 text-xs font-bold">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color || item.fill }} />
-                <span className="text-slate-500 dark:text-slate-400">{item.name || "Total"}:</span>
+            <div key={idx} className="flex items-start justify-between gap-4 text-xs font-bold">
+              <div className="flex items-start gap-1.5 min-w-0">
+                <div className="w-2.5 h-2.5 rounded-full shrink-0 mt-1" style={{ backgroundColor: item.color || item.fill }} />
+                <span className="text-slate-500 dark:text-slate-400 break-words">{item.name || "Total"}:</span>
               </div>
-              <span className="text-slate-900 dark:text-white font-black">Rp {Number(item.value).toLocaleString('id-ID')}</span>
+              <span className="text-slate-900 dark:text-white font-black shrink-0 whitespace-nowrap">Rp {Number(item.value).toLocaleString('id-ID')}</span>
             </div>
           ))}
         </div>
