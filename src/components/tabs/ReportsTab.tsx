@@ -547,7 +547,7 @@ export default function ReportsTab({
                 { id: "laporan", label: "Laporan", icon: Activity },
                 { id: "kalender", label: "Kalender", icon: CalendarDays }
               ].map(tab => (
-                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveView(tab.id as any); }} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${activeView === tab.id ? `${currentTheme.activeBg}` : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-105"}`}>
+                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveView(tab.id as any); }} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${activeView === tab.id ? `${currentTheme.activeBg}` : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"}`}>
                   <tab.icon size={14} /> {tab.label}
                 </button>
               ))}
