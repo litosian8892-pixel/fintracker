@@ -140,10 +140,31 @@ export default function FintrackerApp() {
   }, [theme]);
 
   const triggerHapticFeedback = () => { 
-    if (typeof window !== "undefined" && navigator.vibrate) {
-      if (localStorage.getItem("fintracker_haptic") !== "false") {
-        navigator.vibrate(10); 
-      }
+    if (typeof window !== "undefined" && localStorage.getItem("fintracker_haptic") !== "false") {
+      // 1. Getaran Hardware Aktual (Untuk pengguna Android)
+      if (navigator.vibrate) navigator.vibrate(15); 
+      
+      // 2. Ilusi Sentuhan / Pseudo-Haptic Web Audio (Untuk pengguna iPhone/iOS)
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
+        
+        gain.gain.setValueAtTime(0.15, ctx.currentTime); // Volume 15% agar halus
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+        
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.05);
+      } catch (e) {}
     }
   };
 
