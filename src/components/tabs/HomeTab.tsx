@@ -219,7 +219,23 @@ export default function HomeTab({
   useEffect(() => { if (monthScrollRef.current) { const timer = setTimeout(() => { if (monthScrollRef.current) { monthScrollRef.current.scrollLeft = monthScrollRef.current.scrollWidth; } }, 50); return () => clearTimeout(timer); } }, []);
   useEffect(() => { const updateAccent = () => { const stored = localStorage.getItem("fintracker_accent") as any; if (stored && ["blue", "emerald", "purple", "amber", "rose"].includes(stored)) { setAccent(stored); } }; updateAccent(); window.addEventListener("accent_color_changed", updateAccent); return () => window.removeEventListener("accent_color_changed", updateAccent); }, []);
 
-  const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  // 1. Perbaikan Zona Waktu (Gunakan Local Date, bukan toISOString)
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  // 2. Efek Sinkronisasi Cerdas (Tarik State dari Laporan)
+  // Jika tab Laporan memompa masuk data bulan lain, paksa Beranda untuk mengikuti bulannya!
+  useEffect(() => {
+    if (transactions.length > 0) {
+      const dataMonth = transactions[0].tDate.substring(0, 7);
+      if (dataMonth !== selectedMonth) {
+        setSelectedMonth(dataMonth);
+      }
+    }
+  }, [transactions]);
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showCatModal, setShowCatModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
