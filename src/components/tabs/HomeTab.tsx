@@ -1279,7 +1279,7 @@ const getTodayDateString = () => {
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400">Emoji / Logo Kustom (Satu Karakter)</label>
-                <input type="text" maxLength={2} placeholder="Ketik satu emoji (misal: 💈, 🍛)" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-center text-xl font-black outline-blue-500 text-slate-800 dark:text-white focus:border-blue-500" value={editCatIcon} onChange={(e) => setEditCatIcon(e.target.value)} />
+                <input type="text" maxLength={8} placeholder="Ketik satu emoji (misal: 💈, 🍛)" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl text-center text-xl font-black outline-blue-500 text-slate-800 dark:text-white focus:border-blue-500" value={editCatIcon} onChange={(e) => setEditCatIcon(e.target.value)} />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400">Nama Kategori</label>

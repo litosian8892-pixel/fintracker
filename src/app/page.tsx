@@ -244,7 +244,8 @@ export default function FintrackerApp() {
   const [tTime, setTTime] = useState(() => { const now = new Date(); return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`; });
 
   const [newCatName, setNewCatName] = useState("");
-  const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("variable"); 
+const [newCatIcon, setNewCatIcon] = useState(""); // <-- TAMBAHKAN BARIS INI
+const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("variable");
   const [newWalletTypeName, setNewWalletTypeName] = useState("");
 
   const getPrevMonth = (ym: string) => {
@@ -416,7 +417,13 @@ export default function FintrackerApp() {
     if (isSubmittingRef.current) return; 
     if (!newCatName || !user) return;
     isSubmittingRef.current = true; setIsSubmitting(true);
-    try { const data: any = { name: newCatName, type: tType }; if (tType === "expense") data.expenseType = newExpenseType; await addDoc(collection(db, `users/${user.uid}/categories`), data); setNewCatName(""); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+    try { 
+  const data: any = { name: newCatName, type: tType, icon: newCatIcon || "" }; // <-- UBAH DI SINI
+  if (tType === "expense") data.expenseType = newExpenseType; 
+  await addDoc(collection(db, `users/${user.uid}/categories`), data); 
+  setNewCatName(""); 
+  setNewCatIcon(""); // <-- TAMBAHKAN BARIS INI (Reset emoji)
+} finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
   const deleteCategory = async (id: string) => {
     if (isSubmittingRef.current) return; 
@@ -834,7 +841,7 @@ export default function FintrackerApp() {
               <AssetsTab accounts={accounts} walletTypes={walletTypes} accType={accType} setAccType={setAccType} accName={accName} setAccName={setAccName} accBalance={accBalance} setAccBalance={setAccBalance} accLogo={accLogo} handleLogoUpload={handleLogoUpload} accIsSavings={accIsSavings} setAccIsSavings={setAccIsSavings} accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} accExcludeFromTotal={accExcludeFromTotal} setAccExcludeFromTotal={setAccExcludeFromTotal} editAccExcludeFromTotal={editAccExcludeFromTotal} setEditAccExcludeFromTotal={setEditAccExcludeFromTotal} accIsBusiness={accIsBusiness} setAccIsBusiness={setAccIsBusiness} editAccIsBusiness={editAccIsBusiness} setEditAccIsBusiness={setEditAccIsBusiness} handleCreateAccount={handleCreateAccount} editingAccId={editingAccId} setEditingAccId={setEditingAccId} editAccName={editAccName} setEditAccName={setEditAccName} editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} editAccTargetBalance={editAccTargetBalance} setEditAccTargetBalance={setEditAccTargetBalance} handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder} accSavingsGoalTitle={accSavingsGoalTitle} setAccSavingsGoalTitle={setAccSavingsGoalTitle} editAccSavingsGoalTitle={editAccSavingsGoalTitle} setEditAccSavingsGoalTitle={setEditAccSavingsGoalTitle} isPrivacyMode={isPrivacyMode} accCurrency={accCurrency} setAccCurrency={setAccCurrency} editAccCurrency={editAccCurrency} setEditAccCurrency={setEditAccCurrency} exchangeRates={exchangeRates} handleUpdateGlobalRates={handleUpdateGlobalRates} reportTransactions={reportTransactions} reportMonth={reportMonth} setReportMonth={setReportMonth} accIsInvestment={accIsInvestment} setAccIsInvestment={setAccIsInvestment} editAccIsInvestment={editAccIsInvestment} setEditAccIsInvestment={setEditAccIsInvestment} accAverageBuyPrice={accAverageBuyPrice} setAccAverageBuyPrice={setAccAverageBuyPrice} editAccAverageBuyPrice={editAccAverageBuyPrice} setEditAccAverageBuyPrice={setEditAccAverageBuyPrice} accLastExchangeRate={accLastExchangeRate} setAccLastExchangeRate={setAccLastExchangeRate} editAccLastExchangeRate={editAccLastExchangeRate} setEditAccLastExchangeRate={setEditAccLastExchangeRate} handleUpdateInvestmentRate={handleUpdateInvestmentRate} />
             )}
             {activeTab === "settings" && (
-              <SettingsTab user={user} onLogout={() => signOut(auth)} tType={tType} setTType={setTType} newCatName={newCatName} setNewCatName={setNewCatName} newExpenseType={newExpenseType} setNewExpenseType={setNewExpenseType} addCustomCategory={addCustomCategory} categories={categories} deleteCategory={deleteCategory} updateCategory={handleEditCategory} newWalletTypeName={newWalletTypeName} setNewWalletTypeName={setNewWalletTypeName} addCustomWalletType={addCustomWalletType} walletTypes={walletTypes} deleteWalletType={deleteWalletType} theme={theme} setTheme={setTheme} appPin={appPin} setAppPin={handleSetAppPin} />
+              <SettingsTab user={user} onLogout={() => signOut(auth)} tType={tType} setTType={setTType} newCatName={newCatName} setNewCatName={setNewCatName} newExpenseType={newExpenseType} setNewExpenseType={setNewExpenseType} addCustomCategory={addCustomCategory} categories={categories} deleteCategory={deleteCategory} updateCategory={handleEditCategory} newCatIcon={newCatIcon} setNewCatIcon={setNewCatIcon} newWalletTypeName={newWalletTypeName} setNewWalletTypeName={setNewWalletTypeName} addCustomWalletType={addCustomWalletType} walletTypes={walletTypes} deleteWalletType={deleteWalletType} theme={theme} setTheme={setTheme} appPin={appPin} setAppPin={handleSetAppPin} />
             )}
           </div>
         </div>
