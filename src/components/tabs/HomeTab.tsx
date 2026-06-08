@@ -216,7 +216,7 @@ export default function HomeTab({
 
   const monthScrollRef = useRef<HTMLDivElement>(null);
   const [accent, setAccent] = useState<keyof typeof themeMap>("blue");
-  const [noteSuggestions, setNoteSuggestions] = useState<{note: string, category: string, amount: number}[]>([]);
+  const [noteSuggestions, setNoteSuggestions] = useState<{note: string, category: string, amount: number, icon?: string}[]>([]);
 
   useEffect(() => { if (monthScrollRef.current) { const timer = setTimeout(() => { if (monthScrollRef.current) { monthScrollRef.current.scrollLeft = monthScrollRef.current.scrollWidth; } }, 50); return () => clearTimeout(timer); } }, []);
   useEffect(() => { const updateAccent = () => { const stored = localStorage.getItem("fintracker_accent") as any; if (stored && ["blue", "emerald", "purple", "amber", "rose"].includes(stored)) { setAccent(stored); } }; updateAccent(); window.addEventListener("accent_color_changed", updateAccent); return () => window.removeEventListener("accent_color_changed", updateAccent); }, []);
@@ -300,14 +300,30 @@ export default function HomeTab({
     if (editingTransaction) setEditTNote(val); else setTNote(val);
     if (val.trim().length >= 2) {
       const currentType = editingTransaction ? editTType : tType;
-      const matches: Record<string, {note: string, category: string, amount: number}> = {};
+      const matches: Record<string, {note: string, category: string, amount: number, icon?: string}> = {};
       const sortedTx = [...transactions].sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime());
-      for (const tx of sortedTx) { if (tx.type === currentType && tx.note && tx.note.toLowerCase().includes(val.toLowerCase())) { const key = tx.note.toLowerCase(); if (!matches[key]) { matches[key] = { note: tx.note, category: tx.category, amount: tx.amount }; } } }
+      
+      for (const tx of sortedTx) { 
+        if (tx.type === currentType && tx.note && tx.note.toLowerCase().includes(val.toLowerCase())) { 
+          const key = tx.note.toLowerCase(); 
+          if (!matches[key]) { 
+            // SINKRONISASI CERDAS: Translasi kategori lama ke nama & emoji terbaru
+            const cleanCat = cleanCategoryName(tx.category);
+            const currentCat = categories.find(c => cleanCategoryName(c.name) === cleanCat);
+            matches[key] = { 
+              note: tx.note, 
+              category: currentCat ? currentCat.name : tx.category, 
+              amount: tx.amount,
+              icon: currentCat?.icon || getCategoryIcon(tx.category)
+            }; 
+          } 
+        } 
+      }
       setNoteSuggestions(Object.values(matches).slice(0, 4));
     } else { setNoteSuggestions([]); }
   };
 
-  const handleSelectSuggestion = (sug: {note: string, category: string, amount: number}) => {
+  const handleSelectSuggestion = (sug: {note: string, category: string, amount: number, icon?: string}) => {
     triggerHaptic();
     if (editingTransaction) { setEditTNote(sug.note); if (editTType !== "transfer") setEditTCategory(sug.category); } 
     else { setTNote(sug.note); if (tType !== "transfer") setTCategory(sug.category); }
@@ -741,7 +757,7 @@ export default function HomeTab({
                           <div className="flex flex-col text-left">
                             <span className="text-xs font-bold text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{sug.note}</span>
                             <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1.5 mt-0.5">
-                              <span className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{getCategoryIcon(sug.category)}</span> {sug.category}
+                              <span className="bg-slate-100 dark:bg-slate-800 px-1 rounded text-xs">{sug.icon || getCategoryIcon(sug.category)}</span> {sug.category}
                             </span>
                           </div>
                           <div className="flex flex-col items-end">
