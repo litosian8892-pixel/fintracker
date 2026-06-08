@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 
 interface HomeTabProps {
+  reportMonth: string;
+  setReportMonth: (val: string) => void;
   tType: "income" | "expense" | "transfer";
   setTType: (type: "income" | "expense" | "transfer") => void;
   tDate: string;
@@ -192,7 +194,7 @@ const formatTime = (createdAt: any) => {
 };
 
 export default function HomeTab({
-  tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory
+  reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory
 }: HomeTabProps) {
   const parseTime12 = (timeStr: string) => {
     if (!timeStr) return { hour12: "12", minute: "00", period: "PM" };
@@ -218,23 +220,6 @@ export default function HomeTab({
 
   useEffect(() => { if (monthScrollRef.current) { const timer = setTimeout(() => { if (monthScrollRef.current) { monthScrollRef.current.scrollLeft = monthScrollRef.current.scrollWidth; } }, 50); return () => clearTimeout(timer); } }, []);
   useEffect(() => { const updateAccent = () => { const stored = localStorage.getItem("fintracker_accent") as any; if (stored && ["blue", "emerald", "purple", "amber", "rose"].includes(stored)) { setAccent(stored); } }; updateAccent(); window.addEventListener("accent_color_changed", updateAccent); return () => window.removeEventListener("accent_color_changed", updateAccent); }, []);
-
-  // 1. Perbaikan Zona Waktu (Gunakan Local Date, bukan toISOString)
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  });
-
-  // 2. Efek Sinkronisasi Cerdas (Tarik State dari Laporan)
-  // Jika tab Laporan memompa masuk data bulan lain, paksa Beranda untuk mengikuti bulannya!
-  useEffect(() => {
-    if (transactions.length > 0) {
-      const dataMonth = transactions[0].tDate.substring(0, 7);
-      if (dataMonth !== selectedMonth) {
-        setSelectedMonth(dataMonth);
-      }
-    }
-  }, [transactions]);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showCatModal, setShowCatModal] = useState(false);
@@ -396,11 +381,11 @@ export default function HomeTab({
 
   const monthlyTransactions = useMemo(() => {
     let filtered = transactions;
-    if (!searchQueryInput.trim() || !searchAllMonths) { filtered = filtered.filter(t => t.tDate && t.tDate.startsWith(selectedMonth)); }
+    if (!searchQueryInput.trim() || !searchAllMonths) { filtered = filtered.filter(t => t.tDate && t.tDate.startsWith(reportMonth)); }
     if (selectedAccountIdFilter !== "all") { filtered = filtered.filter(t => t.accountId === selectedAccountIdFilter || t.toAccountId === selectedAccountIdFilter); }
     if (searchQueryInput.trim()) { const q = searchQueryInput.toLowerCase(); filtered = filtered.filter(t => (t.note && t.note.toLowerCase().includes(q)) || t.category.toLowerCase().includes(q)); }
     return filtered;
-  }, [transactions, selectedMonth, selectedAccountIdFilter, searchQueryInput, searchAllMonths]);
+  }, [transactions, reportMonth, selectedAccountIdFilter, searchQueryInput, searchAllMonths]);
 
   const monthlySummary = useMemo(() => { let income = 0; let expense = 0; monthlyTransactions.forEach(t => { if (t.type === "income") income += t.amount; else if (t.type === "expense") expense += t.amount; if (t.type === "transfer" && t.adminFee) expense += t.adminFee; }); return { income, expense }; }, [monthlyTransactions]);
 
@@ -520,7 +505,7 @@ export default function HomeTab({
         ref={monthScrollRef}
         className="flex items-center gap-2 overflow-x-auto pb-1.5 no-scrollbar scroll-smooth -mx-4 px-4 md:mx-0 md:px-0"
       >
-        {recentMonths.map((m) => { const isActive = selectedMonth === m.value; return (<button key={m.value} type="button" onClick={() => setSelectedMonth(m.value)} className={`px-4 py-2 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shrink-0 border ${isActive ? currentTheme.activePill : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"}`}>{m.label}</button>); })}
+        {recentMonths.map((m) => { const isActive = reportMonth === m.value; return (<button key={m.value} type="button" onClick={() => setReportMonth(m.value)} className={`px-4 py-2 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shrink-0 border ${isActive ? currentTheme.activePill : "bg-slate-100/70 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"}`}>{m.label}</button>); })}
       </div>
 
       {/* PREMIUM TOTAL SALDO SUMMARY CARD */}
@@ -539,14 +524,14 @@ export default function HomeTab({
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center shrink-0"><ArrowUpRight size={18} strokeWidth={2.5} /></div>
             <div>
-              <p className="text-[9px] font-black text-white/70 uppercase tracking-widest leading-none mb-1">Pemasukan ({selectedMonth.split("-")[1]})</p>
+              <p className="text-[9px] font-black text-white/70 uppercase tracking-widest leading-none mb-1">Pemasukan ({reportMonth.split("-")[1]})</p>
               <p className="text-sm font-extrabold tracking-tight">{isPrivacyMode ? "Rp •••••" : `Rp ${monthlySummary.income.toLocaleString("id-ID")}`}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 border-l border-white/10 pl-4">
             <div className="w-9 h-9 bg-rose-500/20 text-rose-400 rounded-full flex items-center justify-center shrink-0"><ArrowDownRight size={18} strokeWidth={2.5} /></div>
             <div>
-              <p className="text-[9px] font-black text-white/70 uppercase tracking-widest leading-none mb-1">Pengeluaran ({selectedMonth.split("-")[1]})</p>
+              <p className="text-[9px] font-black text-white/70 uppercase tracking-widest leading-none mb-1">Pengeluaran ({reportMonth.split("-")[1]})</p>
               <p className="text-sm font-extrabold tracking-tight text-rose-200">{isPrivacyMode ? "Rp •••••" : `Rp ${monthlySummary.expense.toLocaleString("id-ID")}`}</p>
             </div>
           </div>

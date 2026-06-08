@@ -853,6 +853,7 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
           <div className="space-y-6 w-full">
             {activeTab === "home" && (
               <HomeTab 
+                reportMonth={reportMonth} setReportMonth={setReportMonth}
                 tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
                 tTime={tTime} setTTime={setTTime}
                 tCategory={tCategory} setTCategory={setTCategory} tAccountId={tAccountId} setTAccountId={setTAccountId}
