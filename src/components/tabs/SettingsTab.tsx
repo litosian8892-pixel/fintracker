@@ -21,6 +21,7 @@ interface SettingsTabProps {
   addCustomWalletType: () => void; walletTypes: WalletTypeData[]; deleteWalletType: (id: string) => void;
   theme: "light" | "dark" | "system"; setTheme: (theme: "light" | "dark" | "system") => void;
   appPin: string | null; setAppPin: (val: string | null) => void;
+  newCatIcon: string; setNewCatIcon: (val: string) => void; // <-- TAMBAHKAN BARIS INI
 }
 
 // PEMETAAN WARNA AKSEN RESMI TAILWIND V4 (Sangat Aman Kontras & Bebas Bug)
@@ -79,7 +80,8 @@ const getCategoryIcon = (catName: string) => {
 export default function SettingsTab({
   user, onLogout, tType, setTType, newCatName, setNewCatName, newExpenseType, setNewExpenseType, addCustomCategory,
   categories, deleteCategory, updateCategory, newWalletTypeName, setNewWalletTypeName, addCustomWalletType, walletTypes, deleteWalletType,
-  theme, setTheme, appPin, setAppPin
+  theme, setTheme, appPin, setAppPin,
+  newCatIcon, setNewCatIcon // <-- TAMBAHKAN BARIS INI
 }: SettingsTabProps) {
   
   // STATE NAVIGASI SUB-MENU (DITAMBAHKAN "accents")
@@ -237,9 +239,9 @@ export default function SettingsTab({
               <input type="text" className="w-full p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100" value={editCatName} onChange={e => setEditCatName(e.target.value)} />
             </div>
             <div className="w-20 space-y-1">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Emoji</label>
-              <input type="text" maxLength={2} className="w-full p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-lg outline-blue-500 font-black text-center text-slate-800 dark:text-slate-100" value={editCatIcon} onChange={e => setEditCatIcon(e.target.value)} />
-            </div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Emoji</label>
+          <input type="text" maxLength={8} className="w-full p-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-lg outline-blue-500 font-black text-center text-slate-800 dark:text-slate-100" value={editCatIcon} onChange={e => setEditCatIcon(e.target.value)} />
+        </div>
           </div>
           {tType === 'expense' && (
             <div className="flex gap-2 text-left">
@@ -516,12 +518,18 @@ export default function SettingsTab({
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 bg-white dark:bg-slate-900 p-3 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm mb-6 text-left">
-          <input 
-            type="text" placeholder="Buat kategori baru..." 
-            className="w-full sm:flex-1 p-3 bg-slate-50 dark:bg-slate-950 border border-transparent rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400" 
-            value={newCatName} onChange={(e) => setNewCatName(e.target.value)} 
-          />
-          <div className="flex gap-2 w-full sm:w-auto">
+      <input 
+        type="text" placeholder="Buat kategori baru..." 
+        className="w-full sm:flex-1 p-3 bg-slate-50 dark:bg-slate-950 border border-transparent rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400" 
+        value={newCatName} onChange={(e) => setNewCatName(e.target.value)} 
+      />
+      {/* KOLOM INPUT EMOJI BARU (MENDUKUNG PASTE EMOJI KOMPLEKS) */}
+      <input 
+        type="text" maxLength={8} placeholder="Emoji" 
+        className="w-full sm:w-16 p-3 bg-slate-50 dark:bg-slate-950 border border-transparent rounded-xl text-xs outline-blue-500 font-bold text-center text-slate-800 dark:text-slate-100 placeholder-slate-400 shrink-0" 
+        value={newCatIcon} onChange={(e) => setNewCatIcon(e.target.value)} 
+      />
+      <div className="flex gap-2 w-full sm:w-auto">
             {tType === "expense" && (
               <select 
                 className="flex-1 sm:flex-none p-3 bg-slate-50 dark:bg-slate-950 rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 cursor-pointer min-w-[110px]" 
