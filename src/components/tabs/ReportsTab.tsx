@@ -427,18 +427,22 @@ export default function ReportsTab({
         ) : (
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="relative w-40 h-40 shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <RePieChart>
-                  <Pie data={data} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={2} dataKey="value" stroke="none">
-                    {data.map((entry, index) => (<Cell key={`cell-${index}`} fill={colors[index % colors.length]} />))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </RePieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              {/* POSISI IKON DIPINDAH KE BELAKANG CHART DENGAN Z-0 */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
                 <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-full shadow-inner flex items-center justify-center">
                   {type === "expense" ? <TrendingDown className="text-red-500" size={20}/> : <TrendingUp className="text-emerald-500" size={20}/>}
                 </div>
+              </div>
+              {/* CHART DIBERI Z-10 AGAR TOOLTIP SELALU MUNCUL DI ATAS IKON */}
+              <div className="relative z-10 w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RePieChart>
+                    <Pie data={data} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={2} dataKey="value" stroke="none">
+                      {data.map((entry, index) => (<Cell key={`cell-${index}`} fill={colors[index % colors.length]} />))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                  </RePieChart>
+                </ResponsiveContainer>
               </div>
             </div>
             
