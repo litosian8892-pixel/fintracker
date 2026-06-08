@@ -944,20 +944,37 @@ const getTodayDateString = () => {
                         </div>
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-400">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
-                          <input type="text" className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-955 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" value={item.amount === 0 ? "" : item.amount} onChange={(e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, "");
-                            const updated = [...editTSplits];
-                            updated[i].amount = val ? Number(val) : 0;
-                            setEditTSplits(updated);
-                          }} />
+                          <input 
+                      type="text" 
+                      autoComplete="off"
+                      data-lpignore="true"
+                      data-1p-ignore
+                      className="w-full p-3 !bg-slate-50 dark:!bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" 
+                      value={item.amount === 0 ? "" : item.amount} 
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, "");
+                        const updated = [...editTSplits];
+                        updated[i].amount = val ? Number(val) : 0;
+                        setEditTSplits(updated);
+                      }} 
+                    />
                           {item.amount > 0 && <p className="text-[9px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(item.amount.toString(), selectedSourceAcc?.currency)}</span></p>}
                         </div>
                       </div>
-                      <input type="text" placeholder="Catatan Pecahan (Opsional)..." className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-955 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" value={item.note || ""} onChange={(e) => {
-                        const updated = [...editTSplits];
-                        updated[i].note = e.target.value;
-                        setEditTSplits(updated);
-                      }} />
+                      <input 
+                    type="text" 
+                    placeholder="Catatan Pecahan (Opsional)..." 
+                    autoComplete="off"
+                    data-lpignore="true"
+                    data-1p-ignore
+                    className="w-full p-3 !bg-slate-50 dark:!bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" 
+                    value={item.note || ""} 
+                    onChange={(e) => {
+                      const updated = [...editTSplits];
+                      updated[i].note = e.target.value;
+                      setEditTSplits(updated);
+                    }} 
+                  />
                     </div>
                   ))}
                   <button type="button" onClick={() => {
@@ -1137,20 +1154,39 @@ const getTodayDateString = () => {
 
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
-                        <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveSplitKeypadIndex(i); setActiveKeypad(null); } }} className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" value={item.amountStr} onChange={(e) => {
-                          const updated = [...tempSplits];
-                          updated[i].amountStr = e.target.value;
-                          setTempSplits(updated);
-                        }} />
+                        <input 
+                      type="text" 
+                      inputMode={isMobile ? "none" : undefined} 
+                      onFocus={() => { if(isMobile) { setActiveSplitKeypadIndex(i); setActiveKeypad(null); } }} 
+                      autoComplete="off"
+                      data-lpignore="true"
+                      data-1p-ignore
+                      className="w-full p-3 !bg-slate-50 dark:!bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" 
+                      value={item.amountStr} 
+                      onChange={(e) => {
+                        const updated = [...tempSplits];
+                        updated[i].amountStr = e.target.value;
+                        setTempSplits(updated);
+                      }} 
+                    />
                         {/* FORMAT TERBACA */}
                         {item.amountStr && <p className="text-[9px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(item.amountStr, selectedSourceAcc?.currency)}</span></p>}
                       </div>
                     </div>
-                    <input type="text" placeholder="Catatan Pecahan (Opsional)..." className="w-full p-3 bg-white border border-slate-200 dark:bg-slate-955 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" value={item.note || ""} onChange={(e) => {
-                      const updated = [...tempSplits];
-                      updated[i].note = e.target.value;
-                      setTempSplits(updated);
-                    }} />
+                    <input 
+                  type="text" 
+                  placeholder="Catatan Pecahan (Opsional)..." 
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore
+                  className="w-full p-3 !bg-slate-50 dark:!bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" 
+                  value={item.note || ""} 
+                  onChange={(e) => {
+                    const updated = [...tempSplits];
+                    updated[i].note = e.target.value;
+                    setTempSplits(updated);
+                  }} 
+                />
                   </div>
                 ))}
               </div>
