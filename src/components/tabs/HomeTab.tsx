@@ -311,8 +311,15 @@ export default function HomeTab({
     setSplits(evaluatedSplits); setTCategory("Split Transaksi"); setShowSplitModal(false);
   };
 
-  const getYesterdayDateString = () => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; };
-  const getTodayDateString = () => { return new Date().toISOString().split('T')[0]; };
+  const getYesterdayDateString = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const getTodayDateString = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
   const recentMonths = useMemo(() => { const months = []; const now = new Date(); for (let i = 11; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" }); months.push({ value, label }); } return months; }, []);
   const totalBalanceCalculated = useMemo(() => { return accounts.filter(acc => !acc.isSavings && !acc.excludeFromTotal).reduce((sum, acc) => sum + (acc.balance * (acc.lastExchangeRate || 1)), 0); }, [accounts]);
 

@@ -43,6 +43,11 @@ const safeEvaluate = (expr: string): number => {
   }
 };
 
+const getLocalDateString = (dateInput = new Date()) => {
+  const d = dateInput;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,7 +78,7 @@ export default function FintrackerApp() {
   const [reportTransactions, setReportTransactions] = useState<TransactionData[]>([]);
   
   const [txLimit, setTxLimit] = useState(10);
-  const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7)); 
+  const [reportMonth, setReportMonth] = useState(() => getLocalDateString().slice(0, 7)); 
 
   const [prevMonthTransactions, setPrevMonthTransactions] = useState<TransactionData[]>([]);
 
@@ -235,7 +240,7 @@ export default function FintrackerApp() {
   const [tToAccountId, setTToAccountId] = useState("");
   const [tNote, setTNote] = useState("");
   const [tCategory, setTCategory] = useState("");
-  const [tDate, setTDate] = useState(new Date().toISOString().split('T')[0]);
+  const [tDate, setTDate] = useState(() => getLocalDateString());
   const [tTime, setTTime] = useState(() => { const now = new Date(); return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`; });
 
   const [newCatName, setNewCatName] = useState("");
@@ -450,7 +455,7 @@ export default function FintrackerApp() {
         const acc = accounts.find(a => a.id === accountId);
         if (!acc) return alert("Dompet pengirim tidak ditemukan!");
         await updateDoc(accRef, { balance: acc.balance - amount });
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount, type: "expense", accountId, accountName: acc.name, category: "Piutang", note: `Memberikan pinjaman (piutang) ke ${person} - ${note || ""}`, tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp() });
+        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount, type: "expense", accountId, accountName: acc.name, category: "Piutang", note: `Memberikan pinjaman (piutang) ke ${person} - ${note || ""}`, tDate: getLocalDateString(), createdAt: serverTimestamp() });
       }
       await addDoc(collection(db, `users/${user.uid}/debts`), { type, personName: person, amount, paidAmount: 0, status: "active", note, dueDate, createdAt: new Date().toISOString() });
       alert("Catatan berhasil ditambahkan & saldo dompet Anda otomatis terpotong!");
