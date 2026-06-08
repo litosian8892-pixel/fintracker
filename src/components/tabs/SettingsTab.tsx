@@ -121,12 +121,34 @@ export default function SettingsTab({
     setAccent((localStorage.getItem("fintracker_accent") as any) || "blue");
   }, [user]);
 
-  // FUNGSI GETAR CERDAS
+  // FUNGSI GETAR CERDAS (HARDWARE + AUDIO CHIMES UNTUK IPHONE)
   const triggerHaptic = () => { 
-    if (typeof window !== "undefined" && navigator.vibrate) {
-      if (localStorage.getItem("fintracker_haptic") !== "false") {
-        navigator.vibrate(10); 
-      }
+    if (typeof window !== "undefined" && localStorage.getItem("fintracker_haptic") !== "false") {
+      // 1. Getaran Hardware Aktual (Hanya jalan di Android)
+      if (navigator.vibrate) navigator.vibrate(15); 
+      
+      // 2. Ilusi Sentuhan / Pseudo-Haptic Web Audio (Untuk iPhone)
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.type = "sine";
+        // Suara 'Click' pendek bernada rendah
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
+        
+        gain.gain.setValueAtTime(0.15, ctx.currentTime); // Volume halus (15%)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+        
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.05);
+      } catch (e) {}
     }
   };
 
@@ -137,7 +159,7 @@ export default function SettingsTab({
     } else {
       localStorage.setItem("fintracker_haptic", "true");
       setHapticEnabled(true);
-      if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(20);
+      triggerHaptic(); // Tembakkan efek agar langsung terasa/terdengar
     }
   };
 
