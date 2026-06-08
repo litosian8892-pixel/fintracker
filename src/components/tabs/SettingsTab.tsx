@@ -306,11 +306,13 @@ export default function SettingsTab({
                 </span>
               )}
             </div>
-            {tType === 'expense' && cat.budgetLimit && cat.budgetLimit > 0 && (
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
-                Limit: Rp {cat.budgetLimit.toLocaleString('id-ID')}
-              </span>
-            )}
+            {tType === 'expense' && (cat.budgetLimit || 0) > 0 ? (
+              <div className="flex items-center mt-2.5">
+                <span className="bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 text-[9px] font-black px-2 py-1 rounded-md border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-1.5 shadow-sm">
+                  🎯 Limit Budget: <span className="text-slate-800 dark:text-slate-300">Rp {cat.budgetLimit!.toLocaleString('id-ID')}</span>
+                </span>
+              </div>
+            ) : null}
           </div>
           <div className="flex gap-1.5 pl-3 shrink-0">
             <button onClick={() => { setEditingCatId(cat.id); setEditCatName(cat.name); setEditCatBudget(cat.budgetLimit?.toString() || ""); setEditCatExpType(cat.expenseType || "variable"); setEditCatIcon(cat.icon || ""); }} className="text-slate-400 hover:text-blue-500 p-2 bg-slate-50 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-all cursor-pointer"><Edit2 size={14}/></button>
