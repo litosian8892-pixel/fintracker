@@ -978,20 +978,21 @@ export default function HomeTab({
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-400">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
                           
-                          {/* INPUT NOMINAL KOREKSI (DILENGKAPI STRING BUFFER UNTUK KALKULATOR) */}
+                          {/* INPUT NOMINAL KOREKSI (DILENGKAPI STRING BUFFER UNTUK SEMUA PERANGKAT) */}
                           <input 
                             type="text" 
                             inputMode={isMobile ? "none" : undefined} 
                             onFocus={() => { 
-                              if(isMobile) { 
-                                setActiveEditSplitKeypadIndex(i); 
-                                setActiveEditSplitExpression(item.amount === 0 ? "" : item.amount.toString()); 
-                                setActiveKeypad(null); 
-                              } 
+                              setActiveEditSplitKeypadIndex(i); 
+                              setActiveEditSplitExpression(item.amount === 0 ? "" : item.amount.toString()); 
+                              if(isMobile) setActiveKeypad(null); 
                             }} 
+                            onBlur={() => {
+                              if(!isMobile) setActiveEditSplitKeypadIndex(null);
+                            }}
                             autoComplete="off"
                             data-lpignore="true"
-                            data-1p-ignore="true"
+                            data-1p-ignore
                             className="w-full p-3 !bg-slate-50 dark:!bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500" 
                             value={activeEditSplitKeypadIndex === i ? activeEditSplitExpression : (item.amount === 0 ? "" : item.amount)} 
                             onChange={(e) => {
@@ -1005,7 +1006,7 @@ export default function HomeTab({
                               setEditTSplits(updated);
                             }} 
                           />
-
+                          
                           {item.amount > 0 && <p className="text-[9px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(item.amount.toString(), selectedSourceAcc?.currency)}</span></p>}
                         </div>
                       </div>
