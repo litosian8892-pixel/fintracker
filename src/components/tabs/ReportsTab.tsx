@@ -1000,15 +1000,15 @@ export default function ReportsTab({
 
               <div className="mt-6 space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-550 dark:text-slate-400 font-bold">Pendapatan</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-bold">Pendapatan</span>
                   <span className="text-emerald-600 dark:text-emerald-400 font-black">Rp {localTotalIncome.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-550 dark:text-slate-400 font-bold">Pengeluaran</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-bold">Pengeluaran</span>
                   <span className="text-red-500 dark:text-red-400 font-black">Rp {localTotalExpense.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs pt-3 mt-1 border-t border-slate-100 border-slate-200 dark:border-slate-800/60">
-                  <span className="text-slate-550 dark:text-slate-400 font-bold">Arus Kas</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-bold">Arus Kas</span>
                   <span className={`font-black ${localTotalIncome - localTotalExpense >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
                     {localTotalIncome - localTotalExpense < 0 ? '-' : ''}Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}
                   </span>
@@ -1063,7 +1063,7 @@ export default function ReportsTab({
         {showAccountFilter && (
           <div className="fixed inset-0 z-[150] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowAccountFilter(false)}>
             <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
-              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-750 rounded-full"></div></div>
+              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
               <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
                 <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Filter by Account</h3>
                 <button onClick={() => setShowAccountFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
@@ -1102,7 +1102,7 @@ export default function ReportsTab({
                     .filter(t => t.category === selectedCategoryDetail.name)
                     .sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime());
                   
-                  if(catTxs.length === 0) return <p className="text-center text-xs text-slate-450 dark:text-slate-500 italic py-4">Tidak ada riwayat untuk kategori ini.</p>;
+                  if(catTxs.length === 0) return <p className="text-center text-xs text-slate-400 dark:text-slate-500 italic py-4">Tidak ada riwayat untuk kategori ini.</p>;
 
                   return catTxs.map(t => (
                     <div key={t.id} className="flex justify-between items-center text-xs p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
