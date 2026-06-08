@@ -165,6 +165,10 @@ export default function DebtsTab({
   const [editSubAccountId, setEditSubAccountId] = useState("");
   const [editSubCategory, setEditSubCategory] = useState("");
 
+  // STATE BARU UNTUK SELECTOR LANGGANAN
+  const [subAccSelector, setSubAccSelector] = useState<"add" | "edit" | null>(null);
+  const [subCatSelector, setSubCatSelector] = useState<"add" | "edit" | null>(null);
+
   const [activeKeypad, setActiveKeypad] = useState<"add" | "edit" | "pay" | "add-sub" | "edit-sub" | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -959,26 +963,39 @@ export default function DebtsTab({
 
                   <div className="space-y-1">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Sumber Dana (Dompet)</label>
-                    <select 
-                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white" 
-                      value={subAccountId} 
-                      onChange={e => setSubAccountId(e.target.value)}
+                    <div 
+                      onClick={() => { triggerHaptic(); setSubAccSelector("add"); }}
+                      className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     >
-                      <option value="" disabled>Pilih dompet...</option>
-                      {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Rp {acc.balance.toLocaleString('id-ID')})</option>)}
-                    </select>
+                      <div className="flex items-center gap-2 truncate">
+                        <Wallet size={14} className="text-slate-400 shrink-0" />
+                        <span className="truncate text-slate-700 dark:text-slate-300">
+                          {subAccountId ? (accounts.find(a => a.id === subAccountId)?.name || "Pilih Dompet...") : "Pilih dompet..."}
+                        </span>
+                      </div>
+                      <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                    </div>
                   </div>
 
                   <div className="space-y-1">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Kategori Pengeluaran</label>
-                    <select 
-                      className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white" 
-                      value={subCategory} 
-                      onChange={e => setSubCategory(e.target.value)}
+                    <div 
+                      onClick={() => { triggerHaptic(); setSubCatSelector("add"); }}
+                      className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     >
-                      <option value="" disabled>Pilih kategori...</option>
-                      {categories.filter(c => c.type === "expense").sort((a,b)=>a.name.localeCompare(b.name)).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
-                    </select>
+                      <div className="flex items-center gap-2 truncate">
+                        <Tag size={14} className="text-slate-400 shrink-0" />
+                        <span className="truncate text-slate-700 dark:text-slate-300">
+                          {subCategory ? (
+                            <>
+                              <span className="mr-2">{categories.find(c => c.name === subCategory)?.icon || "🏷️"}</span>
+                              {subCategory}
+                            </>
+                          ) : "Pilih kategori..."}
+                        </span>
+                      </div>
+                      <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                    </div>
                   </div>
 
                   <div className="flex gap-2 pt-2.5">
@@ -1029,15 +1046,36 @@ export default function DebtsTab({
                               <input type="date" className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-800 dark:text-white" value={editSubDueDate} onChange={e => setEditSubDueDate(e.target.value)} />
                             </div>
 
-                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-800 dark:text-white" value={editSubAccountId} onChange={e => setEditSubAccountId(e.target.value)}>
-                              <option value="" disabled>Pilih dompet...</option>
-                              {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
-                            </select>
+                            <div 
+                              onClick={() => { triggerHaptic(); setSubAccSelector("edit"); }}
+                              className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <Wallet size={14} className="text-slate-400 shrink-0" />
+                                <span className="truncate text-slate-700 dark:text-slate-300">
+                                  {editSubAccountId ? (accounts.find(a => a.id === editSubAccountId)?.name || "Pilih dompet...") : "Pilih dompet..."}
+                                </span>
+                              </div>
+                              <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                            </div>
 
-                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer text-slate-800 dark:text-white" value={editSubCategory} onChange={e => setEditSubCategory(e.target.value)}>
-                              <option value="" disabled>Pilih kategori...</option>
-                              {categories.filter(c => c.type === "expense").sort((a,b)=>a.name.localeCompare(b.name)).map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
-                            </select>
+                            <div 
+                              onClick={() => { triggerHaptic(); setSubCatSelector("edit"); }}
+                              className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <Tag size={14} className="text-slate-400 shrink-0" />
+                                <span className="truncate text-slate-700 dark:text-slate-300">
+                                  {editSubCategory ? (
+                                    <>
+                                      <span className="mr-2">{categories.find(c => c.name === editSubCategory)?.icon || "🏷️"}</span>
+                                      {editSubCategory}
+                                    </>
+                                  ) : "Pilih kategori..."}
+                                </span>
+                              </div>
+                              <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                            </div>
 
                             <div className="flex gap-2 pt-2">
                               <button onClick={() => submitEditSub(sub.id)} className={`flex-1 py-3 text-white rounded-xl text-xs font-black cursor-pointer transition-all active:scale-95 ${currentTheme.fab}`}>Simpan Koreksi</button>
@@ -1388,6 +1426,152 @@ export default function DebtsTab({
                     })}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* BOTTOM SHEET: PILIH DOMPET LANGGANAN */}
+      {/* ========================================== */}
+      {subAccSelector && (
+        <div className="fixed inset-0 z-[190] flex items-end justify-center bg-slate-900/60 animate-in fade-in duration-200">
+          <div className="absolute inset-0 z-0" onClick={() => setSubAccSelector(null)}></div>
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[32px] shadow-2xl p-6 pb-8 overflow-hidden z-10 flex flex-col max-h-[85vh] border-t border-slate-200 dark:border-slate-800 text-left">
+            <div className="w-full flex justify-center pb-2"><div className="w-12 h-1 bg-slate-200 dark:bg-slate-800 rounded-full"></div></div>
+            <div className="flex justify-between items-center mb-6 pt-2">
+              <div className="flex items-center gap-2">
+                <Wallet size={18} className={currentTheme.text} />
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Pilih Dompet Sumber Dana</h3>
+              </div>
+              <button type="button" onClick={() => setSubAccSelector(null)} className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-505 rounded-full cursor-pointer transition-colors"><X size={14} className="text-slate-700 dark:text-slate-300" /></button>
+            </div>
+            <div className="overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-3">
+                {accounts.map(acc => {
+                  const isSelected = subAccSelector === "add" ? subAccountId === acc.id : editSubAccountId === acc.id;
+                  return (
+                    <div 
+                      key={acc.id}
+                      onClick={() => { 
+                        triggerHaptic(); 
+                        if (subAccSelector === "add") setSubAccountId(acc.id);
+                        else setEditSubAccountId(acc.id);
+                        setSubAccSelector(null); 
+                      }}
+                      className={`p-4 rounded-2xl border text-left flex flex-col justify-between relative transition-all active:scale-95 cursor-pointer h-28 ${
+                        isSelected 
+                          ? currentTheme.payAccSelected
+                          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        {acc.logo ? (
+                          <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                            <Wallet size={16} />
+                          </div>
+                        )}
+                        {isSelected && <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-sm ${currentTheme.activeBg}`}>✓</div>}
+                      </div>
+                      <div className="mt-2 min-w-0">
+                        <p className="text-xs font-black text-slate-800 dark:text-white truncate leading-none mb-1">{acc.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate leading-none">Rp {acc.balance.toLocaleString("id-ID")}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* BOTTOM SHEET: PILIH KATEGORI LANGGANAN */}
+      {/* ========================================== */}
+      {subCatSelector && (
+        <div className="fixed inset-0 z-[190] flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-200">
+          <div className="absolute inset-0 z-0" onClick={() => setSubCatSelector(null)}></div>
+          <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-lg shadow-2xl overflow-hidden z-10 flex flex-col max-h-[75vh] border border-slate-200 dark:border-slate-800 text-left">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+              <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
+                <span>🏷️</span> Pilih Kategori Berlangganan
+              </h3>
+              <button type="button" onClick={() => setSubCatSelector(null)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"><X size={14}/></button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-orange-100 dark:border-orange-900/30 z-10">
+                    <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {categories
+                      .filter(c => c.type === "expense" && c.expenseType !== "fixed")
+                      .sort((a,b) => a.name.localeCompare(b.name))
+                      .map(cat => {
+                        const isSelected = subCatSelector === "add" ? subCategory === cat.name : editSubCategory === cat.name;
+                        return (
+                          <button 
+                            key={cat.id} 
+                            type="button" 
+                            onClick={() => { 
+                              triggerHaptic(); 
+                              if (subCatSelector === "add") setSubCategory(cat.name);
+                              else setEditSubCategory(cat.name);
+                              setSubCatSelector(null); 
+                            }} 
+                            className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${
+                              isSelected 
+                                ? currentTheme.activePill 
+                                : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                            }`}
+                          >
+                            <span className="w-5 text-center shrink-0">{cat.icon || "🏷️"}</span>
+                            <span className="truncate flex-1 text-left">{cat.name}</span>
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                <div className="space-y-2 border-l border-slate-100 dark:border-slate-800 pl-4">
+                  <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-purple-100 dark:border-purple-900/30 z-10">
+                    <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">🟣 Tetap</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {categories
+                      .filter(c => c.type === "expense" && c.expenseType === "fixed")
+                      .sort((a,b) => a.name.localeCompare(b.name))
+                      .map(cat => {
+                        const isSelected = subCatSelector === "add" ? subCategory === cat.name : editSubCategory === cat.name;
+                        return (
+                          <button 
+                            key={cat.id} 
+                            type="button" 
+                            onClick={() => { 
+                              triggerHaptic(); 
+                              if (subCatSelector === "add") setSubCategory(cat.name);
+                              else setEditSubCategory(cat.name);
+                              setSubCatSelector(null); 
+                            }} 
+                            className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-2 ${
+                              isSelected 
+                                ? "bg-purple-600 text-white border-purple-700 shadow-sm" 
+                                : "bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                            }`}
+                          >
+                            <span className="w-5 text-center shrink-0">{cat.icon || "🏷️"}</span>
+                            <span className="truncate flex-1 text-left">{cat.name}</span>
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
