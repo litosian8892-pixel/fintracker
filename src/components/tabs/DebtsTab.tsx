@@ -202,8 +202,26 @@ export default function DebtsTab({
     }).format(parsed);
   };
 
-  const triggerHaptic = () => {
-    if (typeof window !== "undefined" && navigator.vibrate) navigator.vibrate(10);
+  const triggerHaptic = () => { 
+    if (typeof window !== "undefined" && localStorage.getItem("fintracker_haptic") !== "false") {
+      if (navigator.vibrate) navigator.vibrate(15); 
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.05);
+      } catch (e) {}
+    }
   };
 
   const handleKeypadPress = (key: string) => {

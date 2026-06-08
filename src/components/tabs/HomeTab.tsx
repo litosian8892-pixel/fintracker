@@ -274,10 +274,24 @@ export default function HomeTab({
 
   const filteredCategories = categories.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name));
   const triggerHaptic = () => { 
-    if (typeof window !== "undefined" && navigator.vibrate) {
-      if (localStorage.getItem("fintracker_haptic") !== "false") {
-        navigator.vibrate(10); 
-      }
+    if (typeof window !== "undefined" && localStorage.getItem("fintracker_haptic") !== "false") {
+      if (navigator.vibrate) navigator.vibrate(15); 
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.05);
+      } catch (e) {}
     }
   };
   
@@ -1006,7 +1020,7 @@ export default function HomeTab({
                               setEditTSplits(updated);
                             }} 
                           />
-                          
+
                           {item.amount > 0 && <p className="text-[9px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(item.amount.toString(), selectedSourceAcc?.currency)}</span></p>}
                         </div>
                       </div>
