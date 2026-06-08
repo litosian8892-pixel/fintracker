@@ -13,7 +13,7 @@ import Sidebar from "../components/layout/Sidebar";
 import MobileHeader from "../components/layout/MobileHeader";
 import BottomNav from "../components/layout/BottomNav";
 
-import { X, Lock, ChevronDown, Fingerprint, Crown, CheckCircle2, MessageCircle } from "lucide-react"; 
+import { X, Lock, ChevronDown, Fingerprint, Crown, CheckCircle2, MessageCircle, Rocket, ArrowRight } from "lucide-react";
 
 const HomeTab = dynamic(() => import("../components/tabs/HomeTab"), { ssr: false });
 const ReportsTab = dynamic(() => import("../components/tabs/ReportsTab"), { ssr: false });
@@ -51,6 +51,20 @@ const getLocalDateString = (dateInput = new Date()) => {
 export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // STATE UNTUK MIGRASI DOMAIN
+  const [isOldDomain, setIsOldDomain] = useState(false);
+  // 👇 GANTI LINK DI BAWAH INI DENGAN DOMAIN BARU ANDA YANG SUDAH DIBUAT DI VERCEL
+  const NEW_DOMAIN_URL = "https://fintracker-id.vercel.app"; 
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Jika URL masih memuat kata "nine-neon", aktifkan Spanduk Migrasi
+      if (window.location.hostname.includes("nine-neon")) {
+        setIsOldDomain(true);
+      }
+    }
+  }, []);
   
   const [isPremium, setIsPremium] = useState<boolean | null>(() => {
     if (typeof window !== "undefined") {
@@ -791,6 +805,21 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
     worksheet["!cols"] = [{ wch: 5 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 25 }, { wch: 25 }, { wch: 18 }, { wch: 35 }];
     XLSX.writeFile(workbook, `Fintracker_Laporan_${reportMonth}.xlsx`);
   };
+
+  // JIKA BUKA DARI DOMAIN LAMA, CEGAT DENGAN SPANDUK MIGRASI INI
+  if (isOldDomain) {
+    return (
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 transition-colors duration-200">
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-[35px] shadow-2xl w-full max-w-sm flex flex-col items-center text-center border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-300">
+          <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-6 shadow-inner"><Rocket size={40} strokeWidth={2}/></div>
+          <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Pindah Rumah! 🚀</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-8 font-semibold leading-relaxed">Fintracker telah bermigrasi ke alamat baru yang lebih cepat & profesional. Silakan pindah ke alamat baru untuk melanjutkan.</p>
+          <a href={NEW_DOMAIN_URL} className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-sm font-black transition-all shadow-lg shadow-blue-500/30 active:scale-95 flex items-center justify-center gap-2">Pindah ke Aplikasi Baru <ArrowRight size={18}/></a>
+          <p className="text-[10px] text-slate-400 mt-6 font-medium bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">Tips: Setelah menekan tombol di atas, jangan lupa <b>Hapus</b> aplikasi lama ini dari layar HP Anda, lalu <b>Install Ulang</b> (Tambahkan ke Layar Utama) melalui link yang baru.</p>
+        </div>
+      </main>
+    );
+  }
 
   if (loading || !pinChecked || (user && isPremium === null)) return <LoadingScreen />;
   if (!user) return <AuthScreen />;
