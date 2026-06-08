@@ -277,13 +277,11 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
     return () => unsub();
   }, []);
 
+  // 1. DATA KRITIS (Langsung ditarik agar Beranda cepat menyala)
   useEffect(() => {
     if (!user) return;
     const unsubAcc = onSnapshot(query(collection(db, `users/${user.uid}/accounts`), orderBy("order", "asc")), (sn) => { setAccounts(sn.docs.map(d => ({ id: d.id, ...d.data() } as AccountData))); });
     const unsubCat = onSnapshot(collection(db, `users/${user.uid}/categories`), (sn) => { if (sn.empty) setupDefaultCategories(user.uid); else setCategories(sn.docs.map(d => ({ id: d.id, ...d.data() } as CategoryData))); });
-    const unsubTypes = onSnapshot(query(collection(db, `users/${user.uid}/walletTypes`), orderBy("order", "asc")), (sn) => { if (sn.empty) setupDefaultWalletTypes(user.uid); else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() } as WalletTypeData))); });
-    const unsubDebts = onSnapshot(query(collection(db, `users/${user.uid}/debts`), orderBy("createdAt", "desc")), (sn) => { setDebts(sn.docs.map(d => ({ id: d.id, ...d.data() } as DebtData))); });
-    const unsubSubs = onSnapshot(query(collection(db, `users/${user.uid}/subscriptions`), orderBy("createdAt", "desc")), (sn) => { setSubscriptions(sn.docs.map(d => ({ id: d.id, ...d.data() } as SubscriptionData))); });
     const unsubProfile = onSnapshot(doc(db, `users/${user.uid}`), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -293,7 +291,26 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
         if (data.rates) setExchangeRates(prev => ({ ...prev, ...data.rates }));
       } else { setIsPremium(false); localStorage.setItem("fintracker_is_premium", "false"); }
     });
-    return () => { unsubAcc(); unsubCat(); unsubTypes(); unsubDebts(); unsubSubs(); unsubProfile(); };
+    return () => { unsubAcc(); unsubCat(); unsubProfile(); };
+  }, [user]);
+
+  // 2. DATA DEFERRED / DITUNDA (Ditarik 2 detik setelah Beranda muncul)
+  useEffect(() => {
+    if (!user) return;
+    let unsubTypes: any, unsubDebts: any, unsubSubs: any;
+    
+    const timer = setTimeout(() => {
+      unsubTypes = onSnapshot(query(collection(db, `users/${user.uid}/walletTypes`), orderBy("order", "asc")), (sn) => { if (sn.empty) setupDefaultWalletTypes(user.uid); else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() } as WalletTypeData))); });
+      unsubDebts = onSnapshot(query(collection(db, `users/${user.uid}/debts`), orderBy("createdAt", "desc")), (sn) => { setDebts(sn.docs.map(d => ({ id: d.id, ...d.data() } as DebtData))); });
+      unsubSubs = onSnapshot(query(collection(db, `users/${user.uid}/subscriptions`), orderBy("createdAt", "desc")), (sn) => { setSubscriptions(sn.docs.map(d => ({ id: d.id, ...d.data() } as SubscriptionData))); });
+    }, 2000); // Tunda 2 Detik
+    
+    return () => { 
+      clearTimeout(timer); 
+      if(unsubTypes) unsubTypes(); 
+      if(unsubDebts) unsubDebts(); 
+      if(unsubSubs) unsubSubs(); 
+    };
   }, [user]);
 
   useEffect(() => {
