@@ -1360,7 +1360,7 @@ export default function HomeTab({
               ))}
               <button type="button" onClick={() => handleSplitKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
               {["(", "0", ")"].map((char) => (
-                <button key={char} type="button" onClick={() => handleSplitKeypadPress(char)} className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/10`}>{char}</button>
+                <button key={char} type="button" onClick={() => handleSplitKeypadPress(char)} className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/10`}>{char}</button>
               ))}
               <button type="button" onClick={() => handleSplitKeypadPress("Ya")} className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}>Ya</button>
             </div>
