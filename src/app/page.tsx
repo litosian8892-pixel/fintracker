@@ -290,7 +290,13 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
   };
 
   useEffect(() => {
+    // BUG FIX SAFARI: Timer pemaksa jika Firebase Auth tercekik oleh ITP Safari
+    const authFallbackTimer = setTimeout(() => {
+      if (loading) setLoading(false);
+    }, 3000);
+
     const unsub = onAuthStateChanged(auth, (u) => { 
+      clearTimeout(authFallbackTimer);
       setUser(u); 
       if (u) {
         const checkGhostDocument = async () => {
@@ -309,25 +315,53 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
       }
       setLoading(false); 
     });
-    return () => unsub();
-  }, []);
+    return () => { clearTimeout(authFallbackTimer); unsub(); };
+  }, [loading]);
 
   // 1. DATA KRITIS (Langsung ditarik agar Beranda cepat menyala)
   useEffect(() => {
     if (!user) return;
-    const unsubAcc = onSnapshot(query(collection(db, `users/${user.uid}/accounts`), orderBy("order", "asc")), (sn) => { setAccounts(sn.docs.map(d => ({ id: d.id, ...d.data() } as AccountData))); });
-    const unsubCat = onSnapshot(collection(db, `users/${user.uid}/categories`), (sn) => { if (sn.empty) setupDefaultCategories(user.uid); else setCategories(sn.docs.map(d => ({ id: d.id, ...d.data() } as CategoryData))); });
-    const unsubProfile = onSnapshot(doc(db, `users/${user.uid}`), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const premiumStatus = data.isPremium === true;
-        setIsPremium(premiumStatus);
-        localStorage.setItem("fintracker_is_premium", premiumStatus.toString());
-        if (data.rates) setExchangeRates(prev => ({ ...prev, ...data.rates }));
-      } else { setIsPremium(false); localStorage.setItem("fintracker_is_premium", "false"); }
-    });
-    return () => { unsubAcc(); unsubCat(); unsubProfile(); };
-  }, [user]);
+    
+    // SAFETY FALLBACK: Safari sering memblokir IndexedDB di tab browser, 
+    // Mencegah isPremium nyangkut di null selamanya yang membuat layar putih/skeleton.
+    const fallbackTimer = setTimeout(() => {
+      if (isPremium === null) {
+         const stored = localStorage.getItem("fintracker_is_premium");
+         setIsPremium(stored === "true");
+      }
+    }, 2500);
+
+    const unsubAcc = onSnapshot(query(collection(db, `users/${user.uid}/accounts`), orderBy("order", "asc")), 
+      (sn) => { setAccounts(sn.docs.map(d => ({ id: d.id, ...d.data() } as AccountData))); },
+      (err) => { console.warn("Accounts sync error (Safari DB blocked?):", err); }
+    );
+    
+    const unsubCat = onSnapshot(collection(db, `users/${user.uid}/categories`), 
+      (sn) => { if (sn.empty) setupDefaultCategories(user.uid); else setCategories(sn.docs.map(d => ({ id: d.id, ...d.data() } as CategoryData))); },
+      (err) => { console.warn("Categories sync error:", err); }
+    );
+    
+    const unsubProfile = onSnapshot(doc(db, `users/${user.uid}`), 
+      (docSnap) => {
+        clearTimeout(fallbackTimer);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const premiumStatus = data.isPremium === true;
+          setIsPremium(premiumStatus);
+          localStorage.setItem("fintracker_is_premium", premiumStatus.toString());
+          if (data.rates) setExchangeRates(prev => ({ ...prev, ...data.rates }));
+        } else { setIsPremium(false); localStorage.setItem("fintracker_is_premium", "false"); }
+      },
+      (err) => { 
+        console.warn("Profile sync error:", err); 
+        clearTimeout(fallbackTimer);
+        const stored = localStorage.getItem("fintracker_is_premium");
+        setIsPremium(stored === "true");
+      }
+    );
+    
+    return () => { clearTimeout(fallbackTimer); unsubAcc(); unsubCat(); unsubProfile(); };
+  }, [user, isPremium]);
 
   // 2. DATA DEFERRED / DITUNDA (Ditarik 2 detik setelah Beranda muncul)
   useEffect(() => {
