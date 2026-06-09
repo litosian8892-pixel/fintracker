@@ -5,7 +5,7 @@ import {
   LogOut, Tag, CreditCard, X, Edit2, Check, Sun, Moon, 
   Monitor, ChevronDown, ChevronUp, Trash2, Lock, Fingerprint, 
   ChevronRight, ChevronLeft, ShieldCheck, Palette, Bell, Smartphone,
-  LayoutTemplate
+  LayoutTemplate, Globe
 } from "lucide-react";
 import { CategoryData, WalletTypeData } from "../../types";
 
@@ -21,7 +21,10 @@ interface SettingsTabProps {
   addCustomWalletType: () => void; walletTypes: WalletTypeData[]; deleteWalletType: (id: string) => void;
   theme: "light" | "dark" | "system"; setTheme: (theme: "light" | "dark" | "system") => void;
   appPin: string | null; setAppPin: (val: string | null) => void;
-  newCatIcon: string; setNewCatIcon: (val: string) => void; // <-- TAMBAHKAN BARIS INI
+  newCatIcon: string; setNewCatIcon: (val: string) => void;
+  // PROPS KURS GLOBAL (Dari AssetsTab)
+  exchangeRates?: Record<string, number>; 
+  handleUpdateGlobalRates?: (rates: Record<string, number>) => void;
 }
 
 // PEMETAAN WARNA AKSEN RESMI TAILWIND V4 (Sangat Aman Kontras & Bebas Bug)
@@ -81,11 +84,23 @@ export default function SettingsTab({
   user, onLogout, tType, setTType, newCatName, setNewCatName, newExpenseType, setNewExpenseType, addCustomCategory,
   categories, deleteCategory, updateCategory, newWalletTypeName, setNewWalletTypeName, addCustomWalletType, walletTypes, deleteWalletType,
   theme, setTheme, appPin, setAppPin,
-  newCatIcon, setNewCatIcon // <-- TAMBAHKAN BARIS INI
+  newCatIcon, setNewCatIcon,
+  exchangeRates, handleUpdateGlobalRates
 }: SettingsTabProps) {
   
-  // STATE NAVIGASI SUB-MENU (DITAMBAHKAN "accents")
-  const [activeMenu, setActiveMenu] = useState<"main" | "categories" | "wallets" | "profile" | "accents">("main");
+  // STATE NAVIGASI SUB-MENU (DITAMBAHKAN "rates")
+  const [activeMenu, setActiveMenu] = useState<"main" | "categories" | "wallets" | "profile" | "accents" | "rates">("main");
+  
+  // STATE LOKAL UNTUK MENGEDIT KURS GLOBAL
+  const [localRates, setLocalRates] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    if (exchangeRates) {
+      const temp: Record<string, string> = {};
+      Object.keys(exchangeRates).forEach(k => { temp[k] = exchangeRates[k].toString(); });
+      setLocalRates(temp);
+    }
+  }, [exchangeRates]);
 
   // STATE KATEGORI
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
@@ -392,6 +407,12 @@ export default function SettingsTab({
               icon={CreditCard} iconBg="bg-blue-50 dark:bg-blue-900/30" iconColor="text-blue-600 dark:text-blue-400" 
               title="Tipe Dompet Aset" subtitle="Kelola jenis-jenis sumber dana" 
               onClick={() => setActiveMenu("wallets")}
+            />
+            {/* MENU BARU UNTUK KURS GLOBAL */}
+            <MenuItem 
+              icon={Globe} iconBg="bg-teal-50 dark:bg-teal-900/30" iconColor="text-teal-600 dark:text-teal-400" 
+              title="Nilai Kurs Global" subtitle="Atur nilai tukar mata uang asing" 
+              onClick={() => setActiveMenu("rates")}
             />
           </div>
         </div>
