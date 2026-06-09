@@ -201,8 +201,6 @@ export default function AssetsTab({
   
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [walletGroup, setWalletGroup] = useState<"pribadi" | "bisnis">("pribadi");
-  const [showRatesModal, setShowRatesModal] = useState(false);
-  const [localRates, setLocalRates] = useState<Record<string, string>>({});
   
   const [localAccCurrency, setLocalAccCurrency] = useState("IDR");
   const [localEditAccCurrency, setLocalEditAccCurrency] = useState("IDR");
@@ -295,7 +293,6 @@ export default function AssetsTab({
   const editLastRate = editAccLastExchangeRate !== undefined ? editAccLastExchangeRate : localEditAccLastRate;
   const setEditLastRate = setEditAccLastExchangeRate !== undefined ? setEditAccLastExchangeRate : setLocalEditAccLastRate;
 
-  useEffect(() => { if (exchangeRates) { const temp: Record<string, string> = {}; Object.keys(exchangeRates).forEach(k => { temp[k] = exchangeRates[k].toString(); }); setLocalRates(temp); } }, [exchangeRates]);
   useEffect(() => { if (editingAccId) setIsManageOpen(true); }, [editingAccId]);
 
   const getRate = (curCode?: string, historicalRate?: number, accountId?: string) => { 
