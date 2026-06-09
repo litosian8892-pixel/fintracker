@@ -995,6 +995,119 @@ const generatePrintHTML = () => {
           </div>
         )}
 
+        {/* ================= VIEW 2: LAPORAN (ANALISIS MENDALAM) ================= */}
+        {activeView === "laporan" && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Kartu Header Laporan Dinamis */}
+            <div className={`${currentTheme.cardGradient} text-white p-6 rounded-[30px] shadow-lg relative overflow-hidden`}>
+              <div className="relative z-10 flex justify-between items-start mb-6"><div><h3 className="font-bold text-white/70 text-xs mb-1">Aktivitas Pengeluaran</h3><p className="font-black text-lg">{new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'short', year: 'numeric'})}</p></div></div>
+              <div className="flex gap-6 mb-6 relative z-10">
+                <div><p className="text-2xl font-black">Rp {localTotalExpense >= 1000 ? (localTotalExpense/1000).toFixed(1)+'K' : localTotalExpense}</p><p className="text-[10px] font-bold text-white/75">Pengeluaran</p></div>
+                {localPieData[0] && (<div><p className="text-2xl font-black">Rp {localPieData[0].value >= 1000 ? (localPieData[0].value/1000).toFixed(1)+'K' : localPieData[0].value}</p><p className="text-[10px] font-bold text-white/75">{localPieData[0].name}</p></div>)}
+              </div>
+              <div className="h-48 w-full relative z-10 -ml-2 mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={dailyCumulativeData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                    <defs><linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ffffff" stopOpacity={0.4}/><stop offset="95%" stopColor="#ffffff" stopOpacity={0}/></linearGradient></defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.15)" />
+                    <XAxis dataKey="name" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.8)", fontStyle: "normal", fontWeight: "bold" }} tickLine={false} axisLine={false} interval={0} dy={10} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.3)', strokeWidth: 2, strokeDasharray: '3 3' }} />
+                    <Area type="monotone" dataKey="DailyExp" name="Pengeluaran Harian" stroke="#ffffff" strokeWidth={3} fillOpacity={1} fill="url(#colorExp)" activeDot={{ r: 6, fill: "#1e3a8a", stroke: "#ffffff", strokeWidth: 2 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ringkasan</p>
+              <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Arus Kas Bulanan</h3>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex gap-2 items-center mb-1"><div className="w-2 h-2 rounded-full bg-emerald-500"/><span className="text-lg font-black text-slate-800 dark:text-slate-100">Rp {localTotalIncome.toLocaleString('id-ID')}</span></div>
+                  <p className="text-[10px] font-bold text-slate-500 pl-4 mb-2">Pemasukan</p>
+                  <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out" style={{width: `${localTotalIncome > 0 ? (localTotalIncome >= localTotalExpense ? 100 : (localTotalIncome / localTotalExpense) * 100) : 0}%`}}></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex gap-2 items-center mb-1"><div className="w-2 h-2 rounded-full bg-red-500"/><span className="text-lg font-black text-slate-800 dark:text-slate-100">Rp {localTotalExpense.toLocaleString('id-ID')}</span></div>
+                  <p className="text-[10px] font-bold text-slate-500 pl-4 mb-2">Pengeluaran</p>
+                  <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-red-500 rounded-full transition-all duration-1000 ease-out" style={{width: `${localTotalExpense > 0 ? (localTotalExpense >= localTotalIncome ? 100 : (localTotalExpense / localTotalIncome) * 100) : 0}%`}}></div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 mt-2"><p className="text-xs font-bold text-slate-600 dark:text-slate-300">Pada {new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'short', year: 'numeric'})}, arus kas Anda {localTotalIncome >= localTotalExpense ? "positif" : "negatif"}. Anda {localTotalIncome >= localTotalExpense ? "menyimpan" : "membelanjakan lebih sebesar"} <span className="font-black">Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}</span>.</p></div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex justify-between items-center mb-2"><h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Income vs Expense</h3><span className="text-[10px] font-bold text-slate-500">Cumulative</span></div>
+              
+              <div className="flex gap-4 text-[10px] font-bold mb-4 text-slate-600 dark:text-slate-300">
+                <div className="flex items-center gap-1.5"><div className="w-4 h-1 rounded bg-emerald-500"/> Pemasukan <span className="text-emerald-500 dark:text-emerald-400 ml-1 font-black">Rp {localTotalIncome >= 1000 ? (localTotalIncome/1000).toFixed(0)+'K' : localTotalIncome}</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-4 h-1 rounded bg-red-500"/> Pengeluaran <span className="text-red-500 dark:text-red-400 ml-1 font-black">Rp {localTotalExpense >= 1000 ? (localTotalExpense/1000).toFixed(0)+'K' : localTotalExpense}</span></div>
+              </div>
+              
+              <div className="h-56 w-full -ml-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ReLineChart data={dailyCumulativeData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-slate-100 dark:stroke-slate-800" />
+                    <XAxis dataKey="name" tick={{ fontSize: 9, fontStyle: "normal", fontWeight: "bold", fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={0} />
+                    <YAxis tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(1)}K` : v} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line type="monotone" dataKey="Pemasukan" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: "#10b981", strokeWidth: 0 }} />
+                    <Line type="monotone" dataKey="Pengeluaran" stroke="#ef4444" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: "#ef4444", strokeWidth: 0 }} />
+                  </ReLineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Ringkasan</p>
+              <div className="flex justify-between items-start mb-6">
+                <div><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-2">Financial Health Score</h3><span className={`px-3 py-1 rounded-full text-[10px] font-black ${healthStatus.bg} ${healthStatus.color}`}>{healthStatus.text}</span></div>
+                <div className="relative w-16 h-16 shrink-0">
+                  <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f1f5f9" strokeWidth="3" className="dark:stroke-slate-800"/>
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={healthStatus.stroke} strokeWidth="3" strokeDasharray={`${healthScore}, 100`} className="transition-all duration-1000 ease-out"/>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center"><span className={`text-xl font-black leading-none ${healthStatus.color}`}>{healthScore}</span><span className="text-[8px] font-bold text-slate-400 leading-none mt-0.5">/100</span></div>
+                </div>
+              </div>
+              <div className={`${localTotalIncome >= localTotalExpense ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"} p-4 rounded-2xl flex items-center gap-4 mb-6 border ${localTotalIncome >= localTotalExpense ? "border-emerald-100 dark:border-emerald-800/30" : "border-red-100 dark:border-red-800/30"}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-white/50 dark:bg-black/20 shrink-0`}>{localTotalIncome >= localTotalExpense ? <TrendingUp size={16}/> : <TrendingDown size={16}/>}</div>
+                <div><p className="text-[10px] font-black uppercase tracking-wider">{localTotalIncome >= localTotalExpense ? "Net Surplus" : "Net Deficit"}</p><p className="text-lg font-black">Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}</p></div>
+              </div>
+              <div className="space-y-4">
+                {[
+                  { label: "Savings Rate", val: `${savingsRate.toFixed(1)}%`, score: (savingsRate>0?30:0), max: 30, icon: "🎯" },
+                  { label: "Expense Control", val: localTotalExpense > localTotalIncome ? "Over" : "Good", score: (localTotalExpense<=localTotalIncome?30:10), max: 30, icon: "📉" },
+                  { label: "No-Spend Days", val: `${noSpendDays} hari`, score: noSpendScore, max: 20, icon: "🌱" },
+                  { label: "Tracking Consistency", val: `${trackedDays} hari`, score: consistencyScore, max: 20, icon: "📅" }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold"><span className="opacity-70">{item.icon}</span> {item.label}</div>
+                    <div className="flex items-center gap-3"><span className="text-[10px] text-slate-500 font-bold w-20 text-right">{item.val}</span><div className="w-12 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-slate-800 dark:bg-slate-300 rounded-full" style={{width:`${(item.score/item.max)*100}%`}}></div></div><span className="text-[10px] font-black text-slate-800 dark:text-slate-200 w-4 text-right">{Math.round(item.score)}</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+              <div><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Spending by Day of Week</h3><p className="text-[10px] font-bold text-slate-500">Peak spending day: <span className="text-red-500">{dowFullNames[peakDayIdx]}</span></p></div>
+              <div className="h-40 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ReBarChart data={dowChartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: "bold", fill: "#94a3b8" }} dy={10} /><Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} content={<CustomTooltip />} /><Bar dataKey="Pengeluaran" radius={[6, 6, 6, 6]}>{dowChartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.fill} />))}</Bar></ReBarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 divide-x divide-slate-200 dark:divide-slate-700">
+                <div className="flex-1 text-center"><p className="text-[10px] font-bold text-slate-500 mb-1">Weekdays</p><p className="text-sm font-black text-slate-800 dark:text-slate-200">Rp {Math.round((dowData[1]+dowData[2]+dowData[3]+dowData[4]+dowData[5])/5/1000).toFixed(0)}K <span className="text-[9px] text-slate-400 font-normal">avg/day</span></p></div>
+                <div className="flex-1 text-center"><p className="text-[10px] font-bold text-slate-500 mb-1">Weekends</p><p className="text-sm font-black text-slate-800 dark:text-slate-200">Rp {Math.round((dowData[0]+dowData[6])/2/1000).toFixed(0)}K <span className="text-[9px] text-slate-400 font-normal">avg/day</span></p></div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ================= VIEW 3: KALENDER ================= */}
         {activeView === "kalender" && (
           <div className="space-y-6 animate-in fade-in duration-300">
