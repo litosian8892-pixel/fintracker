@@ -715,7 +715,7 @@ export default function SettingsTab({
           <div className="grid grid-cols-2 gap-4 mb-6">
             {Object.keys(localRates).filter(k => k !== "IDR").map(cur => {
               // Deteksi apakah ini mata uang bawaan atau kustom tambahan
-              const isDefaultCurrency = ["USD", "SGD", "EUR", "JPY", "GBP", "AUD", "MYR", "SAR", "BTC", "ETH", "GRAM", "CNY"].includes(cur);
+              const isDefaultCurrency = ["USD", "SGD", "EUR", "JPY", "GBP", "AUD", "MYR", "SAR", "BTC", "ETH", "GRAM"].includes(cur);
               
               return (
                 <div key={cur} className="space-y-1 relative group">
