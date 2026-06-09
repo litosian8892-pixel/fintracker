@@ -4,7 +4,7 @@ import {
   Download, ChevronDown, ArrowUp, ArrowDown, X, Printer, 
   BarChart3, PieChart as PieIcon, CalendarDays, Activity, Filter, 
   TrendingDown, TrendingUp, AlertCircle, Check, ChevronRight,
-  Target, ArrowRightLeft, Plus, Trash2
+  Target, Plus, Trash2, Calendar
 } from "lucide-react";
 import { 
   PieChart as RePieChart, Pie, Cell, ResponsiveContainer, Tooltip, 
@@ -24,7 +24,9 @@ const themeMap = {
     border: "border-blue-200 dark:border-blue-800",
     cardGradient: "bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900",
     bgLight: "bg-blue-50 dark:bg-blue-900/20",
-    fab: "bg-blue-600 border-blue-500"
+    fab: "bg-blue-600 border-blue-500",
+    budgetLine: "#2563eb",
+    budgetFill: "bg-blue-600"
   },
   emerald: {
     activeBg: "bg-emerald-600 text-white shadow-sm",
@@ -33,7 +35,9 @@ const themeMap = {
     border: "border-emerald-200 dark:border-emerald-800",
     cardGradient: "bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900",
     bgLight: "bg-emerald-50 dark:bg-emerald-900/20",
-    fab: "bg-emerald-600 border-emerald-500"
+    fab: "bg-emerald-600 border-emerald-500",
+    budgetLine: "#059669",
+    budgetFill: "bg-emerald-600"
   },
   purple: {
     activeBg: "bg-purple-600 text-white shadow-sm",
@@ -42,7 +46,9 @@ const themeMap = {
     border: "border-purple-200 dark:border-purple-800",
     cardGradient: "bg-gradient-to-br from-purple-700 via-purple-800 to-fuchsia-900",
     bgLight: "bg-purple-50 dark:bg-purple-900/20",
-    fab: "bg-purple-600 border-purple-500"
+    fab: "bg-purple-600 border-purple-500",
+    budgetLine: "#7c3aed",
+    budgetFill: "bg-purple-600"
   },
   amber: {
     activeBg: "bg-amber-600 text-white shadow-sm",
@@ -51,7 +57,9 @@ const themeMap = {
     border: "border-amber-200 dark:border-amber-800",
     cardGradient: "bg-gradient-to-br from-amber-600 via-amber-700 to-orange-900",
     bgLight: "bg-amber-50 dark:bg-amber-900/20",
-    fab: "bg-amber-600 border-amber-500"
+    fab: "bg-amber-600 border-amber-500",
+    budgetLine: "#d97706",
+    budgetFill: "bg-amber-600"
   },
   rose: {
     activeBg: "bg-rose-600 text-white shadow-sm",
@@ -60,7 +68,9 @@ const themeMap = {
     border: "border-rose-200 dark:border-rose-800",
     cardGradient: "bg-gradient-to-br from-rose-600 via-rose-700 to-pink-900",
     bgLight: "bg-rose-50 dark:bg-rose-900/20",
-    fab: "bg-rose-600 border-rose-500"
+    fab: "bg-rose-600 border-rose-500",
+    budgetLine: "#e11d48",
+    budgetFill: "bg-rose-600"
   }
 } as const;
 
@@ -339,6 +349,8 @@ export default function ReportsTab({
       return { month: reportMonth, name: w.name, Pemasukan: inc, Pengeluaran: exp, Net: inc - exp };
     });
   }, [currentMonthTxs, reportMonth, daysInMonth]);
+
+  // LOGIKA FITUR ANGGARAN (BUDGETING) BARU
   const budgetCategories = useMemo(() => {
     return categories.filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0).sort((a, b) => a.name.localeCompare(b.name));
   }, [categories]);
@@ -348,8 +360,26 @@ export default function ReportsTab({
   const remainingBudget = totalBudgetLimit - totalSpentOnBudget;
   const overallBudgetPercentage = totalBudgetLimit > 0 ? (totalSpentOnBudget / totalBudgetLimit) * 100 : 0;
   const daysRemaining = isCurrentMonth ? Math.max(0, daysInMonth - todayObj.getDate()) : 0;
+  
+  // Data Chart Anggaran Line Chart (Menyerupai Referensi UI)
+  const safeDailySpend = daysRemaining > 0 && remainingBudget > 0 ? remainingBudget / daysRemaining : 0;
+  
+  const budgetChartData = useMemo(() => {
+    return dailyCumulativeData.map((d, i) => {
+      const target = totalBudgetLimit > 0 ? (totalBudgetLimit / daysInMonth) * (i + 1) : 0;
+      const isPastToday = isCurrentMonth && (i + 1) > todayObj.getDate();
+      return {
+        name: d.name,
+        date: `${reportMonth}-${d.name.padStart(2,'0')}`,
+        Target: target,
+        Terpakai: isPastToday ? null : d.Pengeluaran // Fallback sederhana ke total pengeluaran untuk chart
+      };
+    });
+  }, [dailyCumulativeData, totalBudgetLimit, daysInMonth, isCurrentMonth, todayObj, reportMonth]);
 
-  const generatePrintHTML = () => {
+  const currentTheme = themeMap[accent];
+// === BATAS PART 1 ===
+const generatePrintHTML = () => {
     const tableRows = currentMonthTxs.map(t => `
       <tr style="border-bottom: 1px solid #e2e8f0;">
         <td style="padding: 12px 10px; font-weight: 500;">${new Date(t.tDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'short'})}</td>
@@ -536,8 +566,6 @@ export default function ReportsTab({
       </div>
     );
   };
-
-  const currentTheme = themeMap[accent];
 
   return (
     <>
@@ -838,36 +866,75 @@ export default function ReportsTab({
           </div>
         )}
 
-        {/* ================= VIEW 4: ANGGARAN (BUDGETING TRACKER) ================= */}
+        {/* ================= VIEW 4: ANGGARAN (BUDGETING TRACKER) REFERENSI MEWAH ================= */}
         {activeView === "anggaran" && (
           <div className="space-y-6 animate-in fade-in duration-300 relative pb-20">
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-200">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Sisa Anggaran Tersedia</p>
-                  <h2 className={`text-3xl font-black ${remainingBudget < 0 ? 'text-red-500' : 'text-slate-800 dark:text-white'}`}>
-                    {remainingBudget < 0 ? "-" : ""}Rp {Math.abs(remainingBudget).toLocaleString('id-ID')}
+            {/* Header Anggaran */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm text-center relative overflow-hidden">
+              <div className="flex flex-col items-center justify-center">
+                <div className="flex items-start gap-2">
+                  <BarChart3 className="text-slate-400 mt-1" size={20} />
+                  <h2 className="text-3xl font-black text-slate-800 dark:text-white">
+                    Rp {Math.max(0, remainingBudget).toLocaleString('id-ID')} <span className="text-xl text-slate-500 font-bold">Tersisa</span>
                   </h2>
-                  <p className="text-[10px] font-bold text-slate-500 mt-1">{daysRemaining} hari tersisa • {budgetCategories.length} kategori diatur</p>
                 </div>
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-sm shadow-inner shrink-0 ${overallBudgetPercentage >= 100 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : overallBudgetPercentage >= 80 ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
-                  {overallBudgetPercentage.toFixed(0)}%
+                <p className="text-[11px] font-bold text-slate-500 mt-2">
+                  {daysRemaining} hari tersisa • {budgetCategories.length} kategori diatur
+                </p>
+              </div>
+
+              {/* Progress Bar (Reference Style) */}
+              <div className="mt-8 relative px-2">
+                <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-2">
+                  <span>{new Date(y, m - 1, 1).toLocaleDateString('id-ID', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                  <span>{new Date(y, m, 0).toLocaleDateString('id-ID', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                </div>
+                <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative">
+                   <div className={`absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-out ${overallBudgetPercentage >= 100 ? 'bg-red-500' : overallBudgetPercentage >= 80 ? 'bg-amber-500' : currentTheme.budgetFill}`} style={{width: `${Math.min(overallBudgetPercentage, 100)}%`}}></div>
+                </div>
+                {/* Tooltip floating */}
+                <div className={`absolute -top-6 transition-all duration-1000`} style={{ left: `calc(${Math.min(overallBudgetPercentage, 100)}% - 20px)` }}>
+                  <div className={`px-2 py-1 text-[9px] font-black text-white rounded-lg shadow-sm relative ${overallBudgetPercentage >= 100 ? 'bg-red-500' : overallBudgetPercentage >= 80 ? 'bg-amber-500' : currentTheme.budgetFill}`}>
+                    {overallBudgetPercentage.toFixed(0)}%
+                    <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 ${overallBudgetPercentage >= 100 ? 'bg-red-500' : overallBudgetPercentage >= 80 ? 'bg-amber-500' : currentTheme.budgetFill}`}></div>
+                  </div>
                 </div>
               </div>
-              
-              <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-2">
-                <div className={`h-full rounded-full transition-all duration-1000 ease-out ${overallBudgetPercentage >= 100 ? 'bg-red-500' : overallBudgetPercentage >= 80 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{width: `${Math.min(overallBudgetPercentage, 100)}%`}}></div>
-              </div>
-              
-              <div className="flex justify-between text-[10px] font-bold text-slate-400 dark:text-slate-500">
-                <span>Terpakai: Rp {totalSpentOnBudget.toLocaleString('id-ID')}</span>
-                <span>Total Batas: Rp {totalBudgetLimit.toLocaleString('id-ID')}</span>
-              </div>
+
+              {/* Chart Anggaran (Reference style line chart) */}
+              {totalBudgetLimit > 0 && (
+                <div className="h-40 w-full mt-6 -ml-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ReLineChart data={budgetChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-slate-100 dark:stroke-slate-800" />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fontStyle: "normal", fontWeight: "bold", fill: "#94a3b8" }} tickLine={false} axisLine={false} minTickGap={30} dy={10} />
+                      <YAxis hide domain={[0, 'dataMax']} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Line type="monotone" dataKey="Target" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Batas Aman" />
+                      <Line type="monotone" dataKey="Terpakai" stroke={overallBudgetPercentage >= 100 ? '#ef4444' : currentTheme.budgetLine} strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                    </ReLineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* Insight Box */}
+              {totalBudgetLimit > 0 && (
+                <div className="mt-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl flex items-start gap-3 border border-slate-100 dark:border-slate-800 text-left">
+                  <AlertCircle size={16} className="text-blue-500 mt-0.5 shrink-0" />
+                  <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {remainingBudget < 0 
+                      ? "Anda telah melebihi batas anggaran bulan ini. Kurangi pengeluaran Anda segera!" 
+                      : `Terus belanja. Anda dapat membelanjakan Rp ${safeDailySpend.toLocaleString('id-ID', {maximumFractionDigits:0})} setiap hari selama sisa periode (${daysRemaining} hari tersisa).`
+                    }
+                  </p>
+                </div>
+              )}
             </div>
 
+            {/* List Kategori Anggaran */}
             <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-200">
-              <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-                <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm px-2">Kategori dengan Anggaran</h3>
+              <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm px-2">Daftar Anggaran</h3>
               </div>
               
               <div className="divide-y divide-slate-100 dark:border-slate-800 dark:divide-slate-800/60">
@@ -884,30 +951,25 @@ export default function ReportsTab({
                      const isWarning = pct >= 80 && !isOver;
 
                      return (
-                       <div key={cat.id} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                         <div className="flex justify-between items-start mb-3">
-                           <div className="flex items-center gap-3 min-w-0">
-                             <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg shrink-0">{cat.icon || "🏷️"}</div>
+                       <div key={cat.id} onClick={() => { triggerHaptic(); setSelectedBudgetCat(cat); setBudgetInput(limit.toString()); }} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer group">
+                         <div className="flex justify-between items-center mb-3">
+                           <div className="flex items-center gap-4 min-w-0">
+                             <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-900/20 text-orange-500 flex items-center justify-center text-xl shrink-0 border border-orange-100 dark:border-orange-800/30">{cat.icon || "🏷️"}</div>
                              <div className="text-left min-w-0">
-                               <div className="flex items-center gap-2">
-                                 <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{cat.name}</h4>
-                                 <button onClick={() => { triggerHaptic(); setSelectedBudgetCat(cat); setBudgetInput(limit.toString()); }} className="text-slate-300 hover:text-blue-500 dark:text-slate-600 dark:hover:text-blue-400 transition-colors cursor-pointer shrink-0"><ArrowRightLeft size={12}/></button>
+                               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{cat.name}</h4>
+                               <p className="text-[10px] font-bold text-slate-400 mt-0.5">Bulanan</p>
+                               <div className={`mt-1.5 inline-block px-2 py-0.5 rounded-full text-[9px] font-black text-white shadow-sm ${isOver ? 'bg-red-500' : isWarning ? 'bg-amber-500' : currentTheme.budgetFill}`}>
+                                 {pct.toFixed(0)}%
                                </div>
-                               <p className={`text-[10px] font-bold mt-0.5 truncate ${isOver ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>
-                                 {isOver ? 'Melebihi batas anggaran!' : `Sisa Rp ${(limit - spent).toLocaleString('id-ID')}`}
-                               </p>
                              </div>
                            </div>
                            <div className="text-right shrink-0 pl-2">
                              <span className={`font-black text-sm ${isOver ? 'text-red-500' : 'text-slate-800 dark:text-slate-100'}`}>Rp {spent.toLocaleString('id-ID')}</span>
-                             <p className="text-[9px] font-bold text-slate-400 mt-0.5">dari Rp {limit.toLocaleString('id-ID')}</p>
+                             <p className="text-[10px] font-bold text-slate-400 mt-0.5">dari Rp {limit.toLocaleString('id-ID')}</p>
                            </div>
                          </div>
-                         <div className="flex items-center gap-3 pl-13">
-                           <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                             <div className={`h-full rounded-full transition-all duration-500 ${isOver ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{width: `${Math.min(pct, 100)}%`}}></div>
-                           </div>
-                           <span className={`text-[10px] font-black w-8 text-right ${isOver ? 'text-red-500' : isWarning ? 'text-amber-500' : 'text-emerald-500'}`}>{pct.toFixed(0)}%</span>
+                         <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
+                           <div className={`h-full rounded-full transition-all duration-500 ${isOver ? 'bg-red-500' : isWarning ? 'bg-amber-500' : currentTheme.budgetFill}`} style={{width: `${Math.min(pct, 100)}%`}}></div>
                          </div>
                        </div>
                      )
@@ -1163,6 +1225,14 @@ export default function ReportsTab({
                   onChange={e => setBudgetInput(e.target.value)} 
                 />
                 {budgetInput && <p className="text-[10px] font-bold text-slate-500 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>Rp {Number(budgetInput).toLocaleString('id-ID')}</span></p>}
+              </div>
+
+              {/* MOCKUP UI FREKUENSI UNTUK MENYAMAKAN DENGAN REFERENSI GAMBAR */}
+              <div className="space-y-3 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                 <div className="flex justify-between items-center text-xs font-bold">
+                    <span className="text-slate-500 flex items-center gap-2"><CalendarDays size={14}/> Frekuensi</span>
+                    <span className="text-slate-800 dark:text-slate-200">Bulanan <ChevronRight size={14} className="inline text-slate-400"/></span>
+                 </div>
               </div>
 
               <div className="flex gap-2 pt-2">
