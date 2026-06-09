@@ -306,7 +306,7 @@ export default function SettingsTab({
             <div className="flex gap-2 text-left">
               <div className="flex-1 space-y-1">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Limit Budget (Rp)</label>
-                <input type="number" className="w-full p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100" value={editCatBudget} onChange={e => setEditCatBudget(e.target.value)} />
+                <input type="number" className="w-full p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" value={editCatBudget} onChange={e => setEditCatBudget(e.target.value)} />
               </div>
               <div className="w-28 space-y-1">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Tipe</label>

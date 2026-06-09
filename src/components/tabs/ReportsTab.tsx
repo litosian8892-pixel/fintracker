@@ -3,7 +3,8 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { 
   Download, ChevronDown, ArrowUp, ArrowDown, X, Printer, 
   BarChart3, PieChart as PieIcon, CalendarDays, Activity, Filter, 
-  TrendingDown, TrendingUp, AlertCircle, Check, ChevronRight, Target
+  TrendingDown, TrendingUp, AlertCircle, Check, ChevronRight,
+  Target, ArrowRightLeft, Plus, Trash2
 } from "lucide-react";
 import { 
   PieChart as RePieChart, Pie, Cell, ResponsiveContainer, Tooltip, 
@@ -90,10 +91,11 @@ interface ReportsTabProps {
   globalSearch: string; setGlobalSearch: (val: string) => void; searchResult: TransactionData[];
   prevTotalIncome: number; prevTotalExpense: number; isPrivacyMode?: boolean; 
   accounts?: any[];
+  updateCategory?: (id: string, name: string, limit: number | null, expenseType: "fixed" | "variable", icon?: string) => void;
 }
 
 export default function ReportsTab({
-  reportMonth, setReportMonth, handleExportToExcel, categories, reportTransactions, globalSearch, setGlobalSearch, searchResult, isPrivacyMode = false, accounts = []
+  reportMonth, setReportMonth, handleExportToExcel, categories, reportTransactions, globalSearch, setGlobalSearch, searchResult, isPrivacyMode = false, accounts = [], updateCategory
 }: ReportsTabProps) {
   
   const monthScrollRef = useRef<HTMLDivElement>(null);
@@ -136,6 +138,10 @@ export default function ReportsTab({
 
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [showAllVarList, setShowAllVarList] = useState(false);
+
+  // STATE BARU: MODAL KENDALI ANGGARAN
+  const [selectedBudgetCat, setSelectedBudgetCat] = useState<CategoryData | null>(null);
+  const [budgetInput, setBudgetInput] = useState("");
 
   const triggerHaptic = () => { 
     if (typeof window !== "undefined" && localStorage.getItem("fintracker_haptic") !== "false") {
@@ -339,6 +345,7 @@ export default function ReportsTab({
   const remainingBudget = totalBudgetLimit - totalSpentOnBudget;
   const overallBudgetPercentage = totalBudgetLimit > 0 ? (totalSpentOnBudget / totalBudgetLimit) * 100 : 0;
   const daysRemaining = isCurrentMonth ? Math.max(0, daysInMonth - todayObj.getDate()) : 0;
+
 // === BATAS PART 1 ===
 const generatePrintHTML = () => {
     const tableRows = currentMonthTxs.map(t => `
@@ -563,7 +570,6 @@ const generatePrintHTML = () => {
             })}
           </div>
 
-          {/* TAB SWITCHER BERISI 4 MENU SEKARANG (TERMASUK ANGGARAN) */}
           <div className="flex justify-center mb-2">
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner overflow-x-auto no-scrollbar max-w-full">
               {[
@@ -861,16 +867,16 @@ const generatePrintHTML = () => {
 
             <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-200">
               <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-                <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm px-2">Rincian Anggaran Kategori</h3>
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm px-2">Kategori dengan Anggaran</h3>
               </div>
               
-              {budgetCategories.length === 0 ? (
-                 <div className="p-10 text-center">
-                   <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Belum ada kategori dengan batas anggaran (Budget Limit). Silakan atur limit pengeluaran di menu Pengaturan.</p>
-                 </div>
-              ) : (
-                 <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                   {budgetCategories.map(cat => {
+              <div className="divide-y divide-slate-100 dark:border-slate-800 dark:divide-slate-800/60">
+                {budgetCategories.length === 0 ? (
+                   <div className="p-8 text-center bg-white dark:bg-slate-900">
+                     <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Belum ada anggaran yang diatur.</p>
+                   </div>
+                ) : (
+                   budgetCategories.map(cat => {
                      const spent = expGrouped[cat.name] || 0;
                      const limit = cat.budgetLimit || 0;
                      const pct = limit > 0 ? (spent / limit) * 100 : 0;
@@ -878,18 +884,21 @@ const generatePrintHTML = () => {
                      const isWarning = pct >= 80 && !isOver;
 
                      return (
-                       <div key={cat.id} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                         <div className="flex justify-between items-center mb-3">
-                           <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg">{cat.icon || "🏷️"}</div>
-                             <div>
-                               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{cat.name}</h4>
-                               <p className={`text-[10px] font-bold mt-0.5 ${isOver ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>
+                       <div key={cat.id} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+                         <div className="flex justify-between items-start mb-3">
+                           <div className="flex items-center gap-3 min-w-0">
+                             <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg shrink-0">{cat.icon || "🏷️"}</div>
+                             <div className="text-left min-w-0">
+                               <div className="flex items-center gap-2">
+                                 <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{cat.name}</h4>
+                                 <button onClick={() => { triggerHaptic(); setSelectedBudgetCat(cat); setBudgetInput(limit.toString()); }} className="text-slate-300 hover:text-blue-500 dark:text-slate-600 dark:hover:text-blue-400 transition-colors cursor-pointer shrink-0"><ArrowRightLeft size={12}/></button>
+                               </div>
+                               <p className={`text-[10px] font-bold mt-0.5 truncate ${isOver ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>
                                  {isOver ? 'Melebihi batas anggaran!' : `Sisa Rp ${(limit - spent).toLocaleString('id-ID')}`}
                                </p>
                              </div>
                            </div>
-                           <div className="text-right">
+                           <div className="text-right shrink-0 pl-2">
                              <span className={`font-black text-sm ${isOver ? 'text-red-500' : 'text-slate-800 dark:text-slate-100'}`}>Rp {spent.toLocaleString('id-ID')}</span>
                              <p className="text-[9px] font-bold text-slate-400 mt-0.5">dari Rp {limit.toLocaleString('id-ID')}</p>
                            </div>
@@ -902,121 +911,28 @@ const generatePrintHTML = () => {
                          </div>
                        </div>
                      )
-                   })}
-                 </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ================= VIEW 2: LAPORAN (ANALISIS MENDALAM) ================= */}
-        {activeView === "laporan" && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Kartu Header Laporan Dinamis */}
-            <div className={`${currentTheme.cardGradient} text-white p-6 rounded-[30px] shadow-lg relative overflow-hidden`}>
-              <div className="relative z-10 flex justify-between items-start mb-6"><div><h3 className="font-bold text-white/70 text-xs mb-1">Aktivitas Pengeluaran</h3><p className="font-black text-lg">{new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'short', year: 'numeric'})}</p></div></div>
-              <div className="flex gap-6 mb-6 relative z-10">
-                <div><p className="text-2xl font-black">Rp {localTotalExpense >= 1000 ? (localTotalExpense/1000).toFixed(1)+'K' : localTotalExpense}</p><p className="text-[10px] font-bold text-white/75">Pengeluaran</p></div>
-                {localPieData[0] && (<div><p className="text-2xl font-black">Rp {localPieData[0].value >= 1000 ? (localPieData[0].value/1000).toFixed(1)+'K' : localPieData[0].value}</p><p className="text-[10px] font-bold text-white/75">{localPieData[0].name}</p></div>)}
-              </div>
-              <div className="h-48 w-full relative z-10 -ml-2 mt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={dailyCumulativeData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                    <defs><linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ffffff" stopOpacity={0.4}/><stop offset="95%" stopColor="#ffffff" stopOpacity={0}/></linearGradient></defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.15)" />
-                    <XAxis dataKey="name" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.8)", fontStyle: "normal", fontWeight: "bold" }} tickLine={false} axisLine={false} interval={0} dy={10} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.3)', strokeWidth: 2, strokeDasharray: '3 3' }} />
-                    <Area type="monotone" dataKey="DailyExp" name="Pengeluaran Harian" stroke="#ffffff" strokeWidth={3} fillOpacity={1} fill="url(#colorExp)" activeDot={{ r: 6, fill: "#1e3a8a", stroke: "#ffffff", strokeWidth: 2 }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ringkasan</p>
-              <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Arus Kas Bulanan</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex gap-2 items-center mb-1"><div className="w-2 h-2 rounded-full bg-emerald-500"/><span className="text-lg font-black text-slate-800 dark:text-slate-100">Rp {localTotalIncome.toLocaleString('id-ID')}</span></div>
-                  <p className="text-[10px] font-bold text-slate-500 pl-4 mb-2">Pemasukan</p>
-                  <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out" style={{width: `${localTotalIncome > 0 ? (localTotalIncome >= localTotalExpense ? 100 : (localTotalIncome / localTotalExpense) * 100) : 0}%`}}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex gap-2 items-center mb-1"><div className="w-2 h-2 rounded-full bg-red-500"/><span className="text-lg font-black text-slate-800 dark:text-slate-100">Rp {localTotalExpense.toLocaleString('id-ID')}</span></div>
-                  <p className="text-[10px] font-bold text-slate-500 pl-4 mb-2">Pengeluaran</p>
-                  <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-red-500 rounded-full transition-all duration-1000 ease-out" style={{width: `${localTotalExpense > 0 ? (localTotalExpense >= localTotalIncome ? 100 : (localTotalExpense / localTotalIncome) * 100) : 0}%`}}></div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 mt-2"><p className="text-xs font-bold text-slate-600 dark:text-slate-300">Pada {new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'short', year: 'numeric'})}, arus kas Anda {localTotalIncome >= localTotalExpense ? "positif" : "negatif"}. Anda {localTotalIncome >= localTotalExpense ? "menyimpan" : "membelanjakan lebih sebesar"} <span className="font-black">Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}</span>.</p></div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <div className="flex justify-between items-center mb-2"><h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Income vs Expense</h3><span className="text-[10px] font-bold text-slate-500">Cumulative</span></div>
-              
-              <div className="flex gap-4 text-[10px] font-bold mb-4 text-slate-600 dark:text-slate-300">
-                <div className="flex items-center gap-1.5"><div className="w-4 h-1 rounded bg-emerald-500"/> Pemasukan <span className="text-emerald-500 dark:text-emerald-400 ml-1 font-black">Rp {localTotalIncome >= 1000 ? (localTotalIncome/1000).toFixed(0)+'K' : localTotalIncome}</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-4 h-1 rounded bg-red-500"/> Pengeluaran <span className="text-red-500 dark:text-red-400 ml-1 font-black">Rp {localTotalExpense >= 1000 ? (localTotalExpense/1000).toFixed(0)+'K' : localTotalExpense}</span></div>
+                   })
+                )}
               </div>
               
-              <div className="h-56 w-full -ml-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ReLineChart data={dailyCumulativeData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-slate-100 dark:stroke-slate-800" />
-                    <XAxis dataKey="name" tick={{ fontSize: 9, fontStyle: "normal", fontWeight: "bold", fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={0} />
-                    <YAxis tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(1)}K` : v} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="Pemasukan" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: "#10b981", strokeWidth: 0 }} />
-                    <Line type="monotone" dataKey="Pengeluaran" stroke="#ef4444" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: "#ef4444", strokeWidth: 0 }} />
-                  </ReLineChart>
-                </ResponsiveContainer>
+              {/* DAFTAR KATEGORI TANPA BUDGET */}
+              <div className="p-4 border-y border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 mt-4">
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm px-2">Kategori Tanpa Anggaran</h3>
               </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Ringkasan</p>
-              <div className="flex justify-between items-start mb-6">
-                <div><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-2">Financial Health Score</h3><span className={`px-3 py-1 rounded-full text-[10px] font-black ${healthStatus.bg} ${healthStatus.color}`}>{healthStatus.text}</span></div>
-                <div className="relative w-16 h-16 shrink-0">
-                  <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
-                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f1f5f9" strokeWidth="3" className="dark:stroke-slate-800"/>
-                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={healthStatus.stroke} strokeWidth="3" strokeDasharray={`${healthScore}, 100`} className="transition-all duration-1000 ease-out"/>
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center"><span className={`text-xl font-black leading-none ${healthStatus.color}`}>{healthScore}</span><span className="text-[8px] font-bold text-slate-400 leading-none mt-0.5">/100</span></div>
-                </div>
-              </div>
-              <div className={`${localTotalIncome >= localTotalExpense ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"} p-4 rounded-2xl flex items-center gap-4 mb-6 border ${localTotalIncome >= localTotalExpense ? "border-emerald-100 dark:border-emerald-800/30" : "border-red-100 dark:border-red-800/30"}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-white/50 dark:bg-black/20 shrink-0`}>{localTotalIncome >= localTotalExpense ? <TrendingUp size={16}/> : <TrendingDown size={16}/>}</div>
-                <div><p className="text-[10px] font-black uppercase tracking-wider">{localTotalIncome >= localTotalExpense ? "Net Surplus" : "Net Deficit"}</p><p className="text-lg font-black">Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}</p></div>
-              </div>
-              <div className="space-y-4">
-                {[
-                  { label: "Savings Rate", val: `${savingsRate.toFixed(1)}%`, score: (savingsRate>0?30:0), max: 30, icon: "🎯" },
-                  { label: "Expense Control", val: localTotalExpense > localTotalIncome ? "Over" : "Good", score: (localTotalExpense<=localTotalIncome?30:10), max: 30, icon: "📉" },
-                  { label: "No-Spend Days", val: `${noSpendDays} hari`, score: noSpendScore, max: 20, icon: "🌱" },
-                  { label: "Tracking Consistency", val: `${trackedDays} hari`, score: consistencyScore, max: 20, icon: "📅" }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold"><span className="opacity-70">{item.icon}</span> {item.label}</div>
-                    <div className="flex items-center gap-3"><span className="text-[10px] text-slate-500 font-bold w-20 text-right">{item.val}</span><div className="w-12 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-slate-800 dark:bg-slate-300 rounded-full" style={{width:`${(item.score/item.max)*100}%`}}></div></div><span className="text-[10px] font-black text-slate-800 dark:text-slate-200 w-4 text-right">{Math.round(item.score)}</span></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-              <div><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Spending by Day of Week</h3><p className="text-[10px] font-bold text-slate-500">Peak spending day: <span className="text-red-500">{dowFullNames[peakDayIdx]}</span></p></div>
-              <div className="h-40 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ReBarChart data={dowChartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: "bold", fill: "#94a3b8" }} dy={10} /><Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} content={<CustomTooltip />} /><Bar dataKey="Pengeluaran" radius={[6, 6, 6, 6]}>{dowChartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.fill} />))}</Bar></ReBarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 divide-x divide-slate-200 dark:divide-slate-700">
-                <div className="flex-1 text-center"><p className="text-[10px] font-bold text-slate-500 mb-1">Weekdays</p><p className="text-sm font-black text-slate-800 dark:text-slate-200">Rp {Math.round((dowData[1]+dowData[2]+dowData[3]+dowData[4]+dowData[5])/5/1000).toFixed(0)}K <span className="text-[9px] text-slate-400 font-normal">avg/day</span></p></div>
-                <div className="flex-1 text-center"><p className="text-[10px] font-bold text-slate-500 mb-1">Weekends</p><p className="text-sm font-black text-slate-800 dark:text-slate-200">Rp {Math.round((dowData[0]+dowData[6])/2/1000).toFixed(0)}K <span className="text-[9px] text-slate-400 font-normal">avg/day</span></p></div>
+              <div className="p-4 bg-white dark:bg-slate-900 flex flex-wrap gap-2">
+                {categories.filter(c => c.type === 'expense' && (!c.budgetLimit || c.budgetLimit === 0)).length === 0 ? (
+                  <p className="text-xs text-slate-400 font-bold px-2 py-1">Semua kategori pengeluaran sudah memiliki anggaran.</p>
+                ) : (
+                  categories.filter(c => c.type === 'expense' && (!c.budgetLimit || c.budgetLimit === 0)).sort((a,b) => a.name.localeCompare(b.name)).map(cat => (
+                    <button 
+                      key={cat.id} 
+                      onClick={() => { triggerHaptic(); setSelectedBudgetCat(cat); setBudgetInput(""); }}
+                      className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer flex items-center gap-1.5 transition-colors"
+                    >
+                      <span className="opacity-70">{cat.icon || "🏷️"}</span> {cat.name} <Plus size={12} className="text-blue-500 ml-1"/>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -1177,6 +1093,70 @@ const generatePrintHTML = () => {
             </div>
           </div>
         )}
+
+      {/* ================= BOTTOM SHEETS MODAL ANGGARAN ================= */}
+      {selectedBudgetCat && (
+        <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedBudgetCat(null)}>
+          <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col border border-slate-100 dark:border-slate-800 text-left" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-lg shadow-sm border border-slate-100 dark:border-slate-700">{selectedBudgetCat.icon || "🏷️"}</div>
+                <div>
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">{selectedBudgetCat.name}</h3>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Atur Limit Bulanan</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedBudgetCat(null)} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={14}/></button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Nominal Anggaran (Rp)</label>
+                <input 
+                  type="number" 
+                  autoFocus
+                  placeholder="Contoh: 500000 (Kosongkan utk Hapus)" 
+                  className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm outline-blue-500 font-black text-slate-800 dark:text-slate-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                  value={budgetInput} 
+                  onChange={e => setBudgetInput(e.target.value)} 
+                />
+                {budgetInput && <p className="text-[10px] font-bold text-slate-500 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>Rp {Number(budgetInput).toLocaleString('id-ID')}</span></p>}
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button 
+                  onClick={() => {
+                    triggerHaptic();
+                    if (updateCategory) {
+                      const val = Number(budgetInput);
+                      updateCategory(selectedBudgetCat.id, selectedBudgetCat.name, val > 0 ? val : null, selectedBudgetCat.expenseType || "variable", selectedBudgetCat.icon);
+                      setSelectedBudgetCat(null);
+                    }
+                  }} 
+                  className={`flex-1 py-3.5 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer transition-all active:scale-95 border ${currentTheme.activeBg}`}
+                >
+                  Simpan Anggaran
+                </button>
+                {selectedBudgetCat.budgetLimit && selectedBudgetCat.budgetLimit > 0 && (
+                  <button 
+                    onClick={() => {
+                      triggerHaptic();
+                      if (updateCategory) {
+                        updateCategory(selectedBudgetCat.id, selectedBudgetCat.name, null, selectedBudgetCat.expenseType || "variable", selectedBudgetCat.icon);
+                        setSelectedBudgetCat(null);
+                      }
+                    }} 
+                    className="py-3.5 px-5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 dark:hover:bg-red-800/50 transition-colors cursor-pointer"
+                    title="Hapus Anggaran"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       </div>
     </>
