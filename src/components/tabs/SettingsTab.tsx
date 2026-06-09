@@ -713,20 +713,44 @@ export default function SettingsTab({
           <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-6">Atur nilai tukar mata uang asing ke Rupiah (IDR) secara manual untuk perhitungan total nilai bersih dompet Anda.</p>
           
           <div className="grid grid-cols-2 gap-4 mb-6">
-            {Object.keys(localRates).filter(k => k !== "IDR").map(cur => (
-              <div key={cur} className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{cur} ke IDR</label>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-400">Rp</span>
-                  <input 
-                    type="number" 
-                    className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
-                    value={localRates[cur] || ""} 
-                    onChange={e => setLocalRates({...localRates, [cur]: e.target.value})} 
-                  />
+            {Object.keys(localRates).filter(k => k !== "IDR").map(cur => {
+              // Deteksi apakah ini mata uang bawaan atau kustom tambahan
+              const isDefaultCurrency = ["USD", "SGD", "EUR", "JPY", "GBP", "AUD", "MYR", "SAR", "BTC", "ETH", "GRAM", "CNY"].includes(cur);
+              
+              return (
+                <div key={cur} className="space-y-1 relative group">
+                  <div className="flex justify-between items-center pr-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{cur} ke IDR</label>
+                    {/* Munculkan tombol hapus hanya untuk mata uang kustom */}
+                    {!isDefaultCurrency && (
+                      <button 
+                        onClick={() => {
+                          triggerHaptic();
+                          if(confirm(`Hapus mata uang kustom ${cur}?`)) {
+                            const newRates = { ...localRates };
+                            delete newRates[cur];
+                            setLocalRates(newRates);
+                          }
+                        }}
+                        className="text-red-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                        title={`Hapus ${cur}`}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-400">Rp</span>
+                    <input 
+                      type="number" 
+                      className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                      value={localRates[cur] || ""} 
+                      onChange={e => setLocalRates({...localRates, [cur]: e.target.value})} 
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* FORM TAMBAH MATA UANG KUSTOM */}
