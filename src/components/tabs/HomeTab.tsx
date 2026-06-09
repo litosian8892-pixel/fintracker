@@ -1002,9 +1002,9 @@ export default function HomeTab({
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-400 uppercase">Kategori</label>
-                          <div onClick={() => { setActiveEditSplitIndex(i); setShowEditSplitCatModal(true); }} className="p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between hover:bg-slate-50 truncate">
-                            <span className="truncate">{item.category || "Pilih..."}</span><ChevronDown size={14} className="text-slate-400 shrink-0" />
-                          </div>
+                          <div onClick={() => { setActiveEditSplitIndex(i); setShowEditSplitCatModal(true); }} className="p-3 !bg-slate-50 dark:!bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-900 truncate transition-colors">
+                          <span className="truncate">{item.category || "Pilih..."}</span><ChevronDown size={14} className="text-slate-400 shrink-0" />
+                        </div>
                         </div>
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-slate-400">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
@@ -1278,7 +1278,7 @@ export default function HomeTab({
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400">Kategori</label>
-                        <div onClick={() => { setActiveSplitIndex(i); setShowSplitCatModal(true); setSearchQuery(""); }} className="p-3 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between truncate hover:bg-slate-100 dark:hover:bg-slate-800">
+                        <div onClick={() => { setActiveSplitIndex(i); setShowSplitCatModal(true); setSearchQuery(""); }} className="p-3 !bg-slate-50 dark:!bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between truncate hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
                           <span className="truncate">{item.category || "Pilih..."}</span><ChevronDown size={14} className="text-slate-400 shrink-0" />
                         </div>
                       </div>
