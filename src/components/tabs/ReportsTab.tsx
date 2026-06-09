@@ -3,7 +3,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { 
   Download, ChevronDown, ArrowUp, ArrowDown, X, Printer, 
   BarChart3, PieChart as PieIcon, CalendarDays, Activity, Filter, 
-  TrendingDown, TrendingUp, AlertCircle, Check, ChevronRight
+  TrendingDown, TrendingUp, AlertCircle, Check, ChevronRight, Target
 } from "lucide-react";
 import { 
   PieChart as RePieChart, Pie, Cell, ResponsiveContainer, Tooltip, 
@@ -122,8 +122,8 @@ export default function ReportsTab({
     return () => window.removeEventListener("accent_color_changed", updateAccent);
   }, []);
 
-  const [activeView, setActiveView] = useState<"statistik" | "laporan" | "kalender">("statistik");
-  const [cashFlowMode, setCashFlowMode] = useState<"minggu" | "bulan">("bulan"); // STATE BARU: MINGGU / BULAN
+  const [activeView, setActiveView] = useState<"statistik" | "anggaran" | "laporan" | "kalender">("statistik");
+  const [cashFlowMode, setCashFlowMode] = useState<"minggu" | "bulan">("bulan");
   const [selectedHeatmapDate, setSelectedHeatmapDate] = useState<string | null>(null);
   
   const [selectedAccount, setSelectedAccount] = useState<string>("All");
@@ -232,21 +232,7 @@ export default function ReportsTab({
   
   const localPrevTotalIncome = unrollSplits(prevMonthTxs.filter(t => t.type === 'income')).reduce((s, t) => s + t.amount, 0);
 
-  const getTwelveMonthsList = (ym: string) => {
-    const [year, month] = ym.split("-").map(Number);
-    const months = [];
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(year, month - 1 - i, 1);
-      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
-    }
-    return months;
-  };
-
-  const lastTwelveMonthsList = getTwelveMonthsList(reportMonth);
-  
-  
   const monthNavPills = useMemo(() => {
-    // Kunci kalkulasi ke waktu saat ini, bukan ke state reportMonth
     const today = new Date();
     const year = today.getFullYear();
     const month = today.getMonth() + 1;
@@ -256,7 +242,18 @@ export default function ReportsTab({
       pills.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
     }
     return pills;
-  }, []); // Kosongkan array dependency agar tidak render ulang saat diklik
+  }, []);
+
+  const getTwelveMonthsList = (ym: string) => {
+    const [year, month] = ym.split("-").map(Number);
+    const months = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(year, month - 1 - i, 1);
+      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    return months;
+  };
+  const lastTwelveMonthsList = getTwelveMonthsList(reportMonth);
 
   const trendData = lastTwelveMonthsList.map(month => {
     const monthTxs = filteredGlobalTxs.filter(t => t.tDate && t.tDate.startsWith(month) && (selectedAccount === "All" || t.accountName === selectedAccount));
@@ -294,27 +291,25 @@ export default function ReportsTab({
   incomeTxs.forEach(t => { const d = parseInt(t.tDate.split('-')[2], 10); dailyIncomeMap[d] = (dailyIncomeMap[d] || 0) + t.amount; });
   const trackedDays = Object.keys(dailyExpenseMap).length;
 
-  // LOGIKA BARU: Menyeimbangkan "Hari Hemat" dan "Konsistensi Mencatat" (100 Poin)
   const todayObj = new Date();
   const isCurrentMonth = todayObj.getFullYear() === y && (todayObj.getMonth() + 1) === m;
   const daysPassed = isCurrentMonth ? todayObj.getDate() : daysInMonth;
   
   const noSpendDays = Math.max(0, daysPassed - trackedDays);
-  const noSpendScore = Math.min((noSpendDays / 5) * 20, 20); // Max 20 poin untuk 5 hari hemat
-  const consistencyScore = Math.min((trackedDays / 10) * 20, 20); // Max 20 poin untuk 10 hari mencatat
+  const noSpendScore = Math.min((noSpendDays / 5) * 20, 20);
+  const consistencyScore = Math.min((trackedDays / 10) * 20, 20);
 
   const savingsRate = localTotalIncome > 0 ? ((localTotalIncome - localTotalExpense) / localTotalIncome) * 100 : 0;
   const expenseControlScore = localTotalExpense <= localTotalIncome ? 100 : (localTotalIncome === 0 ? 0 : Math.max(0, 100 - ((localTotalExpense - localTotalIncome) / localTotalIncome * 100)));
   
-  const savingsPoin = savingsRate > 0 ? 30 : 10; // Max 30 poin
-  const controlPoin = expenseControlScore * 0.3; // Max 30 poin
+  const savingsPoin = savingsRate > 0 ? 30 : 10;
+  const controlPoin = expenseControlScore * 0.3;
   const healthScore = Math.min(Math.max(Math.round(savingsPoin + controlPoin + noSpendScore + consistencyScore), 0), 100);
   
   let healthStatus = { text: "Needs Attention", color: "text-red-500", bg: "bg-red-100 dark:bg-red-900/30", stroke: "#ef4444" };
   if (healthScore >= 80) healthStatus = { text: "Excellent", color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/30", stroke: "#10b981" };
   else if (healthScore >= 50) healthStatus = { text: "Good", color: "text-amber-500", bg: "bg-amber-100 dark:bg-amber-900/30", stroke: "#f59e0b" };
 
-  // LOGIKA BARU: HITUNG ARUS KAS MINGGUAN DINAMIS UNTUK BULAN BERJALAN (FASE 14)
   const weeklyCashFlowData = useMemo(() => {
     const weeks = [
       { name: "Minggu 1", start: 1, end: 7 },
@@ -322,28 +317,30 @@ export default function ReportsTab({
       { name: "Minggu 3", start: 15, end: 21 },
       { name: "Minggu 4", start: 22, end: daysInMonth }
     ];
-
     return weeks.map(w => {
       const weekTxs = currentMonthTxs.filter(t => {
         const day = parseInt(t.tDate.split("-")[2], 10);
         return day >= w.start && day <= w.end;
       });
-
       const inc = weekTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.splits?.reduce((s, split) => s + split.amount, 0) || t.amount), 0);
       const adminFees = weekTxs.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).reduce((sum, t) => sum + t.adminFee!, 0);
       const exp = weekTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.splits?.reduce((s, split) => s + split.amount, 0) || t.amount), 0) + adminFees;
-
-      return {
-        month: reportMonth,
-        name: w.name,
-        Pemasukan: inc,
-        Pengeluaran: exp,
-        Net: inc - exp
-      };
+      return { month: reportMonth, name: w.name, Pemasukan: inc, Pengeluaran: exp, Net: inc - exp };
     });
   }, [currentMonthTxs, reportMonth, daysInMonth]);
 
-  const generatePrintHTML = () => {
+  // LOGIKA FITUR ANGGARAN (BUDGETING) BARU
+  const budgetCategories = useMemo(() => {
+    return categories.filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0).sort((a, b) => a.name.localeCompare(b.name));
+  }, [categories]);
+
+  const totalBudgetLimit = budgetCategories.reduce((sum, c) => sum + (c.budgetLimit || 0), 0);
+  const totalSpentOnBudget = budgetCategories.reduce((sum, c) => sum + (expGrouped[c.name] || 0), 0);
+  const remainingBudget = totalBudgetLimit - totalSpentOnBudget;
+  const overallBudgetPercentage = totalBudgetLimit > 0 ? (totalSpentOnBudget / totalBudgetLimit) * 100 : 0;
+  const daysRemaining = isCurrentMonth ? Math.max(0, daysInMonth - todayObj.getDate()) : 0;
+// === BATAS PART 1 ===
+const generatePrintHTML = () => {
     const tableRows = currentMonthTxs.map(t => `
       <tr style="border-bottom: 1px solid #e2e8f0;">
         <td style="padding: 12px 10px; font-weight: 500;">${new Date(t.tDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'short'})}</td>
@@ -442,6 +439,7 @@ export default function ReportsTab({
       </html>
     `;
   };
+  
   const RenderDonutList = ({ data, colors, total, title, type, showAll, setShowAll }: { data: any[], colors: string[], total: number, title: string, type: 'income' | 'expense', showAll: boolean, setShowAll: (val: boolean) => void }) => {
     const displayedProgressBars = showAll ? data : data.slice(0, 5);
     return (
@@ -461,13 +459,11 @@ export default function ReportsTab({
         ) : (
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="relative w-40 h-40 shrink-0">
-              {/* POSISI IKON DIPINDAH KE BELAKANG CHART DENGAN Z-0 */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
                 <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-full shadow-inner flex items-center justify-center">
                   {type === "expense" ? <TrendingDown className="text-red-500" size={20}/> : <TrendingUp className="text-emerald-500" size={20}/>}
                 </div>
               </div>
-              {/* CHART DIBERI Z-10 AGAR TOOLTIP SELALU MUNCUL DI ATAS IKON */}
               <div className="relative z-10 w-full h-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <RePieChart>
@@ -536,15 +532,9 @@ export default function ReportsTab({
 
   return (
     <>
-      {/* SUNTIKAN ATURAN CSS UNTUK MENYEMBUNYIKAN BATANG SCROLLBAR SECARA LOKAL */}
       <style dangerouslySetInnerHTML={{__html: `
-        .no-scrollbar::-webkit-scrollbar {
-          display: none !important;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none !important;
-          scrollbar-width: none !important;
-        }
+        .no-scrollbar::-webkit-scrollbar { display: none !important; }
+        .no-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
       `}} />
 
       <div className="space-y-6 animate-in print:hidden">
@@ -560,7 +550,6 @@ export default function ReportsTab({
             </button>
           </div>
 
-          {/* Navigasi Bulan */}
           <div ref={monthScrollRef} className="flex overflow-x-auto gap-2 px-2 pb-2 -mx-2 snap-x no-scrollbar scroll-smooth">
             {monthNavPills.map(month => {
               const isActive = month === reportMonth;
@@ -574,15 +563,17 @@ export default function ReportsTab({
             })}
           </div>
 
+          {/* TAB SWITCHER BERISI 4 MENU SEKARANG (TERMASUK ANGGARAN) */}
           <div className="flex justify-center mb-2">
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner overflow-x-auto no-scrollbar max-w-full">
               {[
                 { id: "statistik", label: "Statistik", icon: BarChart3 },
+                { id: "anggaran", label: "Anggaran", icon: Target },
                 { id: "laporan", label: "Laporan", icon: Activity },
                 { id: "kalender", label: "Kalender", icon: CalendarDays }
               ].map(tab => (
-                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveView(tab.id as any); }} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${activeView === tab.id ? `${currentTheme.activeBg}` : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"}`}>
-                  <tab.icon size={14} /> {tab.label}
+                <button key={tab.id} onClick={() => { triggerHaptic(); setActiveView(tab.id as any); }} className={`flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-xs font-black transition-all cursor-pointer shrink-0 ${activeView === tab.id ? `${currentTheme.activeBg}` : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"}`}>
+                  <tab.icon size={14} className="shrink-0" /> <span className="hidden sm:inline">{tab.label}</span><span className="sm:hidden">{tab.label.substring(0,3)}</span>
                 </button>
               ))}
             </div>
@@ -593,21 +584,7 @@ export default function ReportsTab({
               <Download size={14}/> Export Excel
             </button>
             <button 
-              onClick={() => {
-                triggerHaptic();
-                try {
-                  const htmlContent = generatePrintHTML();
-                  const printWindow = window.open("", "_blank");
-                  if (printWindow) {
-                    printWindow.document.write(htmlContent);
-                    printWindow.document.close();
-                  } else {
-                    window.print();
-                  }
-                } catch (e) {
-                  window.print();
-                }
-              }} 
+              onClick={() => { triggerHaptic(); try { const htmlContent = generatePrintHTML(); const printWindow = window.open("", "_blank"); if (printWindow) { printWindow.document.write(htmlContent); printWindow.document.close(); } else { window.print(); } } catch (e) { window.print(); } }} 
               className="flex-1 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200/50 dark:border-red-800/50 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors touch-manipulation cursor-pointer active:scale-95"
             >
               <Printer size={14}/> Cetak PDF
@@ -640,51 +617,22 @@ export default function ReportsTab({
               <div className="flex justify-between items-center">
                 <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Arus Kas</h3>
                 
-                {/* BUTTONS SWITCHER INTERAKTIF (AKTIF MINGGU & BULAN) */}
                 <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
-                  <button 
-                    type="button"
-                    onClick={() => { triggerHaptic(); setCashFlowMode("minggu"); }}
-                    className={`px-3 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-all ${
-                      cashFlowMode === "minggu" 
-                        ? `${currentTheme.activeBg} shadow-sm` 
-                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
-                    }`}
-                  >
-                    Minggu
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => { triggerHaptic(); setCashFlowMode("bulan"); }}
-                    className={`px-3 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-all ${
-                      cashFlowMode === "bulan" 
-                        ? `${currentTheme.activeBg} shadow-sm` 
-                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
-                    }`}
-                  >
-                    Bulan
-                  </button>
+                  <button type="button" onClick={() => { triggerHaptic(); setCashFlowMode("minggu"); }} className={`px-3 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-all ${cashFlowMode === "minggu" ? `${currentTheme.activeBg} shadow-sm` : "text-slate-500 dark:text-slate-400 hover:text-slate-700"}`}>Minggu</button>
+                  <button type="button" onClick={() => { triggerHaptic(); setCashFlowMode("bulan"); }} className={`px-3 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-all ${cashFlowMode === "bulan" ? `${currentTheme.activeBg} shadow-sm` : "text-slate-500 dark:text-slate-400 hover:text-slate-700"}`}>Bulan</button>
                 </div>
               </div>
               
               <div className="h-32 w-full pt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ReBarChart 
-                    data={cashFlowMode === "bulan" ? trendData.slice(-12) : weeklyCashFlowData} 
-                    margin={{ top: 10, right: 0, left: 0, bottom: 0 }} 
-                    barGap={0} 
-                    barCategoryGap="20%"
-                  >
+                  <ReBarChart data={cashFlowMode === "bulan" ? trendData.slice(-12) : weeklyCashFlowData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barGap={0} barCategoryGap="20%">
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} dy={10} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} />
                     <Bar dataKey="Net" radius={[4, 4, 4, 4]}>
                       {(cashFlowMode === "bulan" ? trendData.slice(-12) : weeklyCashFlowData).map((entry, index) => {
                         let fill = '#64748b';
-                        if (cashFlowMode === "bulan") {
-                          fill = entry.month === reportMonth ? (entry.Net >= 0 ? '#10b981' : '#ef4444') : '#64748b';
-                        } else {
-                          fill = entry.Net >= 0 ? '#10b981' : '#ef4444';
-                        }
+                        if (cashFlowMode === "bulan") { fill = entry.month === reportMonth ? (entry.Net >= 0 ? '#10b981' : '#ef4444') : '#64748b'; } 
+                        else { fill = entry.Net >= 0 ? '#10b981' : '#ef4444'; }
                         return <Cell key={`cell-${index}`} fill={fill} />;
                       })}
                     </Bar>
@@ -743,7 +691,6 @@ export default function ReportsTab({
             <div className="space-y-4 pt-2 animate-in fade-in duration-300">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg px-2">Rincian Pengeluaran</h3>
               
-              {/* FIXED */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
                 <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-2">Pengeluaran Tetap (Fixed)</p>
                 {sortedFixedKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-500 italic">Kosong</p> : (
@@ -787,7 +734,6 @@ export default function ReportsTab({
                 )}
               </div>
 
-              {/* VARIABLE */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
                 <p className="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest mb-2">Pengeluaran Variabel (Jajan)</p>
                 {sortedVarKeys.length === 0 ? <p className="text-xs text-slate-400 dark:text-slate-500 italic">Kosong</p> : (
@@ -837,7 +783,6 @@ export default function ReportsTab({
               </div>
             </div>
 
-            {/* RINCIAN PEMASUKAN (LIST EXPANDABLE) */}
             <div className="space-y-4 pt-2 animate-in fade-in duration-300">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg px-2">Rincian Pemasukan</h3>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
@@ -884,6 +829,83 @@ export default function ReportsTab({
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* ================= VIEW 4: ANGGARAN (BUDGETING TRACKER) ================= */}
+        {activeView === "anggaran" && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-200">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Sisa Anggaran Tersedia</p>
+                  <h2 className={`text-3xl font-black ${remainingBudget < 0 ? 'text-red-500' : 'text-slate-800 dark:text-white'}`}>
+                    {remainingBudget < 0 ? "-" : ""}Rp {Math.abs(remainingBudget).toLocaleString('id-ID')}
+                  </h2>
+                  <p className="text-[10px] font-bold text-slate-500 mt-1">{daysRemaining} hari tersisa • {budgetCategories.length} kategori diatur</p>
+                </div>
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-sm shadow-inner shrink-0 ${overallBudgetPercentage >= 100 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : overallBudgetPercentage >= 80 ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
+                  {overallBudgetPercentage.toFixed(0)}%
+                </div>
+              </div>
+              
+              <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-2">
+                <div className={`h-full rounded-full transition-all duration-1000 ease-out ${overallBudgetPercentage >= 100 ? 'bg-red-500' : overallBudgetPercentage >= 80 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{width: `${Math.min(overallBudgetPercentage, 100)}%`}}></div>
+              </div>
+              
+              <div className="flex justify-between text-[10px] font-bold text-slate-400 dark:text-slate-500">
+                <span>Terpakai: Rp {totalSpentOnBudget.toLocaleString('id-ID')}</span>
+                <span>Total Batas: Rp {totalBudgetLimit.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-200">
+              <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm px-2">Rincian Anggaran Kategori</h3>
+              </div>
+              
+              {budgetCategories.length === 0 ? (
+                 <div className="p-10 text-center">
+                   <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Belum ada kategori dengan batas anggaran (Budget Limit). Silakan atur limit pengeluaran di menu Pengaturan.</p>
+                 </div>
+              ) : (
+                 <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                   {budgetCategories.map(cat => {
+                     const spent = expGrouped[cat.name] || 0;
+                     const limit = cat.budgetLimit || 0;
+                     const pct = limit > 0 ? (spent / limit) * 100 : 0;
+                     const isOver = pct >= 100;
+                     const isWarning = pct >= 80 && !isOver;
+
+                     return (
+                       <div key={cat.id} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                         <div className="flex justify-between items-center mb-3">
+                           <div className="flex items-center gap-3">
+                             <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg">{cat.icon || "🏷️"}</div>
+                             <div>
+                               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{cat.name}</h4>
+                               <p className={`text-[10px] font-bold mt-0.5 ${isOver ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>
+                                 {isOver ? 'Melebihi batas anggaran!' : `Sisa Rp ${(limit - spent).toLocaleString('id-ID')}`}
+                               </p>
+                             </div>
+                           </div>
+                           <div className="text-right">
+                             <span className={`font-black text-sm ${isOver ? 'text-red-500' : 'text-slate-800 dark:text-slate-100'}`}>Rp {spent.toLocaleString('id-ID')}</span>
+                             <p className="text-[9px] font-bold text-slate-400 mt-0.5">dari Rp {limit.toLocaleString('id-ID')}</p>
+                           </div>
+                         </div>
+                         <div className="flex items-center gap-3 pl-13">
+                           <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                             <div className={`h-full rounded-full transition-all duration-500 ${isOver ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{width: `${Math.min(pct, 100)}%`}}></div>
+                           </div>
+                           <span className={`text-[10px] font-black w-8 text-right ${isOver ? 'text-red-500' : isWarning ? 'text-amber-500' : 'text-emerald-500'}`}>{pct.toFixed(0)}%</span>
+                         </div>
+                       </div>
+                     )
+                   })}
+                 </div>
+              )}
+            </div>
           </div>
         )}
 
