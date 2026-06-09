@@ -684,6 +684,54 @@ export default function SettingsTab({
         </div>
       </div>
 
+      {/* ========================================== */}
+      {/* SUB-MENU 4: KURS GLOBAL (EXCHANGE RATES) */}
+      {/* ========================================== */}
+      <div className={`absolute top-0 left-0 w-full transition-all duration-300 ${activeMenu === "rates" ? "opacity-100 translate-x-0 relative" : "opacity-0 translate-x-full pointer-events-none absolute"}`}>
+        <div className="flex items-center justify-between mb-6">
+          <button onClick={() => { triggerHaptic(); setActiveMenu("main"); }} className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm cursor-pointer text-slate-800 dark:text-slate-100">
+            <ChevronLeft size={20} />
+          </button>
+          <h2 className="font-black text-xl text-slate-800 dark:text-white tracking-tight">Nilai Kurs Global</h2>
+          <div className="w-10"></div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm text-left mb-6">
+          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-6">Atur nilai tukar mata uang asing ke Rupiah (IDR) secara manual untuk perhitungan total nilai bersih dompet Anda.</p>
+          
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            {Object.keys(localRates).filter(k => k !== "IDR").map(cur => (
+              <div key={cur} className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{cur} ke IDR</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-400">Rp</span>
+                  <input 
+                    type="number" 
+                    className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100" 
+                    value={localRates[cur] || ""} 
+                    onChange={e => setLocalRates({...localRates, [cur]: e.target.value})} 
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button 
+            onClick={() => { 
+              triggerHaptic(); 
+              if (handleUpdateGlobalRates) {
+                const parsed: Record<string, number> = {};
+                Object.keys(localRates).forEach(k => { parsed[k] = Number(localRates[k]); });
+                handleUpdateGlobalRates(parsed);
+              }
+            }} 
+            className={`w-full py-3.5 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition-colors active:scale-95 bg-blue-600 hover:bg-blue-700`}
+          >
+            Simpan Pembaruan Kurs
+          </button>
+        </div>
+      </div>
+
 
       {/* POPUP MODAL SETUP & DISABLE PIN */}
       {pinModalMode && (
