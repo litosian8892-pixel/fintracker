@@ -720,7 +720,7 @@ export default function SettingsTab({
                   <span className="text-xs font-bold text-slate-400">Rp</span>
                   <input 
                     type="number" 
-                    className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100" 
+                    className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                     value={localRates[cur] || ""} 
                     onChange={e => setLocalRates({...localRates, [cur]: e.target.value})} 
                   />
