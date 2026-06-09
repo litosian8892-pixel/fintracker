@@ -307,8 +307,8 @@ export default function SettingsTab({
               <div className="flex-1 space-y-1">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Tipe Pengeluaran</label>
                 <select className="w-full p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={editCatExpType} onChange={(e) => setEditCatExpType(e.target.value as "fixed" | "variable")}>
-                  <option value="variable">Variabel (Jajan, Makan)</option>
-                  <option value="fixed">Tetap (Tagihan, Cicilan)</option>
+                  <option value="variable">Variabel</option>
+                  <option value="fixed">Tetap</option>
                 </select>
               </div>
             </div>
