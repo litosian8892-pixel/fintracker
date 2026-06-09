@@ -93,11 +93,24 @@ export default function SettingsTab({
   
   // STATE LOKAL UNTUK MENGEDIT KURS GLOBAL
   const [localRates, setLocalRates] = useState<Record<string, string>>({});
+  const [newCustomCur, setNewCustomCur] = useState(""); // State untuk nambah kustom kurs
   
   useEffect(() => {
     if (exchangeRates) {
       const temp: Record<string, string> = {};
-      Object.keys(exchangeRates).forEach(k => { temp[k] = exchangeRates[k].toString(); });
+      
+      // Daftarkan semua mata uang fisik & unit kripto/emas agar selalu muncul di form
+      const defaultCurrencies = ["USD", "SGD", "EUR", "JPY", "GBP", "AUD", "MYR", "SAR", "BTC", "ETH", "GRAM"];
+      
+      defaultCurrencies.forEach(cur => {
+        temp[cur] = exchangeRates[cur] ? exchangeRates[cur].toString() : "";
+      });
+      
+      // Tambahkan juga jika ada mata uang custom lain dari database
+      Object.keys(exchangeRates).forEach(k => { 
+        if (k !== "IDR") temp[k] = exchangeRates[k].toString(); 
+      });
+      
       setLocalRates(temp);
     }
   }, [exchangeRates]);
@@ -714,6 +727,33 @@ export default function SettingsTab({
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* FORM TAMBAH MATA UANG KUSTOM */}
+          <div className="flex gap-2 mb-6 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <input 
+              type="text" 
+              placeholder="Kode Baru (Cth: THB, DOGE)" 
+              maxLength={5} 
+              className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-blue-500 font-black text-slate-800 dark:text-white uppercase placeholder-slate-400" 
+              value={newCustomCur}
+              onChange={(e) => setNewCustomCur(e.target.value.toUpperCase())}
+            />
+            <button 
+              onClick={() => { 
+                triggerHaptic();
+                const code = newCustomCur.trim();
+                if(code && code !== "IDR" && localRates[code] === undefined) {
+                  setLocalRates({...localRates, [code]: ""});
+                  setNewCustomCur("");
+                } else if (localRates[code] !== undefined) {
+                  alert("Mata uang ini sudah ada di daftar!");
+                }
+              }} 
+              className="px-5 py-3 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-black hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors active:scale-95"
+            >
+              Tambah
+            </button>
           </div>
 
           <button 

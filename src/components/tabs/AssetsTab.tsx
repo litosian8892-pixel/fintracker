@@ -850,6 +850,14 @@ const historicalAssetsData = useMemo(() => {
                           <option value="BTC">₿ Bitcoin (BTC)</option><option value="ETH">⟠ Ethereum (ETH)</option><option value="LOT">Lembar/Lot Saham</option><option value="GRAM">Gram (Emas/Perak)</option>
                         </optgroup>
                       )}
+                      
+                      {/* TAMPILKAN MATA UANG KUSTOM HASIL INPUT PENGGUNA */}
+                      <optgroup label="Kustom / Tambahan">
+                        {exchangeRates && Object.keys(exchangeRates)
+                          .filter(k => !["IDR", "USD", "SGD", "EUR", "JPY", "GBP", "AUD", "MYR", "SAR", "BTC", "ETH", "GRAM", "LOT"].includes(k))
+                          .map(k => <option key={k} value={k}>{k}</option>)
+                        }
+                      </optgroup>
                     </select>
                   </div>
 
