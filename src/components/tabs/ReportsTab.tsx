@@ -16,7 +16,6 @@ import { CategoryData, TransactionData } from "../../types";
 const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#0ea5e9', '#6366f1', '#d946ef', '#f43f5e'];
 const INCOME_COLORS = ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#059669', '#047857'];
 
-// PEMETAAN SEMANTIK WARNA AKSEN TAB LAPORAN (100% Standar Tailwind v4 & Bebas Bocor)
 const themeMap = {
   blue: {
     activeBg: "bg-blue-900 text-white shadow-sm",
@@ -24,7 +23,8 @@ const themeMap = {
     text: "text-blue-600 dark:text-blue-400",
     border: "border-blue-200 dark:border-blue-800",
     cardGradient: "bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900",
-    bgLight: "bg-blue-50 dark:bg-blue-900/20"
+    bgLight: "bg-blue-50 dark:bg-blue-900/20",
+    fab: "bg-blue-600 border-blue-500"
   },
   emerald: {
     activeBg: "bg-emerald-600 text-white shadow-sm",
@@ -32,7 +32,8 @@ const themeMap = {
     text: "text-emerald-600 dark:text-emerald-400",
     border: "border-emerald-200 dark:border-emerald-800",
     cardGradient: "bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900",
-    bgLight: "bg-emerald-50 dark:bg-emerald-900/20"
+    bgLight: "bg-emerald-50 dark:bg-emerald-900/20",
+    fab: "bg-emerald-600 border-emerald-500"
   },
   purple: {
     activeBg: "bg-purple-600 text-white shadow-sm",
@@ -40,7 +41,8 @@ const themeMap = {
     text: "text-purple-600 dark:text-purple-400",
     border: "border-purple-200 dark:border-purple-800",
     cardGradient: "bg-gradient-to-br from-purple-700 via-purple-800 to-fuchsia-900",
-    bgLight: "bg-purple-50 dark:bg-purple-900/20"
+    bgLight: "bg-purple-50 dark:bg-purple-900/20",
+    fab: "bg-purple-600 border-purple-500"
   },
   amber: {
     activeBg: "bg-amber-600 text-white shadow-sm",
@@ -48,7 +50,8 @@ const themeMap = {
     text: "text-amber-600 dark:text-amber-400",
     border: "border-amber-200 dark:border-amber-800",
     cardGradient: "bg-gradient-to-br from-amber-600 via-amber-700 to-orange-900",
-    bgLight: "bg-amber-50 dark:bg-amber-900/20"
+    bgLight: "bg-amber-50 dark:bg-amber-900/20",
+    fab: "bg-amber-600 border-amber-500"
   },
   rose: {
     activeBg: "bg-rose-600 text-white shadow-sm",
@@ -56,7 +59,8 @@ const themeMap = {
     text: "text-rose-600 dark:text-rose-400",
     border: "border-rose-200 dark:border-rose-800",
     cardGradient: "bg-gradient-to-br from-rose-600 via-rose-700 to-pink-900",
-    bgLight: "bg-rose-50 dark:bg-rose-900/20"
+    bgLight: "bg-rose-50 dark:bg-rose-900/20",
+    fab: "bg-rose-600 border-rose-500"
   }
 } as const;
 
@@ -142,6 +146,8 @@ export default function ReportsTab({
   // STATE BARU: MODAL KENDALI ANGGARAN
   const [selectedBudgetCat, setSelectedBudgetCat] = useState<CategoryData | null>(null);
   const [budgetInput, setBudgetInput] = useState("");
+  const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
+  const [newBudgetCat, setNewBudgetCat] = useState<CategoryData | null>(null);
 
   const triggerHaptic = () => { 
     if (typeof window !== "undefined" && localStorage.getItem("fintracker_haptic") !== "false") {
@@ -235,7 +241,6 @@ export default function ReportsTab({
   const prevMonthTxs = filteredGlobalTxs.filter(t => t.tDate && t.tDate.startsWith(prevMonthStr) && (selectedAccount === "All" || t.accountName === selectedAccount));
   const prevAdmin = prevMonthTxs.filter(t => t.type === 'transfer' && t.adminFee).reduce((s,t) => s + t.adminFee!, 0);
   const localPrevTotalExpense = unrollSplits(prevMonthTxs.filter(t => t.type === 'expense')).reduce((s, t) => s + t.amount, 0) + prevAdmin;
-  
   const localPrevTotalIncome = unrollSplits(prevMonthTxs.filter(t => t.type === 'income')).reduce((s, t) => s + t.amount, 0);
 
   const monthNavPills = useMemo(() => {
@@ -334,8 +339,6 @@ export default function ReportsTab({
       return { month: reportMonth, name: w.name, Pemasukan: inc, Pengeluaran: exp, Net: inc - exp };
     });
   }, [currentMonthTxs, reportMonth, daysInMonth]);
-
-  // LOGIKA FITUR ANGGARAN (BUDGETING) BARU
   const budgetCategories = useMemo(() => {
     return categories.filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0).sort((a, b) => a.name.localeCompare(b.name));
   }, [categories]);
@@ -346,8 +349,7 @@ export default function ReportsTab({
   const overallBudgetPercentage = totalBudgetLimit > 0 ? (totalSpentOnBudget / totalBudgetLimit) * 100 : 0;
   const daysRemaining = isCurrentMonth ? Math.max(0, daysInMonth - todayObj.getDate()) : 0;
 
-// === BATAS PART 1 ===
-const generatePrintHTML = () => {
+  const generatePrintHTML = () => {
     const tableRows = currentMonthTxs.map(t => `
       <tr style="border-bottom: 1px solid #e2e8f0;">
         <td style="padding: 12px 10px; font-weight: 500;">${new Date(t.tDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'short'})}</td>
@@ -544,7 +546,7 @@ const generatePrintHTML = () => {
         .no-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
       `}} />
 
-      <div className="space-y-6 animate-in print:hidden">
+      <div className="space-y-6 animate-in print:hidden relative pb-20">
         
         {/* HEADER & FILTER */}
         <div className="flex flex-col gap-4">
@@ -600,9 +602,8 @@ const generatePrintHTML = () => {
 
         {/* ================= VIEW 1: STATISTIK ================= */}
         {activeView === "statistik" && (
-          <div className="space-y-6 animate-in print:hidden">
+          <div className="space-y-6 animate-in fade-in duration-300">
 
-            {/* FIXED VS VARIABLE */}
             {localTotalExpense > 0 && (
               <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
                 <div className="bg-white dark:bg-slate-900 p-4 rounded-[24px] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center text-center transition-colors duration-200">
@@ -618,7 +619,6 @@ const generatePrintHTML = () => {
               </div>
             )}
             
-            {/* Arus Kas & Tren Pengeluaran */}
             <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Arus Kas</h3>
@@ -840,7 +840,7 @@ const generatePrintHTML = () => {
 
         {/* ================= VIEW 4: ANGGARAN (BUDGETING TRACKER) ================= */}
         {activeView === "anggaran" && (
-          <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="space-y-6 animate-in fade-in duration-300 relative pb-20">
             <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-200">
               <div className="flex justify-between items-center mb-6">
                 <div>
@@ -935,6 +935,19 @@ const generatePrintHTML = () => {
                 )}
               </div>
             </div>
+
+            {/* FLOATING ACTION BUTTON (+) KHUSUS TAB ANGGARAN */}
+            <button 
+              onClick={() => { 
+                triggerHaptic(); 
+                setShowAddBudgetModal(true); 
+                setNewBudgetCat(null); 
+                setBudgetInput(""); 
+              }} 
+              className={`fixed bottom-24 md:bottom-10 right-6 w-14 h-14 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40 cursor-pointer shadow-[0_10px_25px_rgba(0,0,0,0.3)] border border-white/20 text-white ${currentTheme.activeBg.split(" ")[0]}`}
+            >
+              <Plus size={28} strokeWidth={2.5} />
+            </button>
           </div>
         )}
 
@@ -1094,28 +1107,57 @@ const generatePrintHTML = () => {
           </div>
         )}
 
-      {/* ================= BOTTOM SHEETS MODAL ANGGARAN ================= */}
-      {selectedBudgetCat && (
-        <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedBudgetCat(null)}>
+      {/* ================= BOTTOM SHEETS MODAL ANGGARAN BARU & EDIT ================= */}
+      {(selectedBudgetCat || showAddBudgetModal) && (
+        <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => { setSelectedBudgetCat(null); setShowAddBudgetModal(false); }}>
           <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col border border-slate-100 dark:border-slate-800 text-left" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-lg shadow-sm border border-slate-100 dark:border-slate-700">{selectedBudgetCat.icon || "🏷️"}</div>
+                <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-lg shadow-sm border border-slate-100 dark:border-slate-700">
+                  {selectedBudgetCat ? (selectedBudgetCat.icon || "🏷️") : "🎯"}
+                </div>
                 <div>
-                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">{selectedBudgetCat.name}</h3>
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">
+                    {selectedBudgetCat ? selectedBudgetCat.name : "Tambah Anggaran Baru"}
+                  </h3>
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Atur Limit Bulanan</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedBudgetCat(null)} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={14}/></button>
+              <button onClick={() => { setSelectedBudgetCat(null); setShowAddBudgetModal(false); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={14}/></button>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-5">
+              
+              {/* OPSI KATEGORI (HANYA MUNCUL SAAT TAMBAH BARU) */}
+              {showAddBudgetModal && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pilih Kategori Pengeluaran</label>
+                  <select 
+                    className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold outline-blue-500 text-slate-800 dark:text-slate-100 cursor-pointer appearance-none"
+                    value={newBudgetCat ? newBudgetCat.id : ""}
+                    onChange={(e) => {
+                      const cat = categories.find(c => c.id === e.target.value);
+                      if (cat) setNewBudgetCat(cat);
+                    }}
+                  >
+                    <option value="" disabled>Pilih Kategori...</option>
+                    {categories
+                      .filter(c => c.type === 'expense' && (!c.budgetLimit || c.budgetLimit === 0))
+                      .sort((a,b) => a.name.localeCompare(b.name))
+                      .map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))
+                    }
+                  </select>
+                </div>
+              )}
+
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Nominal Anggaran (Rp)</label>
                 <input 
                   type="number" 
-                  autoFocus
-                  placeholder="Contoh: 500000 (Kosongkan utk Hapus)" 
+                  autoFocus={!!selectedBudgetCat}
+                  placeholder="Contoh: 500000" 
                   className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm outline-blue-500 font-black text-slate-800 dark:text-slate-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                   value={budgetInput} 
                   onChange={e => setBudgetInput(e.target.value)} 
@@ -1128,16 +1170,24 @@ const generatePrintHTML = () => {
                   onClick={() => {
                     triggerHaptic();
                     if (updateCategory) {
+                      const targetCat = selectedBudgetCat || newBudgetCat;
+                      if (!targetCat) return alert("Pilih kategori terlebih dahulu!");
+                      
                       const val = Number(budgetInput);
-                      updateCategory(selectedBudgetCat.id, selectedBudgetCat.name, val > 0 ? val : null, selectedBudgetCat.expenseType || "variable", selectedBudgetCat.icon);
+                      if (val <= 0) return alert("Nominal anggaran harus lebih dari 0!");
+                      
+                      updateCategory(targetCat.id, targetCat.name, val, targetCat.expenseType || "variable", targetCat.icon);
                       setSelectedBudgetCat(null);
+                      setShowAddBudgetModal(false);
                     }
                   }} 
-                  className={`flex-1 py-3.5 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer transition-all active:scale-95 border ${currentTheme.activeBg}`}
+                  className={`flex-1 py-3.5 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer transition-all active:scale-95 border ${currentTheme.activeBg.split(" ")[0]}`}
                 >
                   Simpan Anggaran
                 </button>
-                {selectedBudgetCat.budgetLimit && selectedBudgetCat.budgetLimit > 0 && (
+                
+                {/* TOMBOL HAPUS (HANYA MUNCUL SAAT EDIT/UPDATE) */}
+                {selectedBudgetCat && selectedBudgetCat.budgetLimit && selectedBudgetCat.budgetLimit > 0 && (
                   <button 
                     onClick={() => {
                       triggerHaptic();

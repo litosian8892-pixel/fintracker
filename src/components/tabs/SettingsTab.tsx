@@ -305,14 +305,10 @@ export default function SettingsTab({
           {tType === 'expense' && (
             <div className="flex gap-2 text-left">
               <div className="flex-1 space-y-1">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Limit Budget (Rp)</label>
-                <input type="number" className="w-full p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" value={editCatBudget} onChange={e => setEditCatBudget(e.target.value)} />
-              </div>
-              <div className="w-28 space-y-1">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Tipe</label>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Tipe Pengeluaran</label>
                 <select className="w-full p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-blue-500 font-bold text-slate-800 dark:text-slate-100 cursor-pointer" value={editCatExpType} onChange={(e) => setEditCatExpType(e.target.value as "fixed" | "variable")}>
-                  <option value="variable">Variabel</option>
-                  <option value="fixed">Tetap</option>
+                  <option value="variable">Variabel (Jajan, Makan)</option>
+                  <option value="fixed">Tetap (Tagihan, Cicilan)</option>
                 </select>
               </div>
             </div>
@@ -334,13 +330,7 @@ export default function SettingsTab({
                 </span>
               )}
             </div>
-            {tType === 'expense' && (cat.budgetLimit || 0) > 0 ? (
-              <div className="flex items-center mt-2.5">
-                <span className="bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 text-[9px] font-black px-2 py-1 rounded-md border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-1.5 shadow-sm">
-                  🎯 Limit Budget: <span className="text-slate-800 dark:text-slate-300">Rp {cat.budgetLimit!.toLocaleString('id-ID')}</span>
-                </span>
-              </div>
-            ) : null}
+  
           </div>
           <div className="flex gap-1.5 pl-3 shrink-0">
             <button onClick={() => { setEditingCatId(cat.id); setEditCatName(cat.name); setEditCatBudget(cat.budgetLimit?.toString() || ""); setEditCatExpType(cat.expenseType || "variable"); setEditCatIcon(cat.icon || ""); }} className="text-slate-400 hover:text-blue-500 p-2 bg-slate-50 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-all cursor-pointer"><Edit2 size={14}/></button>
