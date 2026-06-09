@@ -294,16 +294,21 @@ export default function ReportsTab({
   incomeTxs.forEach(t => { const d = parseInt(t.tDate.split('-')[2], 10); dailyIncomeMap[d] = (dailyIncomeMap[d] || 0) + t.amount; });
   const trackedDays = Object.keys(dailyExpenseMap).length;
 
-  // LOGIKA BARU: Menghitung "Hari Hemat" (No-Spend Days) berdasarkan jumlah hari yang sudah lewat
+  // LOGIKA BARU: Menyeimbangkan "Hari Hemat" dan "Konsistensi Mencatat" (100 Poin)
   const todayObj = new Date();
   const isCurrentMonth = todayObj.getFullYear() === y && (todayObj.getMonth() + 1) === m;
   const daysPassed = isCurrentMonth ? todayObj.getDate() : daysInMonth;
+  
   const noSpendDays = Math.max(0, daysPassed - trackedDays);
-  const noSpendScore = Math.min((noSpendDays / 10) * 30, 30); // 10 Hari Hemat dijamin dapat max 30 Poin!
+  const noSpendScore = Math.min((noSpendDays / 5) * 20, 20); // Max 20 poin untuk 5 hari hemat
+  const consistencyScore = Math.min((trackedDays / 10) * 20, 20); // Max 20 poin untuk 10 hari mencatat
 
   const savingsRate = localTotalIncome > 0 ? ((localTotalIncome - localTotalExpense) / localTotalIncome) * 100 : 0;
   const expenseControlScore = localTotalExpense <= localTotalIncome ? 100 : (localTotalIncome === 0 ? 0 : Math.max(0, 100 - ((localTotalExpense - localTotalIncome) / localTotalIncome * 100)));
-  const healthScore = Math.min(Math.max(Math.round((savingsRate > 0 ? 40 : 10) + noSpendScore + (expenseControlScore * 0.3)), 0), 100);
+  
+  const savingsPoin = savingsRate > 0 ? 30 : 10; // Max 30 poin
+  const controlPoin = expenseControlScore * 0.3; // Max 30 poin
+  const healthScore = Math.min(Math.max(Math.round(savingsPoin + controlPoin + noSpendScore + consistencyScore), 0), 100);
   
   let healthStatus = { text: "Needs Attention", color: "text-red-500", bg: "bg-red-100 dark:bg-red-900/30", stroke: "#ef4444" };
   if (healthScore >= 80) healthStatus = { text: "Excellent", color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/30", stroke: "#10b981" };
@@ -967,9 +972,10 @@ export default function ReportsTab({
               </div>
               <div className="space-y-4">
                 {[
-                  { label: "Savings Rate", val: `${savingsRate.toFixed(1)}%`, score: (savingsRate>0?40:0), max: 40, icon: "🎯" },
+                  { label: "Savings Rate", val: `${savingsRate.toFixed(1)}%`, score: (savingsRate>0?30:0), max: 30, icon: "🎯" },
                   { label: "Expense Control", val: localTotalExpense > localTotalIncome ? "Over" : "Good", score: (localTotalExpense<=localTotalIncome?30:10), max: 30, icon: "📉" },
-                  { label: "No-Spend Days", val: `${noSpendDays} hari hemat`, score: noSpendScore, max: 30, icon: "🌱" }
+                  { label: "No-Spend Days", val: `${noSpendDays} hari`, score: noSpendScore, max: 20, icon: "🌱" },
+                  { label: "Tracking Consistency", val: `${trackedDays} hari`, score: consistencyScore, max: 20, icon: "📅" }
                 ].map((item, i) => (
                   <div key={i} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold"><span className="opacity-70">{item.icon}</span> {item.label}</div>
