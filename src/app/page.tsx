@@ -400,9 +400,15 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
 
         const getMillis = (t: any) => {
           if (!t) return Date.now(); 
-          if (typeof t.toMillis === 'function') return t.toMillis();
-          if (t.seconds) return t.seconds * 1000;
-          return new Date(t).getTime();
+          if (typeof t.toMillis === 'function') {
+            try { return t.toMillis(); } catch { return Date.now(); }
+          }
+          if (typeof t === 'object') {
+            if (t.seconds !== undefined) return t.seconds * 1000;
+            if (t._seconds !== undefined) return t._seconds * 1000;
+          }
+          const parsed = new Date(t).getTime();
+          return isNaN(parsed) ? Date.now() : parsed;
         };
         return getMillis(b.createdAt) - getMillis(a.createdAt);
       });
@@ -439,9 +445,15 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
 
         const getMillis = (t: any) => {
           if (!t) return Date.now(); 
-          if (typeof t.toMillis === 'function') return t.toMillis();
-          if (t.seconds) return t.seconds * 1000;
-          return new Date(t).getTime();
+          if (typeof t.toMillis === 'function') {
+            try { return t.toMillis(); } catch { return Date.now(); }
+          }
+          if (typeof t === 'object') {
+            if (t.seconds !== undefined) return t.seconds * 1000;
+            if (t._seconds !== undefined) return t._seconds * 1000;
+          }
+          const parsed = new Date(t).getTime();
+          return isNaN(parsed) ? Date.now() : parsed;
         };
         return getMillis(b.createdAt) - getMillis(a.createdAt);
       }); 
