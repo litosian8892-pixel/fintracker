@@ -720,49 +720,70 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
 
     isSubmittingRef.current = true; setIsSubmitting(true);
     try {
+      // 🛡️ SOLUSI MUTLAK: Gunakan Batch Writes agar proses update saldo & histori transaksi bersifat Atomik (All-or-Nothing).
+      const batch = writeBatch(db);
+
       if (tType === "transfer") {
         const destAcc = accounts.find(a => a.id === tToAccountId);
-        if (!destAcc) return alert("Dompet tujuan tidak ditemukan!");
+        if (!destAcc) { alert("Dompet tujuan tidak ditemukan!"); return; }
         const rateDest = exchangeRates[destAcc.currency || "IDR"] || destAcc.lastExchangeRate || 1;
         const destAmount = idrAmount / rateDest;
 
-        await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: sourceAcc.balance - (rawAmount + rawAdminFee) });
-        await updateDoc(doc(db, `users/${user.uid}/accounts/${tToAccountId}`), { balance: destAcc.balance + destAmount });
+        batch.update(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: sourceAcc.balance - (rawAmount + rawAdminFee) });
+        batch.update(doc(db, `users/${user.uid}/accounts/${tToAccountId}`), { balance: destAcc.balance + destAmount });
         
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { 
+        const newTxRef = doc(collection(db, `users/${user.uid}/transactions`));
+        batch.set(newTxRef, { 
           amount: idrAmount, type: "transfer", accountId: tAccountId, toAccountId: tToAccountId, accountName: sourceAcc.name, toAccountName: destAcc.name, note: tNote || "Transfer Dana", category: "Transfer", tDate, tTime, adminFee: idrAdminFee, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, createdAt: serverTimestamp() 
         });
       } else {
         const newBal = tType === "income" ? sourceAcc.balance + rawAmount : sourceAcc.balance - rawAmount;
-        await updateDoc(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: newBal });
+        batch.update(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: newBal });
         
         const docData: any = { amount: idrAmount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: tNote, category: (customSplits && customSplits.length > 0) ? "Split Transaksi" : tCategory, tDate, tTime, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, createdAt: serverTimestamp() };
         if (customSplits && customSplits.length > 0) docData.splits = customSplits.map(s => ({ ...s, amount: s.amount * rateSource }));
-        await addDoc(collection(db, `users/${user.uid}/transactions`), docData);
+        
+        const newTxRef = doc(collection(db, `users/${user.uid}/transactions`));
+        batch.set(newTxRef, docData);
       }
+      
+      // Eksekusi semua perintah modifikasi data sekaligus!
+      await batch.commit();
+
       setTAmount(""); setTNote(""); setTAdminFee(""); setTCategory(""); setTAccountId(""); setTToAccountId(""); 
       const now = new Date(); setTTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
       alert("Transaksi Sukses!");
-    } catch (e) { alert("Gagal simpan transaksi"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+    } catch (e) { 
+      console.error("Kesalahan Atomik:", e);
+      alert("Gagal simpan transaksi. Saldo Anda aman dan dibatalkan (Rollback)."); 
+    } finally { 
+      isSubmittingRef.current = false; setIsSubmitting(false); 
+    }
   };
 
   const handleDeleteTransaction = async (t: TransactionData) => {
     if (isSubmittingRef.current) return; 
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
-    setIsSubmitting(true);
+    isSubmittingRef.current = true; setIsSubmitting(true);
     try {
+      // 🛡️ SOLUSI MUTLAK: Batch hapus, mencegah pengguna farming saldo gratis karena error hapus doc.
+      const batch = writeBatch(db);
+
       if (t.type === "transfer") {
         const sourceAcc = accounts.find(a => a.id === t.accountId); const destAcc = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
         const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount;
         const rawAdminFee = t.originalAmount !== undefined ? ((t.adminFee || 0) / (t.exchangeRate || 1)) : (t.adminFee || 0);
-        if (sourceAcc) await updateDoc(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: sourceAcc.balance + (rawAmount + rawAdminFee) });
-        if (destAcc) { const rateDest = exchangeRates[destAcc.currency || "IDR"] || destAcc.lastExchangeRate || 1; const destAmount = t.originalAmount !== undefined ? (t.amount / rateDest) : t.amount; await updateDoc(doc(db, `users/${user.uid}/accounts/${t.toAccountId}`), { balance: destAcc.balance - destAmount }); }
+        if (sourceAcc) batch.update(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: sourceAcc.balance + (rawAmount + rawAdminFee) });
+        if (destAcc) { const rateDest = exchangeRates[destAcc.currency || "IDR"] || destAcc.lastExchangeRate || 1; const destAmount = t.originalAmount !== undefined ? (t.amount / rateDest) : t.amount; batch.update(doc(db, `users/${user.uid}/accounts/${t.toAccountId}`), { balance: destAcc.balance - destAmount }); }
       } else {
         const acc = accounts.find(a => a.id === t.accountId);
-        if (acc) { const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount; const restoredBal = t.type === "income" ? acc.balance - rawAmount : acc.balance + rawAmount; await updateDoc(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: restoredBal }); }
+        if (acc) { const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount; const restoredBal = t.type === "income" ? acc.balance - rawAmount : acc.balance + rawAmount; batch.update(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: restoredBal }); }
       }
-      await deleteDoc(doc(db, `users/${user.uid}/transactions/${t.id}`));
-    } catch (e) { alert("Gagal hapus transaksi"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+      
+      batch.delete(doc(db, `users/${user.uid}/transactions/${t.id}`));
+      
+      await batch.commit();
+    } catch (e) { alert("Gagal hapus transaksi. Saldo batal dikembalikan."); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
   const openEditModal = (t: TransactionData) => {
