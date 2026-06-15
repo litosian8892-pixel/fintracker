@@ -33,7 +33,6 @@ const safeEvaluate = (expr: string): number => {
   sanitized = sanitized.replace(/[+\-*/(.]*$/, "");
   if (!sanitized) return 0;
   try {
-    // BUG FIX: Memperbaiki eksekusi matematika yang sebelumnya terblokir oleh SyntaxError
     const result = new Function(`"use strict"; return (${sanitized});`)();
     if (typeof result === "number" && isFinite(result)) return result;
     return 0;
@@ -52,14 +51,11 @@ export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // STATE UNTUK MIGRASI DOMAIN
   const [isOldDomain, setIsOldDomain] = useState(false);
-  // 👇 GANTI LINK DI BAWAH INI DENGAN DOMAIN BARU ANDA YANG SUDAH DIBUAT DI VERCEL
   const NEW_DOMAIN_URL = "https://fintracker-id.vercel.app"; 
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Jika URL masih memuat kata "nine-neon", aktifkan Spanduk Migrasi
       if (window.location.hostname.includes("nine-neon")) {
         setIsOldDomain(true);
       }
@@ -138,8 +134,6 @@ export default function FintrackerApp() {
   useEffect(() => {
     const handleAppFocus = () => {
       if (document.visibilityState === "visible" || !document.hidden) {
-        // Hanya update jika user BELUM mulai mengetik nominal (tAmount kosong)
-        // dan TIDAK sedang dalam mode edit koreksi, agar tidak mengganggu proses input.
         if (!tAmount && !editingTransaction) {
           const now = new Date();
           setTDate(getLocalDateString(now));
@@ -147,8 +141,6 @@ export default function FintrackerApp() {
         }
       }
     };
-
-    // Deteksi saat pindah/kembali ke tab (PC) atau buka kembali app dari background (Mobile)
     document.addEventListener("visibilitychange", handleAppFocus);
     window.addEventListener("focus", handleAppFocus);
     
@@ -156,6 +148,7 @@ export default function FintrackerApp() {
       document.removeEventListener("visibilitychange", handleAppFocus);
       window.removeEventListener("focus", handleAppFocus);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tAmount, editingTransaction]);
 
   useEffect(() => {
@@ -179,27 +172,20 @@ export default function FintrackerApp() {
 
   const triggerHapticFeedback = () => { 
     if (typeof window !== "undefined" && localStorage.getItem("fintracker_haptic") !== "false") {
-      // 1. Getaran Hardware Aktual (Untuk pengguna Android)
       if (navigator.vibrate) navigator.vibrate(15); 
-      
-      // 2. Ilusi Sentuhan / Pseudo-Haptic Web Audio (Untuk pengguna iPhone/iOS)
       try {
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
         if (!AudioCtx) return;
         const ctx = new AudioCtx();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        
         osc.connect(gain);
         gain.connect(ctx.destination);
-        
         osc.type = "sine";
         osc.frequency.setValueAtTime(600, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
-        
-        gain.gain.setValueAtTime(0.15, ctx.currentTime); // Volume 15% agar halus
+        gain.gain.setValueAtTime(0.15, ctx.currentTime); 
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-        
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.05);
       } catch (e) {}
@@ -247,7 +233,6 @@ export default function FintrackerApp() {
     if (storedPin) { 
       setAppPin(storedPin); 
       setIsUnlocked(false); 
-      
       const isBioEnabled = localStorage.getItem("fintracker_biometric_enabled") === "true";
       if (isBioEnabled) {
         setIsBiometricActive(true);
@@ -303,8 +288,8 @@ export default function FintrackerApp() {
   const [tTime, setTTime] = useState(() => { const now = new Date(); return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`; });
 
   const [newCatName, setNewCatName] = useState("");
-const [newCatIcon, setNewCatIcon] = useState(""); // <-- TAMBAHKAN BARIS INI
-const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("variable");
+  const [newCatIcon, setNewCatIcon] = useState("");
+  const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("variable");
   const [newWalletTypeName, setNewWalletTypeName] = useState("");
 
   const getPrevMonth = (ym: string) => {
@@ -314,9 +299,8 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
   };
 
   useEffect(() => {
-    // BUG FIX SAFARI: Timer pemaksa jika Firebase Auth tercekik oleh ITP Safari
     const authFallbackTimer = setTimeout(() => {
-      if (loading) setLoading(false);
+      setLoading(false);
     }, 3000);
 
     const unsub = onAuthStateChanged(auth, (u) => { 
@@ -340,24 +324,23 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
       setLoading(false); 
     });
     return () => { clearTimeout(authFallbackTimer); unsub(); };
-  }, [loading]);
+  }, []);
 
-  // 1. DATA KRITIS (Langsung ditarik agar Beranda cepat menyala)
   useEffect(() => {
     if (!user) return;
-    
-    // SAFETY FALLBACK: Safari sering memblokir IndexedDB di tab browser, 
-    // Mencegah isPremium nyangkut di null selamanya yang membuat layar putih/skeleton.
     const fallbackTimer = setTimeout(() => {
-      if (isPremium === null) {
-         const stored = localStorage.getItem("fintracker_is_premium");
-         setIsPremium(stored === "true");
-      }
+      setIsPremium((prev) => {
+        if (prev === null) {
+          const stored = localStorage.getItem("fintracker_is_premium");
+          return stored === "true";
+        }
+        return prev;
+      });
     }, 2500);
 
     const unsubAcc = onSnapshot(query(collection(db, `users/${user.uid}/accounts`), orderBy("order", "asc")), 
       (sn) => { setAccounts(sn.docs.map(d => ({ id: d.id, ...d.data() } as AccountData))); },
-      (err) => { console.warn("Accounts sync error (Safari DB blocked?):", err); }
+      (err) => { console.warn("Accounts sync error:", err); }
     );
     
     const unsubCat = onSnapshot(collection(db, `users/${user.uid}/categories`), 
@@ -379,31 +362,22 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
       (err) => { 
         console.warn("Profile sync error:", err); 
         clearTimeout(fallbackTimer);
-        const stored = localStorage.getItem("fintracker_is_premium");
-        setIsPremium(stored === "true");
+        setIsPremium(localStorage.getItem("fintracker_is_premium") === "true");
       }
     );
     
     return () => { clearTimeout(fallbackTimer); unsubAcc(); unsubCat(); unsubProfile(); };
-  }, [user, isPremium]);
+  }, [user]);
 
-  // 2. DATA DEFERRED / DITUNDA (Ditarik 2 detik setelah Beranda muncul)
   useEffect(() => {
     if (!user) return;
     let unsubTypes: any, unsubDebts: any, unsubSubs: any;
-    
     const timer = setTimeout(() => {
       unsubTypes = onSnapshot(query(collection(db, `users/${user.uid}/walletTypes`), orderBy("order", "asc")), (sn) => { if (sn.empty) setupDefaultWalletTypes(user.uid); else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() } as WalletTypeData))); });
       unsubDebts = onSnapshot(query(collection(db, `users/${user.uid}/debts`), orderBy("createdAt", "desc")), (sn) => { setDebts(sn.docs.map(d => ({ id: d.id, ...d.data() } as DebtData))); });
       unsubSubs = onSnapshot(query(collection(db, `users/${user.uid}/subscriptions`), orderBy("createdAt", "desc")), (sn) => { setSubscriptions(sn.docs.map(d => ({ id: d.id, ...d.data() } as SubscriptionData))); });
-    }, 2000); // Tunda 2 Detik
-    
-    return () => { 
-      clearTimeout(timer); 
-      if(unsubTypes) unsubTypes(); 
-      if(unsubDebts) unsubDebts(); 
-      if(unsubSubs) unsubSubs(); 
-    };
+    }, 2000);
+    return () => { clearTimeout(timer); if(unsubTypes) unsubTypes(); if(unsubDebts) unsubDebts(); if(unsubSubs) unsubSubs(); };
   }, [user]);
 
   useEffect(() => {
@@ -411,14 +385,10 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
     const qHistory = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(txLimit));
     const unsubTr = onSnapshot(qHistory, (sn) => {
       const data = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
-      
-      // OPTIMASI: Mengurutkan kronologis berdasarkan tanggal, jam input (tTime), dan waktu pembuatan dokumen (createdAt)
       data.sort((a, b) => {
         const dateCompare = b.tDate.localeCompare(a.tDate);
         if (dateCompare !== 0) return dateCompare;
-        
-        const timeA = a.tTime || "00:00";
-        const timeB = b.tTime || "00:00";
+        const timeA = a.tTime || "00:00"; const timeB = b.tTime || "00:00";
         const timeCompare = timeB.localeCompare(timeA);
         if (timeCompare !== 0) return timeCompare;
 
@@ -445,9 +415,7 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
     if (!user || (activeTab !== "reports" && activeTab !== "assets" && activeTab !== "home")) return; 
     const [y, m] = reportMonth.split("-").map(Number);
     let monthsBack = 0;
-    if (activeTab === "reports") monthsBack = 12; 
-    else if (activeTab === "assets") monthsBack = 1; 
-    else monthsBack = 0; 
+    if (activeTab === "reports") monthsBack = 12; else if (activeTab === "assets") monthsBack = 1; else monthsBack = 0; 
     const startOfRangeDate = new Date(y, m - 1 - monthsBack, 1);
     const startYear = startOfRangeDate.getFullYear();
     const startMonth = String(startOfRangeDate.getMonth() + 1).padStart(2, "0");
@@ -456,14 +424,10 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
     const qReport = query(collection(db, `users/${user.uid}/transactions`), where("tDate", ">=", startOfRange), where("tDate", "<=", endOfRange));
     const unsubReport = onSnapshot(qReport, (sn) => {
       const data = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
-      
-      // OPTIMASI: Mengurutkan berjenjang per tanggal, jam input (tTime), dan pembuatan dokumen (createdAt) agar tampilan Beranda sinkron
       data.sort((a, b) => {
         const dateCompare = b.tDate.localeCompare(a.tDate);
         if (dateCompare !== 0) return dateCompare;
-
-        const timeA = a.tTime || "00:00";
-        const timeB = b.tTime || "00:00";
+        const timeA = a.tTime || "00:00"; const timeB = b.tTime || "00:00";
         const timeCompare = timeB.localeCompare(timeA);
         if (timeCompare !== 0) return timeCompare;
 
@@ -489,8 +453,7 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
   useEffect(() => {
     if (!user || activeTab !== "reports") return; 
     const prevMonth = getPrevMonth(reportMonth);
-    const startOfPrev = `${prevMonth}-01`;
-    const endOfPrev = `${prevMonth}-31`;
+    const startOfPrev = `${prevMonth}-01`; const endOfPrev = `${prevMonth}-31`;
     const qPrev = query(collection(db, `users/${user.uid}/transactions`), where("tDate", ">=", startOfPrev), where("tDate", "<=", endOfPrev));
     const unsubPrev = onSnapshot(qPrev, (sn) => { setPrevMonthTransactions(sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData))); });
     return () => unsubPrev();
@@ -540,12 +503,11 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
     if (!newCatName || !user) return;
     isSubmittingRef.current = true; setIsSubmitting(true);
     try { 
-  const data: any = { name: newCatName, type: tType, icon: newCatIcon || "" }; // <-- UBAH DI SINI
-  if (tType === "expense") data.expenseType = newExpenseType; 
-  await addDoc(collection(db, `users/${user.uid}/categories`), data); 
-  setNewCatName(""); 
-  setNewCatIcon(""); // <-- TAMBAHKAN BARIS INI (Reset emoji)
-} finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+      const data: any = { name: newCatName, type: tType, icon: newCatIcon || "" }; 
+      if (tType === "expense") data.expenseType = newExpenseType; 
+      await addDoc(collection(db, `users/${user.uid}/categories`), data); 
+      setNewCatName(""); setNewCatIcon(""); 
+    } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
   const deleteCategory = async (id: string) => {
     if (isSubmittingRef.current) return; 
@@ -554,8 +516,7 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
     try { await deleteDoc(doc(db, `users/${user.uid}/categories/${id}`)); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
   const handleEditCategory = async (id: string, newName: string, newBudget: number | null, expenseType: "fixed" | "variable", newIcon?: string) => {
-    if (isSubmittingRef.current) return; 
-    if (!user) return;
+    if (isSubmittingRef.current) return; if (!user) return;
     const oldCategory = categories.find(c => c.id === id); const oldName = oldCategory ? oldCategory.name : "";
     isSubmittingRef.current = true; setIsSubmitting(true);
     try { 
@@ -575,8 +536,7 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
     } catch (e) { alert("Gagal memperbarui kategori!"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
   const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string, dueDate: string, accountId?: string) => {
-    if (isSubmittingRef.current) return; 
-    if (!user) return;
+    if (isSubmittingRef.current) return; if (!user) return;
     isSubmittingRef.current = true; setIsSubmitting(true);
     try {
       if (type === "receivable" && accountId) {
@@ -587,12 +547,11 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
         await addDoc(collection(db, `users/${user.uid}/transactions`), { amount, type: "expense", accountId, accountName: acc.name, category: "Piutang", note: `Memberikan pinjaman (piutang) ke ${person} - ${note || ""}`, tDate: getLocalDateString(), createdAt: serverTimestamp() });
       }
       await addDoc(collection(db, `users/${user.uid}/debts`), { type, personName: person, amount, paidAmount: 0, status: "active", note, dueDate, createdAt: new Date().toISOString() });
-      alert("Catatan berhasil ditambahkan & saldo dompet Anda otomatis terpotong!");
+      alert("Catatan berhasil ditambahkan & saldo dompet otomatis terpotong!");
     } catch (e) { alert("Gagal menambah catatan"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
   const handleDeleteDebt = async (id: string) => {
-    if (isSubmittingRef.current) return; 
-    if (!user || !confirm("Hapus catatan ini secara permanen?")) return;
+    if (isSubmittingRef.current) return; if (!user || !confirm("Hapus catatan ini secara permanen?")) return;
     isSubmittingRef.current = true; setIsSubmitting(true);
     try { await deleteDoc(doc(db, `users/${user.uid}/debts/${id}`)); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
@@ -606,8 +565,7 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
     } catch (e) { alert("Gagal memperbarui catatan"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
   const handlePayDebt = async (debtId: string, payAmount: number, accountId: string, categoryName: string, transactionNote: string) => {
-    if (isSubmittingRef.current) return; 
-    if (!user) return;
+    if (isSubmittingRef.current) return; if (!user) return;
     const debt = debts.find(d => d.id === debtId); const acc = accounts.find(a => a.id === accountId);
     if (!debt || !acc) return alert("Data tidak ditemukan!");
     const newPaidAmount = debt.paidAmount + payAmount; const newStatus = newPaidAmount >= debt.amount ? "paid" : "active";
@@ -641,7 +599,7 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
   };
   const handlePaySubscription = async (sub: SubscriptionData) => {
     if (isSubmittingRef.current) return; if (!user) return;
-    const acc = accounts.find(a => a.id === sub.accountId); if (!acc) return alert("Dompet sumber dana tidak ditemukan! Silakan edit langganan ini dan pilih dompet yang aktif.");
+    const acc = accounts.find(a => a.id === sub.accountId); if (!acc) return alert("Dompet sumber dana tidak ditemukan!");
     isSubmittingRef.current = true; setIsSubmitting(true);
     try {
       await updateDoc(doc(db, `users/${user.uid}/accounts/${sub.accountId}`), { balance: acc.balance - sub.amount });
@@ -650,7 +608,7 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
       const oldDate = new Date(year, month, day); if (sub.cycle === "monthly") { oldDate.setMonth(oldDate.getMonth() + 1); } else { oldDate.setFullYear(oldDate.getFullYear() + 1); }
       const y = oldDate.getFullYear(); const m = String(oldDate.getMonth() + 1).padStart(2, '0'); const d = String(oldDate.getDate()).padStart(2, '0'); const newDueDate = `${y}-${m}-${d}`;
       await updateDoc(doc(db, `users/${user.uid}/subscriptions/${sub.id}`), { nextDueDate: newDueDate });
-      alert(`Pembayaran ${sub.name} berhasil! Jatuh tempo diperpanjang secara otomatis ke ${newDueDate}.`);
+      alert(`Pembayaran ${sub.name} berhasil! Jatuh tempo diperpanjang otomatis ke ${newDueDate}.`);
     } catch (e) { alert("Gagal memproses pembayaran langganan."); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
   const addCustomWalletType = async () => {
@@ -704,7 +662,6 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
   const handleUpdateInvestmentRate = async (id: string, newRate: number) => {
     if (!user) return; try { await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { lastExchangeRate: newRate }); } catch (error) { console.error("Gagal update rate:", error); }
   };
-
   const moveAccountOrder = async (index: number, direction: "up" | "down") => {
     if (isSubmittingRef.current) return; if (!user) return;
     const targetIndex = direction === "up" ? index - 1 : index + 1;
@@ -744,7 +701,6 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
 
     isSubmittingRef.current = true; setIsSubmitting(true);
     try {
-      // 🛡️ SOLUSI MUTLAK: Gunakan Batch Writes agar proses update saldo & histori transaksi bersifat Atomik (All-or-Nothing).
       const batch = writeBatch(db);
 
       if (tType === "transfer") {
@@ -771,18 +727,14 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
         batch.set(newTxRef, docData);
       }
       
-      // Eksekusi semua perintah modifikasi data sekaligus!
       await batch.commit();
 
       setTAmount(""); setTNote(""); setTAdminFee(""); setTCategory(""); setTAccountId(""); setTToAccountId(""); 
       const now = new Date(); setTTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
       alert("Transaksi Sukses!");
     } catch (e) { 
-      console.error("Kesalahan Atomik:", e);
-      alert("Gagal simpan transaksi. Saldo Anda aman dan dibatalkan (Rollback)."); 
-    } finally { 
-      isSubmittingRef.current = false; setIsSubmitting(false); 
-    }
+      console.error(e); alert("Gagal simpan transaksi. Saldo Anda dibatalkan (Rollback)."); 
+    } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
   const handleDeleteTransaction = async (t: TransactionData) => {
@@ -790,7 +742,6 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
     if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
     isSubmittingRef.current = true; setIsSubmitting(true);
     try {
-      // 🛡️ SOLUSI MUTLAK: Batch hapus, mencegah pengguna farming saldo gratis karena error hapus doc.
       const batch = writeBatch(db);
 
       if (t.type === "transfer") {
@@ -805,9 +756,8 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
       }
       
       batch.delete(doc(db, `users/${user.uid}/transactions/${t.id}`));
-      
       await batch.commit();
-    } catch (e) { alert("Gagal hapus transaksi. Saldo batal dikembalikan."); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+    } catch (e) { alert("Gagal hapus transaksi."); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
   const openEditModal = (t: TransactionData) => {
@@ -860,7 +810,7 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
       if (editTType === "transfer") { updateData.toAccountId = editTToAccountId; updateData.toAccountName = accounts.find(a => a.id === editTToAccountId)?.name || ""; updateData.adminFee = newIdrAdminFee; updateData.splits = null; } else { updateData.toAccountId = null; updateData.toAccountName = null; updateData.adminFee = null; if (editTSplits.length > 0) { updateData.splits = editTSplits.map(s => ({ ...s, amount: s.amount * rateSource })); } else { updateData.splits = null; } }
       await updateDoc(tRef, updateData);
       setEditingTransaction(null); setEditTAdminFee(""); alert("Transaksi berhasil diperbarui!");
-    } catch (e) { alert("Gagal memperbarui transaksi: " + e); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+    } catch (e) { alert("Gagal memperbarui transaksi"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
   const monthlyTransactions = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
@@ -897,7 +847,6 @@ const [newExpenseType, setNewExpenseType] = useState<"fixed" | "variable">("vari
     XLSX.writeFile(workbook, `Fintracker_Laporan_${reportMonth}.xlsx`);
   };
 
-  // JIKA BUKA DARI DOMAIN LAMA, CEGAT DENGAN SPANDUK MIGRASI INI
   if (isOldDomain) {
     return (
       <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 transition-colors duration-200">
