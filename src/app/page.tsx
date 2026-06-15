@@ -134,6 +134,30 @@ export default function FintrackerApp() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // FITUR PINTAR: Auto-Refresh Jam & Tanggal saat aplikasi kembali dibuka (kembali fokus)
+  useEffect(() => {
+    const handleAppFocus = () => {
+      if (document.visibilityState === "visible" || !document.hidden) {
+        // Hanya update jika user BELUM mulai mengetik nominal (tAmount kosong)
+        // dan TIDAK sedang dalam mode edit koreksi, agar tidak mengganggu proses input.
+        if (!tAmount && !editingTransaction) {
+          const now = new Date();
+          setTDate(getLocalDateString(now));
+          setTTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+        }
+      }
+    };
+
+    // Deteksi saat pindah/kembali ke tab (PC) atau buka kembali app dari background (Mobile)
+    document.addEventListener("visibilitychange", handleAppFocus);
+    window.addEventListener("focus", handleAppFocus);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleAppFocus);
+      window.removeEventListener("focus", handleAppFocus);
+    };
+  }, [tAmount, editingTransaction]);
+
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme") as "light" | "dark" | "system" | null;
     if (storedTheme) setTheme(storedTheme);
