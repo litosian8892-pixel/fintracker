@@ -130,26 +130,6 @@ export default function FintrackerApp() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // FITUR PINTAR: Auto-Refresh Jam & Tanggal saat aplikasi kembali dibuka (kembali fokus)
-  useEffect(() => {
-    const handleAppFocus = () => {
-      if (document.visibilityState === "visible" || !document.hidden) {
-        if (!tAmount && !editingTransaction) {
-          const now = new Date();
-          setTDate(getLocalDateString(now));
-          setTTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
-        }
-      }
-    };
-    document.addEventListener("visibilitychange", handleAppFocus);
-    window.addEventListener("focus", handleAppFocus);
-    
-    return () => {
-      document.removeEventListener("visibilitychange", handleAppFocus);
-      window.removeEventListener("focus", handleAppFocus);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tAmount, editingTransaction]);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme") as "light" | "dark" | "system" | null;
@@ -286,6 +266,27 @@ export default function FintrackerApp() {
   const [tCategory, setTCategory] = useState("");
   const [tDate, setTDate] = useState(() => getLocalDateString());
   const [tTime, setTTime] = useState(() => { const now = new Date(); return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`; });
+
+  // FITUR PINTAR: Auto-Refresh Jam & Tanggal saat aplikasi kembali dibuka (kembali fokus)
+  useEffect(() => {
+    const handleAppFocus = () => {
+      if (document.visibilityState === "visible" || !document.hidden) {
+        if (!tAmount && !editingTransaction) {
+          const now = new Date();
+          setTDate(getLocalDateString(now));
+          setTTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleAppFocus);
+    window.addEventListener("focus", handleAppFocus);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleAppFocus);
+      window.removeEventListener("focus", handleAppFocus);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tAmount, editingTransaction]);
 
   const [newCatName, setNewCatName] = useState("");
   const [newCatIcon, setNewCatIcon] = useState("");
