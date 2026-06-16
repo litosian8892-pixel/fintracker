@@ -79,7 +79,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     const label = payload[0].payload.name || payload[0].payload.date || payload[0].name || payload[0].payload.dayName;
     return (
       <div className="bg-white dark:bg-slate-800 p-3 rounded-[18px] shadow-xl border border-slate-200 dark:border-slate-700 space-y-1.5 min-w-[150px] max-w-[250px] text-left relative z-50">
-        <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-wider leading-relaxed break-words">{label}</p>
+        <p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-wider leading-relaxed break-words">{label?.trim() ? label : "Sistem / Lainnya"}</p>
         <div className="space-y-1.5 pt-1">
           {payload.map((item: any, idx: number) => (
             <div key={idx} className="flex items-start justify-between gap-4 text-xs font-bold">
@@ -523,7 +523,7 @@ const generatePrintHTML = () => {
                   <div key={idx} onClick={() => { triggerHaptic(); setSelectedCategoryDetail({name: item.name, type}); }} className="flex justify-between items-center text-xs w-full p-2 hover:bg-slate-50 dark:hover:bg-slate-800 -mx-2 rounded-xl transition-colors active:scale-95 group">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-3 h-3 rounded shrink-0" style={{ backgroundColor: colors[idx % colors.length] }} />
-                      <span className="font-bold text-slate-700 dark:text-slate-300 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.name}</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.name?.trim() ? item.name : "Sistem / Lainnya"}</span>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <span className="font-black text-slate-800 dark:text-slate-200">{pct}%</span>
@@ -547,7 +547,7 @@ const generatePrintHTML = () => {
                      <div className="flex gap-2 items-center text-slate-600 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                         <div className="w-6 h-4 bg-slate-100 dark:bg-slate-800 rounded flex items-center justify-center text-[8px] group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50">{pct.toFixed(0)}%</div>
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors[data.findIndex(d => d.name === item.name) % colors.length] }} />
-                        {item.name}
+                        {item.name?.trim() ? item.name : "Sistem / Lainnya"}
                      </div>
                      <div className="flex items-center gap-1">
                        <span className="text-slate-800 dark:text-slate-200">Rp {item.value.toLocaleString('id-ID')}</span>
@@ -737,8 +737,8 @@ const generatePrintHTML = () => {
                         <div key={key} className="border-b border-slate-50 dark:border-slate-800 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
                           <div onClick={() => { triggerHaptic(); toggleExpand(key); }} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 p-1.5 -mx-1.5 rounded-xl transition-all">
                             <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1.5">
-                              <span className="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black">{data.items[0]?.category?.charAt(0).toUpperCase()}</span>
-                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">( {data.items.length}x )</span>
+                              <span className="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black">{data.items[0]?.category?.charAt(0).toUpperCase() || "⚙️"}</span>
+                              {key?.trim() ? key : "Sistem / Lainnya"} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">( {data.items.length}x )</span>
                             </span>
                             <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">
                               Rp {data.total.toLocaleString('id-ID')} 
@@ -780,8 +780,8 @@ const generatePrintHTML = () => {
                         <div key={key} className="border-b border-slate-50 dark:border-slate-800 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
                           <div onClick={() => { triggerHaptic(); toggleExpand(key); }} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 p-1.5 -mx-1.5 rounded-xl transition-all">
                             <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1.5">
-                              <span className="bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black">{data.items[0]?.category?.charAt(0).toUpperCase()}</span>
-                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">( {data.items.length}x )</span>
+                              <span className="bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black">{data.items[0]?.category?.charAt(0).toUpperCase() || "⚙️"}</span>
+                              {key?.trim() ? key : "Sistem / Lainnya"} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">( {data.items.length}x )</span>
                             </span>
                             <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">
                               Rp {data.total.toLocaleString('id-ID')} 
@@ -831,8 +831,8 @@ const generatePrintHTML = () => {
                         <div key={key} className="border-b border-slate-50 dark:border-slate-800 last:border-0 pb-1.5 pt-1.5 first:pt-0 last:pb-0">
                           <div onClick={() => { triggerHaptic(); toggleExpand(`inc-${key}`); }} className="flex justify-between items-center text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 p-1.5 -mx-1.5 rounded-xl transition-all">
                             <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1.5">
-                              <span className="bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black">{data.items[0]?.category?.charAt(0).toUpperCase()}</span>
-                              {key} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">( {data.items.length}x )</span>
+                              <span className="bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black">{data.items[0]?.category?.charAt(0).toUpperCase() || "⚙️"}</span>
+                              {key?.trim() ? key : "Sistem / Lainnya"} <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">( {data.items.length}x )</span>
                             </span>
                             <span className="text-slate-800 dark:text-slate-100 font-black flex items-center gap-1.5">
                               Rp {data.total.toLocaleString('id-ID')} 
@@ -1234,7 +1234,7 @@ const generatePrintHTML = () => {
               <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
               <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start shrink-0">
                 <div>
-                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{selectedCategoryDetail.name}</h3>
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{selectedCategoryDetail.name?.trim() ? selectedCategoryDetail.name : "Sistem / Lainnya"}</h3>
                   <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Rincian riwayat kategori bulan ini</p>
                 </div>
                 <button onClick={() => setSelectedCategoryDetail(null)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
