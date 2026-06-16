@@ -153,12 +153,11 @@ export default function ReportsTab({
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [showAllVarList, setShowAllVarList] = useState(false);
 
-  // STATE BARU: MODAL KENDALI ANGGARAN
   const [selectedBudgetCat, setSelectedBudgetCat] = useState<CategoryData | null>(null);
   const [budgetInput, setBudgetInput] = useState("");
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
   const [newBudgetCat, setNewBudgetCat] = useState<CategoryData | null>(null);
-  const [showBudgetCatSelector, setShowBudgetCatSelector] = useState(false); // State utk dropdown custom
+  const [showBudgetCatSelector, setShowBudgetCatSelector] = useState(false);
 
   const triggerHaptic = () => { 
     if (typeof window !== "undefined" && localStorage.getItem("fintracker_haptic") !== "false") {
@@ -351,7 +350,6 @@ export default function ReportsTab({
     });
   }, [currentMonthTxs, reportMonth, daysInMonth]);
 
-  // LOGIKA FITUR ANGGARAN (BUDGETING) BARU
   const budgetCategories = useMemo(() => {
     return categories.filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0).sort((a, b) => a.name.localeCompare(b.name));
   }, [categories]);
@@ -362,7 +360,6 @@ export default function ReportsTab({
   const overallBudgetPercentage = totalBudgetLimit > 0 ? (totalSpentOnBudget / totalBudgetLimit) * 100 : 0;
   const daysRemaining = isCurrentMonth ? Math.max(0, daysInMonth - todayObj.getDate()) : 0;
   
-  // Data Chart Anggaran Line Chart (Menyerupai Referensi UI)
   const safeDailySpend = daysRemaining > 0 && remainingBudget > 0 ? remainingBudget / daysRemaining : 0;
   
   const budgetChartData = useMemo(() => {
@@ -373,14 +370,14 @@ export default function ReportsTab({
         name: d.name,
         date: `${reportMonth}-${d.name.padStart(2,'0')}`,
         Target: target,
-        Terpakai: isPastToday ? null : d.Pengeluaran // Fallback sederhana ke total pengeluaran untuk chart
+        Terpakai: isPastToday ? null : d.Pengeluaran
       };
     });
   }, [dailyCumulativeData, totalBudgetLimit, daysInMonth, isCurrentMonth, todayObj, reportMonth]);
 
   const currentTheme = themeMap[accent];
-// === BATAS PART 1 ===
-const generatePrintHTML = () => {
+
+  const generatePrintHTML = () => {
     const tableRows = currentMonthTxs.map(t => `
       <tr style="border-bottom: 1px solid #e2e8f0;">
         <td style="padding: 12px 10px; font-weight: 500;">${new Date(t.tDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'short'})}</td>
@@ -1003,7 +1000,7 @@ const generatePrintHTML = () => {
               <div className="relative z-10 flex justify-between items-start mb-6"><div><h3 className="font-bold text-white/70 text-xs mb-1">Aktivitas Pengeluaran</h3><p className="font-black text-lg">{new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'short', year: 'numeric'})}</p></div></div>
               <div className="flex gap-6 mb-6 relative z-10">
                 <div><p className="text-2xl font-black">Rp {localTotalExpense >= 1000 ? (localTotalExpense/1000).toFixed(1)+'K' : localTotalExpense}</p><p className="text-[10px] font-bold text-white/75">Pengeluaran</p></div>
-                {localPieData[0] && (<div><p className="text-2xl font-black">Rp {localPieData[0].value >= 1000 ? (localPieData[0].value/1000).toFixed(1)+'K' : localPieData[0].value}</p><p className="text-[10px] font-bold text-white/75">{localPieData[0].name}</p></div>)}
+                {localPieData[0] && (<div><p className="text-2xl font-black">Rp {localPieData[0].value >= 1000 ? (localPieData[0].value/1000).toFixed(1)+'K' : localPieData[0].value}</p><p className="text-[10px] font-bold text-white/75">{localPieData[0].name?.trim() ? localPieData[0].name : "Sistem / Lainnya"}</p></div>)}
               </div>
               <div className="h-48 w-full relative z-10 -ml-2 mt-2">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1187,8 +1184,8 @@ const generatePrintHTML = () => {
                         {dayTxs.sort((a,b) => b.amount - a.amount).map(t => (
                           <div key={t.id} className="flex justify-between items-center text-xs p-3 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 last:border-0">
                             <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-black ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' : 'bg-red-100 text-red-500 dark:bg-red-900/30'}`}>{t.category.charAt(0).toUpperCase()}</div>
-                              <div className="flex flex-col text-left"><span className="font-black text-slate-800 dark:text-slate-200">{t.category}</span><span className="text-[10px] font-bold text-slate-400 mt-0.5 truncate max-w-[150px]">{t.accountName} {t.note ? `• ${t.note}` : ''}</span></div>
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-black ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' : 'bg-red-100 text-red-500 dark:bg-red-900/30'}`}>{t.category?.charAt(0).toUpperCase() || "⚙️"}</div>
+                              <div className="flex flex-col text-left"><span className="font-black text-slate-800 dark:text-slate-200">{t.category?.trim() ? t.category : "Sistem / Lainnya"}</span><span className="text-[10px] font-bold text-slate-400 mt-0.5 truncate max-w-[150px]">{t.accountName} {t.note ? `• ${t.note}` : ''}</span></div>
                             </div>
                             <span className={`font-black shrink-0 ${t.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>{t.type === 'income' ? '+' : '-'}Rp {t.amount.toLocaleString('id-ID')}</span>
                           </div>
