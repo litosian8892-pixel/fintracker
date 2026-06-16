@@ -20,7 +20,7 @@ const googleProvider = new GoogleAuthProvider();
 
 // INISIALISASI FIRESTORE DENGAN SINGLE TAB PERSISTENCE (Ditambah {} agar lolos TypeScript Vercel)
 const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentSingleTabManager({}) })
+  localCache: persistentLocalCache({ tabManager: persistentSingleTabManager({ forceOwnership: true }) })
 });
 
 export { app, auth, googleProvider, db };
