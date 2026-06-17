@@ -408,7 +408,18 @@ export default function HomeTab({
   const smartInsight = useMemo(() => {
     if (monthlyTransactions.length === 0) return { text: "Belum ada catatan bulan ini. Yuk, mulai mencatat transaksi pertamamu!", icon: "✨", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
     let budgetWarning = null; const expenseByCategory: Record<string, number> = {};
-    monthlyTransactions.filter(t => t.type === 'expense').forEach(t => { expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount; });
+    
+    // BUG FIX: Smart Insight kini memahami Unroll Splits agar akurat dengan Laporan
+    monthlyTransactions.filter(t => t.type === 'expense').forEach(t => { 
+      if (t.splits && t.splits.length > 0) {
+        t.splits.forEach(s => {
+          expenseByCategory[s.category] = (expenseByCategory[s.category] || 0) + s.amount;
+        });
+      } else {
+        expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount; 
+      }
+    });
+
     for (const cat of categories) {
       if (cat.type === 'expense' && cat.budgetLimit && cat.budgetLimit > 0) {
         const spent = expenseByCategory[cat.name] || 0; const percentage = (spent / cat.budgetLimit) * 100;
