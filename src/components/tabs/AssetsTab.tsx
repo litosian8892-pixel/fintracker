@@ -770,6 +770,56 @@ const historicalAssetsData = useMemo(() => {
                 </div>
               </div>
 
+              {/* DAFTAR RIWAYAT MUTASI ASET BULAN INI */}
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-[24px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Riwayat Aktivitas Tabungan</h3>
+                  <span className="text-[10px] font-bold text-slate-400">{reportMonth?.split("-")[1]}/{reportMonth?.split("-")[0]}</span>
+                </div>
+                
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                  {(() => {
+                    const monthlyTrans = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth || ""));
+                    const savingsTxs = monthlyTrans.filter(t => t.type === "transfer").filter(t => {
+                      const sAcc = accounts.find(a => a.id === t.accountId);
+                      const dAcc = accounts.find(a => a.id === t.toAccountId);
+                      return (sAcc && dAcc) && ((!sAcc.isSavings && dAcc.isSavings) || (sAcc.isSavings && !dAcc.isSavings));
+                    }).sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime());
+
+                    if (savingsTxs.length === 0) {
+                      return <p className="text-center text-xs text-slate-400 dark:text-slate-500 italic py-4">Belum ada aktivitas tabungan di bulan ini.</p>;
+                    }
+
+                    return savingsTxs.map(t => {
+                      const sAcc = accounts.find(a => a.id === t.accountId);
+                      const dAcc = accounts.find(a => a.id === t.toAccountId);
+                      const isDeposit = !sAcc?.isSavings && dAcc?.isSavings;
+                      const dateObj = new Date(t.tDate);
+                      const dateLabel = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+
+                      return (
+                        <div key={t.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isDeposit ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'}`}>
+                              {isDeposit ? <ArrowDown size={14} strokeWidth={3}/> : <ArrowUp size={14} strokeWidth={3}/>}
+                            </div>
+                            <div className="flex flex-col text-left min-w-0">
+                              <span className="font-bold text-slate-800 dark:text-slate-200 text-xs">{isDeposit ? `Menabung: ${dAcc?.name}` : `Penarikan: ${sAcc?.name}`}</span>
+                              <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 truncate max-w-[150px]">{dateLabel} • {t.note || (isDeposit ? "Disimpan" : "Ditarik")}</span>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className={`font-black text-xs ${isDeposit ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                              {isDeposit ? '+' : '-'}Rp {t.amount.toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    });
+                  })()}
+                </div>
+              </div>
+
               {/* Grid List Kartu Aset / Impian */}
               {(emergencyAccounts.length === 0 && dreamGoals.length === 0) ? (
                 <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm p-10 flex flex-col items-center justify-center text-center">
