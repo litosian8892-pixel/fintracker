@@ -603,12 +603,29 @@ export default function FintrackerApp() {
     const acc = accounts.find(a => a.id === sub.accountId); if (!acc) return alert("Dompet sumber dana tidak ditemukan!");
     isSubmittingRef.current = true; setIsSubmitting(true);
     try {
-      await updateDoc(doc(db, `users/${user.uid}/accounts/${sub.accountId}`), { balance: acc.balance - sub.amount });
-      await addDoc(collection(db, `users/${user.uid}/transactions`), { amount: sub.amount, type: "expense", accountId: sub.accountId, accountName: acc.name, category: sub.category, note: `Pembayaran Langganan: ${sub.name}`, tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp() });
+      const batch = writeBatch(db);
+      
+      // 1. Potong saldo dompet
+      batch.update(doc(db, `users/${user.uid}/accounts/${sub.accountId}`), { balance: acc.balance - sub.amount });
+      
+      // 2. Catat riwayat dengan catatan singkat (hanya nama langganan), jam akurat, dan tanggal anti-UTC bug
+      const now = new Date();
+      const exactTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const newTxRef = doc(collection(db, `users/${user.uid}/transactions`));
+      
+      batch.set(newTxRef, { 
+        amount: sub.amount, type: "expense", accountId: sub.accountId, accountName: acc.name, 
+        category: sub.category, note: sub.name, tDate: getLocalDateString(now), tTime: exactTime, createdAt: serverTimestamp() 
+      });
+      
+      // 3. Perpanjang tanggal jatuh tempo otomatis
       const parts = sub.nextDueDate.split("-"); let year = parseInt(parts[0], 10); let month = parseInt(parts[1], 10) - 1; let day = parseInt(parts[2], 10);
       const oldDate = new Date(year, month, day); if (sub.cycle === "monthly") { oldDate.setMonth(oldDate.getMonth() + 1); } else { oldDate.setFullYear(oldDate.getFullYear() + 1); }
       const y = oldDate.getFullYear(); const m = String(oldDate.getMonth() + 1).padStart(2, '0'); const d = String(oldDate.getDate()).padStart(2, '0'); const newDueDate = `${y}-${m}-${d}`;
-      await updateDoc(doc(db, `users/${user.uid}/subscriptions/${sub.id}`), { nextDueDate: newDueDate });
+      
+      batch.update(doc(db, `users/${user.uid}/subscriptions/${sub.id}`), { nextDueDate: newDueDate });
+      
+      await batch.commit(); // Eksekusi 3 tindakan sekaligus (Atomik)
       alert(`Pembayaran ${sub.name} berhasil! Jatuh tempo diperpanjang otomatis ke ${newDueDate}.`);
     } catch (e) { alert("Gagal memproses pembayaran langganan."); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
@@ -650,12 +667,27 @@ export default function FintrackerApp() {
     if (isSubmittingRef.current) return; if (!user || !editAccName || !editAccBalance) return;
     isSubmittingRef.current = true; setIsSubmitting(true);
     try {
+      const batch = writeBatch(db);
       const oldAcc = accounts.find(a => a.id === id); const newBalance = Number(editAccBalance); const targetCurrency = editAccCurrency; const targetRate = targetCurrency === "IDR" ? 1 : exchangeRates[targetCurrency] || 1; 
+      
       if (oldAcc && newBalance !== oldAcc.balance) {
-        const diff = newBalance - oldAcc.balance; const tType = diff > 0 ? "income" : "expense"; const convertedDiff = Math.abs(diff) * targetRate; const currencySymbol = targetCurrency !== "IDR" ? `${targetCurrency} ` : "";
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount: convertedDiff, type: tType, accountId: id, accountName: editAccName, note: `Penyesuaian manual dari ${currencySymbol}${oldAcc.balance.toLocaleString('id-ID')} ke ${currencySymbol}${newBalance.toLocaleString('id-ID')}`, category: "Penyesuaian Saldo", tDate: new Date().toISOString().split('T')[0], originalAmount: Math.abs(diff), originalCurrency: targetCurrency, exchangeRate: targetRate, createdAt: serverTimestamp() });
+        const diff = newBalance - oldAcc.balance; const tType = diff > 0 ? "income" : "expense"; const convertedDiff = Math.abs(diff) * targetRate;
+        const now = new Date();
+        const exactTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        
+        const newTxRef = doc(collection(db, `users/${user.uid}/transactions`));
+        batch.set(newTxRef, { 
+          amount: convertedDiff, type: tType, accountId: id, accountName: editAccName, 
+          note: "Penyesuaian Saldo", category: "Penyesuaian Saldo", 
+          tDate: getLocalDateString(now), tTime: exactTime, 
+          originalAmount: Math.abs(diff), originalCurrency: targetCurrency, exchangeRate: targetRate, createdAt: serverTimestamp() 
+        });
       }
-      await updateDoc(doc(db, `users/${user.uid}/accounts/${id}`), { name: editAccName, balance: newBalance, logo: editAccLogo, isSavings: editAccIsSavings && !editAccIsInvestment, targetBalance: editAccIsSavings && editAccTargetBalance && !editAccIsInvestment ? safeEvaluate(editAccTargetBalance) : null, excludeFromTotal: editAccExcludeFromTotal, isBusiness: editAccIsBusiness && !editAccIsInvestment, savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle && !editAccIsInvestment ? editAccSavingsGoalTitle : null, currency: targetCurrency, isInvestment: editAccIsInvestment, averageBuyPrice: editAccIsInvestment && editAccAverageBuyPrice ? safeEvaluate(editAccAverageBuyPrice) : null, lastExchangeRate: editAccIsInvestment && editAccLastExchangeRate ? safeEvaluate(editAccLastExchangeRate) : targetRate });
+      
+      batch.update(doc(db, `users/${user.uid}/accounts/${id}`), { name: editAccName, balance: newBalance, logo: editAccLogo, isSavings: editAccIsSavings && !editAccIsInvestment, targetBalance: editAccIsSavings && editAccTargetBalance && !editAccIsInvestment ? safeEvaluate(editAccTargetBalance) : null, excludeFromTotal: editAccExcludeFromTotal, isBusiness: editAccIsBusiness && !editAccIsInvestment, savingsGoalTitle: editAccIsSavings && editAccSavingsGoalTitle && !editAccIsInvestment ? editAccSavingsGoalTitle : null, currency: targetCurrency, isInvestment: editAccIsInvestment, averageBuyPrice: editAccIsInvestment && editAccAverageBuyPrice ? safeEvaluate(editAccAverageBuyPrice) : null, lastExchangeRate: editAccIsInvestment && editAccLastExchangeRate ? safeEvaluate(editAccLastExchangeRate) : targetRate });
+      
+      await batch.commit();
+
       setEditingAccId(null); setEditAccName(""); setEditAccBalance(""); setEditAccLogo(""); setEditAccTargetBalance(""); setEditAccIsSavings(false); setEditAccExcludeFromTotal(false); setEditAccIsBusiness(false); setEditAccSavingsGoalTitle(""); setEditAccCurrency("IDR"); setEditAccIsInvestment(false); setEditAccAverageBuyPrice(""); setEditAccLastExchangeRate("");
       alert("Dompet berhasil diperbarui & riwayat audit otomatis dicatat!");
     } catch (e) { alert("Gagal memperbarui"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
