@@ -178,14 +178,15 @@ export default function ReportsTab({
   // AUTO-DETECT SALDO AKTIF
   const totalAvailableBalance = useMemo(() => {
     if (!accounts) return 0;
-    return accounts
+    const rawTotal = accounts
       .filter(acc => !acc.isSavings && !acc.excludeFromTotal && !acc.isInvestment)
       .reduce((sum, acc) => sum + (acc.balance * (acc.lastExchangeRate || 1)), 0);
+    return Math.floor(rawTotal); // Dibulatkan agar bersih dari koma/desimal
   }, [accounts]);
 
   const handleGenerateAutoBudget = () => {
     triggerHaptic();
-    const total = Number(autoBudgetIncome.replace(/[^0-9]/g, ""));
+    const total = parseFloat(autoBudgetIncome) || 0;
     if (total <= 0) return alert("Masukkan nominal sisa uang yang valid!");
     
     const fixedCats = categories.filter(c => c.type === 'expense' && c.expenseType === 'fixed');
@@ -1559,7 +1560,7 @@ export default function ReportsTab({
                   <div className="space-y-1">
                     <div className="flex justify-between items-center pl-1 mb-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sisa Uang Anda (Rp)</label>
-                      {totalAvailableBalance > 0 && Number(autoBudgetIncome) === totalAvailableBalance && (
+                      {totalAvailableBalance > 0 && (parseFloat(autoBudgetIncome) || 0) === totalAvailableBalance && (
                         <span className="text-[8px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/50 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">🪄 Diisi Otomatis</span>
                       )}
                     </div>
@@ -1573,9 +1574,9 @@ export default function ReportsTab({
                     />
                     <div className="flex justify-between items-start pl-1 mt-1">
                       {autoBudgetIncome ? (
-                        <p className="text-[10px] font-bold text-slate-500">Terbaca: <span className="text-indigo-600 dark:text-indigo-400 font-black">Rp {Number(autoBudgetIncome.replace(/[^0-9]/g, "")).toLocaleString('id-ID')}</span></p>
+                        <p className="text-[10px] font-bold text-slate-500">Terbaca: <span className="text-indigo-600 dark:text-indigo-400 font-black">Rp {(parseFloat(autoBudgetIncome) || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })}</span></p>
                       ) : <span />}
-                      {totalAvailableBalance > 0 && Number(autoBudgetIncome) !== totalAvailableBalance && (
+                      {totalAvailableBalance > 0 && (parseFloat(autoBudgetIncome) || 0) !== totalAvailableBalance && (
                         <button onClick={() => { triggerHaptic(); setAutoBudgetIncome(totalAvailableBalance.toString()); }} className="text-[9px] font-bold text-indigo-500 hover:text-indigo-600 hover:underline cursor-pointer transition-colors">
                           Gunakan Saldo Dompet
                         </button>
