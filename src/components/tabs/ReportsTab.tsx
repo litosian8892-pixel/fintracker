@@ -175,6 +175,14 @@ export default function ReportsTab({
   const [autoBudgetIncome, setAutoBudgetIncome] = useState("");
   const [autoBudgetPreview, setAutoBudgetPreview] = useState<any>(null);
 
+  // AUTO-DETECT SALDO AKTIF
+  const totalAvailableBalance = useMemo(() => {
+    if (!accounts) return 0;
+    return accounts
+      .filter(acc => !acc.isSavings && !acc.excludeFromTotal && !acc.isInvestment)
+      .reduce((sum, acc) => sum + (acc.balance * (acc.lastExchangeRate || 1)), 0);
+  }, [accounts]);
+
   const handleGenerateAutoBudget = () => {
     triggerHaptic();
     const total = Number(autoBudgetIncome.replace(/[^0-9]/g, ""));
@@ -1010,7 +1018,7 @@ export default function ReportsTab({
             </div>
 
             {/* TOMBOL WIDGET AUTO-BUDGET */}
-            <div onClick={() => { triggerHaptic(); setShowAutoBudgetModal(true); setAutoBudgetPreview(null); setAutoBudgetIncome(""); }} className={`p-4 rounded-[24px] cursor-pointer transition-all border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center justify-between shadow-sm`}>
+            <div onClick={() => { triggerHaptic(); setShowAutoBudgetModal(true); setAutoBudgetPreview(null); setAutoBudgetIncome(totalAvailableBalance > 0 ? totalAvailableBalance.toString() : ""); }} className={`p-4 rounded-[24px] cursor-pointer transition-all border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center justify-between shadow-sm`}>
               <div className="flex items-center gap-4">
                  <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center text-2xl shadow-sm border border-indigo-100 dark:border-indigo-800">🪄</div>
                  <div className="text-left">
@@ -1549,7 +1557,12 @@ export default function ReportsTab({
                   </div>
                   
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Sisa Uang Anda (Rp)</label>
+                    <div className="flex justify-between items-center pl-1 mb-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sisa Uang Anda (Rp)</label>
+                      {totalAvailableBalance > 0 && Number(autoBudgetIncome) === totalAvailableBalance && (
+                        <span className="text-[8px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/50 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">🪄 Diisi Otomatis</span>
+                      )}
+                    </div>
                     <input 
                       type="number" 
                       autoFocus
@@ -1558,7 +1571,16 @@ export default function ReportsTab({
                       value={autoBudgetIncome} 
                       onChange={e => setAutoBudgetIncome(e.target.value)} 
                     />
-                    {autoBudgetIncome && <p className="text-[10px] font-bold text-slate-500 pl-1 mt-1">Terbaca: <span className="text-indigo-600 dark:text-indigo-400 font-black">Rp {Number(autoBudgetIncome.replace(/[^0-9]/g, "")).toLocaleString('id-ID')}</span></p>}
+                    <div className="flex justify-between items-start pl-1 mt-1">
+                      {autoBudgetIncome ? (
+                        <p className="text-[10px] font-bold text-slate-500">Terbaca: <span className="text-indigo-600 dark:text-indigo-400 font-black">Rp {Number(autoBudgetIncome.replace(/[^0-9]/g, "")).toLocaleString('id-ID')}</span></p>
+                      ) : <span />}
+                      {totalAvailableBalance > 0 && Number(autoBudgetIncome) !== totalAvailableBalance && (
+                        <button onClick={() => { triggerHaptic(); setAutoBudgetIncome(totalAvailableBalance.toString()); }} className="text-[9px] font-bold text-indigo-500 hover:text-indigo-600 hover:underline cursor-pointer transition-colors">
+                          Gunakan Saldo Dompet
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <button onClick={handleGenerateAutoBudget} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer transition-all active:scale-95 border border-indigo-500">
