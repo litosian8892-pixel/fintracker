@@ -73,6 +73,12 @@ interface HomeTabProps {
   editTSplits: SplitItemData[];
   setEditTSplits: (splits: SplitItemData[]) => void;
   updateCategory?: (id: string, newName: string, newBudget: number | null, expenseType: "fixed" | "variable", newIcon?: string) => Promise<void>;
+  
+  // TRAVEL MODE PROPS
+  isTravelMode?: boolean;
+  toggleTravelMode?: (val: boolean) => void;
+  activeTripName?: string;
+  updateTripName?: (val: string) => void;
 }
 
 const themeMap = {
@@ -194,7 +200,7 @@ const formatTime = (createdAt: any) => {
 };
 
 export default function HomeTab({
-  reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory
+  reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory, isTravelMode, toggleTravelMode, activeTripName, updateTripName
 }: HomeTabProps) {
   const parseTime12 = (timeStr: string) => {
     if (!timeStr) return { hour12: "12", minute: "00", period: "PM" };
@@ -500,7 +506,18 @@ export default function HomeTab({
       {/* HEADER TAB TRANSAKSI */}
       <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          {!isSearchExpanded ? ( <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight truncate">Transaksi</h2> ) : (
+          {!isSearchExpanded ? ( 
+            <div className="flex items-center gap-3 w-full">
+              <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight shrink-0">Transaksi</h2>
+              {/* BADGE TRAVEL MODE SILUMAN */}
+              {isTravelMode && (
+                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-500/30 rounded-full shrink-0 min-w-0 animate-in zoom-in-95 duration-300">
+                  <span className="text-xs">✈️</span>
+                  <span className="text-[9px] font-black text-indigo-700 dark:text-indigo-400 truncate max-w-[100px]">{activeTripName || "Travel Mode"}</span>
+                </div>
+              )}
+            </div>
+          ) : (
             <div className="flex items-center gap-2 w-full pr-2 animate-in slide-in-from-left-2 duration-150">
               <input type="text" placeholder={searchAllMonths ? "Cari semua bulan..." : "Cari bulan ini..."} className="w-full px-3 py-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-slate-100" value={searchQueryInput} onChange={(e) => setSearchQueryInput(e.target.value)} autoFocus />
               <button type="button" onClick={() => { triggerHaptic(); setSearchAllMonths(!searchAllMonths); }} className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black shrink-0 border transition-all active:scale-95 ${searchAllMonths ? "bg-blue-600 border-blue-600 text-white shadow" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"}`}>Semua Bulan</button>
@@ -1071,6 +1088,37 @@ export default function HomeTab({
                   <button type="button" onClick={() => {
                     setEditTSplits([...editTSplits, { category: "", amount: 0, note: "" }]);
                   }} className={`w-full py-2.5 border border-dashed rounded-xl text-xs font-black cursor-pointer transition-colors ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>+ Tambah Pecahan Koreksi</button>
+                </div>
+              )}
+
+              {/* PUSAT KENDALI TRAVEL MODE TERSEMBUNYI */}
+              {!editingTransaction && (
+                <div className={`mt-4 rounded-2xl border transition-all duration-300 relative overflow-hidden ${isTravelMode ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 p-3' : 'bg-transparent border-slate-200 dark:border-slate-800 p-3'}`}>
+                  {isTravelMode && <div className="absolute -right-4 -top-4 w-16 h-16 bg-indigo-500/10 blur-xl rounded-full pointer-events-none"></div>}
+                  <div className="flex items-center justify-between gap-3 relative z-10">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-colors ${isTravelMode ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>✈️</div>
+                      <div>
+                        <h3 className={`text-[11px] font-black leading-tight ${isTravelMode ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-700 dark:text-slate-300'}`}>Travel Mode</h3>
+                        <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400">Sembunyikan dari Laporan</p>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => toggleTravelMode && toggleTravelMode(!isTravelMode)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${isTravelMode ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${isTravelMode ? 'translate-x-5' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  {isTravelMode && (
+                    <div className="mt-2.5 pt-2.5 border-t border-indigo-100 dark:border-indigo-500/20 animate-in slide-in-from-top-2 duration-200 relative z-10">
+                      <input 
+                        type="text" 
+                        value={activeTripName || ""} 
+                        onChange={(e) => updateTripName && updateTripName(e.target.value)} 
+                        placeholder="Nama Trip (misal: Trip Bali 2026)"
+                        autoComplete="off"
+                        className="w-full bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-500/30 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 transition-all placeholder:text-slate-400"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
