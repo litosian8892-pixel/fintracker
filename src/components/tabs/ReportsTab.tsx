@@ -194,19 +194,40 @@ export default function ReportsTab({
     
     if (fixedCats.length === 0 && varCats.length === 0) return alert("Anda belum memiliki kategori pengeluaran sama sekali!");
 
-    // Rumus 50/30/20
-    const needsTotal = total * 0.5; // 50% Pokok
-    const wantsTotal = total * 0.3; // 30% Keinginan
-    const savingsTotal = total * 0.2; // 20% Tabungan
+    // 1. FIXED EXPENSE (Kebutuhan Tetap): Paham Realita!
+    // Pertahankan limit lama. Jika belum ada, paskan dengan pengeluaran bulan ini agar tidak merah.
+    const previewFixed = fixedCats.map(c => {
+      const currentSpent = expGrouped[c.name] || 0;
+      const finalLimit = (c.budgetLimit && c.budgetLimit > 0) ? c.budgetLimit : (currentSpent > 0 ? currentSpent : 0);
+      return { id: c.id, name: c.name, type: c.expenseType, limit: finalLimit, icon: c.icon };
+    });
 
-    const fixedPerCat = fixedCats.length > 0 ? Math.floor(needsTotal / fixedCats.length) : 0;
-    // Jika tidak ada pengeluaran tetap, gabungkan jatahnya ke variabel
-    const varPerCat = varCats.length > 0 ? Math.floor((wantsTotal + (fixedCats.length === 0 ? needsTotal : 0)) / varCats.length) : 0;
+    // 2. VARIABLE EXPENSE (Jajan/Bebas): 
+    // Sisa uang dompet dialokasikan 80% untuk jajan, 20% disuruh Tabung.
+    const varPool = total * 0.8; 
+    const savingsTotal = total * 0.2; 
 
-    const preview = [
-      ...fixedCats.map(c => ({ id: c.id, name: c.name, type: c.expenseType, limit: fixedPerCat, icon: c.icon })),
-      ...varCats.map(c => ({ id: c.id, name: c.name, type: c.expenseType, limit: varPerCat, icon: c.icon }))
-    ];
+    // Cari tahu kebiasaan pengeluaran variabel Anda bulan ini
+    const totalVarSpent = varCats.reduce((sum, c) => sum + (expGrouped[c.name] || 0), 0);
+    
+    const previewVar = varCats.map(c => {
+      const currentSpent = expGrouped[c.name] || 0;
+      let portion = 0;
+      if (totalVarSpent > 0) {
+        portion = currentSpent / totalVarSpent; // Proporsional sesuai kebiasaan jajan
+      } else {
+        portion = 1 / varCats.length; // Bagi rata jika bulan ini belum jajan sama sekali
+      }
+      
+      // Limit Baru = Pengeluaran Saat Ini + "Jatah Napas Tambahan"
+      const additionalHeadroom = Math.floor(varPool * portion);
+      const newLimit = currentSpent + additionalHeadroom;
+      
+      return { id: c.id, name: c.name, type: c.expenseType, limit: newLimit, icon: c.icon };
+    });
+
+    // Sembunyikan kategori yang limit barunya 0 agar tampilan rapi
+    const preview = [...previewFixed, ...previewVar].filter(c => c.limit > 0);
 
     setAutoBudgetPreview({ total, savingsTotal, categories: preview });
   };
@@ -1608,7 +1629,7 @@ export default function ReportsTab({
                             <div>
                               <span className="font-bold text-slate-800 dark:text-white block">{cat.name}</span>
                               <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase mt-1 inline-block ${cat.type === 'fixed' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'}`}>
-                                {cat.type === 'fixed' ? '50% Kebutuhan Pokok' : '30% Keinginan'}
+                                {cat.type === 'fixed' ? 'Tetap (Dipertahankan)' : 'Variabel (+Napas Baru)'}
                               </span>
                             </div>
                           </div>
