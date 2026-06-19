@@ -118,6 +118,10 @@ export default function FintrackerApp() {
   const [isPrivacyMode, setIsPrivacyMode] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+  
+  // STATE TRAVEL MODE
+  const [isTravelMode, setIsTravelMode] = useState(false);
+  const [activeTripName, setActiveTripName] = useState("Healing Bali 2026");
 
   const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({
     IDR: 1, USD: 16000, SGD: 12000, EUR: 17000, JPY: 100, CNY: 2200, GBP: 20000, AUD: 10500, MYR: 3400, SAR: 4200
@@ -136,7 +140,24 @@ export default function FintrackerApp() {
     if (storedTheme) setTheme(storedTheme);
     const storedPrivacy = localStorage.getItem("fintracker_privacy_mode");
     if (storedPrivacy === "true") setIsPrivacyMode(true);
+    
+    // Load Status Travel Mode
+    const storedTravelMode = localStorage.getItem("fintracker_travel_mode");
+    if (storedTravelMode === "true") setIsTravelMode(true);
+    const storedTripName = localStorage.getItem("fintracker_trip_name");
+    if (storedTripName) setActiveTripName(storedTripName);
   }, []);
+
+  const handleToggleTravelMode = (val: boolean) => {
+    triggerHapticFeedback();
+    setIsTravelMode(val);
+    localStorage.setItem("fintracker_travel_mode", val.toString());
+  };
+
+  const handleUpdateTripName = (val: string) => {
+    setActiveTripName(val);
+    localStorage.setItem("fintracker_trip_name", val);
+  };
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -754,6 +775,7 @@ export default function FintrackerApp() {
         batch.update(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: newBal });
         
         const docData: any = { amount: idrAmount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: tNote, category: (customSplits && customSplits.length > 0) ? "Split Transaksi" : tCategory, tDate, tTime, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, createdAt: serverTimestamp() };
+        if (isTravelMode) docData.tripId = activeTripName || "Liburan"; // Injeksi Tag Liburan
         if (customSplits && customSplits.length > 0) docData.splits = customSplits.map(s => ({ ...s, amount: s.amount * rateSource }));
         
         const newTxRef = doc(collection(db, `users/${user.uid}/transactions`));
@@ -846,7 +868,10 @@ export default function FintrackerApp() {
     } catch (e) { alert("Gagal memperbarui transaksi"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
-  const monthlyTransactions = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
+  // TRAVEL MODE: Karantina Pengeluaran Liburan agar tidak merusak analitik bulanan
+  const allMonthlyTransactions = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
+  const monthlyTransactions = allMonthlyTransactions.filter(t => !(t as any).tripId); 
+  
   const adminFeeTxs = monthlyTransactions.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ id: `fee-${t.id}`, amount: t.adminFee!, type: "expense", accountId: t.accountId, accountName: t.accountName, category: "Biaya Admin", note: `Biaya admin transfer ke ${t.toAccountName}`, tDate: t.tDate } as TransactionData));
   const combinedExpenseTxs = [...monthlyTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
   const totalIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
@@ -857,10 +882,11 @@ export default function FintrackerApp() {
   const incomeCategoryList = Object.keys(incomeByCategory).map(key => ({ name: key, value: incomeByCategory[key] }));
   const expenseByDate = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc; }, {});
   const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
-  const prevAdminFeeTxs = prevMonthTransactions.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ amount: t.adminFee! }));
-  const prevCombinedExpense = [...prevMonthTransactions.filter(t => t.type === 'expense'), ...prevAdminFeeTxs];
+  
+  const prevAdminFeeTxs = prevMonthTransactions.filter(t => !(t as any).tripId && t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ amount: t.adminFee! }));
+  const prevCombinedExpense = [...prevMonthTransactions.filter(t => !(t as any).tripId && t.type === 'expense'), ...prevAdminFeeTxs];
   const prevTotalExpense = prevCombinedExpense.reduce((a, b) => a + b.amount, 0);
-  const prevTotalIncome = prevMonthTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
+  const prevTotalIncome = prevMonthTransactions.filter(t => !(t as any).tripId && t.type === 'income').reduce((a, b) => a + b.amount, 0);
 
   const handleExportToExcel = async () => {
     const monthlyTransactions = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
@@ -951,7 +977,46 @@ export default function FintrackerApp() {
       <Sidebar user={user} activeTab={activeTab as any} setActiveTab={setActiveTab as any} onLogout={() => signOut(auth)} isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode} />
       <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
         <MobileHeader user={user} onLogout={() => signOut(auth)} isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode} />
-        <div className="max-w-5xl w-full mx-auto p-4 md:p-8">
+        
+        {/* GLOBAL TRAVEL MODE BANNER (ISOLASI DATA) */}
+        <div className="px-4 md:px-8 pt-4 pb-0 max-w-5xl w-full mx-auto">
+          <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 ${isTravelMode ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-md shadow-indigo-500/10 p-4' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-3'}`}>
+            {isTravelMode && <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/10 blur-2xl rounded-full pointer-events-none"></div>}
+            
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-colors ${isTravelMode ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`}>
+                  ✈️
+                </div>
+                <div>
+                  <h3 className={`text-sm font-bold leading-tight ${isTravelMode ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-700 dark:text-slate-300'}`}>Travel Mode</h3>
+                  <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                    {isTravelMode ? 'Tersembunyi dari grafik Laporan' : 'Fitur Karantina Liburan'}
+                  </p>
+                </div>
+              </div>
+              
+              <button onClick={() => handleToggleTravelMode(!isTravelMode)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${isTravelMode ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isTravelMode ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+
+            {isTravelMode && (
+              <div className="mt-3 pt-3 border-t border-indigo-100 dark:border-indigo-500/20 animate-in slide-in-from-top-2 duration-300">
+                <label className="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider mb-1 block">Nama Trip / Acara</label>
+                <input 
+                  type="text" 
+                  value={activeTripName} 
+                  onChange={(e) => handleUpdateTripName(e.target.value)} 
+                  placeholder="Contoh: Healing Bali 2026"
+                  className="w-full bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-500/30 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder:text-slate-400"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="max-w-5xl w-full mx-auto p-4 md:p-8 md:pt-4">
           <div className="space-y-6 w-full">
             {activeTab === "home" && (
               <HomeTab 
