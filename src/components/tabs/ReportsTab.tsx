@@ -154,6 +154,7 @@ export default function ReportsTab({
   
   const [selectedAccount, setSelectedAccount] = useState<string>("All");
   const [showAccountFilter, setShowAccountFilter] = useState<boolean>(false);
+  const [showTripFilter, setShowTripFilter] = useState<boolean>(false);
   
   const [selectedCategoryDetail, setSelectedCategoryDetail] = useState<{name: string, type: 'income' | 'expense'} | null>(null);
   
@@ -598,24 +599,15 @@ export default function ReportsTab({
             <h2 className={`font-black text-2xl tracking-tight ${currentTheme.text}`}>Ringkasan</h2>
             
             <div className="flex gap-2">
-              {/* FILTER TRIP (Jika ada data liburan) */}
+              {/* FILTER TRIP (Custom Premium Button) */}
               {uniqueTrips.length > 0 && (
-                <div className="relative group">
-                  <select 
-                    value={selectedTripFilter} 
-                    onChange={(e) => { triggerHaptic(); setSelectedTripFilter(e.target.value); }} 
-                    className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 font-bold text-xs flex items-center gap-2 shadow-sm cursor-pointer appearance-none outline-none max-w-[120px] truncate"
-                  >
-                    <option value="Non-Travel">Rutin Bulanan</option>
-                    <option value="All">Gabung Semua Data</option>
-                    <optgroup label="Daftar Trip Liburan">
-                      {uniqueTrips.map(trip => <option key={trip} value={trip}>✈️ {trip}</option>)}
-                    </optgroup>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-500">
-                    <ChevronDown size={14}/>
-                  </div>
-                </div>
+                <button onClick={() => { triggerHaptic(); setShowTripFilter(true); }} className="px-3 py-2 border border-indigo-200 dark:border-indigo-500/30 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 font-bold text-xs flex items-center gap-2 shadow-sm cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/40 active:scale-95 transition-all">
+                  <span>✈️</span> 
+                  <span className="max-w-[80px] truncate block text-left">
+                    {selectedTripFilter === "Non-Travel" ? "Rutin" : selectedTripFilter === "All" ? "Gabungan" : selectedTripFilter}
+                  </span> 
+                  <ChevronDown size={14}/>
+                </button>
               )}
               
               <button onClick={() => { triggerHaptic(); setShowAccountFilter(true); }} className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold text-xs flex items-center gap-2 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all">
@@ -1260,6 +1252,59 @@ export default function ReportsTab({
                     {selectedAccount === acc && <Check size={18} className={currentTheme.text} />}
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 2B. BOTTOM SHEET FILTER TRIP (TRAVEL MODE) */}
+        {showTripFilter && (
+          <div className="fixed inset-0 z-[150] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowTripFilter(false)}>
+            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
+              <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 bg-indigo-50/50 dark:bg-indigo-900/10">
+                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                  <span className="text-xl">✈️</span>
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Filter Data Laporan</h3>
+                </div>
+                <button onClick={() => setShowTripFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
+              </div>
+              <div className="p-4 overflow-y-auto space-y-2 bg-slate-50/30 dark:bg-slate-950/30">
+                
+                <div onClick={() => { triggerHaptic(); setSelectedTripFilter("Non-Travel"); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === "Non-Travel" ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === "Non-Travel" ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>📊</div>
+                    <div>
+                      <span className="font-black text-sm text-slate-800 dark:text-slate-200 block">Rutin Bulanan</span>
+                      <span className="text-[10px] font-bold text-slate-400">Sembunyikan semua pengeluaran liburan</span>
+                    </div>
+                  </div>
+                  {selectedTripFilter === "Non-Travel" && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
+                </div>
+
+                <div onClick={() => { triggerHaptic(); setSelectedTripFilter("All"); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === "All" ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === "All" ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>🔄</div>
+                    <div>
+                      <span className="font-black text-sm text-slate-800 dark:text-slate-200 block">Gabung Semua Data</span>
+                      <span className="text-[10px] font-bold text-slate-400">Tampilkan rutin & liburan (Total Keseluruhan)</span>
+                    </div>
+                  </div>
+                  {selectedTripFilter === "All" && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
+                </div>
+
+                {uniqueTrips.length > 0 && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2 pt-2 pb-1">Daftar Trip Anda</p>}
+
+                {uniqueTrips.map(trip => (
+                  <div key={trip} onClick={() => { triggerHaptic(); setSelectedTripFilter(trip); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === trip ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === trip ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>🏖️</div>
+                      <span className="font-black text-sm text-slate-800 dark:text-slate-200">{trip}</span>
+                    </div>
+                    {selectedTripFilter === trip && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
+                  </div>
+                ))}
+
               </div>
             </div>
           </div>
