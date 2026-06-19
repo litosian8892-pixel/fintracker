@@ -760,12 +760,24 @@ export default function ReportsTab({
               <div className="flex items-center gap-3 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/30 rounded-2xl animate-in slide-in-from-top-2 duration-200 shadow-inner">
                 <div className="flex-1 space-y-1">
                   <label className="text-[9px] font-black text-indigo-500 uppercase tracking-widest pl-1">Dari Tanggal</label>
-                  <input type="date" className="w-full bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-800/50 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 shadow-sm" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} />
+                  <input 
+                    type="date" 
+                    onClick={(e) => e.currentTarget.showPicker && e.currentTarget.showPicker()}
+                    className="w-full bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-800/50 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 shadow-sm cursor-pointer" 
+                    value={customStartDate} 
+                    onChange={(e) => setCustomStartDate(e.target.value)} 
+                  />
                 </div>
                 <div className="shrink-0 text-indigo-300 mt-4"><span className="font-black text-lg">➔</span></div>
                 <div className="flex-1 space-y-1">
                   <label className="text-[9px] font-black text-indigo-500 uppercase tracking-widest pl-1">Sampai Tanggal</label>
-                  <input type="date" className="w-full bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-800/50 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 shadow-sm" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} />
+                  <input 
+                    type="date" 
+                    onClick={(e) => e.currentTarget.showPicker && e.currentTarget.showPicker()}
+                    className="w-full bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-800/50 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 shadow-sm cursor-pointer" 
+                    value={customEndDate} 
+                    onChange={(e) => setCustomEndDate(e.target.value)} 
+                  />
                 </div>
               </div>
             )}
@@ -1034,6 +1046,160 @@ export default function ReportsTab({
               </div>
             </div>
 
+          </div>
+        )}
+        {/* ================= BOTTOM SHEETS ================= */}
+
+        {/* 1. BOTTOM SHEET TRANSAKSI HARIAN KALENDER */}
+        {selectedHeatmapDate && (
+          <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedHeatmapDate(null)}>
+            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
+              <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start shrink-0">
+                <div><div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-1"><CalendarDays size={16} /><h3 className="font-black text-sm">{new Date(selectedHeatmapDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h3></div><p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-6">{unrollSplits(currentMonthTxs.filter(t => t.tDate === selectedHeatmapDate)).length} transaksi tercatat</p></div>
+                <button onClick={() => setSelectedHeatmapDate(null)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
+              </div>
+              <div className="p-6 overflow-y-auto space-y-4">
+                {(() => {
+                  const dayTxs = unrollSplits(currentMonthTxs.filter(t => t.tDate === selectedHeatmapDate));
+                  const dayInc = dayTxs.filter(t => t.type === 'income').reduce((a,b)=>a+b.amount,0); const dayExp = dayTxs.filter(t => t.type === 'expense').reduce((a,b)=>a+b.amount,0);
+                  return (
+                    <>
+                      <div className="flex gap-4 bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <div className="flex-1"><p className="text-[10px] font-bold text-slate-500 flex items-center gap-1 mb-1"><ArrowUp size={12} className="text-emerald-500"/> Pendapatan</p><p className="text-sm font-black text-emerald-600">Rp {dayInc.toLocaleString('id-ID')}</p></div>
+                        <div className="flex-1"><p className="text-[10px] font-bold text-slate-500 flex items-center gap-1 mb-1"><ArrowDown size={12} className="text-red-500"/> Pengeluaran</p><p className="text-sm font-black text-red-500">Rp {dayExp.toLocaleString('id-ID')}</p></div>
+                      </div>
+                      <div className="space-y-3 pt-2">
+                        {dayTxs.sort((a,b) => b.amount - a.amount).map(t => (
+                          <div key={t.id} className="flex justify-between items-center text-xs p-3 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-black ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' : 'bg-red-100 text-red-500 dark:bg-red-900/30'}`}>{t.category?.charAt(0).toUpperCase() || "⚙️"}</div>
+                              <div className="flex flex-col text-left"><span className="font-black text-slate-800 dark:text-slate-200">{t.category?.trim() ? t.category : "Sistem / Lainnya"}</span><span className="text-[10px] font-bold text-slate-400 mt-0.5 truncate max-w-[150px]">{t.accountName} {t.note ? `• ${t.note}` : ''}</span></div>
+                            </div>
+                            <span className={`font-black shrink-0 ${t.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>{t.type === 'income' ? '+' : '-'}Rp {t.amount.toLocaleString('id-ID')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 2. BOTTOM SHEET FILTER AKUN */}
+        {showAccountFilter && (
+          <div className="fixed inset-0 z-[150] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowAccountFilter(false)}>
+            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
+              <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Filter by Account</h3>
+                <button onClick={() => setShowAccountFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
+              </div>
+              <div className="p-4 overflow-y-auto space-y-2">
+                <div onClick={() => { triggerHaptic(); setSelectedAccount("All"); setShowAccountFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedAccount === "All" ? `${currentTheme.bgLight} ${currentTheme.border} shadow-sm` : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent"}`}>
+                  <div className="flex items-center gap-3"><div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${currentTheme.bgLight} ${currentTheme.text}`}><Filter size={14}/></div><span className="font-black text-sm text-slate-800 dark:text-slate-200">All Accounts</span></div>
+                  {selectedAccount === "All" && <Check size={18} className={currentTheme.text} />}
+                </div>
+                {uniqueAccounts.map(acc => (
+                  <div key={acc} onClick={() => { triggerHaptic(); setSelectedAccount(acc); setShowAccountFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedAccount === acc ? `${currentTheme.bgLight} ${currentTheme.border} shadow-sm` : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent"}`}>
+                    <div className="flex items-center gap-3"><div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${currentTheme.bgLight} ${currentTheme.text}`}>{acc.charAt(0).toUpperCase()}</div><span className="font-black text-sm text-slate-800 dark:text-slate-200">{acc}</span></div>
+                    {selectedAccount === acc && <Check size={18} className={currentTheme.text} />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 2B. BOTTOM SHEET FILTER TRIP (TRAVEL MODE) */}
+        {showTripFilter && (
+          <div className="fixed inset-0 z-[150] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowTripFilter(false)}>
+            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
+              <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 bg-indigo-50/50 dark:bg-indigo-900/10">
+                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                  <span className="text-xl">✈️</span>
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Filter Data Laporan</h3>
+                </div>
+                <button onClick={() => setShowTripFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
+              </div>
+              <div className="p-4 overflow-y-auto space-y-2 bg-slate-50/30 dark:bg-slate-950/30">
+                
+                <div onClick={() => { triggerHaptic(); setSelectedTripFilter("Non-Travel"); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === "Non-Travel" ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === "Non-Travel" ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>📊</div>
+                    <div>
+                      <span className="font-black text-sm text-slate-800 dark:text-slate-200 block">Rutin Bulanan</span>
+                      <span className="text-[10px] font-bold text-slate-400">Sembunyikan semua pengeluaran liburan</span>
+                    </div>
+                  </div>
+                  {selectedTripFilter === "Non-Travel" && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
+                </div>
+
+                <div onClick={() => { triggerHaptic(); setSelectedTripFilter("All"); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === "All" ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === "All" ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>🔄</div>
+                    <div>
+                      <span className="font-black text-sm text-slate-800 dark:text-slate-200 block">Gabung Semua Data</span>
+                      <span className="text-[10px] font-bold text-slate-400">Tampilkan rutin & liburan (Total Keseluruhan)</span>
+                    </div>
+                  </div>
+                  {selectedTripFilter === "All" && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
+                </div>
+
+                {uniqueTrips.length > 0 && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2 pt-2 pb-1">Daftar Trip Anda</p>}
+
+                {uniqueTrips.map(trip => (
+                  <div key={trip} onClick={() => { triggerHaptic(); setSelectedTripFilter(trip); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === trip ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === trip ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>🏖️</div>
+                      <span className="font-black text-sm text-slate-800 dark:text-slate-200">{trip}</span>
+                    </div>
+                    {selectedTripFilter === trip && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
+                  </div>
+                ))}
+
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 3. BOTTOM SHEET RINCIAN TRANSAKSI PER KATEGORI */}
+        {selectedCategoryDetail && (
+          <div className="fixed inset-0 z-[150] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedCategoryDetail(null)}>
+            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
+              <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start shrink-0">
+                <div>
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{selectedCategoryDetail.name?.trim() ? selectedCategoryDetail.name : "Sistem / Lainnya"}</h3>
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Rincian riwayat kategori periode ini</p>
+                </div>
+                <button onClick={() => setSelectedCategoryDetail(null)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
+              </div>
+              <div className="p-6 overflow-y-auto space-y-3">
+                {(() => {
+                  const catTxs = (selectedCategoryDetail.type === 'expense' ? expenseTxs : incomeTxs)
+                    .filter(t => t.category === selectedCategoryDetail.name)
+                    .sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime());
+                  
+                  if(catTxs.length === 0) return <p className="text-center text-xs text-slate-400 dark:text-slate-500 italic py-4">Tidak ada riwayat untuk kategori ini.</p>;
+
+                  return catTxs.map(t => (
+                    <div key={t.id} className="flex justify-between items-center text-xs p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                      <div className="flex flex-col text-left">
+                        <span className="font-bold text-slate-800 dark:text-slate-200 mb-1">{new Date(t.tDate).toLocaleDateString('id-ID', {weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'})}</span>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate max-w-[180px]">{t.accountName} {t.note ? `• ${t.note}` : ''}</span>
+                      </div>
+                      <span className={`font-black shrink-0 ${selectedCategoryDetail.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {selectedCategoryDetail.type === 'income' ? '+' : '-'}Rp {t.amount.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
           </div>
         )}
 
