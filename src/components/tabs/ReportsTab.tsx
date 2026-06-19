@@ -170,10 +170,17 @@ export default function ReportsTab({
   const [newBudgetCat, setNewBudgetCat] = useState<CategoryData | null>(null);
   const [showBudgetCatSelector, setShowBudgetCatSelector] = useState(false);
 
-  // STATE ASISTEN BUDGET
-  const [showAutoBudgetModal, setShowAutoBudgetModal] = useState(false);
-  const [autoBudgetIncome, setAutoBudgetIncome] = useState("");
-  const [autoBudgetPreview, setAutoBudgetPreview] = useState<any>(null);
+  // JALAN PINTAS: CUSTOM DATE RANGE (Siklus Gajian Fleksibel)
+  const [isCustomDateRange, setIsCustomDateRange] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState(() => { const d = new Date(); d.setDate(25); d.setMonth(d.getMonth() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
+  const [customEndDate, setCustomEndDate] = useState(() => { const d = new Date(); d.setDate(24); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
+  
+  const periodDisplayTitle = useMemo(() => {
+    if (isCustomDateRange) {
+      return `${new Date(customStartDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} - ${new Date(customEndDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}`;
+    }
+    return new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'long', year: 'numeric'});
+  }, [isCustomDateRange, customStartDate, customEndDate, reportMonth]);
 
   // AUTO-DETECT SALDO AKTIF
   const totalAvailableBalance = useMemo(() => {
@@ -181,71 +188,13 @@ export default function ReportsTab({
     const rawTotal = accounts
       .filter(acc => !acc.isSavings && !acc.excludeFromTotal && !acc.isInvestment)
       .reduce((sum, acc) => sum + (acc.balance * (acc.lastExchangeRate || 1)), 0);
-    return Math.floor(rawTotal); // Dibulatkan agar bersih dari koma/desimal
+    return Math.floor(rawTotal); 
   }, [accounts]);
 
-  const handleGenerateAutoBudget = () => {
-    triggerHaptic();
-    const total = parseFloat(autoBudgetIncome) || 0;
-    if (total <= 0) return alert("Masukkan nominal sisa uang yang valid!");
-    
-    const fixedCats = categories.filter(c => c.type === 'expense' && c.expenseType === 'fixed');
-    const varCats = categories.filter(c => c.type === 'expense' && c.expenseType !== 'fixed');
-    
-    if (fixedCats.length === 0 && varCats.length === 0) return alert("Anda belum memiliki kategori pengeluaran sama sekali!");
-
-    // 1. FIXED EXPENSE (Kebutuhan Tetap): Paham Realita!
-    // Pertahankan limit lama. Jika belum ada, paskan dengan pengeluaran bulan ini agar tidak merah.
-    const previewFixed = fixedCats.map(c => {
-      const currentSpent = expGrouped[c.name] || 0;
-      const finalLimit = (c.budgetLimit && c.budgetLimit > 0) ? c.budgetLimit : (currentSpent > 0 ? currentSpent : 0);
-      return { id: c.id, name: c.name, type: c.expenseType, limit: finalLimit, icon: c.icon };
-    });
-
-    // 2. VARIABLE EXPENSE (Jajan/Bebas): 
-    // Sisa uang dompet dialokasikan 80% untuk jajan, 20% disuruh Tabung.
-    const varPool = total * 0.8; 
-    const savingsTotal = total * 0.2; 
-
-    // Cari tahu kebiasaan pengeluaran variabel Anda bulan ini
-    const totalVarSpent = varCats.reduce((sum, c) => sum + (expGrouped[c.name] || 0), 0);
-    
-    const previewVar = varCats.map(c => {
-      const currentSpent = expGrouped[c.name] || 0;
-      let portion = 0;
-      if (totalVarSpent > 0) {
-        portion = currentSpent / totalVarSpent; // Proporsional sesuai kebiasaan jajan
-      } else {
-        portion = 1 / varCats.length; // Bagi rata jika bulan ini belum jajan sama sekali
-      }
-      
-      // Limit Baru = Pengeluaran Saat Ini + "Jatah Napas Tambahan"
-      const additionalHeadroom = Math.floor(varPool * portion);
-      const newLimit = currentSpent + additionalHeadroom;
-      
-      return { id: c.id, name: c.name, type: c.expenseType, limit: newLimit, icon: c.icon };
-    });
-
-    // Sembunyikan kategori yang limit barunya 0 agar tampilan rapi
-    const preview = [...previewFixed, ...previewVar].filter(c => c.limit > 0);
-
-    setAutoBudgetPreview({ total, savingsTotal, categories: preview });
-  };
-
-  const applyAutoBudget = async () => {
-    if (!autoBudgetPreview || !updateCategory) return;
-    triggerHaptic();
-    // Looping eksekusi penyimpanan ke setiap kategori
-    for (const cat of autoBudgetPreview.categories) {
-      if (cat.limit > 0) {
-        await updateCategory(cat.id, cat.name, cat.limit, cat.type, cat.icon);
-      }
-    }
-    setShowAutoBudgetModal(false);
-    setAutoBudgetPreview(null);
-    setAutoBudgetIncome("");
-    alert("🪄 Anggaran cerdas berhasil diterapkan!");
-  };
+  // STATE ASISTEN BUDGET
+  const [showAutoBudgetModal, setShowAutoBudgetModal] = useState(false);
+  const [autoBudgetIncome, setAutoBudgetIncome] = useState("");
+  const [autoBudgetPreview, setAutoBudgetPreview] = useState<any>(null);
 
   const triggerHaptic = () => { 
     if (typeof window !== "undefined" && localStorage.getItem("fintracker_haptic") !== "false") {
@@ -282,9 +231,7 @@ export default function ReportsTab({
   // LOGIKA MULTI-FILTER (Account + Travel Mode)
   const filteredGlobalTxs = useMemo(() => {
     return reportTransactions.filter(t => {
-      // 1. Filter Akun
       const accountMatch = selectedAccount === "All" || t.accountName === selectedAccount || t.toAccountName === selectedAccount;
-      // 2. Filter Trip (Travel Mode)
       const tripMatch = selectedTripFilter === "All" ? true : 
                         selectedTripFilter === "Non-Travel" ? !(t as any).tripId : 
                         (t as any).tripId === selectedTripFilter;
@@ -292,7 +239,12 @@ export default function ReportsTab({
     });
   }, [reportTransactions, selectedAccount, selectedTripFilter]);
 
-  const currentMonthTxs = filteredGlobalTxs.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
+  const currentMonthTxs = useMemo(() => {
+    if (isCustomDateRange) {
+      return filteredGlobalTxs.filter(t => t.tDate && t.tDate >= customStartDate && t.tDate <= customEndDate);
+    }
+    return filteredGlobalTxs.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
+  }, [filteredGlobalTxs, reportMonth, isCustomDateRange, customStartDate, customEndDate]);
 
   const unrollSplits = (txs: TransactionData[]): TransactionData[] => {
     return txs.flatMap(t => {
@@ -341,6 +293,57 @@ export default function ReportsTab({
   const displayedVarKeys = showAllVarList ? sortedVarKeys : sortedVarKeys.slice(0, 5);
   const toggleExpand = (catName: string) => { setExpandedCategories(prev => ({ ...prev, [catName]: !prev[catName] })); };
 
+  const handleGenerateAutoBudget = () => {
+    triggerHaptic();
+    const total = parseFloat(autoBudgetIncome) || 0;
+    if (total <= 0) return alert("Masukkan nominal sisa uang yang valid!");
+    
+    const fixedCats = categories.filter(c => c.type === 'expense' && c.expenseType === 'fixed');
+    const varCats = categories.filter(c => c.type === 'expense' && c.expenseType !== 'fixed');
+    
+    if (fixedCats.length === 0 && varCats.length === 0) return alert("Anda belum memiliki kategori pengeluaran sama sekali!");
+
+    const previewFixed = fixedCats.map(c => {
+      const currentSpent = expGrouped[c.name] || 0;
+      const finalLimit = (c.budgetLimit && c.budgetLimit > 0) ? c.budgetLimit : (currentSpent > 0 ? currentSpent : 0);
+      return { id: c.id, name: c.name, type: c.expenseType, limit: finalLimit, icon: c.icon };
+    });
+
+    const varPool = total * 0.8; 
+    const savingsTotal = total * 0.2; 
+    const totalVarSpent = varCats.reduce((sum, c) => sum + (expGrouped[c.name] || 0), 0);
+    
+    const previewVar = varCats.map(c => {
+      const currentSpent = expGrouped[c.name] || 0;
+      let portion = 0;
+      if (totalVarSpent > 0) {
+        portion = currentSpent / totalVarSpent; 
+      } else {
+        portion = 1 / varCats.length; 
+      }
+      const additionalHeadroom = Math.floor(varPool * portion);
+      const newLimit = currentSpent + additionalHeadroom;
+      return { id: c.id, name: c.name, type: c.expenseType, limit: newLimit, icon: c.icon };
+    });
+
+    const preview = [...previewFixed, ...previewVar].filter(c => c.limit > 0);
+    setAutoBudgetPreview({ total, savingsTotal, categories: preview });
+  };
+
+  const applyAutoBudget = async () => {
+    if (!autoBudgetPreview || !updateCategory) return;
+    triggerHaptic();
+    for (const cat of autoBudgetPreview.categories) {
+      if (cat.limit > 0) {
+        await updateCategory(cat.id, cat.name, cat.limit, cat.type, cat.icon);
+      }
+    }
+    setShowAutoBudgetModal(false);
+    setAutoBudgetPreview(null);
+    setAutoBudgetIncome("");
+    alert("🪄 Anggaran cerdas berhasil diterapkan!");
+  };
+
   const [y, m] = reportMonth.split('-').map(Number);
   const prevDate = new Date(y, m - 2, 1);
   const prevMonthStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
@@ -385,14 +388,30 @@ export default function ReportsTab({
   const daysInMonth = new Date(y, m, 0).getDate();
   const firstDayOfWeek = new Date(y, m - 1, 1).getDay(); 
   
+  const effectiveDaysArray = useMemo(() => {
+    const arr = [];
+    if (isCustomDateRange && customStartDate && customEndDate) {
+       const start = new Date(customStartDate);
+       const end = new Date(customEndDate);
+       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          arr.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+       }
+    } else {
+       for (let i = 1; i <= daysInMonth; i++) {
+          arr.push(`${reportMonth}-${String(i).padStart(2, '0')}`);
+       }
+    }
+    return arr;
+  }, [isCustomDateRange, customStartDate, customEndDate, reportMonth, daysInMonth]);
+
   let runExp = 0, runInc = 0;
-  const dailyCumulativeData = Array.from({length: daysInMonth}, (_, i) => {
-    const dayStr = `${reportMonth}-${String(i+1).padStart(2, '0')}`;
+  const dailyCumulativeData = effectiveDaysArray.map((dayStr, i) => {
     const txs = currentMonthTxs.filter(t => t.tDate === dayStr && (selectedAccount === "All" || t.accountName === selectedAccount));
     const exp = txs.filter(t=>t.type==='expense').reduce((a,b)=>a+(b.splits?.reduce((s, sp)=>s+sp.amount,0)||b.amount),0) + txs.filter(t=>t.type==='transfer' && t.adminFee).reduce((a,b)=>a+b.adminFee!,0);
     const inc = txs.filter(t=>t.type==='income').reduce((a,b)=>a+(b.splits?.reduce((s, sp)=>s+sp.amount,0)||b.amount),0);
     runExp += exp; runInc += inc;
-    return { name: String(i+1), Pemasukan: runInc, Pengeluaran: runExp, DailyExp: exp };
+    const displayDay = new Date(dayStr).getDate();
+    return { name: String(displayDay), dateStr: dayStr, Pemasukan: runInc, Pengeluaran: runExp, DailyExp: exp };
   });
 
   const dowNames = ['M', 'S', 'S', 'R', 'K', 'J', 'S'];
@@ -402,15 +421,23 @@ export default function ReportsTab({
   const dowChartData = dowNames.map((name, i) => ({ dayName: dowFullNames[i], name, Pengeluaran: dowData[i], fill: dowData[i] === Math.max(...dowData, 1) ? '#ef4444' : '#64748b' }));
   const peakDayIdx = dowData.indexOf(Math.max(...dowData));
 
-  const dailyExpenseMap: Record<number, number> = {};
-  const dailyIncomeMap: Record<number, number> = {};
-  expenseTxs.forEach(t => { const d = parseInt(t.tDate.split('-')[2], 10); dailyExpenseMap[d] = (dailyExpenseMap[d] || 0) + t.amount; });
-  incomeTxs.forEach(t => { const d = parseInt(t.tDate.split('-')[2], 10); dailyIncomeMap[d] = (dailyIncomeMap[d] || 0) + t.amount; });
+  const dailyExpenseMap: Record<string, number> = {};
+  const dailyIncomeMap: Record<string, number> = {};
+  expenseTxs.forEach(t => { dailyExpenseMap[t.tDate] = (dailyExpenseMap[t.tDate] || 0) + t.amount; });
+  incomeTxs.forEach(t => { dailyIncomeMap[t.tDate] = (dailyIncomeMap[t.tDate] || 0) + t.amount; });
   const trackedDays = Object.keys(dailyExpenseMap).length;
 
   const todayObj = new Date();
-  const isCurrentMonth = todayObj.getFullYear() === y && (todayObj.getMonth() + 1) === m;
-  const daysPassed = isCurrentMonth ? todayObj.getDate() : daysInMonth;
+  const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+  
+  let daysPassed = 0;
+  if (isCustomDateRange) {
+    const passedArr = effectiveDaysArray.filter(d => d <= todayStr);
+    daysPassed = passedArr.length;
+  } else {
+    const isCurrentMonth = todayObj.getFullYear() === y && (todayObj.getMonth() + 1) === m;
+    daysPassed = isCurrentMonth ? todayObj.getDate() : daysInMonth;
+  }
   
   const noSpendDays = Math.max(0, daysPassed - trackedDays);
   const noSpendScore = Math.min((noSpendDays / 5) * 20, 20);
@@ -454,22 +481,30 @@ export default function ReportsTab({
   const totalSpentOnBudget = budgetCategories.reduce((sum, c) => sum + (expGrouped[c.name] || 0), 0);
   const remainingBudget = totalBudgetLimit - totalSpentOnBudget;
   const overallBudgetPercentage = totalBudgetLimit > 0 ? (totalSpentOnBudget / totalBudgetLimit) * 100 : 0;
-  const daysRemaining = isCurrentMonth ? Math.max(0, daysInMonth - todayObj.getDate()) : 0;
+  
+  let daysRemaining = 0;
+  if (isCustomDateRange) {
+    const remainingArr = effectiveDaysArray.filter(d => d > todayStr);
+    daysRemaining = remainingArr.length;
+  } else {
+    const isCurrentMonth = todayObj.getFullYear() === y && (todayObj.getMonth() + 1) === m;
+    daysRemaining = isCurrentMonth ? Math.max(0, daysInMonth - todayObj.getDate()) : 0;
+  }
   
   const safeDailySpend = daysRemaining > 0 && remainingBudget > 0 ? remainingBudget / daysRemaining : 0;
-  
+
   const budgetChartData = useMemo(() => {
     return dailyCumulativeData.map((d, i) => {
-      const target = totalBudgetLimit > 0 ? (totalBudgetLimit / daysInMonth) * (i + 1) : 0;
-      const isPastToday = isCurrentMonth && (i + 1) > todayObj.getDate();
+      const target = totalBudgetLimit > 0 ? (totalBudgetLimit / effectiveDaysArray.length) * (i + 1) : 0;
+      const isPastToday = d.dateStr > todayStr;
       return {
         name: d.name,
-        date: `${reportMonth}-${d.name.padStart(2,'0')}`,
+        date: d.dateStr,
         Target: target,
         Terpakai: isPastToday ? null : d.Pengeluaran
       };
     });
-  }, [dailyCumulativeData, totalBudgetLimit, daysInMonth, isCurrentMonth, todayObj, reportMonth]);
+  }, [dailyCumulativeData, totalBudgetLimit, effectiveDaysArray.length, todayStr]);
 
   const currentTheme = themeMap[accent];
 
@@ -533,7 +568,7 @@ export default function ReportsTab({
           </div>
           <div style="text-align: right;">
             <p style="margin: 0; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #64748b;">Periode</p>
-            <p style="margin: 4px 0 0 0; font-size: 18px; font-weight: 900;">${new Date(reportMonth + '-01').toLocaleDateString('id-ID', {month: 'long', year: 'numeric'})}</p>
+            <p style="margin: 4px 0 0 0; font-size: 18px; font-weight: 900;">${periodDisplayTitle}</p>
           </div>
         </div>
         <div class="summary-box">
@@ -695,17 +730,45 @@ export default function ReportsTab({
             </div>
           </div>
 
-          <div ref={monthScrollRef} className="flex overflow-x-auto gap-2 px-2 pb-2 -mx-2 snap-x no-scrollbar scroll-smooth">
-            {monthNavPills.map(month => {
-              const isActive = month === reportMonth;
-              const dateObj = new Date(month + "-01");
-              const label = dateObj.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
-              return (
-                <button key={month} onClick={() => { triggerHaptic(); setReportMonth(month); }} className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${isActive ? `${currentTheme.activePill}` : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"}`}>
-                  {label}
-                </button>
-              );
-            })}
+          <div className="flex flex-col gap-2 px-2 pb-2">
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                <CalendarDays size={12}/> Periode Laporan
+              </span>
+              <button 
+                onClick={() => { triggerHaptic(); setIsCustomDateRange(!isCustomDateRange); }}
+                className={`text-[9px] font-black px-2.5 py-1.5 rounded-lg transition-all cursor-pointer shadow-sm ${isCustomDateRange ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800' : 'bg-white text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 hover:bg-slate-50'}`}
+              >
+                {isCustomDateRange ? 'Batal (Kembali Bulanan)' : 'Pilih Rentang Siklus'}
+              </button>
+            </div>
+
+            {!isCustomDateRange ? (
+              <div ref={monthScrollRef} className="flex overflow-x-auto gap-2 -mx-2 px-2 pt-1 pb-1 snap-x no-scrollbar scroll-smooth">
+                {monthNavPills.map(month => {
+                  const isActive = month === reportMonth;
+                  const dateObj = new Date(month + "-01");
+                  const label = dateObj.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+                  return (
+                    <button key={month} onClick={() => { triggerHaptic(); setReportMonth(month); }} className={`snap-center shrink-0 px-4 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${isActive ? `${currentTheme.activePill}` : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"}`}>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/30 rounded-2xl animate-in slide-in-from-top-2 duration-200 shadow-inner">
+                <div className="flex-1 space-y-1">
+                  <label className="text-[9px] font-black text-indigo-500 uppercase tracking-widest pl-1">Dari Tanggal</label>
+                  <input type="date" className="w-full bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-800/50 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 shadow-sm" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} />
+                </div>
+                <div className="shrink-0 text-indigo-300 mt-4"><span className="font-black text-lg">➔</span></div>
+                <div className="flex-1 space-y-1">
+                  <label className="text-[9px] font-black text-indigo-500 uppercase tracking-widest pl-1">Sampai Tanggal</label>
+                  <input type="date" className="w-full bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-800/50 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 shadow-sm" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-center mb-2">
@@ -974,469 +1037,7 @@ export default function ReportsTab({
           </div>
         )}
 
-        {/* ================= VIEW 4: ANGGARAN (BUDGETING TRACKER) REFERENSI MEWAH ================= */}
-        {activeView === "anggaran" && (
-          <div className="space-y-6 animate-in fade-in duration-300 relative pb-20">
-            {/* Header Anggaran */}
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm text-center relative overflow-hidden">
-              <div className="flex flex-col items-center justify-center">
-                <div className="flex items-start gap-2">
-                  <BarChart3 className="text-slate-400 mt-1" size={20} />
-                  <h2 className="text-3xl font-black text-slate-800 dark:text-white">
-                    Rp {Math.max(0, remainingBudget).toLocaleString('id-ID')} <span className="text-xl text-slate-500 font-bold">Tersisa</span>
-                  </h2>
-                </div>
-                <p className="text-[11px] font-bold text-slate-500 mt-2">
-                  {daysRemaining} hari tersisa • {budgetCategories.length} kategori diatur
-                </p>
-              </div>
-
-              {/* Progress Bar (Reference Style) */}
-              <div className="mt-8 relative px-2">
-                <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-2">
-                  <span>{new Date(y, m - 1, 1).toLocaleDateString('id-ID', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
-                  <span>{new Date(y, m, 0).toLocaleDateString('id-ID', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
-                </div>
-                <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative">
-                   <div className={`absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-out ${overallBudgetPercentage >= 100 ? 'bg-red-500' : overallBudgetPercentage >= 80 ? 'bg-amber-500' : currentTheme.budgetFill}`} style={{width: `${Math.min(overallBudgetPercentage, 100)}%`}}></div>
-                </div>
-                {/* Tooltip floating */}
-                <div className={`absolute -top-6 transition-all duration-1000`} style={{ left: `calc(${Math.min(overallBudgetPercentage, 100)}% - 20px)` }}>
-                  <div className={`px-2 py-1 text-[9px] font-black text-white rounded-lg shadow-sm relative ${overallBudgetPercentage >= 100 ? 'bg-red-500' : overallBudgetPercentage >= 80 ? 'bg-amber-500' : currentTheme.budgetFill}`}>
-                    {overallBudgetPercentage.toFixed(0)}%
-                    <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 ${overallBudgetPercentage >= 100 ? 'bg-red-500' : overallBudgetPercentage >= 80 ? 'bg-amber-500' : currentTheme.budgetFill}`}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Chart Anggaran (Reference style line chart) */}
-              {totalBudgetLimit > 0 && (
-                <div className="h-40 w-full mt-6 -ml-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ReLineChart data={budgetChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-slate-100 dark:stroke-slate-800" />
-                      <XAxis dataKey="name" tick={{ fontSize: 9, fontStyle: "normal", fontWeight: "bold", fill: "#94a3b8" }} tickLine={false} axisLine={false} minTickGap={30} dy={10} />
-                      <YAxis hide domain={[0, 'dataMax']} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Line type="monotone" dataKey="Target" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Batas Aman" />
-                      <Line type="monotone" dataKey="Terpakai" stroke={overallBudgetPercentage >= 100 ? '#ef4444' : currentTheme.budgetLine} strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
-                    </ReLineChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-
-              {/* Insight Box */}
-              {totalBudgetLimit > 0 && (
-                <div className="mt-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl flex items-start gap-3 border border-slate-100 dark:border-slate-800 text-left">
-                  <AlertCircle size={16} className="text-blue-500 mt-0.5 shrink-0" />
-                  <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300 leading-relaxed">
-                    {remainingBudget < 0 
-                      ? "Anda telah melebihi batas anggaran bulan ini. Kurangi pengeluaran Anda segera!" 
-                      : `Terus belanja. Anda dapat membelanjakan Rp ${safeDailySpend.toLocaleString('id-ID', {maximumFractionDigits:0})} setiap hari selama sisa periode (${daysRemaining} hari tersisa).`
-                    }
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* TOMBOL WIDGET AUTO-BUDGET */}
-            <div onClick={() => { triggerHaptic(); setShowAutoBudgetModal(true); setAutoBudgetPreview(null); setAutoBudgetIncome(totalAvailableBalance > 0 ? totalAvailableBalance.toString() : ""); }} className={`p-4 rounded-[24px] cursor-pointer transition-all border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center justify-between shadow-sm`}>
-              <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center text-2xl shadow-sm border border-indigo-100 dark:border-indigo-800">🪄</div>
-                 <div className="text-left">
-                   <h4 className="text-sm font-black text-indigo-700 dark:text-indigo-400 mb-0.5">Asisten Budget 50/30/20</h4>
-                   <p className="text-[10px] font-bold text-indigo-500 dark:text-indigo-500/70 leading-tight">Buat anggaran otomatis dalam 1 klik untuk sisa {daysRemaining} hari bulan ini.</p>
-                 </div>
-              </div>
-              <ChevronRight size={18} className="text-indigo-400 shrink-0" />
-            </div>
-
-            {/* List Kategori Anggaran */}
-            <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-200">
-              <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
-                <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm px-2">Daftar Anggaran</h3>
-              </div>
-              
-              <div className="divide-y divide-slate-100 dark:border-slate-800 dark:divide-slate-800/60">
-                {budgetCategories.length === 0 ? (
-                   <div className="p-8 text-center bg-white dark:bg-slate-900">
-                     <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Belum ada anggaran yang diatur.</p>
-                   </div>
-                ) : (
-                   budgetCategories.map(cat => {
-                     const spent = expGrouped[cat.name] || 0;
-                     const limit = cat.budgetLimit || 0;
-                     const pct = limit > 0 ? (spent / limit) * 100 : 0;
-                     const isOver = pct >= 100;
-                     const isWarning = pct >= 80 && !isOver;
-
-                     return (
-                       <div key={cat.id} onClick={() => { triggerHaptic(); setSelectedBudgetCat(cat); setBudgetInput(limit.toString()); }} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer group">
-                         <div className="flex justify-between items-center mb-3">
-                           <div className="flex items-center gap-4 min-w-0">
-                             <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-900/20 text-orange-500 flex items-center justify-center text-xl shrink-0 border border-orange-100 dark:border-orange-800/30">{cat.icon || "🏷️"}</div>
-                             <div className="text-left min-w-0">
-                               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{cat.name}</h4>
-                               <p className="text-[10px] font-bold text-slate-400 mt-0.5">Bulanan</p>
-                               <div className={`mt-1.5 inline-block px-2 py-0.5 rounded-full text-[9px] font-black text-white shadow-sm ${isOver ? 'bg-red-500' : isWarning ? 'bg-amber-500' : currentTheme.budgetFill}`}>
-                                 {pct.toFixed(0)}%
-                               </div>
-                             </div>
-                           </div>
-                           <div className="text-right shrink-0 pl-2">
-                             <span className={`font-black text-sm ${isOver ? 'text-red-500' : 'text-slate-800 dark:text-slate-100'}`}>Rp {spent.toLocaleString('id-ID')}</span>
-                             <p className="text-[10px] font-bold text-slate-400 mt-0.5">dari Rp {limit.toLocaleString('id-ID')}</p>
-                           </div>
-                         </div>
-                         <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
-                           <div className={`h-full rounded-full transition-all duration-500 ${isOver ? 'bg-red-500' : isWarning ? 'bg-amber-500' : currentTheme.budgetFill}`} style={{width: `${Math.min(pct, 100)}%`}}></div>
-                         </div>
-                       </div>
-                     )
-                   })
-                )}
-              </div>
-                           
-            </div>
-
-            {/* FLOATING ACTION BUTTON (+) KHUSUS TAB ANGGARAN */}
-            <button 
-              onClick={() => { 
-                triggerHaptic(); 
-                setShowAddBudgetModal(true); 
-                setNewBudgetCat(null); 
-                setBudgetInput(""); 
-              }} 
-              className={`fixed bottom-24 md:bottom-10 right-6 w-14 h-14 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40 cursor-pointer shadow-[0_10px_25px_rgba(0,0,0,0.3)] border border-white/20 text-white ${currentTheme.activeBg.split(" ")[0]}`}
-            >
-              <Plus size={28} strokeWidth={2.5} />
-            </button>
-          </div>
-        )}
-
-        {/* ================= VIEW 2: LAPORAN (ANALISIS MENDALAM) ================= */}
-        {activeView === "laporan" && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Kartu Header Laporan Dinamis */}
-            <div className={`${currentTheme.cardGradient} text-white p-6 rounded-[30px] shadow-lg relative overflow-hidden`}>
-              <div className="relative z-10 flex justify-between items-start mb-6"><div><h3 className="font-bold text-white/70 text-xs mb-1">Aktivitas Pengeluaran</h3><p className="font-black text-lg">{new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'short', year: 'numeric'})}</p></div></div>
-              <div className="flex gap-6 mb-6 relative z-10">
-                <div><p className="text-2xl font-black">Rp {localTotalExpense >= 1000 ? (localTotalExpense/1000).toFixed(1)+'K' : localTotalExpense}</p><p className="text-[10px] font-bold text-white/75">Pengeluaran</p></div>
-                {localPieData[0] && (<div><p className="text-2xl font-black">Rp {localPieData[0].value >= 1000 ? (localPieData[0].value/1000).toFixed(1)+'K' : localPieData[0].value}</p><p className="text-[10px] font-bold text-white/75">{localPieData[0].name?.trim() ? localPieData[0].name : "Sistem / Lainnya"}</p></div>)}
-              </div>
-              <div className="h-48 w-full relative z-10 -ml-2 mt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={dailyCumulativeData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                    <defs><linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ffffff" stopOpacity={0.4}/><stop offset="95%" stopColor="#ffffff" stopOpacity={0}/></linearGradient></defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.15)" />
-                    <XAxis dataKey="name" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.8)", fontStyle: "normal", fontWeight: "bold" }} tickLine={false} axisLine={false} interval={0} dy={10} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.3)', strokeWidth: 2, strokeDasharray: '3 3' }} />
-                    <Area type="monotone" dataKey="DailyExp" name="Pengeluaran Harian" stroke="#ffffff" strokeWidth={3} fillOpacity={1} fill="url(#colorExp)" activeDot={{ r: 6, fill: "#1e3a8a", stroke: "#ffffff", strokeWidth: 2 }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ringkasan</p>
-              <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Arus Kas Bulanan</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex gap-2 items-center mb-1"><div className="w-2 h-2 rounded-full bg-emerald-500"/><span className="text-lg font-black text-slate-800 dark:text-slate-100">Rp {localTotalIncome.toLocaleString('id-ID')}</span></div>
-                  <p className="text-[10px] font-bold text-slate-500 pl-4 mb-2">Pemasukan</p>
-                  <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out" style={{width: `${localTotalIncome > 0 ? (localTotalIncome >= localTotalExpense ? 100 : (localTotalIncome / localTotalExpense) * 100) : 0}%`}}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex gap-2 items-center mb-1"><div className="w-2 h-2 rounded-full bg-red-500"/><span className="text-lg font-black text-slate-800 dark:text-slate-100">Rp {localTotalExpense.toLocaleString('id-ID')}</span></div>
-                  <p className="text-[10px] font-bold text-slate-500 pl-4 mb-2">Pengeluaran</p>
-                  <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-red-500 rounded-full transition-all duration-1000 ease-out" style={{width: `${localTotalExpense > 0 ? (localTotalExpense >= localTotalIncome ? 100 : (localTotalExpense / localTotalIncome) * 100) : 0}%`}}></div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 mt-2"><p className="text-xs font-bold text-slate-600 dark:text-slate-300">Pada {new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'short', year: 'numeric'})}, arus kas Anda {localTotalIncome >= localTotalExpense ? "positif" : "negatif"}. Anda {localTotalIncome >= localTotalExpense ? "menyimpan" : "membelanjakan lebih sebesar"} <span className="font-black">Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}</span>.</p></div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <div className="flex justify-between items-center mb-2"><h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Income vs Expense</h3><span className="text-[10px] font-bold text-slate-500">Cumulative</span></div>
-              
-              <div className="flex gap-4 text-[10px] font-bold mb-4 text-slate-600 dark:text-slate-300">
-                <div className="flex items-center gap-1.5"><div className="w-4 h-1 rounded bg-emerald-500"/> Pemasukan <span className="text-emerald-500 dark:text-emerald-400 ml-1 font-black">Rp {localTotalIncome >= 1000 ? (localTotalIncome/1000).toFixed(0)+'K' : localTotalIncome}</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-4 h-1 rounded bg-red-500"/> Pengeluaran <span className="text-red-500 dark:text-red-400 ml-1 font-black">Rp {localTotalExpense >= 1000 ? (localTotalExpense/1000).toFixed(0)+'K' : localTotalExpense}</span></div>
-              </div>
-              
-              <div className="h-56 w-full -ml-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ReLineChart data={dailyCumulativeData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-slate-100 dark:stroke-slate-800" />
-                    <XAxis dataKey="name" tick={{ fontSize: 9, fontStyle: "normal", fontWeight: "bold", fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={0} />
-                    <YAxis tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(1)}K` : v} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="Pemasukan" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: "#10b981", strokeWidth: 0 }} />
-                    <Line type="monotone" dataKey="Pengeluaran" stroke="#ef4444" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: "#ef4444", strokeWidth: 0 }} />
-                  </ReLineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Ringkasan</p>
-              <div className="flex justify-between items-start mb-6">
-                <div><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-2">Financial Health Score</h3><span className={`px-3 py-1 rounded-full text-[10px] font-black ${healthStatus.bg} ${healthStatus.color}`}>{healthStatus.text}</span></div>
-                <div className="relative w-16 h-16 shrink-0">
-                  <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
-                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f1f5f9" strokeWidth="3" className="dark:stroke-slate-800"/>
-                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={healthStatus.stroke} strokeWidth="3" strokeDasharray={`${healthScore}, 100`} className="transition-all duration-1000 ease-out"/>
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center"><span className={`text-xl font-black leading-none ${healthStatus.color}`}>{healthScore}</span><span className="text-[8px] font-bold text-slate-400 leading-none mt-0.5">/100</span></div>
-                </div>
-              </div>
-              <div className={`${localTotalIncome >= localTotalExpense ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"} p-4 rounded-2xl flex items-center gap-4 mb-6 border ${localTotalIncome >= localTotalExpense ? "border-emerald-100 dark:border-emerald-800/30" : "border-red-100 dark:border-red-800/30"}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-white/50 dark:bg-black/20 shrink-0`}>{localTotalIncome >= localTotalExpense ? <TrendingUp size={16}/> : <TrendingDown size={16}/>}</div>
-                <div><p className="text-[10px] font-black uppercase tracking-wider">{localTotalIncome >= localTotalExpense ? "Net Surplus" : "Net Deficit"}</p><p className="text-lg font-black">Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}</p></div>
-              </div>
-              <div className="space-y-4">
-                {[
-                  { label: "Savings Rate", val: `${savingsRate.toFixed(1)}%`, score: (savingsRate>0?30:0), max: 30, icon: "🎯" },
-                  { label: "Expense Control", val: localTotalExpense > localTotalIncome ? "Over" : "Good", score: (localTotalExpense<=localTotalIncome?30:10), max: 30, icon: "📉" },
-                  { label: "No-Spend Days", val: `${noSpendDays} hari`, score: noSpendScore, max: 20, icon: "🌱" },
-                  { label: "Tracking Consistency", val: `${trackedDays} hari`, score: consistencyScore, max: 20, icon: "📅" }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-bold"><span className="opacity-70">{item.icon}</span> {item.label}</div>
-                    <div className="flex items-center gap-3"><span className="text-[10px] text-slate-500 font-bold w-20 text-right">{item.val}</span><div className="w-12 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-slate-800 dark:bg-slate-300 rounded-full" style={{width:`${(item.score/item.max)*100}%`}}></div></div><span className="text-[10px] font-black text-slate-800 dark:text-slate-200 w-4 text-right">{Math.round(item.score)}</span></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-              <div><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Spending by Day of Week</h3><p className="text-[10px] font-bold text-slate-500">Peak spending day: <span className="text-red-500">{dowFullNames[peakDayIdx]}</span></p></div>
-              <div className="h-40 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ReBarChart data={dowChartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: "bold", fill: "#94a3b8" }} dy={10} /><Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} content={<CustomTooltip />} /><Bar dataKey="Pengeluaran" radius={[6, 6, 6, 6]}>{dowChartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.fill} />))}</Bar></ReBarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 divide-x divide-slate-200 dark:divide-slate-700">
-                <div className="flex-1 text-center"><p className="text-[10px] font-bold text-slate-500 mb-1">Weekdays</p><p className="text-sm font-black text-slate-800 dark:text-slate-200">Rp {Math.round((dowData[1]+dowData[2]+dowData[3]+dowData[4]+dowData[5])/5/1000).toFixed(0)}K <span className="text-[9px] text-slate-400 font-normal">avg/day</span></p></div>
-                <div className="flex-1 text-center"><p className="text-[10px] font-bold text-slate-500 mb-1">Weekends</p><p className="text-sm font-black text-slate-800 dark:text-slate-200">Rp {Math.round((dowData[0]+dowData[6])/2/1000).toFixed(0)}K <span className="text-[9px] text-slate-400 font-normal">avg/day</span></p></div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================= VIEW 3: KALENDER ================= */}
-        {activeView === "kalender" && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-200">
-              
-              <div className="flex justify-between items-center mb-6 px-2">
-                <div>
-                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'long', year: 'numeric'})}</h3>
-                  <p className="text-[10px] font-bold text-slate-500">{trackedDays} hari terlacak bulan ini</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-7 mb-2">{['M', 'S', 'S', 'R', 'K', 'J', 'S'].map((day, i) => (<div key={i} className="text-center text-[10px] font-black text-slate-400 uppercase py-2">{day}</div>))}</div>
-              
-              <div className="grid grid-cols-7 gap-1 md:gap-2">
-                {Array.from({length: firstDayOfWeek}).map((_, i) => (<div key={`empty-${i}`} className="aspect-square bg-slate-50/50 dark:bg-slate-800/10 rounded-xl"></div>))}
-                {Array.from({length: daysInMonth}).map((_, i) => {
-                  const d = i + 1; const dateStr = `${reportMonth}-${String(d).padStart(2, '0')}`; const isToday = new Date().toISOString().split('T')[0] === dateStr;
-                  const inc = dailyIncomeMap[d] || 0; const exp = dailyExpenseMap[d] || 0; const hasData = inc > 0 || exp > 0;
-                  return (
-                    <div key={d} onClick={() => { if(hasData) { triggerHaptic(); setSelectedHeatmapDate(dateStr); } }} className={`aspect-square p-1 md:p-2 rounded-xl flex flex-col justify-between transition-all ${hasData ? 'cursor-pointer hover:scale-105 hover:shadow-md hover:z-10' : ''} ${isToday ? 'bg-blue-50 border-2 border-blue-500 dark:bg-blue-900/20' : hasData ? 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm' : 'bg-slate-50/50 dark:bg-slate-800/30 border border-transparent'}`}>
-                      <span className={`text-[10px] md:text-xs font-black ${isToday ? 'text-blue-600' : 'text-slate-700 dark:text-slate-300'} ${!hasData && !isToday ? 'opacity-40' : ''}`}>{d}</span>
-                      {hasData && (
-                        <div className="flex flex-col gap-0.5 mt-auto">
-                          {inc > 0 && <span className="text-[7px] md:text-[9px] font-black text-emerald-500 truncate leading-none">+{inc.toLocaleString('id-ID')}</span>}
-                          {exp > 0 && <span className="text-[7px] md:text-[9px] font-black text-red-500 truncate leading-none">-{exp.toLocaleString('id-ID')}</span>}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-6 space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-500 dark:text-slate-400 font-bold">Pendapatan</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-black">Rp {localTotalIncome.toLocaleString('id-ID')}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-500 dark:text-slate-400 font-bold">Pengeluaran</span>
-                  <span className="text-red-500 dark:text-red-400 font-black">Rp {localTotalExpense.toLocaleString('id-ID')}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs pt-3 mt-1 border-t border-slate-100 border-slate-200 dark:border-slate-800/60">
-                  <span className="text-slate-500 dark:text-slate-400 font-bold">Arus Kas</span>
-                  <span className={`font-black ${localTotalIncome - localTotalExpense >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
-                    {localTotalIncome - localTotalExpense < 0 ? '-' : ''}Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}
-                  </span>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        )}
-
-        {/* ================= BOTTOM SHEETS ================= */}
-
-        {/* 1. BOTTOM SHEET TRANSAKSI HARIAN KALENDER */}
-        {selectedHeatmapDate && (
-          <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedHeatmapDate(null)}>
-            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
-              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
-              <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start shrink-0">
-                <div><div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-1"><CalendarDays size={16} /><h3 className="font-black text-sm">{new Date(selectedHeatmapDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h3></div><p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 ml-6">{unrollSplits(currentMonthTxs.filter(t => t.tDate === selectedHeatmapDate)).length} transaksi tercatat</p></div>
-                <button onClick={() => setSelectedHeatmapDate(null)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
-              </div>
-              <div className="p-6 overflow-y-auto space-y-4">
-                {(() => {
-                  const dayTxs = unrollSplits(currentMonthTxs.filter(t => t.tDate === selectedHeatmapDate));
-                  const dayInc = dayTxs.filter(t => t.type === 'income').reduce((a,b)=>a+b.amount,0); const dayExp = dayTxs.filter(t => t.type === 'expense').reduce((a,b)=>a+b.amount,0);
-                  return (
-                    <>
-                      <div className="flex gap-4 bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                        <div className="flex-1"><p className="text-[10px] font-bold text-slate-500 flex items-center gap-1 mb-1"><ArrowUp size={12} className="text-emerald-500"/> Pendapatan</p><p className="text-sm font-black text-emerald-600">Rp {dayInc.toLocaleString('id-ID')}</p></div>
-                        <div className="flex-1"><p className="text-[10px] font-bold text-slate-500 flex items-center gap-1 mb-1"><ArrowDown size={12} className="text-red-500"/> Pengeluaran</p><p className="text-sm font-black text-red-500">Rp {dayExp.toLocaleString('id-ID')}</p></div>
-                      </div>
-                      <div className="space-y-3 pt-2">
-                        {dayTxs.sort((a,b) => b.amount - a.amount).map(t => (
-                          <div key={t.id} className="flex justify-between items-center text-xs p-3 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-black ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' : 'bg-red-100 text-red-500 dark:bg-red-900/30'}`}>{t.category?.charAt(0).toUpperCase() || "⚙️"}</div>
-                              <div className="flex flex-col text-left"><span className="font-black text-slate-800 dark:text-slate-200">{t.category?.trim() ? t.category : "Sistem / Lainnya"}</span><span className="text-[10px] font-bold text-slate-400 mt-0.5 truncate max-w-[150px]">{t.accountName} {t.note ? `• ${t.note}` : ''}</span></div>
-                            </div>
-                            <span className={`font-black shrink-0 ${t.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>{t.type === 'income' ? '+' : '-'}Rp {t.amount.toLocaleString('id-ID')}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )
-                })()}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 2. BOTTOM SHEET FILTER AKUN */}
-        {showAccountFilter && (
-          <div className="fixed inset-0 z-[150] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowAccountFilter(false)}>
-            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
-              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
-              <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
-                <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Filter by Account</h3>
-                <button onClick={() => setShowAccountFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
-              </div>
-              <div className="p-4 overflow-y-auto space-y-2">
-                <div onClick={() => { triggerHaptic(); setSelectedAccount("All"); setShowAccountFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedAccount === "All" ? `${currentTheme.bgLight} ${currentTheme.border} shadow-sm` : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent"}`}>
-                  <div className="flex items-center gap-3"><div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${currentTheme.bgLight} ${currentTheme.text}`}><Filter size={14}/></div><span className="font-black text-sm text-slate-800 dark:text-slate-200">All Accounts</span></div>
-                  {selectedAccount === "All" && <Check size={18} className={currentTheme.text} />}
-                </div>
-                {uniqueAccounts.map(acc => (
-                  <div key={acc} onClick={() => { triggerHaptic(); setSelectedAccount(acc); setShowAccountFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedAccount === acc ? `${currentTheme.bgLight} ${currentTheme.border} shadow-sm` : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent"}`}>
-                    <div className="flex items-center gap-3"><div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${currentTheme.bgLight} ${currentTheme.text}`}>{acc.charAt(0).toUpperCase()}</div><span className="font-black text-sm text-slate-800 dark:text-slate-200">{acc}</span></div>
-                    {selectedAccount === acc && <Check size={18} className={currentTheme.text} />}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 2B. BOTTOM SHEET FILTER TRIP (TRAVEL MODE) */}
-        {showTripFilter && (
-          <div className="fixed inset-0 z-[150] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowTripFilter(false)}>
-            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
-              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
-              <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 bg-indigo-50/50 dark:bg-indigo-900/10">
-                <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                  <span className="text-xl">✈️</span>
-                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Filter Data Laporan</h3>
-                </div>
-                <button onClick={() => setShowTripFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
-              </div>
-              <div className="p-4 overflow-y-auto space-y-2 bg-slate-50/30 dark:bg-slate-950/30">
-                
-                <div onClick={() => { triggerHaptic(); setSelectedTripFilter("Non-Travel"); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === "Non-Travel" ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === "Non-Travel" ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>📊</div>
-                    <div>
-                      <span className="font-black text-sm text-slate-800 dark:text-slate-200 block">Rutin Bulanan</span>
-                      <span className="text-[10px] font-bold text-slate-400">Sembunyikan semua pengeluaran liburan</span>
-                    </div>
-                  </div>
-                  {selectedTripFilter === "Non-Travel" && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
-                </div>
-
-                <div onClick={() => { triggerHaptic(); setSelectedTripFilter("All"); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === "All" ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === "All" ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>🔄</div>
-                    <div>
-                      <span className="font-black text-sm text-slate-800 dark:text-slate-200 block">Gabung Semua Data</span>
-                      <span className="text-[10px] font-bold text-slate-400">Tampilkan rutin & liburan (Total Keseluruhan)</span>
-                    </div>
-                  </div>
-                  {selectedTripFilter === "All" && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
-                </div>
-
-                {uniqueTrips.length > 0 && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2 pt-2 pb-1">Daftar Trip Anda</p>}
-
-                {uniqueTrips.map(trip => (
-                  <div key={trip} onClick={() => { triggerHaptic(); setSelectedTripFilter(trip); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === trip ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === trip ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>🏖️</div>
-                      <span className="font-black text-sm text-slate-800 dark:text-slate-200">{trip}</span>
-                    </div>
-                    {selectedTripFilter === trip && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
-                  </div>
-                ))}
-
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 3. BOTTOM SHEET RINCIAN TRANSAKSI PER KATEGORI */}
-        {selectedCategoryDetail && (
-          <div className="fixed inset-0 z-[150] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedCategoryDetail(null)}>
-            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
-              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
-              <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start shrink-0">
-                <div>
-                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{selectedCategoryDetail.name?.trim() ? selectedCategoryDetail.name : "Sistem / Lainnya"}</h3>
-                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Rincian riwayat kategori bulan ini</p>
-                </div>
-                <button onClick={() => setSelectedCategoryDetail(null)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
-              </div>
-              <div className="p-6 overflow-y-auto space-y-3">
-                {(() => {
-                  const catTxs = (selectedCategoryDetail.type === 'expense' ? expenseTxs : incomeTxs)
-                    .filter(t => t.category === selectedCategoryDetail.name)
-                    .sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime());
-                  
-                  if(catTxs.length === 0) return <p className="text-center text-xs text-slate-400 dark:text-slate-500 italic py-4">Tidak ada riwayat untuk kategori ini.</p>;
-
-                  return catTxs.map(t => (
-                    <div key={t.id} className="flex justify-between items-center text-xs p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                      <div className="flex flex-col text-left">
-                        <span className="font-bold text-slate-800 dark:text-slate-200 mb-1">{new Date(t.tDate).toLocaleDateString('id-ID', {weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'})}</span>
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate max-w-[180px]">{t.accountName} {t.note ? `• ${t.note}` : ''}</span>
-                      </div>
-                      <span className={`font-black shrink-0 ${selectedCategoryDetail.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
-                        {selectedCategoryDetail.type === 'income' ? '+' : '-'}Rp {t.amount.toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                  ));
-                })()}
-              </div>
-            </div>
-          </div>
-        )}
-
-      {/* ================= BOTTOM SHEETS MODAL ANGGARAN BARU & EDIT ================= */}
+        {/* ================= BOTTOM SHEETS MODAL ANGGARAN BARU & EDIT ================= */}
       {(selectedBudgetCat || showAddBudgetModal) && (
         <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => { setSelectedBudgetCat(null); setShowAddBudgetModal(false); }}>
           <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col border border-slate-100 dark:border-slate-800 text-left" onClick={e => e.stopPropagation()}>
@@ -1556,7 +1157,7 @@ export default function ReportsTab({
         </div>
       )}
 
-      {/* MODAL ASISTEN BUDGET 50/30/20 */}
+      {/* MODAL ASISTEN BUDGET CERDAS */}
       {showAutoBudgetModal && (
         <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowAutoBudgetModal(false)}>
           <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col border border-slate-100 dark:border-slate-800 max-h-[90vh]" onClick={e => e.stopPropagation()}>
@@ -1565,7 +1166,7 @@ export default function ReportsTab({
                 <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-lg shadow-sm border border-indigo-100 dark:border-indigo-700">🪄</div>
                 <div>
                   <h3 className="font-black text-indigo-800 dark:text-indigo-100 text-sm">Asisten Pintar</h3>
-                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Rule 50/30/20</p>
+                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">ALOKASI PROPORSIONAL</p>
                 </div>
               </div>
               <button onClick={() => setShowAutoBudgetModal(false)} className="p-2 bg-indigo-100 dark:bg-indigo-800/50 hover:bg-indigo-200 dark:hover:bg-indigo-700 text-indigo-500 rounded-full cursor-pointer transition-colors"><X size={14}/></button>
@@ -1575,7 +1176,7 @@ export default function ReportsTab({
               {!autoBudgetPreview ? (
                 <div className="space-y-4 animate-in fade-in duration-300">
                   <div className="bg-indigo-50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 leading-relaxed text-center">
-                    Halo! Bulan ini masih tersisa <span className="font-black text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded">{daysRemaining} Hari</span> lagi. Untuk bertahan hidup sampai akhir bulan, berapa sisa uang Anda saat ini?
+                    Halo! Periode ini tersisa <span className="font-black text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded">{daysRemaining} Hari</span> lagi. Untuk bertahan hidup dengan aman, berapa sisa uang Anda saat ini?
                   </div>
                   
                   <div className="space-y-1">
@@ -1623,7 +1224,7 @@ export default function ReportsTab({
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Rekomendasi Batas Pengeluaran:</p>
                     <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
                       {autoBudgetPreview.categories.map((cat: any, idx: number) => (
-                        <div key={idx} className="p-3.5 flex justify-between items-center text-xs">
+                        <div key={idx} className="p-3.5 flex justify-between items-center text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                           <div className="flex items-center gap-3">
                             <span className="text-lg">{cat.icon || "🏷️"}</span>
                             <div>
@@ -1635,7 +1236,7 @@ export default function ReportsTab({
                           </div>
                           <span className="font-black text-slate-700 dark:text-slate-300 text-right shrink-0">
                             Rp {cat.limit.toLocaleString('id-ID')}
-                            <p className="text-[9px] font-bold text-slate-400 mt-1">{(cat.limit / daysRemaining).toLocaleString('id-ID')}/hari</p>
+                            {daysRemaining > 0 && <p className="text-[9px] font-bold text-slate-400 mt-1">{(cat.limit / daysRemaining).toLocaleString('id-ID', { maximumFractionDigits: 0 })}/hari</p>}
                           </span>
                         </div>
                       ))}
