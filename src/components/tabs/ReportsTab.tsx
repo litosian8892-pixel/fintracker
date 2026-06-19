@@ -112,6 +112,16 @@ export default function ReportsTab({
   reportMonth, setReportMonth, handleExportToExcel, categories, reportTransactions, globalSearch, setGlobalSearch, searchResult, isPrivacyMode = false, accounts = [], updateCategory
 }: ReportsTabProps) {
   
+  // EXTRA FILTER UNTUK TRAVEL MODE
+  const [selectedTripFilter, setSelectedTripFilter] = useState<string>("Non-Travel");
+  const uniqueTrips = useMemo(() => {
+    const trips = new Set<string>();
+    reportTransactions.forEach(t => {
+      if ((t as any).tripId) trips.add((t as any).tripId);
+    });
+    return Array.from(trips).sort();
+  }, [reportTransactions]);
+  
   const monthScrollRef = useRef<HTMLDivElement>(null);
   const [accent, setAccent] = useState<keyof typeof themeMap>("blue");
 
@@ -191,10 +201,18 @@ export default function ReportsTab({
     return Array.from(accs).sort();
   }, [reportTransactions, accounts]);
 
+  // LOGIKA MULTI-FILTER (Account + Travel Mode)
   const filteredGlobalTxs = useMemo(() => {
-    if (selectedAccount === "All") return reportTransactions;
-    return reportTransactions.filter(t => t.accountName === selectedAccount || t.toAccountName === selectedAccount);
-  }, [reportTransactions, selectedAccount]);
+    return reportTransactions.filter(t => {
+      // 1. Filter Akun
+      const accountMatch = selectedAccount === "All" || t.accountName === selectedAccount || t.toAccountName === selectedAccount;
+      // 2. Filter Trip (Travel Mode)
+      const tripMatch = selectedTripFilter === "All" ? true : 
+                        selectedTripFilter === "Non-Travel" ? !(t as any).tripId : 
+                        (t as any).tripId === selectedTripFilter;
+      return accountMatch && tripMatch;
+    });
+  }, [reportTransactions, selectedAccount, selectedTripFilter]);
 
   const currentMonthTxs = filteredGlobalTxs.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
 
@@ -578,11 +596,34 @@ export default function ReportsTab({
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center px-2">
             <h2 className={`font-black text-2xl tracking-tight ${currentTheme.text}`}>Ringkasan</h2>
-            <button onClick={() => { triggerHaptic(); setShowAccountFilter(true); }} className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold text-xs flex items-center gap-2 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all">
-              <Filter size={14} className={currentTheme.text} /> 
-              {selectedAccount === "All" ? "Semua Akun" : selectedAccount} 
-              <ChevronDown size={14}/>
-            </button>
+            
+            <div className="flex gap-2">
+              {/* FILTER TRIP (Jika ada data liburan) */}
+              {uniqueTrips.length > 0 && (
+                <div className="relative group">
+                  <select 
+                    value={selectedTripFilter} 
+                    onChange={(e) => { triggerHaptic(); setSelectedTripFilter(e.target.value); }} 
+                    className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 font-bold text-xs flex items-center gap-2 shadow-sm cursor-pointer appearance-none outline-none max-w-[120px] truncate"
+                  >
+                    <option value="Non-Travel">Rutin Bulanan</option>
+                    <option value="All">Gabung Semua Data</option>
+                    <optgroup label="Daftar Trip Liburan">
+                      {uniqueTrips.map(trip => <option key={trip} value={trip}>✈️ {trip}</option>)}
+                    </optgroup>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-500">
+                    <ChevronDown size={14}/>
+                  </div>
+                </div>
+              )}
+              
+              <button onClick={() => { triggerHaptic(); setShowAccountFilter(true); }} className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold text-xs flex items-center gap-2 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all">
+                <Filter size={14} className={currentTheme.text} /> 
+                <span className="max-w-[80px] truncate block">{selectedAccount === "All" ? "Semua Akun" : selectedAccount}</span> 
+                <ChevronDown size={14}/>
+              </button>
+            </div>
           </div>
 
           <div ref={monthScrollRef} className="flex overflow-x-auto gap-2 px-2 pb-2 -mx-2 snap-x no-scrollbar scroll-smooth">
