@@ -508,18 +508,41 @@ export default function ReportsTab({
 
   const currentTheme = themeMap[accent];
 
+  // FIX: FUNGSI EXCEL LOKAL AGAR MENURUTI FILTER TRIP & CUSTOM DATE
+  const handleLocalExportToExcel = async () => {
+    if (currentMonthTxs.length === 0) return alert("Tidak ada data transaksi pada periode ini!");
+    triggerHaptic();
+    const excelData = currentMonthTxs.map((t, idx) => {
+      let categoryStr = t.category;
+      if (t.splits && t.splits.length > 0) categoryStr = "Split: " + t.splits.map(s => `${s.category} (Rp ${s.amount.toLocaleString('id-ID')})`).join(', ');
+      let noteStr = t.note || "-";
+      if (t.splits && t.splits.length > 0) { const splitNotes = t.splits.map(s => s.note).filter(Boolean); if (splitNotes.length > 0) { noteStr = `${noteStr} [Pecahan: ${splitNotes.join(', ')}]`; } }
+      return { "No": idx + 1, "Tanggal": t.tDate, "Waktu": t.tTime || "-", "Tipe": t.type === "income" ? "Pemasukan" : t.type === "expense" ? "Pengeluaran" : "Transfer", "Kategori": categoryStr, "Dompet": t.type === "transfer" ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName, "Nominal (Rp)": t.amount, "Catatan": noteStr };
+    });
+    const XLSX = await import("xlsx");
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan");
+    worksheet["!cols"] = [{ wch: 5 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 25 }, { wch: 25 }, { wch: 18 }, { wch: 35 }];
+    const fileName = `Laporan_${isCustomDateRange ? 'Custom' : reportMonth}${selectedTripFilter !== 'Non-Travel' ? '_Trip' : ''}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
   const generatePrintHTML = () => {
     const tableRows = currentMonthTxs.map(t => `
       <tr style="border-bottom: 1px solid #e2e8f0;">
         <td style="padding: 12px 10px; font-weight: 500;">${new Date(t.tDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'short'})}</td>
         <td style="padding: 12px 10px; font-weight: bold;">${t.note || t.category}</td>
         <td style="padding: 12px 10px;">${t.category}</td>
-        <td style="padding: 12px 10px;">${t.type === 'transfer' ? `${t.accountName} -> ${t.toAccountName}` : t.accountName}</td>
+        <td style="padding: 12px 10px;">${t.type === 'transfer' ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName}</td>
         <td style="padding: 12px 10px; text-align: right; font-weight: 900; color: ${t.type === 'income' ? '#10b981' : t.type === 'expense' ? '#ef4444' : '#3b82f6'};">
           ${t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''} ${t.amount.toLocaleString('id-ID')}
         </td>
       </tr>
     `).join('');
+
+    // FIX: TAMBAHKAN LABEL TRIP DI JUDUL PDF
+    const filterSubtitle = selectedTripFilter !== "Non-Travel" && selectedTripFilter !== "All" ? `| Trip: ${selectedTripFilter}` : "";
 
     return `
       <!DOCTYPE html>
@@ -564,7 +587,7 @@ export default function ReportsTab({
         <div class="header">
           <div>
             <div class="logo-title"><span>FIN</span><span>TRACKER</span></div>
-            <p style="margin: 4px 0 0 0; font-size: 12px; font-weight: bold; color: #94a3b8;">Laporan Mutasi Keuangan ${selectedAccount !== "All" ? `(${selectedAccount})` : ''}</p>
+            <p style="margin: 4px 0 0 0; font-size: 12px; font-weight: bold; color: #94a3b8;">Mutasi Keuangan ${selectedAccount !== "All" ? `(${selectedAccount})` : ''} ${filterSubtitle}</p>
           </div>
           <div style="text-align: right;">
             <p style="margin: 0; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #64748b;">Periode</p>
@@ -799,7 +822,7 @@ export default function ReportsTab({
           </div>
 
           <div className="flex gap-3 px-2">
-            <button onClick={handleExportToExcel} className="flex-1 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer active:scale-95">
+            <button onClick={handleLocalExportToExcel} className="flex-1 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer active:scale-95">
               <Download size={14}/> Export Excel
             </button>
             <button 
@@ -1273,7 +1296,8 @@ export default function ReportsTab({
                   type="number" 
                   autoFocus={!!selectedBudgetCat}
                   placeholder="Contoh: 500000" 
-                  className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm outline-blue-500 font-black text-slate-800 dark:text-slate-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                  autoComplete="off" data-lpignore="true" data-1p-ignore="true"
+                  className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm outline-blue-500 font-black text-slate-800 dark:text-slate-100 !bg-slate-50 dark:!bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                   value={budgetInput} 
                   onChange={e => setBudgetInput(e.target.value)} 
                 />
@@ -1356,7 +1380,8 @@ export default function ReportsTab({
                       type="number" 
                       autoFocus
                       placeholder="Contoh: 3000000" 
-                      className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm outline-indigo-500 font-black text-slate-800 dark:text-slate-100 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                      autoComplete="off" data-lpignore="true" data-1p-ignore="true"
+                      className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm outline-indigo-500 font-black text-slate-800 dark:text-slate-100 !bg-slate-50 dark:!bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                       value={autoBudgetIncome} 
                       onChange={e => setAutoBudgetIncome(e.target.value)} 
                     />
