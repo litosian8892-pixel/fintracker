@@ -777,7 +777,7 @@ const historicalAssetsData = useMemo(() => {
                   <span className="text-[10px] font-bold text-slate-400">{reportMonth?.split("-")[1]}/{reportMonth?.split("-")[0]}</span>
                 </div>
                 
-                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-transparent dark:scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark]">
                   {(() => {
                     const monthlyTrans = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth || ""));
                     const savingsTxs = monthlyTrans.filter(t => t.type === "transfer").filter(t => {
