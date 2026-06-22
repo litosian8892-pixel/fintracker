@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc, setDoc, getDocs, writeBatch } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc, setDoc, getDocs, writeBatch, increment } from "firebase/firestore";
 
 import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData, SplitItemData, SubscriptionData } from "../types";
 import LoadingScreen from "../components/shared/LoadingScreen";
@@ -777,21 +777,23 @@ export default function FintrackerApp() {
       const batch = writeBatch(db);
 
       if (tType === "transfer") {
-        const destAcc = accounts.find(a => a.id === tToAccountId);
-        if (!destAcc) { alert("Dompet tujuan tidak ditemukan!"); return; }
-        const rateDest = exchangeRates[destAcc.currency || "IDR"] || destAcc.lastExchangeRate || 1;
-        const destAmount = idrAmount / rateDest;
+          const destAcc = accounts.find(a => a.id === tToAccountId);
+          // FIX Deadlock Form: Matikan loading jika gagal
+          if (!destAcc) { isSubmittingRef.current = false; setIsSubmitting(false); alert("Dompet tujuan tidak ditemukan!"); return; }
+          const rateDest = exchangeRates[destAcc.currency || "IDR"] || destAcc.lastExchangeRate || 1;
+          const destAmount = idrAmount / rateDest;
 
-        batch.update(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: sourceAcc.balance - (rawAmount + rawAdminFee) });
-        batch.update(doc(db, `users/${user.uid}/accounts/${tToAccountId}`), { balance: destAcc.balance + destAmount });
+          // ATURAN MUTLAK BANK-GRADE: Gunakan increment() agar tidak tertimpa cache UI
+          batch.update(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: increment(-(rawAmount + rawAdminFee)) });
+          batch.update(doc(db, `users/${user.uid}/accounts/${tToAccountId}`), { balance: increment(destAmount) });
         
         const newTxRef = doc(collection(db, `users/${user.uid}/transactions`));
         batch.set(newTxRef, { 
           amount: idrAmount, type: "transfer", accountId: tAccountId, toAccountId: tToAccountId, accountName: sourceAcc.name, toAccountName: destAcc.name, note: tNote || "Transfer Dana", category: "Transfer", tDate, tTime, adminFee: idrAdminFee, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, createdAt: serverTimestamp() 
         });
       } else {
-        const newBal = tType === "income" ? sourceAcc.balance + rawAmount : sourceAcc.balance - rawAmount;
-        batch.update(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: newBal });
+          const balanceModifier = tType === "income" ? rawAmount : -rawAmount;
+          batch.update(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: increment(balanceModifier) });
         
         const docData: any = { amount: idrAmount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: tNote, category: (customSplits && customSplits.length > 0) ? "Split Transaksi" : tCategory, tDate, tTime, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, createdAt: serverTimestamp() };
         if (isTravelMode) docData.tripId = activeTripName || "Liburan"; // Injeksi Tag Liburan
@@ -826,15 +828,29 @@ export default function FintrackerApp() {
       const batch = writeBatch(db);
 
       if (confirmRollback) {
+        const sourceExists = accounts.some(a => a.id === t.accountId);
+        
+        // INCREMENT ROLLBACK: Inversi matematika langsung di database, anti nyangkut!
         if (t.type === "transfer") {
-          const sourceAcc = accounts.find(a => a.id === t.accountId); const destAcc = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
           const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount;
           const rawAdminFee = t.originalAmount !== undefined ? ((t.adminFee || 0) / (t.exchangeRate || 1)) : (t.adminFee || 0);
-          if (sourceAcc) batch.update(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: sourceAcc.balance + (rawAmount + rawAdminFee) });
-          if (destAcc) { const rateDest = exchangeRates[destAcc.currency || "IDR"] || destAcc.lastExchangeRate || 1; const destAmount = t.originalAmount !== undefined ? (t.amount / rateDest) : t.amount; batch.update(doc(db, `users/${user.uid}/accounts/${t.toAccountId}`), { balance: destAcc.balance - destAmount }); }
+          
+          if (sourceExists) batch.update(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: increment(rawAmount + rawAdminFee) });
+          
+          if (t.toAccountId) { 
+            const destAcc = accounts.find(a => a.id === t.toAccountId);
+            if (destAcc) {
+              const rateDest = exchangeRates[destAcc.currency || "IDR"] || destAcc.lastExchangeRate || 1; 
+              const destAmount = t.originalAmount !== undefined ? (t.amount / rateDest) : t.amount; 
+              batch.update(doc(db, `users/${user.uid}/accounts/${t.toAccountId}`), { balance: increment(-destAmount) }); 
+            }
+          }
         } else {
-          const acc = accounts.find(a => a.id === t.accountId);
-          if (acc) { const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount; const restoredBal = t.type === "income" ? acc.balance - rawAmount : acc.balance + rawAmount; batch.update(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: restoredBal }); }
+          if (sourceExists) {
+            const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount; 
+            const modifier = t.type === "income" ? -rawAmount : rawAmount; 
+            batch.update(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: increment(modifier) }); 
+          }
         }
       }
       
@@ -868,28 +884,26 @@ export default function FintrackerApp() {
     try {
       const batch = writeBatch(db);
       
-      // VIRTUAL MEMORY: Cegah data bertabrakan & jadikan prosesnya 100% Atomic Batch
-      const accBalances: Record<string, number> = {};
-      accounts.forEach(a => accBalances[a.id] = a.balance);
+      // ATOMIC MATH DIFF: Kalkulasi selisih (net diff) menggunakan increment() agar kebal Ghost Balance walau di-edit berkali-kali!
+      const accDiffs: Record<string, number> = {};
+      const addDiff = (id: string | null | undefined, amount: number) => { if (id && accounts.some(a => a.id === id)) accDiffs[id] = (accDiffs[id] || 0) + amount; };
 
-      // 1. KEMBALIKAN SALDO DARI TRANSAKSI LAMA
+      // 1. KEMBALIKAN (ROLLBACK) MATEMATIKA LAMA
       if (oldT.type === "transfer") {
         const oldRawAmount = oldT.originalAmount !== undefined ? oldT.originalAmount : oldT.amount;
         const oldRawAdminFee = oldT.originalAmount !== undefined ? ((oldT.adminFee || 0) / (oldT.exchangeRate || 1)) : (oldT.adminFee || 0);
-        if (accBalances[oldT.accountId] !== undefined) accBalances[oldT.accountId] += (oldRawAmount + oldRawAdminFee);
-        if (oldT.toAccountId && accBalances[oldT.toAccountId] !== undefined) {
+        addDiff(oldT.accountId, oldRawAmount + oldRawAdminFee);
+        if (oldT.toAccountId) {
            const destRate = exchangeRates[accounts.find(a => a.id === oldT.toAccountId)?.currency || "IDR"] || accounts.find(a => a.id === oldT.toAccountId)?.lastExchangeRate || 1;
            const oldDestAmount = oldT.originalAmount !== undefined ? (oldT.amount / destRate) : oldT.amount; 
-           accBalances[oldT.toAccountId] -= oldDestAmount;
+           addDiff(oldT.toAccountId, -oldDestAmount);
         }
       } else {
-        if (accBalances[oldT.accountId] !== undefined) {
-          const oldRawAmount = oldT.originalAmount !== undefined ? oldT.originalAmount : oldT.amount; 
-          accBalances[oldT.accountId] += oldT.type === "income" ? -oldRawAmount : oldRawAmount;
-        }
+        const oldRawAmount = oldT.originalAmount !== undefined ? oldT.originalAmount : oldT.amount; 
+        addDiff(oldT.accountId, oldT.type === "income" ? -oldRawAmount : oldRawAmount);
       }
 
-      // 2. TERAPKAN POTONGAN DARI TRANSAKSI BARU (YANG SUDAH DI-EDIT)
+      // 2. TERAPKAN POTONGAN BARU
       const srcCurrency = accounts.find(a => a.id === editTAccountId)?.currency || "IDR"; 
       const rateSource = exchangeRates[srcCurrency] || accounts.find(a => a.id === editTAccountId)?.lastExchangeRate || 1;
       const newIdrAmount = newRawAmount * rateSource; 
@@ -897,23 +911,18 @@ export default function FintrackerApp() {
 
       if (editTType === "transfer") {
         if (!editTToAccountId) throw new Error("Pilih dompet tujuan!");
-        if (accBalances[editTAccountId] !== undefined) accBalances[editTAccountId] -= (newRawAmount + newRawAdminFee);
-        if (accBalances[editTToAccountId] !== undefined) {
-           const destRate = exchangeRates[accounts.find(a => a.id === editTToAccountId)?.currency || "IDR"] || accounts.find(a => a.id === editTToAccountId)?.lastExchangeRate || 1;
-           const destAmount = newIdrAmount / destRate;
-           accBalances[editTToAccountId] += destAmount;
-        }
+        addDiff(editTAccountId, -(newRawAmount + newRawAdminFee));
+        const destRate = exchangeRates[accounts.find(a => a.id === editTToAccountId)?.currency || "IDR"] || accounts.find(a => a.id === editTToAccountId)?.lastExchangeRate || 1;
+        const destAmount = newIdrAmount / destRate;
+        addDiff(editTToAccountId, destAmount);
       } else {
-        if (accBalances[editTAccountId] !== undefined) {
-          accBalances[editTAccountId] += editTType === "income" ? newRawAmount : -newRawAmount;
-        }
+        addDiff(editTAccountId, editTType === "income" ? newRawAmount : -newRawAmount);
       }
 
-      // WRITE TO FIREBASE (SEKALIGUS / ATOMIC)
-      const updatedAccountIds = new Set([oldT.accountId, oldT.toAccountId, editTAccountId, editTToAccountId].filter(Boolean));
-      updatedAccountIds.forEach(accId => {
-        if (accId && accBalances[accId as string] !== undefined) {
-          batch.update(doc(db, `users/${user.uid}/accounts/${accId}`), { balance: accBalances[accId as string] });
+      // 3. APPLY INCREMENT FIREBASE (100% AMAN DARI RACE CONDITION)
+      Object.keys(accDiffs).forEach(accId => {
+        if (accDiffs[accId] !== 0) {
+          batch.update(doc(db, `users/${user.uid}/accounts/${accId}`), { balance: increment(accDiffs[accId]) });
         }
       });
 
