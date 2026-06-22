@@ -1,5 +1,6 @@
 "use client";
-import { History, Trash2, ArrowRightLeft, Edit2 } from "lucide-react";
+import { useState } from "react";
+import { History, Trash2, ArrowRightLeft, Edit2, Loader2 } from "lucide-react";
 import { TransactionData } from "../../types";
 
 interface HistoryListProps {
@@ -12,6 +13,21 @@ interface HistoryListProps {
 }
 
 export default function HistoryList({ transactions, onDelete, onEdit, onLoadMore, hasMore, isPrivacyMode }: HistoryListProps) {
+  // STATE PELINDUNG: Mencegah tombol diklik ganda secara brutal (Spam Click)
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const handleSafeDelete = async (t: TransactionData) => {
+    if (processingId) return;
+    setProcessingId(t.id);
+    try { await onDelete(t); } 
+    finally { setProcessingId(null); }
+  };
+
+  const handleSafeEdit = (t: TransactionData) => {
+    if (processingId) return;
+    onEdit(t);
+  };
+
   return (
     <div className="space-y-4 md:col-span-1 print:hidden">
       <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 italic text-lg px-1">
@@ -36,7 +52,8 @@ export default function HistoryList({ transactions, onDelete, onEdit, onLoadMore
                     <div className="min-w-0 text-left">
                       <p className="font-bold text-sm text-slate-800 dark:text-slate-200 leading-tight mb-1 truncate">{t.note || t.category}</p>
                       <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">
-                        {t.tDate ? new Date(t.tDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-'} 
+                        {/* FIX TIMEZONE: Injeksi T12:00:00 agar tanggal tidak mundur 1 hari jika diakses pagi hari */}
+                        {t.tDate ? new Date(`${t.tDate}T12:00:00`).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-'} 
                         {t.type === "transfer" ? ` • ${t.accountName} ➔ ${t.toAccountName}` : ` • ${t.category} • ${t.accountName}`}
                       </p>
                     </div>
@@ -44,14 +61,22 @@ export default function HistoryList({ transactions, onDelete, onEdit, onLoadMore
                   
                   <div className="flex items-center gap-1.5 shrink-0 pl-2">
                     <p className={`font-black text-sm ${t.type === "income" ? "text-green-600 dark:text-green-400" : t.type === "expense" ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-450"}`}>
-                      {t.type === "income" ? "+" : t.type === "expense" ? "-" : ""} {Number(t.amount).toLocaleString('id-ID')}
+                      {t.type === "income" ? "+" : t.type === "expense" ? "-" : ""} {isPrivacyMode ? "•••••••" : Number(t.amount).toLocaleString('id-ID')}
                     </p>
                     {/* TOMBOL EDIT */}
-                    <button onClick={() => onEdit(t)} className="p-2 text-slate-300 dark:text-slate-600 hover:text-blue-500 dark:hover:text-blue-400 transition-all cursor-pointer">
+                    <button 
+                      onClick={() => handleSafeEdit(t)} 
+                      disabled={processingId === t.id}
+                      className="p-2 text-slate-300 dark:text-slate-600 hover:text-blue-500 dark:hover:text-blue-400 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       <Edit2 size={14} />
                     </button>
-                    <button onClick={() => onDelete(t)} className="p-2 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-450 transition-all cursor-pointer">
-                      <Trash2 size={14} />
+                    <button 
+                      onClick={() => handleSafeDelete(t)} 
+                      disabled={processingId === t.id}
+                      className="p-2 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-450 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {processingId === t.id ? <Loader2 size={14} className="animate-spin text-red-500" /> : <Trash2 size={14} />}
                     </button>
                   </div>
                 </div>
@@ -67,7 +92,7 @@ export default function HistoryList({ transactions, onDelete, onEdit, onLoadMore
                         <div key={idx} className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400">
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
                           <span className="font-extrabold text-slate-800 dark:text-slate-300">{s.category}:</span>
-                          <span className="text-slate-700 dark:text-slate-500 font-extrabold">Rp {s.amount.toLocaleString('id-ID')}</span>
+                          <span className="text-slate-700 dark:text-slate-500 font-extrabold">Rp {isPrivacyMode ? "•••••••" : s.amount.toLocaleString('id-ID')}</span>
                           {s.note && (
                             <span className="text-[9px] font-medium italic text-slate-400 dark:text-slate-500 leading-none">
                               ({s.note})
