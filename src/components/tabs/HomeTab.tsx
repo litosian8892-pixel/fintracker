@@ -285,6 +285,39 @@ const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, g
   );
 };
 
+// 🪄 UX PREMIUM: Komponen Animasi Angka (Slot Machine / Odometer Effect)
+const AnimatedNumber = ({ value, isPrivacyMode, prefix = "Rp ", privacyText = "Rp •••••••" }: { value: number, isPrivacyMode?: boolean, prefix?: string, privacyText?: string }) => {
+  const [displayValue, setDisplayValue] = useState(value);
+  
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    const duration = 1200; // Durasi muter 1.2 detik (Sangat premium)
+    const startValue = displayValue;
+    const endValue = value;
+    if (startValue === endValue) return;
+    
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      
+      // Rumus Matematika EaseOutExpo (Mulai kencang, melambat dan mulus di akhir)
+      const easeOut = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      setDisplayValue(Math.floor(startValue + (endValue - startValue) * easeOut));
+      
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      } else {
+        setDisplayValue(endValue);
+      }
+    };
+    window.requestAnimationFrame(step);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  if (isPrivacyMode) return <span>{privacyText}</span>;
+  return <span>{prefix}{displayValue.toLocaleString("id-ID")}</span>;
+};
+
 export default function HomeTab({
   reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory, isTravelMode, toggleTravelMode, activeTripName, updateTripName
 }: HomeTabProps) {
@@ -686,20 +719,26 @@ export default function HomeTab({
           </div>
           <button type="button" onClick={togglePrivacyMode} className="p-1.5 bg-white/10 active:bg-white/20 text-white rounded-full transition-all duration-200 cursor-pointer hover:scale-105">{isPrivacyMode ? <EyeOff size={14} /> : <Eye size={14} />}</button>
         </div>
-        <div className="text-3xl font-black tracking-tight mb-6 relative z-10">{isPrivacyMode ? "Rp •••••••" : `Rp ${totalBalanceCalculated.toLocaleString("id-ID")}`}</div>
+        <div className="text-3xl font-black tracking-tight mb-6 relative z-10">
+          <AnimatedNumber value={totalBalanceCalculated} isPrivacyMode={isPrivacyMode} />
+        </div>
         <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-4 relative z-10">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center shrink-0"><ArrowUpRight size={18} strokeWidth={2.5} /></div>
             <div>
               <p className="text-[9px] font-black text-white/70 uppercase tracking-widest leading-none mb-1">Pemasukan ({reportMonth.split("-")[1]})</p>
-              <p className="text-sm font-extrabold tracking-tight">{isPrivacyMode ? "Rp •••••" : `Rp ${monthlySummary.income.toLocaleString("id-ID")}`}</p>
+              <p className="text-sm font-extrabold tracking-tight">
+                <AnimatedNumber value={monthlySummary.income} isPrivacyMode={isPrivacyMode} privacyText="Rp •••••" />
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3 border-l border-white/10 pl-4">
             <div className="w-9 h-9 bg-rose-500/20 text-rose-400 rounded-full flex items-center justify-center shrink-0"><ArrowDownRight size={18} strokeWidth={2.5} /></div>
             <div>
               <p className="text-[9px] font-black text-white/70 uppercase tracking-widest leading-none mb-1">Pengeluaran ({reportMonth.split("-")[1]})</p>
-              <p className="text-sm font-extrabold tracking-tight text-rose-200">{isPrivacyMode ? "Rp •••••" : `Rp ${monthlySummary.expense.toLocaleString("id-ID")}`}</p>
+              <p className="text-sm font-extrabold tracking-tight text-rose-200">
+                <AnimatedNumber value={monthlySummary.expense} isPrivacyMode={isPrivacyMode} privacyText="Rp •••••" />
+              </p>
             </div>
           </div>
         </div>
