@@ -557,22 +557,29 @@ export default function FintrackerApp() {
       }
     } catch (e) { alert("Gagal memperbarui kategori!"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
-  const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string, dueDate: string, accountId?: string) => {
+  const handleAddDebt = async (type: "debt" | "receivable", person: string, amount: number, note: string, dueDate: string, accountId?: string, startDate?: string) => {
     if (isSubmittingRef.current) return; if (!user) return;
     isSubmittingRef.current = true; setIsSubmitting(true);
     try {
+      // Set default ke hari ini jika tidak dipilih
+      const actualStartDate = startDate || getLocalDateString();
+      const exactTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
+
       if (type === "receivable" && accountId) {
         const accRef = doc(db, `users/${user.uid}/accounts/${accountId}`);
         const acc = accounts.find(a => a.id === accountId);
         if (!acc) return alert("Dompet pengirim tidak ditemukan!");
         await updateDoc(accRef, { balance: acc.balance - amount });
         
-        // FIX: Hanya gunakan catatan yang diketik user, atau nama orang jika kosong.
-        const cleanNote = note ? note.trim() : person;
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount, type: "expense", accountId, accountName: acc.name, category: "Piutang", note: cleanNote, tDate: getLocalDateString(), createdAt: serverTimestamp() });
+        const cleanNote = note ? `${person} - ${note.trim()}` : person;
+        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount, type: "expense", accountId, accountName: acc.name, category: "Piutang", note: cleanNote, tDate: actualStartDate, tTime: exactTime, createdAt: serverTimestamp() });
       }
-      await addDoc(collection(db, `users/${user.uid}/debts`), { type, personName: person, amount, paidAmount: 0, status: "active", note, dueDate, createdAt: new Date().toISOString() });
-      alert("Catatan berhasil ditambahkan & saldo dompet otomatis terpotong!");
+      
+      // Set tanggal buat utang agar sesuai dengan yang dipilih user
+      const debtCreatedAt = new Date(`${actualStartDate}T12:00:00`).toISOString();
+      await addDoc(collection(db, `users/${user.uid}/debts`), { type, personName: person, amount, paidAmount: 0, status: "active", note, dueDate, createdAt: debtCreatedAt });
+      
+      alert(type === "receivable" ? "Catatan berhasil ditambahkan & saldo dompet otomatis terpotong!" : "Utang berhasil dicatat!");
     } catch (e) { alert("Gagal menambah catatan"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
   const handleDeleteDebt = async (id: string) => {

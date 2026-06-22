@@ -8,7 +8,7 @@ interface DebtsTabProps {
   accounts: AccountData[];
   categories: CategoryData[];
   
-  handleAddDebt: (type: "debt" | "receivable", person: string, amount: number, note: string, dueDate: string, accountId?: string) => void;
+  handleAddDebt: (type: "debt" | "receivable", person: string, amount: number, note: string, dueDate: string, accountId?: string, startDate?: string) => void;
   handleEditDebt: (id: string, person: string, amount: number, note: string, dueDate: string) => void; 
   handlePayDebt: (debtId: string, payAmount: number, accountId: string, category: string, note: string) => void; 
   handleDeleteDebt: (debtId: string) => void;
@@ -132,6 +132,10 @@ export default function DebtsTab({
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [dueDate, setDueDate] = useState(""); 
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
   const [sourceAccountId, setSourceAccountId] = useState("");
 
   const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
@@ -686,14 +690,27 @@ export default function DebtsTab({
                       )}
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 px-1">📅 Jatuh Tempo (Opsional)</label>
-                      <input 
-                        type="date" 
-                        className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white" 
-                        value={dueDate} 
-                        onChange={e => setDueDate(e.target.value)} 
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 px-1">📅 Tgl Pinjam</label>
+                        <input 
+                          type="date" 
+                          onClick={(e) => e.currentTarget.showPicker && e.currentTarget.showPicker()}
+                          className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white" 
+                          value={startDate} 
+                          onChange={e => setStartDate(e.target.value)} 
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 px-1">📅 Jatuh Tempo</label>
+                        <input 
+                          type="date" 
+                          onClick={(e) => e.currentTarget.showPicker && e.currentTarget.showPicker()}
+                          className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white" 
+                          value={dueDate} 
+                          onChange={e => setDueDate(e.target.value)} 
+                        />
+                      </div>
                     </div>
 
                     {activeType === "receivable" && (
