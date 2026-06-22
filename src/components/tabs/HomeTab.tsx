@@ -276,8 +276,29 @@ export default function HomeTab({
   const handleTypeChange = (newType: "income" | "expense" | "transfer") => { setTType(newType); setTAccountId(""); setTToAccountId(""); setSplits([]); if (newType !== "transfer") setTCategory(""); };
   const handleEditTypeChange = (newType: "income" | "expense" | "transfer") => { setEditTType(newType); setEditTAccountId(""); setEditTToAccountId(""); setEditTSplits([]); if (newType !== "transfer") setEditTCategory(""); };
 
-  useEffect(() => { if (tType === "transfer") { setTCategory("Transfer"); } else { const matchingCats = categories.filter((cat) => cat.type === tType); if (tCategory && !matchingCats.some(c => c.name === tCategory) && tCategory !== "Split Transaksi") { setTCategory(""); } } }, [tType, categories, tCategory, setTCategory]);
-  useEffect(() => { if (editTType === "transfer") { setEditTCategory("Transfer"); } else { const matchingCats = categories.filter((cat) => cat.type === editTType); if (editTCategory && !matchingCats.some(c => c.name === editTCategory) && editTCategory !== "Split Transaksi") { setEditTCategory(""); } } }, [editTType, categories, editTCategory, setEditTCategory]);
+  useEffect(() => { 
+    if (tType === "transfer") { 
+      setTCategory("Transfer"); 
+    } else { 
+      const matchingCats = categories.filter((cat) => cat.type === tType); 
+      const isSystemCat = ["Split Transaksi", "Piutang", "Penyesuaian Saldo", "Biaya Admin"].includes(tCategory);
+      if (tCategory && !matchingCats.some(c => c.name === tCategory) && !isSystemCat) { 
+        setTCategory(""); 
+      } 
+    } 
+  }, [tType, categories, tCategory, setTCategory]);
+
+  useEffect(() => { 
+    if (editTType === "transfer") { 
+      setEditTCategory("Transfer"); 
+    } else { 
+      const matchingCats = categories.filter((cat) => cat.type === editTType); 
+      const isSystemCat = ["Split Transaksi", "Piutang", "Penyesuaian Saldo", "Biaya Admin"].includes(editTCategory);
+      if (editTCategory && !matchingCats.some(c => c.name === editTCategory) && !isSystemCat) { 
+        setEditTCategory(""); 
+      } 
+    } 
+  }, [editTType, categories, editTCategory, setEditTCategory]);
 
   const filteredCategories = categories.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name));
   const triggerHaptic = () => { 
