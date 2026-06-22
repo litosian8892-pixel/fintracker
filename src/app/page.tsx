@@ -566,7 +566,10 @@ export default function FintrackerApp() {
         const acc = accounts.find(a => a.id === accountId);
         if (!acc) return alert("Dompet pengirim tidak ditemukan!");
         await updateDoc(accRef, { balance: acc.balance - amount });
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount, type: "expense", accountId, accountName: acc.name, category: "Piutang", note: `Memberikan pinjaman (piutang) ke ${person} - ${note || ""}`, tDate: getLocalDateString(), createdAt: serverTimestamp() });
+        
+        // FIX: Hanya gunakan catatan yang diketik user, atau nama orang jika kosong.
+        const cleanNote = note ? note.trim() : person;
+        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount, type: "expense", accountId, accountName: acc.name, category: "Piutang", note: cleanNote, tDate: getLocalDateString(), createdAt: serverTimestamp() });
       }
       await addDoc(collection(db, `users/${user.uid}/debts`), { type, personName: person, amount, paidAmount: 0, status: "active", note, dueDate, createdAt: new Date().toISOString() });
       alert("Catatan berhasil ditambahkan & saldo dompet otomatis terpotong!");
