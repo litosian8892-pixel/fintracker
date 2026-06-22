@@ -140,6 +140,22 @@ const formatCurrencyTerbaca = (val: string | number, currencyCode?: string) => {
   }).format(parsed);
 };
 
+const safeEvaluate = (expr: string): number => {
+  if (!expr) return 0;
+  let sanitized = expr.replace(/[^0-9+\-*/().]/g, "");
+  if (!sanitized) return 0;
+  sanitized = sanitized.replace(/[+\-*/(.]*$/, "");
+  if (!sanitized) return 0;
+  try {
+    const result = new Function(`"use strict"; return (${sanitized});`)();
+    if (typeof result === "number" && isFinite(result)) return result;
+    return 0;
+  } catch {
+    const fallback = parseFloat(sanitized);
+    return isNaN(fallback) ? 0 : fallback;
+  }
+};
+
 const generateGradientStops = (data: any[], dataKey: string) => {
   if (!data || data.length < 2) return [];
   const stops = [];
@@ -225,6 +241,37 @@ export default function AssetsTab({
   const monthScrollRef = useRef<HTMLDivElement>(null);
 
   const [accent, setAccent] = useState<keyof typeof themeMap>("blue");
+
+  // UX PREMIUM: State Kalkulator Pintar Fintracker
+  const [activeKeypad, setActiveKeypad] = useState<"balance" | "target" | "buyPrice" | "lastRate" | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => { const handleResize = () => setIsMobile(window.innerWidth < 768); handleResize(); window.addEventListener("resize", handleResize); return () => window.removeEventListener("resize", handleResize); }, []);
+  
+  const handleKeypadPress = (key: string) => {
+    triggerHaptic();
+    let currentVal = ""; let setVal: any = null;
+    
+    if (activeKeypad === "balance") { currentVal = editingAccId ? editAccBalance : accBalance; setVal = editingAccId ? setEditAccBalance : setAccBalance; }
+    else if (activeKeypad === "target") { currentVal = editingAccId ? editAccTargetBalance : accTargetBalance; setVal = editingAccId ? setEditAccTargetBalance : setAccTargetBalance; }
+    else if (activeKeypad === "buyPrice") { currentVal = editingAccId ? (editAccAverageBuyPrice || "") : (accAverageBuyPrice || ""); setVal = editingAccId ? setEditAccAverageBuyPrice : setAccAverageBuyPrice; }
+    else if (activeKeypad === "lastRate") { 
+      if (updatingRateAcc) { currentVal = newRateInput; setVal = setNewRateInput; }
+      else { currentVal = editingAccId ? (editAccLastExchangeRate || "") : (accLastExchangeRate || ""); setVal = editingAccId ? setEditAccLastExchangeRate : setAccLastExchangeRate; }
+    }
+    
+    if (!setVal) return;
+    currentVal = currentVal?.toString() || "";
+    
+    if (key === "⌫") setVal(currentVal.slice(0, -1));
+    else if (key === "C") setVal("");
+    else if (key === "=") { const evaluated = safeEvaluate(currentVal); setVal(evaluated > 0 ? evaluated.toString() : ""); }
+    else if (key === "Ya") { 
+      const evaluated = safeEvaluate(currentVal); 
+      if(currentVal) setVal(evaluated >= 0 ? evaluated.toString() : ""); 
+      setActiveKeypad(null); 
+    }
+    else setVal(currentVal + key);
+  };
 
   useEffect(() => {
     if (detailAccId) {
@@ -918,8 +965,8 @@ const historicalAssetsData = useMemo(() => {
 
                   <div className={`space-y-1 p-3 rounded-xl border ${currentTheme.auditBox}`}>
                     <label className={`text-[9px] font-black uppercase tracking-widest ${currentTheme.text}`}>{ (editingAccId ? editIsInv : isInv) ? 'Jumlah Kepemilikan (Unit)' : 'Saldo Saat Ini' }</label>
-                    {/* KEMBALI KE SISTEM iOS: Pakai type="number" + step="any" agar keyboard numpad keluar dan koma diakui */}
-                    <input type="number" step="any" data-1p-ignore="true" data-lpignore="true" autoComplete="off" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccBalance : accBalance} onChange={(e) => { editingAccId ? setEditAccBalance(e.target.value) : setAccBalance(e.target.value); }} />
+                    {/* KALKULATOR FINTRACKER: Tolak keyboard asli HP, munculkan kalkulator pintar di bawah layar */}
+                    <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("balance"); }} data-1p-ignore="true" data-lpignore="true" autoComplete="off" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccBalance : accBalance} onChange={(e) => { editingAccId ? setEditAccBalance(e.target.value) : setAccBalance(e.target.value); }} />
                     {(editingAccId ? editAccBalance : accBalance) && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editingAccId ? editAccBalance : accBalance, editingAccId ? editCurrency : currency)}</span></p>}
                   </div>
 
@@ -967,7 +1014,7 @@ const historicalAssetsData = useMemo(() => {
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Target Nominal Tabungan</label>
-                        <input type="text" inputMode="decimal" data-1p-ignore="true" data-lpignore="true" autoComplete="off" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccTargetBalance : accTargetBalance} onChange={(e) => { const val = e.target.value.replace(/,/g, ".").replace(/[^0-9.-]/g, ""); editingAccId ? setEditAccTargetBalance(val) : setAccTargetBalance(val); }} />
+                        <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("target"); }} data-1p-ignore="true" data-lpignore="true" autoComplete="off" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccTargetBalance : accTargetBalance} onChange={(e) => { editingAccId ? setEditAccTargetBalance(e.target.value) : setAccTargetBalance(e.target.value); }} />
                         {(editingAccId ? editAccTargetBalance : accTargetBalance) && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editingAccId ? editAccTargetBalance : accTargetBalance, editingAccId ? editCurrency : currency)}</span></p>}
                       </div>
                     </div>
@@ -1061,6 +1108,48 @@ const historicalAssetsData = useMemo(() => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* FLOATING KEYPAD DRAWER UNTUK ASET (Kalkulator Fintracker kesayangan Bos!) */}
+      {isMobile && activeKeypad && (
+        <>
+          <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200/50 dark:border-slate-800/80 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
+            <div className="flex justify-between items-center mb-3 px-1 text-left">
+              <span className={`text-[10px] font-black uppercase tracking-widest ${currentTheme.text}`}>
+                {activeKeypad === "balance" ? "Kalkulator Saldo" : activeKeypad === "target" ? "Kalkulator Target" : "Kalkulator"}
+              </span>
+              <button onClick={() => {
+                 // Otomatis bersihkan rumus matematika pas ditutup
+                 const setVal = activeKeypad === "balance" ? (editingAccId ? setEditAccBalance : setAccBalance) : activeKeypad === "target" ? (editingAccId ? setEditAccTargetBalance : setAccTargetBalance) : null;
+                 const curVal = activeKeypad === "balance" ? (editingAccId ? editAccBalance : accBalance) : activeKeypad === "target" ? (editingAccId ? editAccTargetBalance : accTargetBalance) : "";
+                 if(setVal) { const evaluated = safeEvaluate(curVal as string); if(curVal) setVal(evaluated >= 0 ? evaluated.toString() : ""); }
+                 setActiveKeypad(null);
+              }} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 text-xs font-bold flex items-center gap-1.5 cursor-pointer">Selesai <X size={14} /></button>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-slate-100 font-black text-sm">
+              {["+", "-", "*", "/"].map((op) => (
+                <button key={op} type="button" onClick={() => handleKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/20">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>
+              ))}
+              {["7", "8", "9"].map((num) => (
+                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
+              ))}
+              <button type="button" onClick={() => handleKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold">C</button>
+              {["4", "5", "6"].map((num) => (
+                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
+              ))}
+              <button type="button" onClick={() => handleKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 flex items-center justify-center transition-all select-none">⌫</button>
+              {["1", "2", "3"].map((num) => (
+                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/45 dark:border-slate-800/10">{num}</button>
+              ))}
+              <button type="button" onClick={() => handleKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
+              {["(", "0", ")"].map((char) => (
+                <button key={char} type="button" onClick={() => handleKeypadPress(char)} className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/10`}>{char}</button>
+              ))}
+              <button type="button" onClick={() => handleKeypadPress("Ya")} className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}>Ya</button>
+            </div>
+          </div>
+        </>
       )}
 
     </div>
