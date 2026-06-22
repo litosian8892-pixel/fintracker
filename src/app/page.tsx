@@ -288,23 +288,34 @@ export default function FintrackerApp() {
   const [tDate, setTDate] = useState(() => getLocalDateString());
   const [tTime, setTTime] = useState(() => { const now = new Date(); return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`; });
 
-  // FITUR PINTAR: Auto-Refresh Jam & Tanggal saat aplikasi kembali dibuka (kembali fokus)
+  // FITUR PINTAR: Real-Time Auto-Refresh Jam & Tanggal (Ticking Clock)
   useEffect(() => {
-    const handleAppFocus = () => {
-      if (document.visibilityState === "visible" || !document.hidden) {
-        if (!tAmount && !editingTransaction) {
-          const now = new Date();
-          setTDate(getLocalDateString(now));
-          setTTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
-        }
+    const syncRealTime = () => {
+      // Hanya update otomatis jika user belum mengetik nominal & tidak sedang mode edit
+      if (!tAmount && !editingTransaction) {
+        const now = new Date();
+        setTDate(getLocalDateString(now));
+        setTTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
       }
     };
+
+    const handleAppFocus = () => {
+      if (document.visibilityState === "visible" || !document.hidden) {
+        syncRealTime();
+      }
+    };
+
+    // 1. Sinkronisasi instan saat pindah tab / buka app dari background
     document.addEventListener("visibilitychange", handleAppFocus);
     window.addEventListener("focus", handleAppFocus);
+    
+    // 2. Sinkronisasi Real-Time setiap 10 detik (Membuat jam berdetak)
+    const liveTicker = setInterval(syncRealTime, 10000);
     
     return () => {
       document.removeEventListener("visibilitychange", handleAppFocus);
       window.removeEventListener("focus", handleAppFocus);
+      clearInterval(liveTicker); // Bersihkan memori saat form ditutup
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tAmount, editingTransaction]);
