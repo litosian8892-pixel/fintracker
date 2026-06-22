@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, TouchEvent } from "react";
+import { useState, useRef } from "react";
 import { History, Trash2, ArrowRightLeft, Edit2, Loader2 } from "lucide-react";
 import { TransactionData } from "../../types";
 
@@ -12,7 +12,7 @@ interface HistoryListProps {
   isPrivacyMode?: boolean;
 }
 
-// SUB-KOMPONEN: Item Transaksi dengan Swipe-to-Action ala iOS
+// SUB-KOMPONEN: Item Transaksi dengan Swipe-to-Action Super Responsif (Support Jari & Mouse)
 const SwipeableItem = ({ 
   t, 
   onEdit, 
@@ -33,82 +33,84 @@ const SwipeableItem = ({
   isProcessing: boolean
 }) => {
   const [dragOffset, setDragOffset] = useState(0);
-  const touchStartX = useRef<number | null>(null);
-  const touchCurrentX = useRef<number | null>(null);
+  const startX = useRef<number | null>(null);
+  const isDragging = useRef(false);
 
-  // Lebar area tombol di balik layar (Edit & Hapus)
+  // Lebar area tombol di balik layar (Maksimal geser ke kiri)
   const MAX_SWIPE = -110; 
 
-  const handleTouchStart = (e: TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDragging.current = true;
+    startX.current = e.clientX;
+    e.currentTarget.setPointerCapture(e.pointerId);
   };
 
-  const handleTouchMove = (e: TouchEvent) => {
-    if (touchStartX.current === null) return;
-    touchCurrentX.current = e.touches[0].clientX;
-    const diff = touchCurrentX.current - touchStartX.current;
-
-    // Jika sedang terbuka dan user geser ke kanan, atau sebaliknya
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current || startX.current === null) return;
+    
+    const diff = e.clientX - startX.current;
     let newOffset = isOpen ? MAX_SWIPE + diff : diff;
 
-    // Batasi geseran agar tidak kebablasan
-    if (newOffset > 0) newOffset = 0; // Tahan ke kanan
-    if (newOffset < MAX_SWIPE - 20) newOffset = MAX_SWIPE - 20; // Efek karet sedikit di kiri
+    if (newOffset > 0) newOffset = 0; // Tahan agar tidak bisa digeser ke kanan
+    if (newOffset < MAX_SWIPE - 20) newOffset = MAX_SWIPE - 20; // Efek membal di ujung kiri
 
     setDragOffset(newOffset);
   };
 
-  const handleTouchEnd = () => {
-    if (touchStartX.current === null || touchCurrentX.current === null) {
-      touchStartX.current = null;
-      touchCurrentX.current = null;
-      return;
-    }
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    e.currentTarget.releasePointerCapture(e.pointerId);
 
-    const diff = touchCurrentX.current - touchStartX.current;
-    
-    // Threshold snapping (Lebih dari 40px akan membuka)
-    if (!isOpen && diff < -40) {
+    // Threshold: Jika digeser lebih dari 40px ke kiri, buka layarnya
+    if (!isOpen && dragOffset < -40) {
       onOpen();
-    } else if (isOpen && diff > 20) {
+    } 
+    // Jika sedang terbuka dan digeser ke kanan lebih dari -80px, tutup
+    else if (isOpen && dragOffset > MAX_SWIPE + 20) {
       onClose();
     }
     
-    setDragOffset(0);
-    touchStartX.current = null;
-    touchCurrentX.current = null;
+    setDragOffset(0); // Mereset state offset karena transition akan diatur oleh prop isOpen
+    startX.current = null;
   };
 
   return (
-    <div className="relative rounded-[25px] overflow-hidden bg-slate-100 dark:bg-slate-800 shadow-sm">
+    <div className="relative rounded-[25px] overflow-hidden bg-slate-100 dark:bg-slate-800/80 shadow-sm">
       
       {/* BACKGROUND ACTIONS (TOMBOL TERSEMBUNYI DI BALIK KARTU) */}
-      <div className="absolute inset-y-0 right-0 flex items-center justify-end px-3 gap-2 w-1/2">
+      <div className="absolute inset-y-0 right-0 flex items-center justify-end px-4 gap-2.5 w-1/2 z-0">
         <button 
           onClick={() => { onClose(); onEdit(); }}
           disabled={isProcessing}
-          className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center transition-all active:scale-90"
+          className="w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-all active:scale-90 shadow-md disabled:opacity-50"
         >
-          <Edit2 size={16} />
+          <Edit2 size={16} strokeWidth={2.5} />
         </button>
         <button 
           onClick={() => { onClose(); onDelete(); }}
           disabled={isProcessing}
-          className="w-10 h-10 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center transition-all active:scale-90"
+          className="w-10 h-10 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center transition-all active:scale-90 shadow-md disabled:opacity-50"
         >
-          {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+          {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} strokeWidth={2.5} />}
         </button>
       </div>
 
       {/* FRONT CARD (YANG DIGESER) */}
       <div 
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{ transform: `translateX(${isOpen ? MAX_SWIPE : dragOffset}px)` }}
-        className={`relative z-10 bg-white dark:bg-slate-900 p-4 rounded-[25px] border border-slate-100 dark:border-slate-800/80 transition-transform ${touchStartX.current === null ? 'duration-300 ease-out' : 'duration-0'}`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        // touch-action: pan-y sangat penting agar scroll layar ke atas/bawah tidak error saat digeser
+        style={{ 
+          transform: `translateX(${isDragging.current ? dragOffset : (isOpen ? MAX_SWIPE : 0)}px)`,
+          touchAction: "pan-y" 
+        }}
+        className={`relative z-10 bg-white dark:bg-slate-900 p-4 rounded-[25px] border border-slate-100 dark:border-slate-800 shadow-sm cursor-grab active:cursor-grabbing ${isDragging.current ? 'duration-0' : 'transition-transform duration-300 ease-out'}`}
       >
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start pointer-events-none">
           <div className="flex items-start gap-4 min-w-0">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shrink-0 mt-0.5 ${t.type === "income" ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400" : t.type === "expense" ? "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400" : "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400"}`}>
               {t.type === "income" ? "↓" : t.type === "expense" ? "↑" : <ArrowRightLeft size={18}/>}
@@ -130,7 +132,7 @@ const SwipeableItem = ({
         </div>
 
         {t.splits && t.splits.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2 text-left pl-14 animate-in fade-in duration-200">
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2 text-left pl-14 pointer-events-none">
             <p className="text-[9px] font-black text-blue-500 dark:text-blue-400 uppercase tracking-widest leading-none flex items-center gap-1">
               <span>✂️</span> Detail Alokasi Pecahan:
             </p>
@@ -155,12 +157,11 @@ const SwipeableItem = ({
   );
 };
 
-
 export default function HistoryList({ transactions, onDelete, onEdit, onLoadMore, hasMore, isPrivacyMode }: HistoryListProps) {
   // STATE PELINDUNG: Mencegah tombol diklik ganda secara brutal (Spam Click)
   const [processingId, setProcessingId] = useState<string | null>(null);
   
-  // STATE SWIPE: Hanya boleh satu item yang terbuka digeser dalam satu waktu
+  // STATE SWIPE: Mengunci agar hanya satu item yang terbuka digeser dalam satu waktu
   const [openItemId, setOpenItemId] = useState<string | null>(null);
 
   const handleSafeDelete = async (t: TransactionData) => {
@@ -181,7 +182,11 @@ export default function HistoryList({ transactions, onDelete, onEdit, onLoadMore
         <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 italic text-lg">
           <History size={20} className="text-blue-600 dark:text-blue-500"/> Riwayat Terakhir
         </h3>
-        <span className="text-[9px] font-black text-slate-400 bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded-full md:hidden">👈 Geser Kiri</span>
+        {transactions.length > 0 && (
+          <span className="text-[9px] font-black text-slate-400 bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded-full animate-pulse">
+            👈 Geser (Swipe)
+          </span>
+        )}
       </div>
 
       <div className="space-y-3 pb-24 md:pb-4">
