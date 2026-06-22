@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { User } from "firebase/auth";
-import { Home, PieChart, Wallet, Settings, LogOut, BookUser, Eye, EyeOff } from "lucide-react";
+import { Home, PieChart, Wallet, Settings, LogOut, BookUser, Eye, EyeOff, Cloud, CloudOff } from "lucide-react";
 
 interface SidebarProps {
   user: User | null;
@@ -44,6 +44,7 @@ const themeMap = {
 export default function Sidebar({ user, activeTab, setActiveTab, onLogout, isPrivacyMode, togglePrivacyMode }: SidebarProps) {
   const [greeting, setGreeting] = useState({ text: "Halo", icon: "👋" });
   const [accent, setAccent] = useState<keyof typeof themeMap>("blue");
+  const [isOnline, setIsOnline] = useState(true);
 
   // Efek Sapaan Cerdas Berdasarkan Waktu
   useEffect(() => {
@@ -65,6 +66,23 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout, isPri
     updateAccent();
     window.addEventListener("accent_color_changed", updateAccent);
     return () => window.removeEventListener("accent_color_changed", updateAccent);
+  }, []);
+
+  // Efek untuk memantau status Sinkronisasi PWA (Offline/Online)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsOnline(navigator.onLine);
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+
+      window.addEventListener("online", handleOnline);
+      window.addEventListener("offline", handleOffline);
+
+      return () => {
+        window.removeEventListener("online", handleOnline);
+        window.removeEventListener("offline", handleOffline);
+      };
+    }
   }, []);
 
   const firstName = user?.displayName?.split(" ")[0] || "Pengguna";
@@ -133,21 +151,39 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout, isPri
               className={`w-10 h-10 rounded-full border-2 shadow-sm object-cover bg-slate-100 dark:bg-slate-800 ${currentTheme.avatarBorder}`}
               alt="Avatar"
             />
-            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
+            {/* Indikator Online/Offline pada Avatar Desktop */}
+            <div 
+              className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white dark:border-slate-900 rounded-full transition-colors duration-500 ${
+                isOnline ? 'bg-emerald-500' : 'bg-amber-500'
+              }`}
+            ></div>
           </div>
           
           <div className="flex flex-col min-w-0">
             <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1 leading-none mb-1">
               <span>{greeting.icon}</span> Selamat {greeting.text}
             </span>
-            <span className="text-sm font-black text-slate-800 dark:text-white leading-none truncate max-w-[90px]">
+            <span className="text-sm font-black text-slate-800 dark:text-white leading-none truncate max-w-[80px]">
               {firstName}
             </span>
           </div>
         </div>
         
         {/* TOMBOL AKSI */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
+          
+          {/* Indikator Awan Sinkronisasi (Offline-First) */}
+          <div 
+            className={`p-2 rounded-xl transition-all duration-500 flex items-center justify-center cursor-default ${
+              isOnline 
+                ? 'text-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20' 
+                : 'bg-amber-50/80 dark:bg-amber-900/30 text-amber-500'
+            }`}
+            title={isOnline ? "Aplikasi Tersinkronisasi (Online)" : "Tersimpan Lokal (Offline)"}
+          >
+            {isOnline ? <Cloud size={18} strokeWidth={2.5}/> : <CloudOff size={18} strokeWidth={2.5} className="animate-pulse"/>}
+          </div>
+
           <button 
             onClick={() => { triggerHaptic(); togglePrivacyMode?.(); }} 
             className={`p-2 rounded-xl transition-all duration-300 active:scale-90 cursor-pointer flex items-center justify-center ${
@@ -162,7 +198,7 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout, isPri
 
           <button 
             onClick={() => { triggerHaptic(); onLogout(); }} 
-            className="p-2 rounded-xl text-slate-400 dark:text-slate-500 hover:bg-red-50/80 dark:hover:bg-red-955/30 hover:text-red-500 dark:hover:text-red-400 transition-all duration-300 active:scale-90 cursor-pointer flex items-center justify-center"
+            className="p-2 rounded-xl text-slate-400 dark:text-slate-500 hover:bg-red-50/80 dark:hover:bg-red-950/30 hover:text-red-500 dark:hover:text-red-400 transition-all duration-300 active:scale-90 cursor-pointer flex items-center justify-center"
             title="Keluar"
           >
             <LogOut size={18} strokeWidth={2.5} />
