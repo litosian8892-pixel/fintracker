@@ -51,6 +51,34 @@ export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 🍞 APPLE-STYLE TOAST STATE
+  const [toast, setToast] = useState<{message: string, type: "success" | "error" | "warning", id: number} | null>(null);
+
+  // 🪄 GALAXY BRAIN OVERRIDE: Bajak window.alert agar berubah jadi Toast Premium!
+  useEffect(() => {
+    const originalAlert = window.alert;
+    window.alert = (message: any) => {
+      const msg = String(message);
+      let type: "success" | "error" | "warning" = "warning";
+      const lowerMsg = msg.toLowerCase();
+      
+      // Deteksi otomatis tipe notifikasi dari teks
+      if (lowerMsg.includes("berhasil") || lowerMsg.includes("sukses")) type = "success";
+      else if (lowerMsg.includes("gagal") || lowerMsg.includes("ditolak") || lowerMsg.includes("error") || lowerMsg.includes("tidak mencukupi") || lowerMsg.includes("belum") || lowerMsg.includes("tidak valid")) type = "error";
+      
+      setToast({ message: msg, type, id: Date.now() });
+    };
+    return () => { window.alert = originalAlert; }; // Kembalikan ke normal jika komponen hancur
+  }, []);
+
+  // Timer Toast otomatis hilang dalam 3.5 detik
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   const [isOldDomain, setIsOldDomain] = useState(false);
   const NEW_DOMAIN_URL = "https://fintracker-id.vercel.app"; 
 
@@ -1058,6 +1086,32 @@ export default function FintrackerApp() {
 
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 md:flex transition-colors duration-200 relative">
+
+      {/* 🍞 APPLE-STYLE TOAST UI (DYNAMIC ISLAND FLOAT) */}
+      {toast && (
+        <div key={toast.id} className="fixed top-6 left-0 right-0 z-[99999] flex justify-center px-4 pointer-events-none animate-in slide-in-from-top-10 fade-in duration-300">
+          <div className={`flex items-start gap-3 p-4 rounded-3xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.3)] backdrop-blur-xl border max-w-sm w-full transition-all ${
+            toast.type === 'success' ? 'bg-emerald-500/90 border-emerald-400 text-white' : 
+            toast.type === 'error' ? 'bg-rose-500/95 border-rose-400 text-white' : 
+            'bg-slate-800/95 dark:bg-slate-100/95 border-slate-700 dark:border-slate-200 text-white dark:text-slate-900'
+          }`}>
+            <div className="shrink-0 text-2xl mt-0.5 animate-bounce">
+              {toast.type === 'success' ? '✨' : toast.type === 'error' ? '⚠️' : '🔔'}
+            </div>
+            <div className="flex flex-col gap-1 w-full">
+              <h4 className="text-[10px] font-black uppercase tracking-widest opacity-80">
+                {toast.type === 'success' ? 'Berhasil' : toast.type === 'error' ? 'Peringatan' : 'Informasi'}
+              </h4>
+              <p className="text-xs font-bold leading-relaxed pr-2">
+                {/* Membaca baris baru (\n) agar rapi */}
+                {toast.message.split('\n').map((line, i) => (
+                  <span key={i} className="block">{line}</span>
+                ))}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Sidebar user={user} activeTab={activeTab as any} setActiveTab={setActiveTab as any} onLogout={() => signOut(auth)} isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode} />
       <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
