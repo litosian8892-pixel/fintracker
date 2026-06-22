@@ -18,9 +18,24 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-// INISIALISASI FIRESTORE DENGAN SINGLE TAB PERSISTENCE (Ditambah {} agar lolos TypeScript Vercel)
-const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentSingleTabManager({ forceOwnership: true }) })
-});
+import { getFirestore } from "firebase/firestore";
+
+// INISIALISASI FIRESTORE DENGAN PROTEKSI NEXT.JS SSR (Server-Side Rendering)
+let db: ReturnType<typeof getFirestore>;
+
+if (typeof window !== "undefined") {
+  // Mode Client / PWA HP: Aktifkan Offline-First IndexedDB
+  try {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentSingleTabManager({ forceOwnership: true }) })
+    });
+  } catch (error) {
+    // Fallback jika tab manager sudah terinisialisasi sebelumnya (Hot-Reload React)
+    db = getFirestore(app);
+  }
+} else {
+  // Mode Server / Vercel Build: Gunakan Firestore standar tanpa memori offline
+  db = getFirestore(app);
+}
 
 export { app, auth, googleProvider, db };
