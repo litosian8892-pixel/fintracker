@@ -199,6 +199,92 @@ const formatTime = (createdAt: any) => {
   return `${hours}:${minutes}`;
 };
 
+// 🪄 UX PREMIUM: Komponen Swipeable khusus untuk Beranda (HomeTab)
+const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, getRowIcon, isOpen, onOpen, onClose }: any) => {
+  const [dragOffset, setDragOffset] = useState(0);
+  const startX = useRef<number | null>(null);
+  const isDragging = useRef(false);
+  const MAX_SWIPE = -100;
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDragging.current = true;
+    startX.current = e.clientX;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current || startX.current === null) return;
+    const diff = e.clientX - startX.current;
+    let newOffset = isOpen ? MAX_SWIPE + diff : diff;
+    if (newOffset > 0) newOffset = 0;
+    if (newOffset < MAX_SWIPE - 20) newOffset = MAX_SWIPE - 20; // Efek membal di ujung
+    setDragOffset(newOffset);
+  };
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    if (!isOpen && dragOffset < -40) onOpen();
+    else if (isOpen && dragOffset > MAX_SWIPE + 20) onClose();
+    setDragOffset(0);
+    startX.current = null;
+  };
+
+  const isTransfer = t.type === "transfer"; 
+  const isIncome = t.type === "income";
+
+  return (
+    <div className="relative rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800/80 shadow-sm">
+      {/* TOMBOL TERSEMBUNYI DI BALIK LAYAR */}
+      <div className="absolute inset-y-0 right-0 flex items-center justify-end px-3 gap-2.5 w-1/2 z-0">
+        <button onClick={() => { onClose(); onEdit(); }} className="w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-all shadow-md active:scale-90"><Edit3 size={15} strokeWidth={2.5} /></button>
+        <button onClick={() => { onClose(); onDelete(); }} className="w-10 h-10 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center transition-all shadow-md active:scale-90"><Trash2 size={15} strokeWidth={2.5} /></button>
+      </div>
+      
+      {/* KARTU TRANSAKSI YANG BISA DIGESER */}
+      <div
+        onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} onPointerLeave={handlePointerUp}
+        style={{ transform: `translateX(${isDragging.current ? dragOffset : (isOpen ? MAX_SWIPE : 0)}px)`, touchAction: "pan-y" }}
+        className={`relative z-10 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-3 flex flex-col cursor-grab active:cursor-grabbing shadow-sm ${isDragging.current ? 'duration-0' : 'transition-transform duration-300 ease-out'}`}
+      >
+        <div className="flex items-center justify-between w-full pointer-events-none">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg shrink-0">{getRowIcon(t)}</div>
+            <div className="min-w-0 text-left">
+              <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate flex items-center gap-1">{t.category} {t.splits && t.splits.length > 0 && <span className={`text-[8px] px-1 rounded font-bold ${currentTheme.bgLight} ${currentTheme.text}`}>✂️ {t.splits.length} Pecahan</span>}</p>
+              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate mt-0.5">{t.note || (isTransfer ? "Transfer Dana" : "-")}</p>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border flex items-center gap-0.5 uppercase ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}><Wallet size={8} /> {isTransfer ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName}</span>
+                {(() => {
+                  const formattedTime = (t.tTime || formatTime(t.createdAt)).replace(':', '.');
+                  if (!formattedTime) return null;
+                  return (<span className="text-[9px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-950/40 px-1.5 py-0.5 rounded-md border border-slate-200/30 dark:border-slate-700/30 flex items-center gap-0.5">🕒 {formattedTime}</span>);
+                })()}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 shrink-0 text-right pointer-events-none">
+            <div>
+              <p className={`text-xs font-black ${isIncome ? "text-emerald-500" : isTransfer ? "text-blue-500" : "text-rose-500"}`}>{isPrivacyMode ? "Rp •••••" : `${isIncome ? "+" : "-"}${t.amount.toLocaleString("id-ID")}`}</p>
+              {t.adminFee && t.adminFee > 0 ? (<p className="text-[8px] font-black text-slate-400 dark:text-slate-500 mt-0.5">Admin: Rp {t.adminFee.toLocaleString("id-ID")}</p>) : null}
+            </div>
+          </div>
+        </div>
+        
+        {t.splits && t.splits.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2 text-left pl-13 pointer-events-none">
+            <p className={`text-[9px] font-black uppercase tracking-widest leading-none flex items-center gap-1 ${currentTheme.text}`}><span>✂️</span> Detail Alokasi Pecahan:</p>
+            <div className="space-y-1.5">
+              {t.splits.map((s: any, idx: number) => (
+                <div key={idx} className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" /><span className="font-extrabold text-slate-800 dark:text-slate-300">{s.category}:</span><span className="text-slate-700 dark:text-slate-500 font-extrabold">Rp {isPrivacyMode ? "•••••••" : s.amount.toLocaleString('id-ID')}</span>{s.note && (<span className="text-[9px] font-medium italic text-slate-400 dark:text-slate-500 leading-none">({s.note})</span>)}</div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function HomeTab({
   reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory, isTravelMode, toggleTravelMode, activeTripName, updateTripName
 }: HomeTabProps) {
@@ -246,6 +332,9 @@ export default function HomeTab({
 
   const [activeAccSelector, setActiveAccSelector] = useState<"source" | "dest" | null>(null);
   const [isDark, setIsDark] = useState(false);
+  
+  // UX Premium: State untuk menahan item mana yang sedang digeser agar tidak berantakan
+  const [openSwipeId, setOpenSwipeId] = useState<string | null>(null);
   
   useEffect(() => { const checkDark = () => { setIsDark(document.documentElement.classList.contains("dark")); }; checkDark(); const observer = new MutationObserver(checkDark); observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] }); return () => observer.disconnect(); }, []);
 
@@ -643,51 +732,21 @@ export default function HomeTab({
                   <span className={`text-xs font-black ${dailyNet > 0 ? "text-emerald-500" : dailyNet < 0 ? "text-rose-500" : "text-slate-400"}`}>{isPrivacyMode ? "Rp ••" : `${dailyNet > 0 ? "+" : ""}${dailyNet.toLocaleString("id-ID")}`}</span>
                 </div>
 
-                <div className="space-y-2">
-                  {list.map((t) => {
-                    const isTransfer = t.type === "transfer"; const isIncome = t.type === "income";
-                    return (
-                      <div key={t.id} className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl flex flex-col hover:border-blue-100 dark:hover:border-blue-900/30 transition-all group">
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg shrink-0">{getRowIcon(t)}</div>
-                            <div className="min-w-0 text-left">
-                              <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate flex items-center gap-1">{t.category} {t.splits && t.splits.length > 0 && <span className={`text-[8px] px-1 rounded font-bold ${currentTheme.bgLight} ${currentTheme.text}`}>✂️ {t.splits.length} Pecahan</span>}</p>
-                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate mt-0.5">{t.note || (isTransfer ? "Transfer Dana" : "-")}</p>
-                              <div className="flex flex-wrap gap-1.5 mt-1">
-                                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border flex items-center gap-0.5 uppercase ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}><Wallet size={8} /> {isTransfer ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName}</span>
-                                {(() => {
-                                  const formattedTime = (t.tTime || formatTime(t.createdAt)).replace(':', '.');
-                                  if (!formattedTime) return null;
-                                  return (<span className="text-[9px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-950/40 px-1.5 py-0.5 rounded-md border border-slate-200/30 dark:border-slate-700/30 flex items-center gap-0.5">🕒 {formattedTime}</span>);
-                                })()}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4 shrink-0 text-right">
-                            <div>
-                              <p className={`text-xs font-black ${isIncome ? "text-emerald-500" : isTransfer ? "text-blue-500" : "text-rose-500"}`}>{isPrivacyMode ? "Rp •••••" : `${isIncome ? "+" : "-"}${t.amount.toLocaleString("id-ID")}`}</p>
-                              {t.adminFee && t.adminFee > 0 ? (<p className="text-[8px] font-black text-slate-400 dark:text-slate-500 mt-0.5">Admin: Rp {t.adminFee.toLocaleString("id-ID")}</p>) : null}
-                            </div>
-                            <div className="flex items-center gap-1.5 shrink-0 opacity-100">
-                              <button type="button" onClick={() => { triggerHaptic(); onEditTransaction(t); }} className={`p-1.5 rounded-lg transition-colors cursor-pointer ${currentTheme.text} hover:bg-slate-100 dark:hover:bg-slate-800`}><Edit3 size={13} /></button>
-                              <button type="button" onClick={() => { triggerHaptic(); onDeleteTransaction(t); }} className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"><Trash2 size={13} /></button>
-                            </div>
-                          </div>
-                        </div>
-                        {t.splits && t.splits.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2 text-left pl-13 animate-in fade-in duration-200">
-                            <p className={`text-[9px] font-black uppercase tracking-widest leading-none flex items-center gap-1 ${currentTheme.text}`}><span>✂️</span> Detail Alokasi Pecahan:</p>
-                            <div className="space-y-1.5">
-                              {t.splits.map((s, idx) => (
-                                <div key={idx} className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" /><span className="font-extrabold text-slate-800 dark:text-slate-300">{s.category}:</span><span className="text-slate-700 dark:text-slate-500 font-extrabold">Rp {s.amount.toLocaleString('id-ID')}</span>{s.note && (<span className="text-[9px] font-medium italic text-slate-400 dark:text-slate-500 leading-none">({s.note})</span>)}</div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                <div className="space-y-2 overflow-x-hidden p-1 -mx-1">
+                  {list.map((t) => (
+                    <SwipeableHomeCard 
+                      key={t.id}
+                      t={t}
+                      isPrivacyMode={isPrivacyMode}
+                      currentTheme={currentTheme}
+                      getRowIcon={getRowIcon}
+                      isOpen={openSwipeId === t.id}
+                      onOpen={() => setOpenSwipeId(t.id)}
+                      onClose={() => setOpenSwipeId(null)}
+                      onEdit={() => { triggerHaptic(); onEditTransaction(t); }}
+                      onDelete={() => { triggerHaptic(); onDeleteTransaction(t); }}
+                    />
+                  ))}
                 </div>
               </div>
             );
