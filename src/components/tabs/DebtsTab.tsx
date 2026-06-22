@@ -262,8 +262,13 @@ export default function DebtsTab({
   const submitAdd = () => {
     if (!person || !amount) return alert("Nama dan Nominal harus diisi!");
     if (activeType === "receivable" && !sourceAccountId) return alert("Pilih dompet pengirim uang terlebih dahulu!");
-    handleAddDebt(activeType, person, safeEvaluate(amount), note, dueDate, sourceAccountId);
+    
+    // FIX: Memastikan startDate (Tgl Pinjam) dikirimkan ke mesin utama!
+    handleAddDebt(activeType, person, safeEvaluate(amount), note, dueDate, sourceAccountId, startDate);
+    
     setShowAddForm(false); setPerson(""); setAmount(""); setNote(""); setDueDate(""); setSourceAccountId(""); setActiveKeypad(null);
+    const d = new Date();
+    setStartDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
   };
 
   const submitEdit = (id: string) => {

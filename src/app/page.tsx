@@ -572,12 +572,21 @@ export default function FintrackerApp() {
         await updateDoc(accRef, { balance: acc.balance - amount });
         
         const cleanNote = note ? `${person} - ${note.trim()}` : person;
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount, type: "expense", accountId, accountName: acc.name, category: "Piutang", note: cleanNote, tDate: actualStartDate, tTime: exactTime, createdAt: serverTimestamp() });
+        
+        // FIX: Gunakan actualStartDate dan exactTime agar riwayat sinkron dengan Tgl Pinjam
+        await addDoc(collection(db, `users/${user.uid}/transactions`), { 
+          amount, type: "expense", accountId, accountName: acc.name, category: "Piutang", 
+          note: cleanNote, tDate: actualStartDate, tTime: exactTime, createdAt: serverTimestamp() 
+        });
       }
       
-      // Set tanggal buat utang agar sesuai dengan yang dipilih user
+      // FIX: Gunakan actualStartDate untuk createdAt si Utang agar urutannya benar di kalender
       const debtCreatedAt = new Date(`${actualStartDate}T12:00:00`).toISOString();
-      await addDoc(collection(db, `users/${user.uid}/debts`), { type, personName: person, amount, paidAmount: 0, status: "active", note, dueDate, createdAt: debtCreatedAt });
+      
+      await addDoc(collection(db, `users/${user.uid}/debts`), { 
+        type, personName: person, amount, paidAmount: 0, status: "active", 
+        note, dueDate, createdAt: debtCreatedAt 
+      });
       
       alert(type === "receivable" ? "Catatan berhasil ditambahkan & saldo dompet otomatis terpotong!" : "Utang berhasil dicatat!");
     } catch (e) { alert("Gagal menambah catatan"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
