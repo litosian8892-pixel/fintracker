@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { User } from "firebase/auth";
-import { LogOut, Eye, EyeOff } from "lucide-react";
+import { LogOut, Eye, EyeOff, Cloud, CloudOff } from "lucide-react";
 
 interface MobileHeaderProps {
   user: User | null;
@@ -12,14 +12,34 @@ interface MobileHeaderProps {
 
 export default function MobileHeader({ user, onLogout, isPrivacyMode, togglePrivacyMode }: MobileHeaderProps) {
   const [greeting, setGreeting] = useState({ text: "Halo", icon: "👋" });
+  const [isOnline, setIsOnline] = useState(true);
 
-  // Efek untuk menentukan sapaan berdasarkan jam lokal pengguna
+  // Efek untuk menentukan sapaan berdasarkan jam lokal pengguna (Anti UTC Bug)
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 11) setGreeting({ text: "Selamat Pagi", icon: "☀️" });
     else if (hour >= 11 && hour < 15) setGreeting({ text: "Selamat Siang", icon: "🌤️" });
     else if (hour >= 15 && hour < 18) setGreeting({ text: "Selamat Sore", icon: "⛅" });
     else setGreeting({ text: "Selamat Malam", icon: "🌙" });
+  }, []);
+
+  // Efek untuk memantau status Sinkronisasi PWA (Offline/Online)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Set initial status
+      setIsOnline(navigator.onLine);
+
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+
+      window.addEventListener("online", handleOnline);
+      window.addEventListener("offline", handleOffline);
+
+      return () => {
+        window.removeEventListener("online", handleOnline);
+        window.removeEventListener("offline", handleOffline);
+      };
+    }
   }, []);
 
   // Mengambil kata pertama dari nama pengguna untuk sapaan
@@ -40,8 +60,12 @@ export default function MobileHeader({ user, onLogout, isPrivacyMode, togglePriv
               className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-800 shadow-sm object-cover bg-slate-100 dark:bg-slate-800" 
               alt="Avatar"
             />
-            {/* Indikator Online Premium */}
-            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
+            {/* Indikator Online/Offline pada Avatar */}
+            <div 
+              className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white dark:border-slate-900 rounded-full transition-colors duration-500 ${
+                isOnline ? 'bg-emerald-500' : 'bg-amber-500'
+              }`}
+            ></div>
           </div>
           
           <div className="flex flex-col min-w-0">
@@ -54,8 +78,21 @@ export default function MobileHeader({ user, onLogout, isPrivacyMode, togglePriv
           </div>
         </div>
 
-        {/* SISI KANAN: AKSI (PRIVASI & LOGOUT) */}
+        {/* SISI KANAN: AKSI (SYNC, PRIVASI & LOGOUT) */}
         <div className="flex items-center gap-2 shrink-0">
+          
+          {/* Indikator Awan Sinkronisasi (Offline-First) */}
+          <div 
+            className={`p-2.5 rounded-full transition-all duration-500 flex items-center justify-center cursor-default ${
+              isOnline 
+                ? 'bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-500 dark:text-emerald-500/80' 
+                : 'bg-amber-100/80 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 shadow-inner'
+            }`}
+            title={isOnline ? "Aplikasi Tersinkronisasi (Online)" : "Tersimpan Lokal (Offline)"}
+          >
+            {isOnline ? <Cloud size={18} strokeWidth={2.5}/> : <CloudOff size={18} strokeWidth={2.5} className="animate-pulse"/>}
+          </div>
+
           {/* Tombol Privasi */}
           <button 
             onClick={() => { triggerHaptic(); togglePrivacyMode?.(); }} 
