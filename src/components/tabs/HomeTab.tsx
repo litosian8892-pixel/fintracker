@@ -1180,9 +1180,58 @@ export default function HomeTab({
 
             <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex gap-3 shrink-0">
               {editingTransaction ? (
-                <button type="button" onClick={() => { triggerHaptic(); handleUpdateTransaction(); closeMainDrawer(); }} className={`flex-1 py-3.5 text-white rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer border ${currentTheme.fab}`}>Simpan Koreksi</button>
+                <button 
+                  type="button" 
+                  onClick={() => { 
+                    triggerHaptic(); 
+                    
+                    // UX Premium: Hard-Block Overdraft untuk Mode Edit
+                    if (editTType === "expense" || editTType === "transfer") {
+                      const editSourceAcc = accounts.find(a => a.id === editTAccountId);
+                      if (editSourceAcc) {
+                        let availableBalance = editSourceAcc.balance;
+                        
+                        // Algoritma Pintar: Jika dompet asal tidak diganti, uang yang bisa dipakai = Saldo saat ini + Saldo transaksi lama yang dibatalkan
+                        if (editingTransaction.accountId === editTAccountId && (editingTransaction.type === "expense" || editingTransaction.type === "transfer")) {
+                          const oldRawAmount = editingTransaction.originalAmount !== undefined ? editingTransaction.originalAmount : editingTransaction.amount;
+                          availableBalance += oldRawAmount;
+                        }
+                        
+                        if (safeEvaluate(editTAmount) > availableBalance) {
+                          alert(`Transaksi Ditolak!\n\nSaldo dompet tidak mencukupi.\nMaksimal dana yang bisa digunakan adalah ${formatCurrencyTerbaca(availableBalance.toString(), editSourceAcc.currency)}.`);
+                          return; // BLOCK EKSEKUSI
+                        }
+                      }
+                    }
+
+                    handleUpdateTransaction(); 
+                    closeMainDrawer(); 
+                  }} 
+                  className={`flex-1 py-3.5 text-white rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer border ${currentTheme.fab}`}
+                >
+                  Simpan Koreksi
+                </button>
               ) : (
-                <button type="button" onClick={() => { triggerHaptic(); if(splits.length > 0) handleTransaction(splits); else handleTransaction(); closeMainDrawer(); }} className={`flex-1 py-3.5 text-white rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer border ${currentTheme.fab}`}>Simpan Transaksi</button>
+                <button 
+                  type="button" 
+                  onClick={() => { 
+                    triggerHaptic(); 
+                    
+                    // UX Premium: Hard-Block Overdraft untuk Transaksi Baru
+                    if (tType === "expense" || tType === "transfer") {
+                      if (selectedSourceAcc && safeEvaluate(tAmount) > selectedSourceAcc.balance) {
+                        alert(`Transaksi Ditolak!\n\nSaldo dompet "${selectedSourceAcc.name}" tidak mencukupi.\nSisa saldo: ${formatCurrencyTerbaca(selectedSourceAcc.balance.toString(), selectedSourceAcc.currency)}.`);
+                        return; // BLOCK EKSEKUSI
+                      }
+                    }
+
+                    if(splits.length > 0) handleTransaction(splits); else handleTransaction(); 
+                    closeMainDrawer(); 
+                  }} 
+                  className={`flex-1 py-3.5 text-white rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer border ${currentTheme.fab}`}
+                >
+                  Simpan Transaksi
+                </button>
               )}
               <button type="button" onClick={closeMainDrawer} className="py-3.5 px-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer">Batal</button>
             </div>
