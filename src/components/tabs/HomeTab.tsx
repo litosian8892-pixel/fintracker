@@ -221,6 +221,7 @@ export default function HomeTab({
   };
 
   const monthScrollRef = useRef<HTMLDivElement>(null);
+  const noteInputRef = useRef<HTMLInputElement>(null); // UX: Radar Auto-Focus Keyboard
   const [accent, setAccent] = useState<keyof typeof themeMap>("blue");
   const [noteSuggestions, setNoteSuggestions] = useState<{note: string, category: string, amount: number, icon?: string}[]>([]);
 
@@ -265,6 +266,18 @@ export default function HomeTab({
 
   useEffect(() => { const handleResize = () => setIsMobile(window.innerWidth < 768); handleResize(); window.addEventListener("resize", handleResize); return () => window.removeEventListener("resize", handleResize); }, []);
   useEffect(() => { if (editingTransaction) { setIsDrawerOpen(true); } }, [editingTransaction]);
+  
+  // UX Premium: Auto-Focus Keyboard HP saat tombol "Catat Baru" ditekan (DIPINDAH KE SINI AGAR TIDAK ERROR isDrawerOpen)
+  useEffect(() => {
+    if (isDrawerOpen && !editingTransaction) {
+      // Tunggu 300ms agar animasi laci slide-up selesai sebelum memunculkan keyboard
+      const timer = setTimeout(() => {
+        noteInputRef.current?.focus();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isDrawerOpen, editingTransaction]);
+
   useEffect(() => { if (!tAmount || safeEvaluate(tAmount) === 0) { setSplits([]); } }, [tAmount]);
 
   const availableSourceAccounts = tType === "transfer" ? accounts : accounts.filter(acc => !acc.isSavings);
@@ -780,6 +793,7 @@ export default function HomeTab({
               <div className="space-y-1 relative z-[60] mb-2 animate-in slide-in-from-top-2 duration-300">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan (Beli Apa?)</label>
                 <input 
+                  ref={noteInputRef}
                   type="text" 
                   className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white relative z-[70]" 
                   placeholder="Ketik 2 huruf untuk saran otomatis..." 
@@ -826,15 +840,35 @@ export default function HomeTab({
                 editTSplits.length === 0 && (
                   <div className="space-y-1 relative z-10">
                     <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
-                    <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("amount"); setActiveEditSplitKeypadIndex(null); } }} className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-white focus:border-blue-500" placeholder="0" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
-                    {editTAmount && <p className="text-[10px] font-bold text-slate-400 pl-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editTAmount, selectedSourceAcc?.currency)}</span></p>}
+                    <div className="relative">
+                      <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("amount"); setActiveEditSplitKeypadIndex(null); } }} className="w-full p-3.5 pr-16 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-white focus:border-blue-500" placeholder="0" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
+                      {/* UX Premium: Tombol Cepat +000 */}
+                      <button type="button" onClick={() => { triggerHaptic(); setEditTAmount((editTAmount || "0") + "000"); }} className={`absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1.5 rounded-xl text-[10px] font-black border transition-colors cursor-pointer active:scale-95 shadow-sm ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>+000</button>
+                    </div>
+                    <div className="flex justify-between items-start px-1 mt-1 min-h-[16px]">
+                      {editTAmount ? <p className="text-[10px] font-bold text-slate-400">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editTAmount, selectedSourceAcc?.currency)}</span></p> : <div></div>}
+                      {/* UX Premium: Live Overdraft Warning (Mencegah dompet minus) */}
+                      {((editTType === "expense" || editTType === "transfer") && selectedSourceAcc && safeEvaluate(editTAmount) > selectedSourceAcc.balance) && (
+                        <p className="text-[9px] font-black text-orange-500 text-right animate-in fade-in slide-in-from-top-1">⚠️ Sisa: {formatCurrencyTerbaca(selectedSourceAcc.balance.toString(), selectedSourceAcc.currency)}</p>
+                      )}
+                    </div>
                   </div>
                 )
               ) : (
                 <div className="space-y-1 relative z-10">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
-                  <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("amount"); setActiveSplitKeypadIndex(null); } }} className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-white focus:border-blue-500" placeholder="0" value={tAmount} onChange={(e) => setTAmount(e.target.value)} />
-                  {tAmount && <p className="text-[10px] font-bold text-slate-400 pl-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(tAmount, selectedSourceAcc?.currency)}</span></p>}
+                  <div className="relative">
+                    <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("amount"); setActiveSplitKeypadIndex(null); } }} className="w-full p-3.5 pr-16 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-white focus:border-blue-500" placeholder="0" value={tAmount} onChange={(e) => setTAmount(e.target.value)} />
+                    {/* UX Premium: Tombol Cepat +000 */}
+                    <button type="button" onClick={() => { triggerHaptic(); setTAmount((tAmount || "0") + "000"); }} className={`absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1.5 rounded-xl text-[10px] font-black border transition-colors cursor-pointer active:scale-95 shadow-sm ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>+000</button>
+                  </div>
+                  <div className="flex justify-between items-start px-1 mt-1 min-h-[16px]">
+                    {tAmount ? <p className="text-[10px] font-bold text-slate-400">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(tAmount, selectedSourceAcc?.currency)}</span></p> : <div></div>}
+                    {/* UX Premium: Live Overdraft Warning (Mencegah dompet minus) */}
+                    {((tType === "expense" || tType === "transfer") && selectedSourceAcc && safeEvaluate(tAmount) > selectedSourceAcc.balance) && (
+                      <p className="text-[9px] font-black text-orange-500 text-right animate-in fade-in slide-in-from-top-1">⚠️ Sisa: {formatCurrencyTerbaca(selectedSourceAcc.balance.toString(), selectedSourceAcc.currency)}</p>
+                    )}
+                  </div>
                 </div>
               )}
 
