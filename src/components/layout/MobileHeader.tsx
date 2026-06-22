@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { User } from "firebase/auth";
-import { LogOut, Eye, EyeOff, Cloud, CloudOff } from "lucide-react";
+import { LogOut, Eye, EyeOff } from "lucide-react";
 
 interface MobileHeaderProps {
   user: User | null;
@@ -54,18 +54,19 @@ export default function MobileHeader({ user, onLogout, isPrivacyMode, togglePriv
         
         {/* SISI KIRI: AVATAR & SAPAAN DINAMIS */}
         <div className="flex items-center gap-3">
-          <div className="relative shrink-0">
+          <div className="relative shrink-0" title={isOnline ? "Online (Tersinkronisasi)" : "Offline (Data Lokal)"}>
             <img 
               src={user?.photoURL || ""} 
               className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-800 shadow-sm object-cover bg-slate-100 dark:bg-slate-800" 
               alt="Avatar"
             />
-            {/* Indikator Online/Offline pada Avatar */}
-            <div 
-              className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white dark:border-slate-900 rounded-full transition-colors duration-500 ${
+            {/* Indikator Online/Offline Premium (Discord Style) */}
+            <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white dark:border-slate-900 rounded-full transition-colors duration-500 z-10 ${
                 isOnline ? 'bg-emerald-500' : 'bg-amber-500'
-              }`}
-            ></div>
+            }`}></div>
+            {isOnline && (
+              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-transparent rounded-full animate-ping bg-emerald-500/60 z-0"></div>
+            )}
           </div>
           
           <div className="flex flex-col min-w-0">
@@ -78,20 +79,8 @@ export default function MobileHeader({ user, onLogout, isPrivacyMode, togglePriv
           </div>
         </div>
 
-        {/* SISI KANAN: AKSI (SYNC, PRIVASI & LOGOUT) */}
+        {/* SISI KANAN: AKSI (PRIVASI & LOGOUT) */}
         <div className="flex items-center gap-2 shrink-0">
-          
-          {/* Indikator Awan Sinkronisasi (Offline-First) */}
-          <div 
-            className={`p-2.5 rounded-full transition-all duration-500 flex items-center justify-center cursor-default ${
-              isOnline 
-                ? 'bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-500 dark:text-emerald-500/80' 
-                : 'bg-amber-100/80 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 shadow-inner'
-            }`}
-            title={isOnline ? "Aplikasi Tersinkronisasi (Online)" : "Tersimpan Lokal (Offline)"}
-          >
-            {isOnline ? <Cloud size={18} strokeWidth={2.5}/> : <CloudOff size={18} strokeWidth={2.5} className="animate-pulse"/>}
-          </div>
 
           {/* Tombol Privasi */}
           <button 

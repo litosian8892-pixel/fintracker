@@ -145,18 +145,19 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout, isPri
         
         {/* AVATAR & SAPAAN DINAMIS */}
         <div className="flex items-center gap-3">
-          <div className="relative shrink-0">
+          <div className="relative shrink-0" title={isOnline ? "Online (Tersinkronisasi)" : "Offline (Data Lokal)"}>
             <img 
               src={user?.photoURL || ""} 
               className={`w-10 h-10 rounded-full border-2 shadow-sm object-cover bg-slate-100 dark:bg-slate-800 ${currentTheme.avatarBorder}`}
               alt="Avatar"
             />
-            {/* Indikator Online/Offline pada Avatar Desktop */}
-            <div 
-              className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white dark:border-slate-900 rounded-full transition-colors duration-500 ${
+            {/* Indikator Online/Offline Premium (Discord Style) */}
+            <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white dark:border-slate-900 rounded-full transition-colors duration-500 z-10 ${
                 isOnline ? 'bg-emerald-500' : 'bg-amber-500'
-              }`}
-            ></div>
+            }`}></div>
+            {isOnline && (
+              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-transparent rounded-full animate-ping bg-emerald-500/60 z-0"></div>
+            )}
           </div>
           
           <div className="flex flex-col min-w-0">
@@ -169,21 +170,8 @@ export default function Sidebar({ user, activeTab, setActiveTab, onLogout, isPri
           </div>
         </div>
         
-        {/* TOMBOL AKSI */}
+        {/* TOMBOL AKSI (Awan Jelek Sudah Dihapus) */}
         <div className="flex items-center gap-1 shrink-0">
-          
-          {/* Indikator Awan Sinkronisasi (Offline-First) */}
-          <div 
-            className={`p-2 rounded-xl transition-all duration-500 flex items-center justify-center cursor-default ${
-              isOnline 
-                ? 'text-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20' 
-                : 'bg-amber-50/80 dark:bg-amber-900/30 text-amber-500'
-            }`}
-            title={isOnline ? "Aplikasi Tersinkronisasi (Online)" : "Tersimpan Lokal (Offline)"}
-          >
-            {isOnline ? <Cloud size={18} strokeWidth={2.5}/> : <CloudOff size={18} strokeWidth={2.5} className="animate-pulse"/>}
-          </div>
-
           <button 
             onClick={() => { triggerHaptic(); togglePrivacyMode?.(); }} 
             className={`p-2 rounded-xl transition-all duration-300 active:scale-90 cursor-pointer flex items-center justify-center ${
