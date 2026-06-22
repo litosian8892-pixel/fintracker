@@ -270,7 +270,11 @@ export default function DebtsTab({
 
   const submitPay = (debt: DebtData) => {
     if (!payAmount || !payAccountId || !payCategory) return alert("Nominal, Dompet, dan Kategori harus diisi!");
-    const finalNote = debt.note ? debt.note : `Cicilan ${debt.type === 'debt' ? 'Utang ke' : 'Piutang dari'} ${debt.personName}`;
+    
+    // FIX: Biarkan kosong jika tidak ada catatan (Nanti di page.tsx otomatis diganti jadi nama orang jika kosong)
+    // Jangan menyuntikkan kata-kata panjang yang membuat riwayat menjadi berantakan.
+    const finalNote = debt.note ? debt.note : debt.personName; 
+    
     handlePayDebt(debt.id, safeEvaluate(payAmount), payAccountId, payCategory, finalNote);
     setShowPayModal(false); setPayAmount(""); setPayAccountId(""); setPayCategory(""); setActiveKeypad(null);
   };
