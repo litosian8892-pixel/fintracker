@@ -421,8 +421,9 @@ const historicalAssetsData = useMemo(() => {
     return reportTransactions.filter(t => t.tDate?.startsWith(reportMonth || "") && (t.accountId === detailAccId || t.toAccountId === detailAccId));
   }, [reportTransactions, reportMonth, detailAccId]);
 
-  const detailInc = useMemo(() => { return detailTxs.filter(t => t.type === 'income' || (t.type === 'transfer' && t.toAccountId === detailAccId)).reduce((sum, t) => sum + t.amount, 0); }, [detailTxs, detailAccId]);
-  const detailExp = useMemo(() => { return detailTxs.filter(t => t.type === 'expense' || (t.type === 'transfer' && t.accountId === detailAccId)).reduce((sum, t) => sum + t.amount, 0); }, [detailTxs, detailAccId]);
+  // FIX: Transfer antar dompet tidak lagi dihitung sebagai "Pengeluaran" atau "Pemasukan" agar angka masuk akal
+  const detailInc = useMemo(() => { return detailTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0); }, [detailTxs]);
+  const detailExp = useMemo(() => { return detailTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0); }, [detailTxs]);
 
   const detailPieData = useMemo(() => {
     const detailExpGrouped = detailTxs.filter(t => t.type === 'expense').reduce((acc: Record<string, number>, t) => { acc[t.category] = (acc[t.category] || 0) + t.amount; return acc; }, {});
@@ -475,10 +476,14 @@ const historicalAssetsData = useMemo(() => {
             
             <button onClick={() => {
               triggerHaptic();
-              setEditingAccId(detailAcc.id); setEditAccName(detailAcc.name); setEditAccBalance(Number(detailAcc.balance.toFixed(8)).toString()); setEditAccLogo(detailAcc.logo || "");
-              setEditAccIsSavings(!!detailAcc.isSavings); setEditAccIsBusiness(!!detailAcc.isBusiness); setEditAccTargetBalance(detailAcc.targetBalance ? Number(detailAcc.targetBalance.toFixed(8)).toString() : "");
+              
+              // Helper: Membasmi koma sampah JavaScript agar jadi angka bulat/cantik
+              const cleanNum = (num: number | undefined | null) => num ? Number(num.toFixed(4)).toString() : "";
+
+              setEditingAccId(detailAcc.id); setEditAccName(detailAcc.name); setEditAccBalance(cleanNum(detailAcc.balance) || "0"); setEditAccLogo(detailAcc.logo || "");
+              setEditAccIsSavings(!!detailAcc.isSavings); setEditAccIsBusiness(!!detailAcc.isBusiness); setEditAccTargetBalance(cleanNum(detailAcc.targetBalance));
               setEditAccExcludeFromTotal(!!detailAcc.excludeFromTotal); setEditAccSavingsGoalTitle(detailAcc.savingsGoalTitle || "");
-              setEditCurrency(detailAcc.currency || "IDR"); setEditIsInv(!!detailAcc.isInvestment); setEditAvgPrice(detailAcc.averageBuyPrice ? Number(detailAcc.averageBuyPrice.toFixed(8)).toString() : ""); setEditLastRate(detailAcc.lastExchangeRate ? Number(detailAcc.lastExchangeRate.toFixed(8)).toString() : "");
+              setEditCurrency(detailAcc.currency || "IDR"); setEditIsInv(!!detailAcc.isInvestment); setEditAvgPrice(cleanNum(detailAcc.averageBuyPrice)); setEditLastRate(cleanNum(detailAcc.lastExchangeRate));
               setIsManageOpen(true);
             }} className={`p-2.5 rounded-full cursor-pointer transition-colors active:scale-95 flex items-center justify-center ${currentTheme.bgLight} ${currentTheme.text}`}>
               <Edit2 size={16}/>
@@ -913,8 +918,8 @@ const historicalAssetsData = useMemo(() => {
 
                   <div className={`space-y-1 p-3 rounded-xl border ${currentTheme.auditBox}`}>
                     <label className={`text-[9px] font-black uppercase tracking-widest ${currentTheme.text}`}>{ (editingAccId ? editIsInv : isInv) ? 'Jumlah Kepemilikan (Unit)' : 'Saldo Saat Ini' }</label>
-                    {/* UX FIX: Gunakan type="text" + inputMode="decimal" agar NumPad iOS muncul sempurna & blokir Bitwarden injeksi */}
-                    <input type="text" inputMode="decimal" data-1p-ignore="true" data-lpignore="true" autoComplete="off" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccBalance : accBalance} onChange={(e) => { const val = e.target.value.replace(/,/g, ".").replace(/[^0-9.-]/g, ""); editingAccId ? setEditAccBalance(val) : setAccBalance(val); }} />
+                    {/* KEMBALI KE SISTEM iOS: Pakai type="number" + step="any" agar keyboard numpad keluar dan koma diakui */}
+                    <input type="number" step="any" data-1p-ignore="true" data-lpignore="true" autoComplete="off" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccBalance : accBalance} onChange={(e) => { editingAccId ? setEditAccBalance(e.target.value) : setAccBalance(e.target.value); }} />
                     {(editingAccId ? editAccBalance : accBalance) && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editingAccId ? editAccBalance : accBalance, editingAccId ? editCurrency : currency)}</span></p>}
                   </div>
 
@@ -1012,7 +1017,7 @@ const historicalAssetsData = useMemo(() => {
                         <div className="flex items-center gap-1">
                           <button disabled={index===0} onClick={()=>moveAccountOrder(index, "up")} className="p-1.5 bg-slate-200/50 dark:bg-slate-800 rounded text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-30"><ArrowUp size={12}/></button>
                           <button disabled={index===accounts.length-1} onClick={()=>moveAccountOrder(index, "down")} className="p-1.5 bg-slate-200/50 dark:bg-slate-800 rounded text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-30"><ArrowDown size={12}/></button>
-                          <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(Number(acc.balance.toFixed(8)).toString()); setEditAccIsSavings(!!acc.isSavings); setEditAccIsBusiness(!!acc.isBusiness); setEditAccTargetBalance(acc.targetBalance ? Number(acc.targetBalance.toFixed(8)).toString() : ""); setEditAccExcludeFromTotal(!!acc.excludeFromTotal); setEditAccSavingsGoalTitle(acc.savingsGoalTitle||""); setEditIsInv(!!acc.isInvestment); setEditAvgPrice(acc.averageBuyPrice ? Number(acc.averageBuyPrice.toFixed(8)).toString() : ""); setEditLastRate(acc.lastExchangeRate ? Number(acc.lastExchangeRate.toFixed(8)).toString() : ""); if(setEditAccCurrency)setEditAccCurrency(acc.currency||"IDR"); else setLocalEditAccCurrency(acc.currency||"IDR"); }} className="p-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 rounded ml-1 cursor-pointer"><Edit2 size={12}/></button>
+                          <button onClick={() => { const cleanNum = (num: number | undefined | null) => num ? Number(num.toFixed(4)).toString() : ""; setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(cleanNum(acc.balance) || "0"); setEditAccIsSavings(!!acc.isSavings); setEditAccIsBusiness(!!acc.isBusiness); setEditAccTargetBalance(cleanNum(acc.targetBalance)); setEditAccExcludeFromTotal(!!acc.excludeFromTotal); setEditAccSavingsGoalTitle(acc.savingsGoalTitle||""); setEditIsInv(!!acc.isInvestment); setEditAvgPrice(cleanNum(acc.averageBuyPrice)); setEditLastRate(cleanNum(acc.lastExchangeRate)); if(setEditAccCurrency)setEditAccCurrency(acc.currency||"IDR"); else setLocalEditAccCurrency(acc.currency||"IDR"); }} className="p-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 rounded ml-1 cursor-pointer"><Edit2 size={12}/></button>
                           <button onClick={() => deleteAccount(acc.id, acc.name)} className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 rounded cursor-pointer"><Trash2 size={12}/></button>
                         </div>
                       </div>
