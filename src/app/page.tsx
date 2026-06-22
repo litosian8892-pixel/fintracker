@@ -794,25 +794,39 @@ export default function FintrackerApp() {
 
   const handleDeleteTransaction = async (t: TransactionData) => {
     if (isSubmittingRef.current) return; 
-    if (!user || !confirm("Hapus transaksi ini? Saldo akan dikoreksi.")) return;
+    if (!user) return;
+    
+    const confirmDelete = window.confirm("Hapus transaksi ini?");
+    if (!confirmDelete) return;
+
+    // SAFE-ROLLBACK: Opsi untuk membersihkan data error masa lalu tanpa merusak dompet
+    const confirmRollback = window.confirm("Apakah Anda ingin MENGEMBALIKAN (Koreksi) saldo dompet dari transaksi ini?\n\n[OK] = Ya, kembalikan saldo.\n[Cancel] = TIDAK, hapus riwayatnya saja (Pilih ini jika saldo Anda sudah terlanjur error/Ghost Balance).");
+
     isSubmittingRef.current = true; setIsSubmitting(true);
     try {
       const batch = writeBatch(db);
 
-      if (t.type === "transfer") {
-        const sourceAcc = accounts.find(a => a.id === t.accountId); const destAcc = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
-        const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount;
-        const rawAdminFee = t.originalAmount !== undefined ? ((t.adminFee || 0) / (t.exchangeRate || 1)) : (t.adminFee || 0);
-        if (sourceAcc) batch.update(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: sourceAcc.balance + (rawAmount + rawAdminFee) });
-        if (destAcc) { const rateDest = exchangeRates[destAcc.currency || "IDR"] || destAcc.lastExchangeRate || 1; const destAmount = t.originalAmount !== undefined ? (t.amount / rateDest) : t.amount; batch.update(doc(db, `users/${user.uid}/accounts/${t.toAccountId}`), { balance: destAcc.balance - destAmount }); }
-      } else {
-        const acc = accounts.find(a => a.id === t.accountId);
-        if (acc) { const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount; const restoredBal = t.type === "income" ? acc.balance - rawAmount : acc.balance + rawAmount; batch.update(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: restoredBal }); }
+      if (confirmRollback) {
+        if (t.type === "transfer") {
+          const sourceAcc = accounts.find(a => a.id === t.accountId); const destAcc = t.toAccountId ? accounts.find(a => a.id === t.toAccountId) : null;
+          const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount;
+          const rawAdminFee = t.originalAmount !== undefined ? ((t.adminFee || 0) / (t.exchangeRate || 1)) : (t.adminFee || 0);
+          if (sourceAcc) batch.update(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: sourceAcc.balance + (rawAmount + rawAdminFee) });
+          if (destAcc) { const rateDest = exchangeRates[destAcc.currency || "IDR"] || destAcc.lastExchangeRate || 1; const destAmount = t.originalAmount !== undefined ? (t.amount / rateDest) : t.amount; batch.update(doc(db, `users/${user.uid}/accounts/${t.toAccountId}`), { balance: destAcc.balance - destAmount }); }
+        } else {
+          const acc = accounts.find(a => a.id === t.accountId);
+          if (acc) { const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount; const restoredBal = t.type === "income" ? acc.balance - rawAmount : acc.balance + rawAmount; batch.update(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: restoredBal }); }
+        }
       }
       
       batch.delete(doc(db, `users/${user.uid}/transactions/${t.id}`));
       await batch.commit();
-    } catch (e) { alert("Gagal hapus transaksi."); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+      alert(confirmRollback ? "Transaksi dihapus & Saldo dikembalikan!" : "Riwayat berhasil dihapus (Tanpa mengubah saldo dompet).");
+    } catch (e: any) { 
+      alert(`Gagal hapus transaksi.\n\nError: ${e.message}`); 
+    } finally { 
+      isSubmittingRef.current = false; setIsSubmitting(false); 
+    }
   };
 
   const openEditModal = (t: TransactionData) => {
@@ -831,41 +845,73 @@ export default function FintrackerApp() {
     if (newRawAmount <= 0) return alert("Nominal transaksi tidak valid!");
     const newRawAdminFee = editTType === "transfer" && editTAdminFee ? safeEvaluate(editTAdminFee) : 0; 
     isSubmittingRef.current = true; setIsSubmitting(true);
+    
     try {
+      const batch = writeBatch(db);
+      
+      // VIRTUAL MEMORY: Cegah data bertabrakan & jadikan prosesnya 100% Atomic Batch
+      const accBalances: Record<string, number> = {};
+      accounts.forEach(a => accBalances[a.id] = a.balance);
+
+      // 1. KEMBALIKAN SALDO DARI TRANSAKSI LAMA
       if (oldT.type === "transfer") {
         const oldRawAmount = oldT.originalAmount !== undefined ? oldT.originalAmount : oldT.amount;
         const oldRawAdminFee = oldT.originalAmount !== undefined ? ((oldT.adminFee || 0) / (oldT.exchangeRate || 1)) : (oldT.adminFee || 0);
-        const oldSrc = accounts.find(a => a.id === oldT.accountId); const oldDest = oldT.toAccountId ? accounts.find(a => a.id === oldT.toAccountId) : null;
-        if (oldSrc) await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.accountId}`), { balance: oldSrc.balance + (oldRawAmount + oldRawAdminFee) });
-        if (oldDest) { const rateOldDest = exchangeRates[oldDest.currency || "IDR"] || oldDest.lastExchangeRate || 1; const oldDestAmount = oldT.originalAmount !== undefined ? (oldT.amount / rateOldDest) : oldT.amount; await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.toAccountId}`), { balance: oldDest.balance - oldDestAmount }); }
+        if (accBalances[oldT.accountId] !== undefined) accBalances[oldT.accountId] += (oldRawAmount + oldRawAdminFee);
+        if (oldT.toAccountId && accBalances[oldT.toAccountId] !== undefined) {
+           const destRate = exchangeRates[accounts.find(a => a.id === oldT.toAccountId)?.currency || "IDR"] || accounts.find(a => a.id === oldT.toAccountId)?.lastExchangeRate || 1;
+           const oldDestAmount = oldT.originalAmount !== undefined ? (oldT.amount / destRate) : oldT.amount; 
+           accBalances[oldT.toAccountId] -= oldDestAmount;
+        }
       } else {
-        const oldAcc = accounts.find(a => a.id === oldT.accountId);
-        if (oldAcc) { const oldRawAmount = oldT.originalAmount !== undefined ? oldT.originalAmount : oldT.amount; const restoredBal = oldT.type === "income" ? oldAcc.balance - oldRawAmount : oldAcc.balance + oldRawAmount; await updateDoc(doc(db, `users/${user.uid}/accounts/${oldT.accountId}`), { balance: restoredBal }); }
+        if (accBalances[oldT.accountId] !== undefined) {
+          const oldRawAmount = oldT.originalAmount !== undefined ? oldT.originalAmount : oldT.amount; 
+          accBalances[oldT.accountId] += oldT.type === "income" ? -oldRawAmount : oldRawAmount;
+        }
       }
 
-      const srcAccRef = doc(db, `users/${user.uid}/accounts/${editTAccountId}`);
-      const srcSnap = await getDoc(srcAccRef);
-      if (!srcSnap.exists()) throw "Dompet asal tidak ditemukan";
-      const freshSrcBal = srcSnap.data().balance; const srcCurrency = srcSnap.data().currency || "IDR"; const rateSource = exchangeRates[srcCurrency] || srcSnap.data().lastExchangeRate || 1;
-      const newIdrAmount = newRawAmount * rateSource; const newIdrAdminFee = newRawAdminFee * rateSource;
+      // 2. TERAPKAN POTONGAN DARI TRANSAKSI BARU (YANG SUDAH DI-EDIT)
+      const srcCurrency = accounts.find(a => a.id === editTAccountId)?.currency || "IDR"; 
+      const rateSource = exchangeRates[srcCurrency] || accounts.find(a => a.id === editTAccountId)?.lastExchangeRate || 1;
+      const newIdrAmount = newRawAmount * rateSource; 
+      const newIdrAdminFee = newRawAdminFee * rateSource;
 
       if (editTType === "transfer") {
-        const destAccRef = doc(db, `users/${user.uid}/accounts/${editTToAccountId}`); const destSnap = await getDoc(destAccRef); if (!destSnap.exists()) throw "Dompet tujuan tidak ditemukan";
-        const freshDestBal = destSnap.data().balance; const rateDest = exchangeRates[destSnap.data().currency || "IDR"] || destSnap.data().lastExchangeRate || 1;
-        const destAmount = newIdrAmount / rateDest;
-        await updateDoc(srcAccRef, { balance: freshSrcBal - (newRawAmount + newRawAdminFee) });
-        await updateDoc(destAccRef, { balance: freshDestBal + destAmount });
+        if (!editTToAccountId) throw new Error("Pilih dompet tujuan!");
+        if (accBalances[editTAccountId] !== undefined) accBalances[editTAccountId] -= (newRawAmount + newRawAdminFee);
+        if (accBalances[editTToAccountId] !== undefined) {
+           const destRate = exchangeRates[accounts.find(a => a.id === editTToAccountId)?.currency || "IDR"] || accounts.find(a => a.id === editTToAccountId)?.lastExchangeRate || 1;
+           const destAmount = newIdrAmount / destRate;
+           accBalances[editTToAccountId] += destAmount;
+        }
       } else {
-        const newBal = editTType === "income" ? freshSrcBal + newRawAmount : freshSrcBal - newRawAmount;
-        await updateDoc(srcAccRef, { balance: newBal });
+        if (accBalances[editTAccountId] !== undefined) {
+          accBalances[editTAccountId] += editTType === "income" ? newRawAmount : -newRawAmount;
+        }
       }
 
+      // WRITE TO FIREBASE (SEKALIGUS / ATOMIC)
+      const updatedAccountIds = new Set([oldT.accountId, oldT.toAccountId, editTAccountId, editTToAccountId].filter(Boolean));
+      updatedAccountIds.forEach(accId => {
+        if (accId && accBalances[accId as string] !== undefined) {
+          batch.update(doc(db, `users/${user.uid}/accounts/${accId}`), { balance: accBalances[accId as string] });
+        }
+      });
+
+      // 3. UPDATE CATATAN RIWAYAT TRANSAKSI
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
       const updateData: any = { amount: newIdrAmount, type: editTType, accountId: editTAccountId, accountName: accounts.find(a => a.id === editTAccountId)?.name || "", note: editTNote, category: editTSplits.length > 0 ? "Split Transaksi" : (editTType === "transfer" ? "Transfer" : editTCategory), tDate: editTDate, tTime: editTTime, originalAmount: newRawAmount, originalCurrency: srcCurrency, exchangeRate: rateSource };
       if (editTType === "transfer") { updateData.toAccountId = editTToAccountId; updateData.toAccountName = accounts.find(a => a.id === editTToAccountId)?.name || ""; updateData.adminFee = newIdrAdminFee; updateData.splits = null; } else { updateData.toAccountId = null; updateData.toAccountName = null; updateData.adminFee = null; if (editTSplits.length > 0) { updateData.splits = editTSplits.map(s => ({ ...s, amount: s.amount * rateSource })); } else { updateData.splits = null; } }
-      await updateDoc(tRef, updateData);
+      
+      batch.update(tRef, updateData);
+      await batch.commit(); // Eksekusi 100% aman (kalau internet putus, batal semua!)
+
       setEditingTransaction(null); setEditTAdminFee(""); alert("Transaksi berhasil diperbarui!");
-    } catch (e) { alert("Gagal memperbarui transaksi"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+    } catch (e: any) { 
+      alert(`Gagal memperbarui transaksi.\n\nError: ${e.message}`); 
+    } finally { 
+      isSubmittingRef.current = false; setIsSubmitting(false); 
+    }
   };
 
   // TRAVEL MODE: Karantina Pengeluaran Liburan agar tidak merusak analitik bulanan
