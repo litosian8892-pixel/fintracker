@@ -475,12 +475,12 @@ const historicalAssetsData = useMemo(() => {
             
             <button onClick={() => {
               triggerHaptic();
-              setEditingAccId(detailAcc.id); setEditAccName(detailAcc.name); setEditAccBalance(detailAcc.balance.toString()); setEditAccLogo(detailAcc.logo || "");
-              setEditAccIsSavings(!!detailAcc.isSavings); setEditAccIsBusiness(!!detailAcc.isBusiness); setEditAccTargetBalance(detailAcc.targetBalance?.toString() || "");
+              setEditingAccId(detailAcc.id); setEditAccName(detailAcc.name); setEditAccBalance(Number(detailAcc.balance.toFixed(8)).toString()); setEditAccLogo(detailAcc.logo || "");
+              setEditAccIsSavings(!!detailAcc.isSavings); setEditAccIsBusiness(!!detailAcc.isBusiness); setEditAccTargetBalance(detailAcc.targetBalance ? Number(detailAcc.targetBalance.toFixed(8)).toString() : "");
               setEditAccExcludeFromTotal(!!detailAcc.excludeFromTotal); setEditAccSavingsGoalTitle(detailAcc.savingsGoalTitle || "");
-              setEditCurrency(detailAcc.currency || "IDR"); setEditIsInv(!!detailAcc.isInvestment); setEditAvgPrice(detailAcc.averageBuyPrice?.toString() || ""); setEditLastRate(detailAcc.lastExchangeRate?.toString() || "");
+              setEditCurrency(detailAcc.currency || "IDR"); setEditIsInv(!!detailAcc.isInvestment); setEditAvgPrice(detailAcc.averageBuyPrice ? Number(detailAcc.averageBuyPrice.toFixed(8)).toString() : ""); setEditLastRate(detailAcc.lastExchangeRate ? Number(detailAcc.lastExchangeRate.toFixed(8)).toString() : "");
               setIsManageOpen(true);
-            }} className={`p-2.5 rounded-full cursor-pointer transition-colors active:scale-95 flex items-center justify-center ${currentTheme.bgLight} ${currentTheme.text}`} border-transparent>
+            }} className={`p-2.5 rounded-full cursor-pointer transition-colors active:scale-95 flex items-center justify-center ${currentTheme.bgLight} ${currentTheme.text}`}>
               <Edit2 size={16}/>
             </button>
           </div>
@@ -913,7 +913,8 @@ const historicalAssetsData = useMemo(() => {
 
                   <div className={`space-y-1 p-3 rounded-xl border ${currentTheme.auditBox}`}>
                     <label className={`text-[9px] font-black uppercase tracking-widest ${currentTheme.text}`}>{ (editingAccId ? editIsInv : isInv) ? 'Jumlah Kepemilikan (Unit)' : 'Saldo Saat Ini' }</label>
-                    <input type="number" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccBalance : accBalance} onChange={(e) => editingAccId ? setEditAccBalance(e.target.value) : setAccBalance(e.target.value)} />
+                    {/* UX FIX: Gunakan type="text" + inputMode="decimal" agar NumPad iOS muncul sempurna & blokir Bitwarden injeksi */}
+                    <input type="text" inputMode="decimal" data-1p-ignore="true" data-lpignore="true" autoComplete="off" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccBalance : accBalance} onChange={(e) => { const val = e.target.value.replace(/,/g, ".").replace(/[^0-9.-]/g, ""); editingAccId ? setEditAccBalance(val) : setAccBalance(val); }} />
                     {(editingAccId ? editAccBalance : accBalance) && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editingAccId ? editAccBalance : accBalance, editingAccId ? editCurrency : currency)}</span></p>}
                   </div>
 
@@ -924,14 +925,14 @@ const historicalAssetsData = useMemo(() => {
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Harga Beli / Modal (Per 1 Unit)</label>
                         <div className="flex items-center gap-2">
                            <span className="text-xs font-bold text-slate-400 pl-1">Rp</span>
-                           <input type="number" placeholder="Contoh: 1000000000" className="flex-1 p-3 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAvgPrice : avgPrice} onChange={(e) => editingAccId ? setEditAvgPrice(e.target.value) : setAvgPrice(e.target.value)} />
+                           <input type="text" inputMode="decimal" data-1p-ignore="true" data-lpignore="true" autoComplete="off" placeholder="Contoh: 1000000000" className="flex-1 p-3 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAvgPrice : avgPrice} onChange={(e) => { const val = e.target.value.replace(/,/g, ".").replace(/[^0-9.-]/g, ""); editingAccId ? setEditAvgPrice(val) : setAvgPrice(val); }} />
                         </div>
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-amber-500 uppercase tracking-widest pl-1">Harga Pasar Saat Ini (Per 1 Unit)</label>
                         <div className="flex items-center gap-2">
                            <span className="text-xs font-bold text-amber-500 pl-1">Rp</span>
-                           <input type="number" placeholder="Bisa diupdate kapan saja nanti" className="flex-1 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-xl text-xs border border-amber-200 dark:border-amber-800/50 outline-none font-bold text-amber-700 dark:text-amber-400" value={editingAccId ? editLastRate : lastRate} onChange={(e) => editingAccId ? setEditLastRate(e.target.value) : setLastRate(e.target.value)} />
+                           <input type="text" inputMode="decimal" data-1p-ignore="true" data-lpignore="true" autoComplete="off" placeholder="Bisa diupdate kapan saja nanti" className="flex-1 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-xl text-xs border border-amber-200 dark:border-amber-800/50 outline-none font-bold text-amber-700 dark:text-amber-400" value={editingAccId ? editLastRate : lastRate} onChange={(e) => { const val = e.target.value.replace(/,/g, ".").replace(/[^0-9.-]/g, ""); editingAccId ? setEditLastRate(val) : setLastRate(val); }} />
                         </div>
                       </div>
                     </div>
@@ -961,7 +962,7 @@ const historicalAssetsData = useMemo(() => {
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Target Nominal Tabungan</label>
-                        <input type="number" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccTargetBalance : accTargetBalance} onChange={(e) => editingAccId ? setEditAccTargetBalance(e.target.value) : setAccTargetBalance(e.target.value)} />
+                        <input type="text" inputMode="decimal" data-1p-ignore="true" data-lpignore="true" autoComplete="off" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccTargetBalance : accTargetBalance} onChange={(e) => { const val = e.target.value.replace(/,/g, ".").replace(/[^0-9.-]/g, ""); editingAccId ? setEditAccTargetBalance(val) : setAccTargetBalance(val); }} />
                         {(editingAccId ? editAccTargetBalance : accTargetBalance) && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editingAccId ? editAccTargetBalance : accTargetBalance, editingAccId ? editCurrency : currency)}</span></p>}
                       </div>
                     </div>
@@ -1011,7 +1012,7 @@ const historicalAssetsData = useMemo(() => {
                         <div className="flex items-center gap-1">
                           <button disabled={index===0} onClick={()=>moveAccountOrder(index, "up")} className="p-1.5 bg-slate-200/50 dark:bg-slate-800 rounded text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-30"><ArrowUp size={12}/></button>
                           <button disabled={index===accounts.length-1} onClick={()=>moveAccountOrder(index, "down")} className="p-1.5 bg-slate-200/50 dark:bg-slate-800 rounded text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-30"><ArrowDown size={12}/></button>
-                          <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(acc.balance.toString()); setEditAccIsSavings(!!acc.isSavings); setEditAccIsBusiness(!!acc.isBusiness); setEditAccTargetBalance(acc.targetBalance?.toString()||""); setEditAccExcludeFromTotal(!!acc.excludeFromTotal); setEditAccSavingsGoalTitle(acc.savingsGoalTitle||""); setEditIsInv(!!acc.isInvestment); setEditAvgPrice(acc.averageBuyPrice?.toString()||""); setEditLastRate(acc.lastExchangeRate?.toString()||""); if(setEditAccCurrency)setEditAccCurrency(acc.currency||"IDR"); else setLocalEditAccCurrency(acc.currency||"IDR"); }} className="p-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 rounded ml-1 cursor-pointer"><Edit2 size={12}/></button>
+                          <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(Number(acc.balance.toFixed(8)).toString()); setEditAccIsSavings(!!acc.isSavings); setEditAccIsBusiness(!!acc.isBusiness); setEditAccTargetBalance(acc.targetBalance ? Number(acc.targetBalance.toFixed(8)).toString() : ""); setEditAccExcludeFromTotal(!!acc.excludeFromTotal); setEditAccSavingsGoalTitle(acc.savingsGoalTitle||""); setEditIsInv(!!acc.isInvestment); setEditAvgPrice(acc.averageBuyPrice ? Number(acc.averageBuyPrice.toFixed(8)).toString() : ""); setEditLastRate(acc.lastExchangeRate ? Number(acc.lastExchangeRate.toFixed(8)).toString() : ""); if(setEditAccCurrency)setEditAccCurrency(acc.currency||"IDR"); else setLocalEditAccCurrency(acc.currency||"IDR"); }} className="p-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 rounded ml-1 cursor-pointer"><Edit2 size={12}/></button>
                           <button onClick={() => deleteAccount(acc.id, acc.name)} className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 rounded cursor-pointer"><Trash2 size={12}/></button>
                         </div>
                       </div>
@@ -1035,7 +1036,7 @@ const historicalAssetsData = useMemo(() => {
             <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-[20px] border border-amber-200 dark:border-amber-800/50 space-y-3 mb-6">
                <div>
                   <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500">Harga 1 {updatingRateAcc.currency || "UNIT"} saat ini (Rupiah):</p>
-                  <input type="number" autoFocus className="w-full mt-2 p-3 bg-white dark:bg-slate-900 rounded-xl text-lg border border-amber-200 dark:border-amber-700 outline-none font-black text-slate-800 dark:text-white" value={newRateInput} onChange={(e) => setNewRateInput(e.target.value)} />
+                  <input type="text" inputMode="decimal" data-1p-ignore="true" data-lpignore="true" autoComplete="off" autoFocus className="w-full mt-2 p-3 bg-white dark:bg-slate-900 rounded-xl text-lg border border-amber-200 dark:border-amber-700 outline-none font-black text-slate-800 dark:text-white" value={newRateInput} onChange={(e) => { const val = e.target.value.replace(/,/g, ".").replace(/[^0-9.-]/g, ""); setNewRateInput(val); }} />
                </div>
                {newRateInput && (
                  <p className="text-[10px] font-bold text-slate-500">Estimasi Nilai Baru: <span className="font-black text-amber-600 dark:text-amber-400">Rp {(updatingRateAcc.balance * Number(newRateInput)).toLocaleString('id-ID')}</span></p>
