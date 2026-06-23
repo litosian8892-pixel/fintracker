@@ -697,8 +697,8 @@ export default function ReportsTab({
                       <span className="font-bold text-slate-700 dark:text-slate-300 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.name?.trim() ? item.name : "Sistem / Lainnya"}</span>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="font-black text-slate-800 dark:text-slate-200">{pct}%</span>
-                      <span className="font-bold text-slate-400 hidden sm:block w-20 text-right">Rp {item.value.toLocaleString('id-ID')}</span>
+                      <span className="font-black text-slate-800 dark:text-slate-200 w-10 text-right">{pct}%</span>
+                      <span className="font-bold text-slate-400 hidden sm:block min-w-[90px] whitespace-nowrap text-right">Rp {item.value.toLocaleString('id-ID')}</span>
                       <ChevronRight size={14} className="text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
@@ -755,15 +755,13 @@ export default function ReportsTab({
             
             <div className="flex gap-2">
               {/* FILTER TRIP (Custom Premium Button) */}
-              {uniqueTrips.length > 0 && (
-                <button onClick={() => { triggerHaptic(); setShowTripFilter(true); }} className="px-3 py-2 border border-indigo-200 dark:border-indigo-500/30 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 font-bold text-xs flex items-center gap-2 shadow-sm cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/40 active:scale-95 transition-all">
-                  <span>✈️</span> 
-                  <span className="max-w-[80px] truncate block text-left">
-                    {selectedTripFilter === "Non-Travel" ? "Rutin" : selectedTripFilter === "All" ? "Gabungan" : selectedTripFilter}
-                  </span> 
-                  <ChevronDown size={14}/>
-                </button>
-              )}
+              <button onClick={() => { triggerHaptic(); setShowTripFilter(true); }} className="px-3 py-2 border border-indigo-200 dark:border-indigo-500/30 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 font-bold text-xs flex items-center gap-2 shadow-sm cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/40 active:scale-95 transition-all">
+                <span>✈️</span> 
+                <span className="max-w-[80px] truncate block text-left">
+                  {selectedTripFilter === "Non-Travel" ? "Rutin" : selectedTripFilter === "All" ? "Gabungan" : selectedTripFilter}
+                </span> 
+                <ChevronDown size={14}/>
+              </button>
               
               <button onClick={() => { triggerHaptic(); setShowAccountFilter(true); }} className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold text-xs flex items-center gap-2 shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all">
                 <Filter size={14} className={currentTheme.text} /> 
@@ -1094,97 +1092,124 @@ export default function ReportsTab({
         {/* ================= VIEW 2: ANGGARAN ================= */}
         {activeView === "anggaran" && (
           <div className="space-y-6 animate-in fade-in duration-300 text-left">
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-6 opacity-10"><Target size={100} className={currentTheme.text} /></div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-2">Anggaran Tersisa</p>
-              <h2 className={`text-3xl font-black mb-1 ${remainingBudget >= 0 ? "text-slate-800 dark:text-white" : "text-red-500"}`}>
+            {/* 1. KARTU ANGGARAN UTAMA */}
+            <div className={`p-6 rounded-[30px] shadow-lg relative overflow-hidden transition-all duration-300 ${totalBudgetLimit > 0 ? `bg-gradient-to-br ${currentTheme.cardGradient} text-white` : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm'}`}>
+              {totalBudgetLimit > 0 && <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full pointer-events-none"></div>}
+              {totalBudgetLimit > 0 && <Target size={100} className="absolute -right-4 -bottom-4 opacity-10 text-white pointer-events-none" />}
+              
+              <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${totalBudgetLimit > 0 ? 'text-white/80' : 'text-slate-400'}`}>Anggaran Tersisa</p>
+              
+              <h2 className={`text-4xl font-black tracking-tight mb-2 ${totalBudgetLimit > 0 ? (remainingBudget >= 0 ? "text-white" : "text-rose-300") : "text-slate-800 dark:text-white"}`}>
                 Rp {remainingBudget.toLocaleString('id-ID')}
               </h2>
-              <p className="text-[10px] font-bold text-slate-400">
-                Terpakai: Rp {totalSpentOnBudget.toLocaleString('id-ID')} / Limit: Rp {totalBudgetLimit.toLocaleString('id-ID')}
-              </p>
+              
+              <div className={`flex items-center gap-3 text-[11px] font-bold ${totalBudgetLimit > 0 ? 'text-white/80' : 'text-slate-500'}`}>
+                <span>Terpakai: <strong className={totalBudgetLimit > 0 ? "text-white" : "text-slate-700 dark:text-slate-300"}>Rp {totalSpentOnBudget.toLocaleString('id-ID')}</strong></span>
+                <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
+                <span>Limit: <strong className={totalBudgetLimit > 0 ? "text-white" : "text-slate-700 dark:text-slate-300"}>Rp {totalBudgetLimit.toLocaleString('id-ID')}</strong></span>
+              </div>
+              
               {totalBudgetLimit > 0 && (
-                <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-4">
-                  <div className={`h-full ${currentTheme.progressActive}`} style={{ width: `${overallBudgetPercentage}%` }} />
+                <div className="w-full h-2.5 bg-black/20 rounded-full overflow-hidden mt-5 shadow-inner">
+                  <div className={`h-full ${overallBudgetPercentage >= 100 ? 'bg-rose-500' : overallBudgetPercentage >= 80 ? 'bg-amber-400' : 'bg-white'} transition-all duration-1000 ease-out`} style={{ width: `${Math.min(overallBudgetPercentage, 100)}%` }} />
                 </div>
               )}
             </div>
 
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Peta Jalan Anggaran</h3>
-                <button onClick={() => { triggerHaptic(); setShowAutoBudgetModal(true); }} className="px-3.5 py-1.5 bg-indigo-500 text-white font-black text-[10px] rounded-full flex items-center gap-1 cursor-pointer hover:bg-indigo-600 transition-colors active:scale-95 shadow-md shadow-indigo-500/10">
-                  🪄 Alokasi Cerdas
-                </button>
+            {/* 2. KENDALI & DAFTAR ANGGARAN (GABUNGAN) */}
+            <div className="space-y-4 pt-2">
+              {/* Header & Tombol Aksi */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 px-1">
+                <div>
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg leading-tight">Manajemen Anggaran</h3>
+                  <p className="text-[10px] font-bold text-slate-500 mt-1">{budgetCategories.length} kategori diatur</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => { triggerHaptic(); setShowAutoBudgetModal(true); }} className="flex-1 sm:flex-none px-4 py-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-black text-[10px] rounded-xl flex items-center justify-center gap-1.5 cursor-pointer hover:bg-indigo-100 transition-colors active:scale-95 border border-indigo-100 dark:border-indigo-800 shadow-sm">
+                    🪄 Alokasi Cerdas
+                  </button>
+                  <button onClick={() => { triggerHaptic(); setBudgetInput(""); setNewBudgetCat(null); setShowAddBudgetModal(true); }} className={`flex-1 sm:flex-none px-4 py-2.5 text-[10px] font-black border rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-sm ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>
+                    <Plus size={12}/> Buat Manual
+                  </button>
+                </div>
               </div>
 
-              {totalBudgetLimit > 0 ? (
-                <>
-                  <div className="h-40 w-full pt-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={budgetChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="areaBudgetFill" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={currentTheme.budgetLine} stopOpacity={0.15}/>
-                            <stop offset="95%" stopColor={currentTheme.budgetLine} stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.12)" />
-                        <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 8, fontWeight: "bold", fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Area type="monotone" dataKey="Terpakai" stroke={currentTheme.budgetLine} strokeWidth={3} fillOpacity={1} fill="url(#areaBudgetFill)" activeDot={{ r: 6, fill: "#ffffff", stroke: currentTheme.budgetLine, strokeWidth: 2 }} />
-                        <Line type="monotone" dataKey="Target" stroke="#cbd5e1" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                  {safeDailySpend > 0 && (
-                    <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-4 rounded-2xl flex items-center gap-4 border border-indigo-100 dark:border-indigo-900/30">
-                      <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-500"><Activity size={20}/></div>
-                      <div className="text-left"><p className="text-xs font-black text-slate-800 dark:text-slate-200">Batas Jajan Harian Aman</p><p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">Maksimal Rp {Math.floor(safeDailySpend).toLocaleString('id-ID')} / hari untuk bertahan hidup</p></div>
+              {totalBudgetLimit === 0 ? (
+                /* SINGLE EMPTY STATE ELEGAN */
+                <div className="text-center bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 p-8 py-12 flex flex-col items-center justify-center shadow-sm mt-2">
+                  <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center text-3xl mb-5 shadow-inner">🎯</div>
+                  <h4 className="text-base font-black text-slate-800 dark:text-slate-100 mb-2">Anggaran Masih Kosong</h4>
+                  <p className="text-xs text-slate-500 font-bold max-w-[280px] mx-auto mb-0 leading-relaxed">Kamu belum membuat batas anggaran. Buat manual satu per satu, atau gunakan fitur Alokasi Cerdas di atas untuk membaginya secara otomatis!</p>
+                </div>
+              ) : (
+                /* FILLED STATE (GRAFIK + LIST) */
+                <div className="space-y-6">
+                  {/* Grafik Peta Jalan */}
+                  <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Proyeksi Peta Jalan Anggaran</p>
+                    <div className="h-40 w-full pt-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={budgetChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="areaBudgetFill" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor={currentTheme.budgetLine} stopOpacity={0.15}/>
+                              <stop offset="95%" stopColor={currentTheme.budgetLine} stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.12)" />
+                          <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                          <YAxis tickFormatter={(val) => new Intl.NumberFormat('id-ID', { notation: "compact" }).format(val)} tick={{ fontSize: 8, fontWeight: "bold", fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Area type="monotone" dataKey="Terpakai" stroke={currentTheme.budgetLine} strokeWidth={3} fillOpacity={1} fill="url(#areaBudgetFill)" activeDot={{ r: 6, fill: "#ffffff", stroke: currentTheme.budgetLine, strokeWidth: 2 }} />
+                          <Line type="monotone" dataKey="Target" stroke="#cbd5e1" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                        </AreaChart>
+                      </ResponsiveContainer>
                     </div>
-                  )}
-                </>
-              ) : (
-                <div className="p-8 text-center bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl opacity-60"><p className="text-slate-400 text-xs font-bold">Atur anggaran di bawah untuk melihat performa cash-flow.</p></div>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center px-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori Ber-Anggaran</p>
-                <button onClick={() => { triggerHaptic(); setBudgetInput(""); setNewBudgetCat(null); setShowAddBudgetModal(true); }} className={`px-2.5 py-1 text-[9px] font-black border rounded-lg flex items-center gap-1 cursor-pointer ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>
-                  <Plus size={10}/> Set Budget
-                </button>
-              </div>
-
-              {budgetCategories.length === 0 ? (
-                <p className="text-center text-xs text-slate-400 italic py-10 bg-white dark:bg-slate-900 rounded-[30px] border border-slate-100 dark:border-slate-800">Belum ada anggaran bulanan yang dibuat.</p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {budgetCategories.map(cat => {
-                    const spent = expGrouped[cat.name] || 0;
-                    const pct = Math.round((spent / cat.budgetLimit!) * 100);
-                    return (
-                      <div key={cat.id} onClick={() => { triggerHaptic(); setSelectedBudgetCat(cat); setBudgetInput(cat.budgetLimit!.toString()); }} className="bg-white dark:bg-slate-900 p-5 rounded-[24px] shadow-sm cursor-pointer hover:shadow-md transition-all border border-slate-100 dark:border-slate-800 flex flex-col justify-between text-left group">
-                        <div>
-                          <div className="flex justify-between items-start">
-                            <span className="text-xl">{cat.icon || "🏷️"}</span>
-                            <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${pct >= 100 ? 'bg-red-50 text-red-500 border-red-200 dark:bg-red-900/30' : pct >= 80 ? 'bg-amber-50 text-amber-500 border-amber-200 dark:bg-amber-900/30' : `${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}`}>{pct}%</span>
-                          </div>
-                          <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 mt-3 truncate">{cat.name}</h4>
-                          <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">{cat.expenseType === 'fixed' ? 'Fixed (Tetap)' : 'Variable'}</p>
-                          <div className="flex items-baseline gap-1 mt-2">
-                            <p className="text-base font-black text-slate-800 dark:text-white">Rp {spent.toLocaleString('id-ID')}</p>
-                            <p className="text-[10px] font-bold text-slate-400">/ Rp {cat.budgetLimit!.toLocaleString('id-ID')}</p>
-                          </div>
-                        </div>
-                        <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-4">
-                          <div className={`h-full ${pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : currentTheme.budgetFill}`} style={{ width: `${Math.min(pct, 100)}%` }} />
-                        </div>
+                    {safeDailySpend > 0 && (
+                      <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-4 rounded-2xl flex items-center gap-4 border border-indigo-100 dark:border-indigo-900/30">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-500 shrink-0"><Activity size={20}/></div>
+                        <div className="text-left"><p className="text-xs font-black text-slate-800 dark:text-slate-200">Batas Jajan Harian Aman</p><p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">Maksimal Rp {Math.floor(safeDailySpend).toLocaleString('id-ID')} / hari untuk bertahan hidup</p></div>
                       </div>
-                    )
-                  })}
+                    )}
+                  </div>
+
+                  {/* Grid Kategori */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {budgetCategories.map(cat => {
+                      const spent = expGrouped[cat.name] || 0;
+                      const pct = Math.round((spent / cat.budgetLimit!) * 100);
+                      const isOver = pct >= 100;
+                      const isWarning = pct >= 80 && pct < 100;
+                      
+                      return (
+                        <div key={cat.id} onClick={() => { triggerHaptic(); setSelectedBudgetCat(cat); setBudgetInput(cat.budgetLimit!.toString()); }} className={`p-5 rounded-[24px] shadow-sm cursor-pointer hover:shadow-md transition-all border flex flex-col justify-between text-left group bg-white dark:bg-slate-900 ${isOver ? 'border-rose-200 dark:border-rose-900/50' : isWarning ? 'border-amber-200 dark:border-amber-900/50' : 'border-slate-200 dark:border-slate-800'}`}>
+                          <div>
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex items-center gap-3">
+                                <span className="text-2xl">{cat.icon || "🏷️"}</span>
+                                <div>
+                                  <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 truncate">{cat.name}</h4>
+                                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase mt-1 inline-block ${cat.expenseType === 'fixed' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30' : 'bg-orange-100 text-orange-600 dark:bg-orange-900/30'}`}>
+                                    {cat.expenseType === 'fixed' ? 'Fixed (Tetap)' : 'Variable'}
+                                  </span>
+                                </div>
+                              </div>
+                              <span className={`text-[10px] font-black px-2 py-1 rounded-lg border ${isOver ? 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:border-rose-800/50' : isWarning ? 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:border-amber-800/50' : `${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}`}>
+                                {pct}%
+                              </span>
+                            </div>
+                            <div className="flex items-baseline gap-1.5 mt-4">
+                              <p className={`text-lg font-black ${isOver ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>Rp {spent.toLocaleString('id-ID')}</p>
+                              <p className="text-[10px] font-bold text-slate-400">/ Rp {cat.budgetLimit!.toLocaleString('id-ID')}</p>
+                            </div>
+                          </div>
+                          <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-4 shadow-inner">
+                            <div className={`h-full ${isOver ? 'bg-rose-500' : isWarning ? 'bg-amber-500' : currentTheme.budgetFill} transition-all duration-1000 ease-out`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -1194,65 +1219,237 @@ export default function ReportsTab({
         {/* ================= VIEW 3: LAPORAN ================= */}
         {activeView === "laporan" && (
           <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-slate-900 p-5 rounded-[24px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">Pencarian Mutasi Cerdas</p>
-              <div className="relative">
-                <Filter className="absolute left-3 top-3 text-slate-400" size={16} />
-                <input type="text" placeholder="Ketik apa saja (gaji, kopi, bca)..." className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white" value={globalSearch} onChange={(e) => setGlobalSearch(e.target.value)} />
+            
+            {/* DASHBOARD ANALITIK LAPORAN (NEW) */}
+            <div className="space-y-4 mb-8">
+              {/* 1. Aktivitas Pengeluaran Card */}
+              <div className="bg-blue-900 text-white p-6 rounded-[30px] shadow-lg relative overflow-hidden">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="font-bold text-blue-100 text-sm">Aktivitas Pengeluaran</h3>
+                    <p className="font-black text-xl">{new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'short', year: 'numeric'})}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-4 mb-6">
+                  <div>
+                    <p className="font-black text-lg">Rp {localTotalExpense.toLocaleString('id-ID')}</p>
+                    <p className="text-[10px] text-blue-200 font-bold">Pengeluaran</p>
+                  </div>
+                  {localPieData.slice(0, 2).map((cat, i) => (
+                    <div key={i}>
+                      <p className="font-black text-lg">Rp {cat.value.toLocaleString('id-ID')}</p>
+                      <p className="text-[10px] text-blue-200 font-bold truncate max-w-[100px]">{cat.name}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="h-32 w-full -mx-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={dailyCumulativeData} margin={{top: 5, right: 0, left: 0, bottom: 0}}>
+                      <defs>
+                        <linearGradient id="colorDailyExp" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ffffff" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#ffffff" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+                      <Area type="monotone" dataKey="DailyExp" stroke="#ffffff" strokeWidth={2} fillOpacity={1} fill="url(#colorDailyExp)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-between text-[10px] font-bold text-blue-200 mt-2">
+                  <span>1 {new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'short'})}</span>
+                  <span>{daysInMonth} {new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'short'})}</span>
+                </div>
               </div>
-            </div>
 
-            {globalSearch.trim() && (
-              <div className="space-y-2 animate-in slide-in-from-top-2">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Hasil Pencarian ({searchResult.length})</p>
-                {searchResult.length === 0 ? (
-                  <p className="text-center py-10 text-slate-400 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100">Tidak ada transaksi yang cocok.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {searchResult.map(t => {
-                      const isInc = t.type === 'income'; const isTr = t.type === 'transfer';
+              {/* 2. Arus Kas Bulanan */}
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] shadow-sm border border-slate-200 dark:border-slate-800 transition-colors">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Ringkasan</p>
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-6">Arus Kas Bulanan</h3>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="font-black text-sm text-slate-800 dark:text-slate-100">Rp {localTotalIncome.toLocaleString('id-ID')}</span></div>
+                    <p className="text-[10px] font-bold text-slate-500 ml-4">Pemasukan</p>
+                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden"><div className="h-full bg-emerald-500 transition-all duration-1000" style={{width: localTotalIncome > 0 ? '100%' : '0%'}}></div></div>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1"><div className="w-2 h-2 rounded-full bg-red-500"></div><span className="font-black text-sm text-slate-800 dark:text-slate-100">Rp {localTotalExpense.toLocaleString('id-ID')}</span></div>
+                    <p className="text-[10px] font-bold text-slate-500 ml-4">Pengeluaran</p>
+                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden"><div className="h-full bg-red-500 transition-all duration-1000" style={{width: localTotalIncome > 0 ? `${Math.min((localTotalExpense/localTotalIncome)*100, 100)}%` : (localTotalExpense > 0 ? '100%' : '0%')}}></div></div>
+                  </div>
+                </div>
+                <div className={`mt-6 p-4 rounded-2xl ${localTotalIncome >= localTotalExpense ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300'} font-bold text-[11px] leading-relaxed border ${localTotalIncome >= localTotalExpense ? 'border-emerald-100 dark:border-emerald-800/30' : 'border-slate-200 dark:border-slate-700'}`}>
+                  Pada {new Date(reportMonth + "-01").toLocaleDateString('id-ID', {month: 'short', year: 'numeric'})}, arus kas bulanan Anda {localTotalIncome >= localTotalExpense ? 'positif' : 'negatif'}. Anda {localTotalIncome >= localTotalExpense ? 'menyimpan' : 'membelanjakan lebih sebesar'} Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}.
+                </div>
+              </div>
+
+              {/* 3. Income vs Expense (Cumulative) & Health Score */}
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] shadow-sm border border-slate-200 dark:border-slate-800 transition-colors">
+                <div className="flex justify-between items-end mb-6">
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Income vs Expense</h3>
+                  <span className="text-[10px] font-bold text-slate-400">Cumulative</span>
+                </div>
+                <div className="flex gap-4 mb-4 text-[10px] font-bold">
+                  <div className="flex items-center gap-1.5"><div className="w-3 h-1 rounded bg-emerald-500"></div><span className="text-slate-500 dark:text-slate-400">Pemasukan</span><span className="text-emerald-600 dark:text-emerald-400">Rp {localTotalIncome.toLocaleString('id-ID')}</span></div>
+                  <div className="flex items-center gap-1.5"><div className="w-3 h-1 rounded bg-red-500"></div><span className="text-slate-500 dark:text-slate-400">Pengeluaran</span><span className="text-red-500">Rp {localTotalExpense.toLocaleString('id-ID')}</span></div>
+                </div>
+                <div className="h-48 w-full -ml-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={dailyCumulativeData} margin={{top: 5, right: 0, left: 20, bottom: 0}}>
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#94a3b8", fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                      <YAxis width={65} tickFormatter={(val) => val.toLocaleString('id-ID')} tick={{ fontSize: 9, fill: "#94a3b8", fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Area type="step" dataKey="Pemasukan" stroke="#10b981" fill="none" strokeWidth={2} />
+                      <Area type="step" dataKey="Pengeluaran" stroke="#ef4444" fill="#ef4444" fillOpacity={0.1} strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Ringkasan</p>
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Financial Health Score</h3>
+                      <span className={`inline-block mt-1 px-2.5 py-1 rounded-full text-[9px] font-black border ${healthStatus.bg.includes('red') ? 'border-red-200 dark:border-red-800/50' : healthStatus.bg.includes('emerald') ? 'border-emerald-200 dark:border-emerald-800/50' : 'border-amber-200 dark:border-amber-800/50'} ${healthStatus.bg} ${healthStatus.color}`}>{healthStatus.text}</span>
+                    </div>
+                    <div className="relative w-16 h-16 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                        <path className="text-slate-100 dark:text-slate-800" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={healthStatus.stroke} strokeWidth="4" strokeDasharray={`${healthScore}, 100`} />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className={`text-lg font-black ${healthStatus.color}`}>{healthScore}</span>
+                        <span className="text-[7px] font-bold text-slate-400 -mt-1">/100</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 mb-6">
+                    <div className={`flex-1 p-4 rounded-2xl flex flex-col justify-center border transition-colors ${localTotalIncome >= localTotalExpense ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/20' : 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/20'}`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-2 ${localTotalIncome >= localTotalExpense ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500' : 'bg-red-100 dark:bg-red-900/30 text-red-500'}`}>
+                        {localTotalIncome >= localTotalExpense ? <TrendingUp size={12}/> : <TrendingDown size={12}/>}
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                        {localTotalIncome >= localTotalExpense ? 'Net Surplus' : 'Net Deficit'}
+                      </p>
+                      <p className={`text-sm font-black ${localTotalIncome >= localTotalExpense ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-500'}`}>
+                        Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <div className="flex-1 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl flex flex-col justify-center items-end text-right border border-slate-100 dark:border-slate-800">
+                      <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">vs prev period</p>
+                      <p className="text-sm font-black text-slate-600 dark:text-slate-300 flex items-center gap-1 mt-1">
+                        {localTotalExpense > localPrevTotalExpense ? <ArrowUp size={12} className="text-red-500"/> : <ArrowDown size={12} className="text-emerald-500"/>} 
+                        {localPrevTotalExpense > 0 ? Math.abs(Math.round(((localTotalExpense - localPrevTotalExpense)/localPrevTotalExpense)*100)) : 0}%
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-2"><div className="w-5 h-5 rounded flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-[10px]">🐖</div> Savings Rate</span>
+                      <div className="flex items-center gap-3"><span className="font-black text-slate-800 dark:text-slate-200">{savingsRate.toFixed(1)}%</span><div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full"><div className="h-full bg-slate-400 dark:bg-slate-500 rounded-full" style={{width: `${Math.min(savingsRate, 100)}%`}}></div></div></div>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-2"><div className="w-5 h-5 rounded flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-[10px]">📉</div> Expense Control</span>
+                      <div className="flex items-center gap-3"><span className="font-black text-red-500 flex items-center"><ArrowDown size={10}/> {(100-expenseControlScore).toFixed(1)}%</span><div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full"><div className="h-full bg-slate-400 dark:bg-slate-500 rounded-full" style={{width: `${expenseControlScore}%`}}></div></div></div>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-2"><div className="w-5 h-5 rounded flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-[10px]">📅</div> Tracking Consistency</span>
+                      <div className="flex items-center gap-3"><span className="font-black text-slate-500 text-[9px]">{trackedDays}/{daysInMonth} hari</span><div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full"><div className="h-full bg-red-400 rounded-full" style={{width: `${(trackedDays/daysInMonth)*100}%`}}></div></div></div>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-2"><div className="w-5 h-5 rounded flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-[10px]">🏛️</div> Diversification</span>
+                      <div className="flex items-center gap-3"><span className="font-black text-slate-500 text-[9px]">{Object.keys(incGrouped).length} sources</span><div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full"><div className="h-full bg-slate-400 dark:bg-slate-500 rounded-full" style={{width: `${Math.min((Object.keys(incGrouped).length/5)*100, 100)}%`}}></div></div></div>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-600 dark:text-slate-300 font-bold flex items-center gap-2"><div className="w-5 h-5 rounded flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-[10px]">⊕</div> Progres Anggaran</span>
+                      <div className="flex items-center gap-3"><span className="font-black text-slate-500 text-[9px]">{budgetCategories.length} limit</span><div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full"><div className="h-full bg-red-400 rounded-full" style={{width: `${Math.min((budgetCategories.length/5)*100, 100)}%`}}></div></div></div>
+                    </div>
+                  </div>
+
+                  {healthScore < 50 && (
+                    <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex items-start gap-3 border border-slate-200 dark:border-slate-800">
+                      <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
+                      <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300 leading-relaxed">Kesehatan finansial perlu perhatian. Mulailah dengan melacak setiap pengeluaran.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 4. Income & Expense Breakdown */}
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] shadow-sm border border-slate-200 dark:border-slate-800 transition-colors">
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-1">Income & Expense Breakdown</h3>
+                <p className="text-[10px] font-bold text-slate-400 mb-6">Top categories by amount</p>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center font-black text-sm mb-4">
+                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div><span className="text-slate-800 dark:text-slate-100">Pengeluaran</span></div>
+                    <span className="text-red-500">Rp {localTotalExpense.toLocaleString('id-ID')}</span>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    {(showAllExpCategories ? localPieData : localPieData.slice(0, 5)).map((cat, i) => {
+                      const pct = localTotalExpense > 0 ? (cat.value / localTotalExpense) * 100 : 0;
+                      // Logika Pintar: Cari emoji custom user, kalau tidak ada baru pakai default
+                      const catIcon = categories.find(c => c.name === cat.name)?.icon || getCategoryIcon(cat.name);
+                      
                       return (
-                        <div key={t.id} className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex justify-between items-center text-left">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-sm">{getCategoryIcon(t.category)}</div>
-                            <div>
-                              <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block">{t.category}</span>
-                              <span className="text-[9px] font-bold text-slate-400">{new Date(`${t.tDate}T12:00:00`).toLocaleDateString('id-ID', {day:'numeric', month:'short'})} • {isTr ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName} {t.note ? `• ${t.note}` : ''}</span>
-                            </div>
+                        <div key={i} onClick={() => { triggerHaptic(); setSelectedCategoryDetail({name: cat.name, type: 'expense'}); }} className="space-y-2 cursor-pointer group p-2 -mx-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors active:scale-95">
+                          <div className="flex justify-between items-start text-xs gap-4">
+                            <span className="font-bold text-slate-600 dark:text-slate-300 flex items-start gap-2 flex-1">
+                              <div className="w-6 h-6 shrink-0 rounded-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-white dark:group-hover:bg-slate-700 transition-colors text-sm">{catIcon}</div>
+                              <span className="leading-tight mt-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{cat.name}</span>
+                            </span>
+                            <span className="font-black text-slate-800 dark:text-slate-200 shrink-0 text-right mt-1">
+                              {pct.toFixed(1)}% <span className="text-slate-400 dark:text-slate-500 ml-1 block sm:inline">Rp {cat.value.toLocaleString('id-ID')}</span>
+                            </span>
                           </div>
-                          <span className={`font-black text-xs shrink-0 ${isInc ? 'text-emerald-600' : isTr ? 'text-blue-500' : 'text-rose-500'}`}>{isInc ? '+' : '-'}${(t.splits?.reduce((s,x)=>s+x.amount,0)||t.amount).toLocaleString('id-ID')}</span>
+                          <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length]}}></div></div>
                         </div>
                       )
                     })}
                   </div>
-                )}
-              </div>
-            )}
 
-            {!globalSearch.trim() && (
-              <div className="space-y-3">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 text-left">Daftar Transaksi Bulanan</p>
-                {currentMonthTxs.length === 0 ? (
-                  <p className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800">Tidak ada transaksi tercatat pada periode ini.</p>
-                ) : (
-                  currentMonthTxs.sort((a,b)=>new Date(b.tDate).getTime() - new Date(a.tDate).getTime()).map(t => {
-                    const isInc = t.type === 'income'; const isTr = t.type === 'transfer';
-                    return (
-                      <div key={t.id} className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex justify-between items-center text-left transition-colors">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-sm shrink-0">{getCategoryIcon(t.category)}</div>
-                          <div className="min-w-0">
-                            <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block">{t.category}</span>
-                            <span className="text-[9px] font-bold text-slate-400 block truncate max-w-[180px] sm:max-w-xs">{new Date(`${t.tDate}T12:00:00`).toLocaleDateString('id-ID', {day:'numeric', month:'short'})} • {isTr ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName} {t.note ? `• ${t.note}` : ''}</span>
-                          </div>
-                        </div>
-                        <span className={`font-black text-xs shrink-0 pl-2 ${isInc ? 'text-emerald-500' : isTr ? 'text-blue-500' : 'text-rose-500'}`}>{isInc ? '+' : '-'}{(t.splits?.reduce((s,x)=>s+x.amount,0)||t.amount).toLocaleString('id-ID')}</span>
-                      </div>
-                    )
-                  })
-                )}
+                  {localPieData.length > 5 && (
+                    <button onClick={() => { triggerHaptic(); setShowAllExpCategories(!showAllExpCategories); }} className="w-full mt-2 py-2.5 text-[10px] font-bold text-blue-500 dark:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors border border-dashed border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95">
+                      {showAllExpCategories ? "↑ Sembunyikan" : `Tampilkan ${localPieData.length - 5} Kategori Lainnya ↓`}
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
+
+              {/* 5. Spending by Day of Week */}
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] shadow-sm border border-slate-200 dark:border-slate-800 transition-colors">
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-1">Spending by Day of Week</h3>
+                <p className="text-[10px] font-bold text-slate-400 mb-6">Peak spending day: {dowFullNames[peakDayIdx]}</p>
+                <div className="h-40 w-full mb-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ReBarChart data={dowChartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: "bold", fill: "#94a3b8" }} dy={10} />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} />
+                      <Bar dataKey="Pengeluaran" radius={[4, 4, 4, 4]}>
+                        {dowChartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.fill} />))}
+                      </Bar>
+                    </ReBarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex border-t border-slate-100 dark:border-slate-800 pt-4">
+                  <div className="flex-1 text-center border-r border-slate-100 dark:border-slate-800">
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Weekdays</p>
+                    <p className="text-sm font-black text-slate-800 dark:text-slate-200 mt-0.5">Rp {Math.round((dowData[1]+dowData[2]+dowData[3]+dowData[4]+dowData[5])/5 / 1000)}K</p>
+                    <p className="text-[8px] font-bold text-slate-400">avg/day</p>
+                  </div>
+                  <div className="flex-1 text-center">
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Weekends</p>
+                    <p className="text-sm font-black text-slate-800 dark:text-slate-200 mt-0.5">Rp {Math.round((dowData[0]+dowData[6])/2 / 1000)}K</p>
+                    <p className="text-[8px] font-bold text-slate-400">avg/day</p>
+                  </div>
+                </div>
+              </div>
+              
+              </div>
+            {/* END DASHBOARD ANALITIK LAPORAN */}
+
           </div>
         )}
 
@@ -1274,21 +1471,46 @@ export default function ReportsTab({
                   
                   <div className="grid grid-cols-7 gap-1 md:gap-2">
                     {Array.from({length: firstDayOfWeek}).map((_, i) => (<div key={`empty-${i}`} className="aspect-square bg-slate-50/50 dark:bg-slate-800/10 rounded-xl font-bold"></div>))}
-                    {Array.from({length: daysInMonth}).map((_, i) => {
-                      const d = i + 1; const dateStr = `${reportMonth}-${String(d).padStart(2, '0')}`; const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
-                      const inc = dailyIncomeMap[dateStr] || 0; const exp = dailyExpenseMap[dateStr] || 0; const hasData = inc > 0 || exp > 0;
-                      return (
-                        <div key={d} onClick={() => { if(hasData) { triggerHaptic(); setSelectedHeatmapDate(dateStr); } }} className={`aspect-square p-1 md:p-2 rounded-xl flex flex-col justify-between transition-all ${hasData ? 'cursor-pointer hover:scale-105 hover:shadow-md hover:z-10' : ''} ${isToday ? 'bg-blue-50 border-2 border-blue-500 dark:bg-blue-900/20' : hasData ? 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm' : 'bg-slate-50/50 dark:bg-slate-800/30 border border-transparent'}`}>
-                          <span className={`text-[10px] md:text-xs font-black ${isToday ? 'text-blue-600' : 'text-slate-700 dark:text-slate-300'} ${!hasData && !isToday ? 'opacity-40' : ''}`}>{d}</span>
-                          {hasData && (
-                            <div className="flex flex-col gap-0.5 mt-auto">
-                              {inc > 0 && <span className="text-[7px] opacity-85 font-black text-emerald-500 truncate leading-none">+{inc.toLocaleString('id-ID')}</span>}
-                              {exp > 0 && <span className="text-[7px] opacity-85 font-black text-red-500 truncate leading-none">-{exp.toLocaleString('id-ID')}</span>}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {(() => {
+                      // Analisis Puncak Pemasukan & Pengeluaran untuk Skala Heatmap
+                      const maxExp = Math.max(...(Object.values(dailyExpenseMap).length ? Object.values(dailyExpenseMap) : [1]));
+                      const maxInc = Math.max(...(Object.values(dailyIncomeMap).length ? Object.values(dailyIncomeMap) : [1]));
+                      
+                      return Array.from({length: daysInMonth}).map((_, i) => {
+                        const d = i + 1; const dateStr = `${reportMonth}-${String(d).padStart(2, '0')}`; const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
+                        const inc = dailyIncomeMap[dateStr] || 0; const exp = dailyExpenseMap[dateStr] || 0; const hasData = inc > 0 || exp > 0;
+                        
+                        // Logika Level Warna Heatmap (Merah = Defisit, Hijau = Surplus)
+                        let heatClass = 'bg-slate-50/50 dark:bg-slate-800/30 border border-transparent';
+                        if (hasData) {
+                          if (exp > inc) {
+                            const ratio = exp / maxExp;
+                            if (ratio > 0.66) heatClass = 'bg-red-100 border-red-200 dark:bg-red-900/40 dark:border-red-800 shadow-sm';
+                            else if (ratio > 0.33) heatClass = 'bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-900/50 shadow-sm';
+                            else heatClass = 'bg-orange-50/30 border-orange-100/50 dark:bg-orange-900/10 dark:border-orange-900/30 shadow-sm';
+                          } else {
+                            const ratio = inc / maxInc;
+                            if (ratio > 0.66) heatClass = 'bg-emerald-100 border-emerald-200 dark:bg-emerald-900/40 dark:border-emerald-800 shadow-sm';
+                            else if (ratio > 0.33) heatClass = 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-900/50 shadow-sm';
+                            else heatClass = 'bg-teal-50/30 border-teal-100/50 dark:bg-teal-900/10 dark:border-teal-900/30 shadow-sm';
+                          }
+                        }
+                        
+                        const todayClass = isToday ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-900 z-10' : '';
+
+                        return (
+                          <div key={d} onClick={() => { if(hasData) { triggerHaptic(); setSelectedHeatmapDate(dateStr); } }} className={`aspect-square p-1 md:p-1.5 rounded-xl flex flex-col justify-between transition-all ${todayClass} ${hasData ? 'cursor-pointer hover:scale-110 hover:shadow-xl hover:z-20' : ''} ${heatClass}`}>
+                            <span className={`text-[10px] md:text-xs font-black ${isToday ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'} ${!hasData && !isToday ? 'opacity-40' : ''}`}>{d}</span>
+                            {hasData && (
+                              <div className="flex flex-col mt-auto w-full">
+                                {inc > 0 && <span className="text-[9px] md:text-[10px] tracking-tighter opacity-90 font-black text-emerald-600 dark:text-emerald-400 truncate w-full leading-tight">+{inc.toLocaleString('id-ID')}</span>}
+                                {exp > 0 && <span className="text-[9px] md:text-[10px] tracking-tighter opacity-90 font-black text-red-600 dark:text-red-400 truncate w-full leading-tight">-{exp.toLocaleString('id-ID')}</span>}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </>
               ) : (
@@ -1439,41 +1661,52 @@ export default function ReportsTab({
         )}
 
         {/* 3. BOTTOM SHEET RINCIAN TRANSAKSI PER KATEGORI */}
-        {selectedCategoryDetail && (
-          <div className="fixed inset-0 z-[150] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedCategoryDetail(null)}>
-            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
-              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
-              <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start shrink-0">
-                <div>
-                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{selectedCategoryDetail.name?.trim() ? selectedCategoryDetail.name : "Sistem / Lainnya"}</h3>
-                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Rincian riwayat kategori periode ini</p>
-                </div>
-                <button onClick={() => setSelectedCategoryDetail(null)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
-              </div>
-              <div className="p-6 overflow-y-auto space-y-3">
-                {(() => {
-                  const catTxs = (selectedCategoryDetail.type === 'expense' ? expenseTxs : incomeTxs)
-                    .filter(t => t.category === selectedCategoryDetail.name)
-                    .sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime());
-                  
-                  if(catTxs.length === 0) return <p className="text-center text-xs text-slate-400 dark:text-slate-500 italic py-4">Tidak ada riwayat untuk kategori ini.</p>;
+        {selectedCategoryDetail && (() => {
+          const catTxs = (selectedCategoryDetail.type === 'expense' ? expenseTxs : incomeTxs)
+            .filter(t => t.category === selectedCategoryDetail.name)
+            .sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime());
+          
+          const totalAmount = catTxs.reduce((sum, t) => sum + t.amount, 0);
 
-                  return catTxs.map(t => (
-                    <div key={t.id} className="flex justify-between items-center text-xs p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                      <div className="flex flex-col text-left">
-                        <span className="font-bold text-slate-800 dark:text-slate-200 mb-1">{new Date(t.tDate).toLocaleDateString('id-ID', {weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'})}</span>
-                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate max-w-[180px]">{t.accountName} {t.note ? `• ${t.note}` : ''}</span>
-                      </div>
-                      <span className={`font-black shrink-0 ${selectedCategoryDetail.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
-                        {selectedCategoryDetail.type === 'income' ? '+' : '-'}Rp {t.amount.toLocaleString('id-ID')}
+          return (
+            <div className="fixed inset-0 z-[150] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedCategoryDetail(null)}>
+              <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+                <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
+                
+                <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start shrink-0">
+                  <div className="pr-4">
+                    <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg leading-tight mb-1">{selectedCategoryDetail.name?.trim() ? selectedCategoryDetail.name : "Sistem / Lainnya"}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Total:</span>
+                      <span className={`text-[11px] font-black px-2 py-0.5 rounded-md ${selectedCategoryDetail.type === 'income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                        {selectedCategoryDetail.type === 'income' ? '+' : '-'}Rp {totalAmount.toLocaleString('id-ID')}
                       </span>
                     </div>
-                  ));
-                })()}
+                  </div>
+                  <button onClick={() => setSelectedCategoryDetail(null)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors shrink-0"><X size={16}/></button>
+                </div>
+                
+                <div className="p-6 overflow-y-auto no-scrollbar space-y-3">
+                  {catTxs.length === 0 ? (
+                    <p className="text-center text-xs text-slate-400 dark:text-slate-500 italic py-4">Tidak ada riwayat untuk kategori ini.</p>
+                  ) : (
+                    catTxs.map(t => (
+                      <div key={t.id} className="flex justify-between items-center text-xs p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <div className="flex flex-col text-left">
+                          <span className="font-bold text-slate-800 dark:text-slate-200 mb-1">{new Date(t.tDate).toLocaleDateString('id-ID', {weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'})}</span>
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate max-w-[180px]">{t.accountName} {t.note ? `• ${t.note}` : ''}</span>
+                        </div>
+                        <span className={`font-black shrink-0 ${selectedCategoryDetail.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {selectedCategoryDetail.type === 'income' ? '+' : '-'}Rp {t.amount.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ================= BOTTOM SHEETS MODAL ANGGARAN BARU & EDIT ================= */}
         {(selectedBudgetCat || showAddBudgetModal) && (
@@ -1612,7 +1845,7 @@ export default function ReportsTab({
                 {!autoBudgetPreview ? (
                   <div className="space-y-4 animate-in fade-in duration-300">
                     <div className="bg-indigo-50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 leading-relaxed text-center">
-                      Halo! Periode ini tersisa <span className="font-black text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded">{daysRemaining} Hari</span> lagi. Untuk bertahan hidup dengan aman, berapa sisa uang Anda saat ini?
+                      Halo! Periode ini tersisa <span className="font-black text-indigo-950 dark:text-white underline decoration-indigo-300 dark:decoration-indigo-700 underline-offset-2">{daysRemaining} Hari</span> lagi. Untuk bertahan hidup dengan aman, berapa sisa uang Anda saat ini?
                     </div>
                     
                     <div className="space-y-1">

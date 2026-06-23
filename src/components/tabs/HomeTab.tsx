@@ -554,11 +554,43 @@ export default function HomeTab({
     let filtered = transactions;
     if (!searchQueryInput.trim() || !searchAllMonths) { filtered = filtered.filter(t => t.tDate && t.tDate.startsWith(reportMonth)); }
     if (selectedAccountIdFilter !== "all") { filtered = filtered.filter(t => t.accountId === selectedAccountIdFilter || t.toAccountId === selectedAccountIdFilter); }
-    if (searchQueryInput.trim()) { const q = searchQueryInput.toLowerCase(); filtered = filtered.filter(t => (t.note && t.note.toLowerCase().includes(q)) || t.category.toLowerCase().includes(q)); }
+    if (searchQueryInput.trim()) { 
+      const q = searchQueryInput.toLowerCase(); 
+      filtered = filtered.filter(t => 
+        (t.note && t.note.toLowerCase().includes(q)) || 
+        (t.category && t.category.toLowerCase().includes(q)) ||
+        (t.accountName && t.accountName.toLowerCase().includes(q)) ||
+        (t.toAccountName && t.toAccountName.toLowerCase().includes(q)) ||
+        (t.splits && t.splits.some(s => (s.category && s.category.toLowerCase().includes(q)) || (s.note && s.note.toLowerCase().includes(q))))
+      ); 
+    }
     return filtered;
   }, [transactions, reportMonth, selectedAccountIdFilter, searchQueryInput, searchAllMonths]);
 
-  const monthlySummary = useMemo(() => { let income = 0; let expense = 0; monthlyTransactions.forEach(t => { if (t.type === "income") income += t.amount; else if (t.type === "expense") expense += t.amount; if (t.type === "transfer" && t.adminFee) expense += t.adminFee; }); return { income, expense }; }, [monthlyTransactions]);
+  const monthlySummary = useMemo(() => { 
+    let income = 0; let expense = 0; 
+    const q = searchQueryInput.trim().toLowerCase();
+    
+    monthlyTransactions.forEach(t => { 
+      if (q && t.splits && t.splits.length > 0) {
+        // Logika Pintar: Jika sedang mencari, dan ini transaksi pecah, hitung persis bagian pecahannya saja
+        const isParentMatch = (t.note && t.note.toLowerCase().includes(q)) || (t.accountName && t.accountName.toLowerCase().includes(q)) || (t.toAccountName && t.toAccountName.toLowerCase().includes(q));
+        if (isParentMatch) {
+          if (t.type === "income") income += t.amount; else if (t.type === "expense") expense += t.amount;
+        } else {
+          t.splits.forEach(s => {
+            if ((s.category && s.category.toLowerCase().includes(q)) || (s.note && s.note.toLowerCase().includes(q))) {
+              if (t.type === "income") income += s.amount; else if (t.type === "expense") expense += s.amount;
+            }
+          });
+        }
+      } else {
+        if (t.type === "income") income += t.amount; else if (t.type === "expense") expense += t.amount; 
+      }
+      if (t.type === "transfer" && t.adminFee) expense += t.adminFee; 
+    }); 
+    return { income, expense }; 
+  }, [monthlyTransactions, searchQueryInput]);
 
   const smartInsight = useMemo(() => {
     // UX Premium: Hindari teks kosong fiktif saat cold start, ganti dengan sapaan asisten menganalisis
