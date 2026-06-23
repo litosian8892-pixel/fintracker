@@ -115,6 +115,7 @@ export default function FintrackerApp() {
   
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
   const [reportTransactions, setReportTransactions] = useState<TransactionData[]>([]);
+  const [isReportLoading, setIsReportLoading] = useState(true); // UX: State loading khusus laporan bulanan
   
   const [txLimit, setTxLimit] = useState(10);
   const [reportMonth, setReportMonth] = useState(() => getLocalDateString().slice(0, 7)); 
@@ -487,6 +488,7 @@ export default function FintrackerApp() {
   useEffect(() => {
     if (!user || (activeTab !== "reports" && activeTab !== "assets" && activeTab !== "home")) return; 
     
+    setIsReportLoading(true); // Pancing skeleton kembali saat ganti bulan/tab
     let unsubReport: (() => void) | null = null;
 
     // 3. JALUR NON-KRITIS BERAT (DETIK 1.5): Tunda penarikan transaksi bulanan yang super banyak
@@ -524,10 +526,11 @@ export default function FintrackerApp() {
             return isNaN(parsed) ? Date.now() : parsed;
           };
           return getMillis(b.createdAt) - getMillis(a.createdAt);
-        }); 
-        setReportTransactions(data);
-      });
-    }, 1500);
+          }); 
+          setReportTransactions(data);
+          setIsReportLoading(false); // Matikan loading skeleton setelah data masuk dari database
+        });
+      }, 1500);
 
     return () => {
       clearTimeout(reportTimer);
@@ -1164,6 +1167,7 @@ export default function FintrackerApp() {
                 toggleTravelMode={handleToggleTravelMode}
                 activeTripName={activeTripName}
                 updateTripName={handleUpdateTripName}
+                isReportLoading={isReportLoading} // UX: Teruskan status loading agar beranda tahu kapan harus nampilin skeleton
               />
             )}
             {activeTab === "reports" && (

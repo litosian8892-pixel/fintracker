@@ -80,6 +80,7 @@ interface HomeTabProps {
   toggleTravelMode?: (val: boolean) => void;
   activeTripName?: string;
   updateTripName?: (val: string) => void;
+  isReportLoading?: boolean; // Props baru
 }
 
 const themeMap = {
@@ -320,7 +321,7 @@ const AnimatedNumber = ({ value, isPrivacyMode, prefix = "Rp ", privacyText = "R
 };
 
 export default function HomeTab({
-  reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory, isTravelMode, toggleTravelMode, activeTripName, updateTripName
+  reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory, isTravelMode, toggleTravelMode, activeTripName, updateTripName, isReportLoading
 }: HomeTabProps) {
   const parseTime12 = (timeStr: string) => {
     if (!timeStr) return { hour12: "12", minute: "00", period: "PM" };
@@ -560,6 +561,8 @@ export default function HomeTab({
   const monthlySummary = useMemo(() => { let income = 0; let expense = 0; monthlyTransactions.forEach(t => { if (t.type === "income") income += t.amount; else if (t.type === "expense") expense += t.amount; if (t.type === "transfer" && t.adminFee) expense += t.adminFee; }); return { income, expense }; }, [monthlyTransactions]);
 
   const smartInsight = useMemo(() => {
+    // UX Premium: Hindari teks kosong fiktif saat cold start, ganti dengan sapaan asisten menganalisis
+    if (isReportLoading) return { text: "Fintracker Assistant sedang menganalisis kesehatan keuanganmu...", icon: "🧠", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50/50 dark:bg-indigo-950/20", border: "border-indigo-100/30 dark:border-indigo-900/30" };
     if (monthlyTransactions.length === 0) return { text: "Belum ada catatan bulan ini. Yuk, mulai mencatat transaksi pertamamu!", icon: "✨", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
     let budgetWarning = null; const expenseByCategory: Record<string, number> = {};
     
@@ -747,7 +750,23 @@ export default function HomeTab({
 
       {/* DAILY GROUPED TRANSACTION HISTORY LIST */}
       <div className="space-y-4">
-        {groupedTransactionsByDay.length === 0 ? (
+        {isReportLoading ? (
+          // SKELETON SHIMMER LOADING (Agar tidak kaget disangka datanya hilang saat cold-start!)
+          <div className="space-y-3 animate-pulse">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="p-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                  <div className="space-y-1.5 text-left">
+                    <div className="h-3.5 w-28 bg-slate-100 dark:bg-slate-800 rounded" />
+                    <div className="h-2 w-16 bg-slate-100 dark:bg-slate-800 rounded" />
+                  </div>
+                </div>
+                <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded" />
+              </div>
+            ))}
+          </div>
+        ) : groupedTransactionsByDay.length === 0 ? (
           <div className="p-12 text-center bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-[28px]"><p className="text-slate-400 dark:text-slate-500 text-xs font-bold">Tidak ada transaksi tercatat di bulan ini.</p></div>
         ) : (
           groupedTransactionsByDay.map(({ dateStr, list, dailyNet }) => {
