@@ -323,6 +323,11 @@ export default function DebtsTab({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200 text-slate-800 dark:text-slate-100">
+      {/* SUNTIKAN ANTI SCROLLBAR DEFAULT */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .no-scrollbar::-webkit-scrollbar { display: none !important; }
+        .no-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+      `}} />
       
       {/* Detail Screen Rendering */}
       {selectedDebt ? (
@@ -1314,7 +1319,7 @@ export default function DebtsTab({
               </div>
               <button type="button" onClick={() => setPayAccSelector(false)} className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-505 rounded-full cursor-pointer transition-colors"><X size={14} className="text-slate-700 dark:text-slate-300" /></button>
             </div>
-            <div className="overflow-y-auto pr-1">
+            <div className="overflow-y-auto no-scrollbar pr-1">
               <div className="grid grid-cols-2 gap-3">
                 {accounts.map(acc => {
                   const isSelected = payAccountId === acc.id;
@@ -1365,7 +1370,7 @@ export default function DebtsTab({
               <button type="button" onClick={() => setPayCatSelector(false)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"><X size={14}/></button>
             </div>
             
-            <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
+            <div className="p-5 overflow-y-auto no-scrollbar no-scrollbar bg-white dark:bg-slate-900">
               {selectedDebt?.type === "debt" ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -1471,7 +1476,7 @@ export default function DebtsTab({
               </div>
               <button type="button" onClick={() => setSubAccSelector(null)} className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-505 rounded-full cursor-pointer transition-colors"><X size={14} className="text-slate-700 dark:text-slate-300" /></button>
             </div>
-            <div className="overflow-y-auto pr-1">
+            <div className="overflow-y-auto no-scrollbar no-scrollbar pr-1">
               <div className="grid grid-cols-2 gap-3">
                 {accounts.map(acc => {
                   const isSelected = subAccSelector === "add" ? subAccountId === acc.id : editSubAccountId === acc.id;
@@ -1527,7 +1532,7 @@ export default function DebtsTab({
               <button type="button" onClick={() => setSubCatSelector(null)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"><X size={14}/></button>
             </div>
             
-            <div className="p-5 overflow-y-auto bg-white dark:bg-slate-900">
+            <div className="p-5 overflow-y-auto no-scrollbar no-scrollbar bg-white dark:bg-slate-900">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-orange-100 dark:border-orange-900/30 z-10">
