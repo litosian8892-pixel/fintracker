@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import { flushSync } from "react-dom";
 import { AccountData, CategoryData, SplitItemData, TransactionData } from "../../types";
 import { 
   ArrowUpRight, 
@@ -389,16 +390,7 @@ export default function HomeTab({
   useEffect(() => { const handleResize = () => setIsMobile(window.innerWidth < 768); handleResize(); window.addEventListener("resize", handleResize); return () => window.removeEventListener("resize", handleResize); }, []);
   useEffect(() => { if (editingTransaction) { setIsDrawerOpen(true); } }, [editingTransaction]);
   
-  // UX Premium: Auto-Focus Keyboard HP saat tombol "Catat Baru" ditekan (DIPINDAH KE SINI AGAR TIDAK ERROR isDrawerOpen)
-  useEffect(() => {
-    if (isDrawerOpen && !editingTransaction) {
-      // Tunggu 300ms agar animasi laci slide-up selesai sebelum memunculkan keyboard
-      const timer = setTimeout(() => {
-        noteInputRef.current?.focus();
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [isDrawerOpen, editingTransaction]);
+  // Efek auto-focus dipindah ke tombol FAB menggunakan flushSync agar lolos dari blokir sekuriti iOS
 
   useEffect(() => { if (!tAmount || safeEvaluate(tAmount) === 0) { setSplits([]); } }, [tAmount]);
 
@@ -793,9 +785,20 @@ export default function HomeTab({
         )}
       </div>
 
-      <button type="button" onClick={() => { triggerHaptic(); setIsDrawerOpen(true); }} className={`fixed bottom-24 right-6 md:bottom-8 md:right-8 z-40 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-lg transition-all cursor-pointer border ${currentTheme.fab}`}>
-        <Plus size={28} strokeWidth={2.5} />
-      </button>
+      {/* FLOATING ACTION BUTTON (+) */}
+          <button type="button" onClick={() => { 
+            triggerHaptic(); 
+            // HACK KELAS DEWA: flushSync memaksa React merender laci saat ini juga secara sinkron!
+            // Ini membuat pemanggilan .focus() berada di dalam siklus klik jari yang sama, sehingga iPhone/iOS merestuinya!
+            flushSync(() => {
+              setIsDrawerOpen(true);
+            });
+            if (noteInputRef.current) {
+              noteInputRef.current.focus();
+            }
+          }} className={`fixed bottom-24 right-6 md:bottom-8 md:right-8 z-40 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-lg transition-all cursor-pointer active:scale-95 border ${currentTheme.fab}`}>
+            <Plus size={28} strokeWidth={2.5} />
+          </button>
 
       {/* UNIFIED SLIDE-UP BOTTOM DRAWER DENGAN INPUT JAM */}
       {isDrawerOpen && (
