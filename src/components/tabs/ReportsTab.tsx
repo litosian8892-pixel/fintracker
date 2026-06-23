@@ -1601,7 +1601,7 @@ export default function ReportsTab({
                 <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Filter by Account</h3>
                 <button onClick={() => setShowAccountFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-505 rounded-full transition-colors"><X size={16}/></button>
               </div>
-              <div className="p-4 overflow-y-auto space-y-2">
+              <div className="p-4 overflow-y-auto no-scrollbar space-y-2">
                 <div onClick={() => { triggerHaptic(); setSelectedAccount("All"); setShowAccountFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedAccount === "All" ? `${currentTheme.bgLight} ${currentTheme.border} shadow-sm` : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent"}`}>
                   <div className="flex items-center gap-3"><div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${currentTheme.bgLight} ${currentTheme.text}`}><Filter size={14}/></div><span className="font-black text-sm text-slate-800 dark:text-slate-200">All Accounts</span></div>
                   {selectedAccount === "All" && <Check size={18} className={currentTheme.text} />}
@@ -1629,7 +1629,7 @@ export default function ReportsTab({
                 </div>
                 <button onClick={() => setShowTripFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
               </div>
-              <div className="p-4 overflow-y-auto space-y-2 bg-slate-50/30 dark:bg-slate-950/30">
+              <div className="p-4 overflow-y-auto no-scrollbar space-y-2 bg-slate-50/30 dark:bg-slate-950/30">
                 
                 <div onClick={() => { triggerHaptic(); setSelectedTripFilter("Non-Travel"); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === "Non-Travel" ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
                   <div className="flex items-center gap-3">
@@ -1759,7 +1759,7 @@ export default function ReportsTab({
                     {showBudgetCatSelector && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowBudgetCatSelector(false)}></div>
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-60 overflow-y-auto">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-60 overflow-y-auto no-scrollbar">
                           {categories.filter(c => c.type === 'expense' && (!c.budgetLimit || c.budgetLimit === 0)).length === 0 ? (
                             <div className="p-4 text-center text-xs font-bold text-slate-500">Semua kategori sudah diatur anggarannya.</div>
                           ) : (
@@ -1851,7 +1851,7 @@ export default function ReportsTab({
                 <button onClick={() => setShowAutoBudgetModal(false)} className="p-2 bg-indigo-100 dark:bg-indigo-800/50 hover:bg-indigo-200 dark:hover:bg-indigo-700 text-indigo-500 rounded-full cursor-pointer transition-colors"><X size={14}/></button>
               </div>
               
-              <div className="p-6 overflow-y-auto space-y-5">
+              <div className="p-6 overflow-y-auto no-scrollbar space-y-5">
                 {!autoBudgetPreview ? (
                   <div className="space-y-4 animate-in fade-in duration-300">
                     <div className="bg-indigo-50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 leading-relaxed text-center">
