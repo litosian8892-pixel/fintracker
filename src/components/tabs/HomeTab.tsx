@@ -596,18 +596,37 @@ export default function HomeTab({
     // UX Premium: Hindari teks kosong fiktif saat cold start, ganti dengan sapaan asisten menganalisis
     if (isReportLoading) return { text: "Fintracker Assistant sedang menganalisis kesehatan keuanganmu...", icon: "🧠", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50/50 dark:bg-indigo-950/20", border: "border-indigo-100/30 dark:border-indigo-900/30" };
     if (monthlyTransactions.length === 0) return { text: "Belum ada catatan bulan ini. Yuk, mulai mencatat transaksi pertamamu!", icon: "✨", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
-    let budgetWarning = null; const expenseByCategory: Record<string, number> = {};
     
-    // BUG FIX: Smart Insight kini memahami Unroll Splits agar akurat dengan Laporan
+    let budgetWarning = null; 
+    const expenseByCategory: Record<string, number> = {};
+    const q = searchQueryInput.trim().toLowerCase();
+    
+    // BUG FIX: Smart Insight kini memahami Unroll Splits & Filter Pencarian agar akurat 100%
     monthlyTransactions.filter(t => t.type === 'expense').forEach(t => { 
       if (t.splits && t.splits.length > 0) {
+        const isParentMatch = q ? ((t.note && t.note.toLowerCase().includes(q)) || (t.accountName && t.accountName.toLowerCase().includes(q)) || (t.toAccountName && t.toAccountName.toLowerCase().includes(q))) : false;
+        
         t.splits.forEach(s => {
+          if (q && !isParentMatch) {
+            const isSplitMatch = (s.category && s.category.toLowerCase().includes(q)) || (s.note && s.note.toLowerCase().includes(q));
+            if (!isSplitMatch) return; // Lewati pecahan yang tidak relevan dengan pencarian
+          }
           expenseByCategory[s.category] = (expenseByCategory[s.category] || 0) + s.amount;
         });
       } else {
         expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount; 
       }
     });
+
+    // UX PREMIUM: Jika sedang menggunakan fitur pencarian, Assistant berubah jadi "Mode Detektif"
+    if (q) {
+      const sortedCats = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1]);
+      if (sortedCats.length > 0) { 
+        const [topCat, topAmount] = sortedCats[0]; 
+        return { text: `Dari hasil pencarian ini, pengeluaran terbesar ada di kategori '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}).`, icon: "🔍", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30", border: "border-indigo-100 dark:border-indigo-900/30" }; 
+      }
+      return { text: `Menampilkan hasil pencarian untuk '${searchQueryInput}'.`, icon: "🔍", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
+    }
 
     for (const cat of categories) {
       if (cat.type === 'expense' && cat.budgetLimit && cat.budgetLimit > 0) {
@@ -622,7 +641,7 @@ export default function HomeTab({
       if (sortedCats.length > 0) { const [topCat, topAmount] = sortedCats[0]; return { text: `Sejauh ini, uangmu paling banyak tersedot untuk kategori '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}).`, icon: "💡", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30", border: "border-indigo-100 dark:border-indigo-900/30" }; }
     }
     return { text: "Arus kas bulan ini terlihat sangat sehat and aman. Terus pertahankan kebiasaan baik ini!", icon: "🌟", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-100 dark:border-emerald-900/30" };
-  }, [monthlyTransactions, monthlySummary, categories]);
+  }, [monthlyTransactions, monthlySummary, categories, searchQueryInput, isReportLoading]);
 
   const groupedTransactionsByDay = useMemo(() => {
     const groups: Record<string, TransactionData[]> = {};
