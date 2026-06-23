@@ -1762,7 +1762,7 @@ export default function HomeTab({
               </div>
               <button type="button" onClick={() => setActiveAccSelector(null)} className="p-1.5 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 rounded-full transition-colors cursor-pointer"><X size={14} className="text-slate-700 dark:text-slate-300" /></button>
             </div>
-            <div className="overflow-y-auto pr-1 text-left">
+            <div className="overflow-y-auto no-scrollbar pr-1 text-left">
               <div className="grid grid-cols-2 gap-3">
                 {(activeAccSelector === "source" ? availableSourceAccounts : accounts).map(acc => {
                   const activeId = activeAccSelector === "source" ? (editingTransaction ? editTAccountId : tAccountId) : (editingTransaction ? editTToAccountId : tToAccountId);
