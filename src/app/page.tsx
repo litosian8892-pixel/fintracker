@@ -116,6 +116,7 @@ export default function FintrackerApp() {
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
   const [reportTransactions, setReportTransactions] = useState<TransactionData[]>([]);
   const [isReportLoading, setIsReportLoading] = useState(true); // UX: State loading khusus laporan bulanan
+  const isColdStartRef = useRef(true); // UX: Pengunci agar tunda 1.5 detik HANYA berjalan pada Cold Start pertama
   
   const [txLimit, setTxLimit] = useState(10);
   const [reportMonth, setReportMonth] = useState(() => getLocalDateString().slice(0, 7)); 
@@ -488,12 +489,9 @@ export default function FintrackerApp() {
   useEffect(() => {
     if (!user || (activeTab !== "reports" && activeTab !== "assets" && activeTab !== "home")) return; 
     
-    setIsReportLoading(true); // Pancing skeleton kembali saat ganti bulan/tab
     let unsubReport: (() => void) | null = null;
 
-    // 3. JALUR NON-KRITIS BERAT (DETIK 1.5): Tunda penarikan transaksi bulanan yang super banyak
-    // agar tidak menghambat pemuatan instan halaman depan saat Cold Start!
-    const reportTimer = setTimeout(() => {
+    const loadReportData = () => {
       const [y, m] = reportMonth.split("-").map(Number);
       let monthsBack = 0;
       if (activeTab === "reports") monthsBack = 12; else if (activeTab === "assets") monthsBack = 1; else monthsBack = 0; 
@@ -526,16 +524,32 @@ export default function FintrackerApp() {
             return isNaN(parsed) ? Date.now() : parsed;
           };
           return getMillis(b.createdAt) - getMillis(a.createdAt);
-          }); 
-          setReportTransactions(data);
-          setIsReportLoading(false); // Matikan loading skeleton setelah data masuk dari database
-        });
+        }); 
+        setReportTransactions(data);
+        setIsReportLoading(false); // Matikan loading skeleton
+      });
+    };
+
+    if (isColdStartRef.current) {
+      // JALUR TUNDA (DETIK 1.5): Hanya berjalan SEKALI saat pertama kali aplikasi dibuka (Cold Start)
+      setIsReportLoading(true);
+      const reportTimer = setTimeout(() => {
+        loadReportData();
+        isColdStartRef.current = false; // Tandai cold start selesai
       }, 1500);
 
-    return () => {
-      clearTimeout(reportTimer);
-      if (unsubReport) (unsubReport as () => void)();
-    };
+      return () => {
+        clearTimeout(reportTimer);
+        if (unsubReport) (unsubReport as () => void)();
+      };
+    } else {
+      // JALUR INSTAN (DETIK 0): Pindah tab / ganti bulan berikutnya langsung dimuat instan tanpa delay!
+      setIsReportLoading(true);
+      loadReportData();
+      return () => {
+        if (unsubReport) (unsubReport as () => void)();
+      };
+    }
   }, [user, reportMonth, activeTab]);
 
   useEffect(() => {
