@@ -26,7 +26,8 @@ const themeMap = {
     bgLight: "bg-blue-50 dark:bg-blue-900/20",
     fab: "bg-blue-600 border-blue-500",
     budgetLine: "#2563eb",
-    budgetFill: "bg-blue-600"
+    budgetFill: "bg-blue-600",
+    progressActive: "bg-blue-600"
   },
   emerald: {
     activeBg: "bg-emerald-600 text-white shadow-sm",
@@ -37,7 +38,8 @@ const themeMap = {
     bgLight: "bg-emerald-50 dark:bg-emerald-900/20",
     fab: "bg-emerald-600 border-emerald-500",
     budgetLine: "#059669",
-    budgetFill: "bg-emerald-600"
+    budgetFill: "bg-emerald-600",
+    progressActive: "bg-emerald-600"
   },
   purple: {
     activeBg: "bg-purple-600 text-white shadow-sm",
@@ -48,7 +50,8 @@ const themeMap = {
     bgLight: "bg-purple-50 dark:bg-purple-900/20",
     fab: "bg-purple-600 border-purple-500",
     budgetLine: "#7c3aed",
-    budgetFill: "bg-purple-600"
+    budgetFill: "bg-purple-600",
+    progressActive: "bg-purple-600"
   },
   amber: {
     activeBg: "bg-amber-600 text-white shadow-sm",
@@ -59,7 +62,8 @@ const themeMap = {
     bgLight: "bg-amber-50 dark:bg-amber-900/20",
     fab: "bg-amber-600 border-amber-500",
     budgetLine: "#d97706",
-    budgetFill: "bg-amber-600"
+    budgetFill: "bg-amber-600",
+    progressActive: "bg-amber-600"
   },
   rose: {
     activeBg: "bg-rose-600 text-white shadow-sm",
@@ -70,7 +74,8 @@ const themeMap = {
     bgLight: "bg-rose-50 dark:bg-rose-900/20",
     fab: "bg-rose-600 border-rose-500",
     budgetLine: "#e11d48",
-    budgetFill: "bg-rose-600"
+    budgetFill: "bg-rose-600",
+    progressActive: "bg-rose-600"
   }
 } as const;
 
@@ -97,6 +102,21 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
+// FIX: PERBAIKAN DEKLARASI FUNGSI KATEGORI PIUTANG AGAR TIDAK EROR DI VS CODE
+const getCategoryIcon = (catName: string) => {
+  const name = catName ? catName.toLowerCase() : "";
+  if (name.includes("makan") || name.includes("food") || name.includes("cafe") || name.includes("kopi")) return "🍔";
+  if (name.includes("transport") || name.includes("ojek") || name.includes("bensin") || name.includes("car")) return "🚗";
+  if (name.includes("gaji") || name.includes("salary") || name.includes("income") || name.includes("gajian")) return "💰";
+  if (name.includes("tagihan") || name.includes("bill") || name.includes("listrik") || name.includes("wifi") || name.includes("pulsa")) return "⚡";
+  if (name.includes("belanja") || name.includes("grocer") || name.includes("pasar") || name.includes("supermarket")) return "🛒";
+  if (name.includes("transfer") || name.includes("kirim")) return "💸";
+  if (name.includes("piutang") || name.includes("utang") || name.includes("debt")) return "🤝";
+  if (name.includes("invest") || name.includes("saham") || name.includes("crypto")) return "📈";
+  if (name.includes("hiburan") || name.includes("game") || name.includes("nonton") || name.includes("netflix")) return "🎬";
+  return "🏷️";
+};
+
 interface ReportsTabProps {
   reportMonth: string; setReportMonth: (val: string) => void; handleExportToExcel: () => void;
   totalIncome: number; totalExpense: number; pieData: { name: string; value: number }[];
@@ -109,7 +129,7 @@ interface ReportsTabProps {
 }
 
 export default function ReportsTab({
-  reportMonth, setReportMonth, handleExportToExcel, categories, reportTransactions, globalSearch, setGlobalSearch, searchResult, isPrivacyMode = false, accounts = [], updateCategory
+  reportMonth, setReportMonth, handleExportToExcel, categories, reportTransactions, globalSearch, setGlobalSearch, searchResult, isPrivacyMode = false, accounts = [], updateCategory, prevTotalIncome, prevTotalExpense, pieData, incomeCategoryList, barData
 }: ReportsTabProps) {
   
   // EXTRA FILTER UNTUK TRAVEL MODE
@@ -303,6 +323,7 @@ export default function ReportsTab({
     
     if (fixedCats.length === 0 && varCats.length === 0) return alert("Anda belum memiliki kategori pengeluaran sama sekali!");
 
+    // 1. FIXED EXPENSE (Kebutuhan Tetap) - PERTAHANKAN
     const previewFixed = fixedCats.map(c => {
       const currentSpent = expGrouped[c.name] || 0;
       const finalLimit = (c.budgetLimit && c.budgetLimit > 0) ? c.budgetLimit : (currentSpent > 0 ? currentSpent : 0);
@@ -478,7 +499,7 @@ export default function ReportsTab({
   }, [categories]);
 
   const totalBudgetLimit = budgetCategories.reduce((sum, c) => sum + (c.budgetLimit || 0), 0);
-  const totalSpentOnBudget = budgetCategories.reduce((sum, c) => sum + (expGrouped[c.name] || 0), 0);
+  const totalSpentOnBudget = budgetCategories.reduce((sum, cat) => sum + (expGrouped[cat.name] || 0), 0); // FIX: TYPO SINKRONISASI
   const remainingBudget = totalBudgetLimit - totalSpentOnBudget;
   const overallBudgetPercentage = totalBudgetLimit > 0 ? (totalSpentOnBudget / totalBudgetLimit) * 100 : 0;
   
@@ -492,7 +513,6 @@ export default function ReportsTab({
   }
   
   const safeDailySpend = daysRemaining > 0 && remainingBudget > 0 ? remainingBudget / daysRemaining : 0;
-
   const budgetChartData = useMemo(() => {
     return dailyCumulativeData.map((d, i) => {
       const target = totalBudgetLimit > 0 ? (totalBudgetLimit / effectiveDaysArray.length) * (i + 1) : 0;
@@ -726,7 +746,7 @@ export default function ReportsTab({
         .no-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
       `}} />
 
-      <div className="space-y-6 animate-in print:hidden relative pb-20">
+      <div className="space-y-6 animate-in print:hidden relative pb-20 text-left">
         
         {/* HEADER & FILTER */}
         <div className="flex flex-col gap-4">
@@ -884,7 +904,7 @@ export default function ReportsTab({
                 <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-orange-500">
                   {localTotalIncome - localTotalExpense >= 0 ? <TrendingUp size={20}/> : <TrendingDown size={20}/>}
                 </div>
-                <div><p className="text-xs font-black text-slate-800 dark:text-slate-200">Periode terakhir tren {localTotalIncome - localTotalExpense >= 0 ? "positif" : "menurun"}</p><p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">perubahan Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}</p></div>
+                <div><p className="text-xs font-black text-slate-800 dark:text-slate-200">Periode terakhir tren positif</p><p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">perubahan Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}</p></div>
               </div>
             </div>
 
@@ -892,7 +912,7 @@ export default function ReportsTab({
               <div className="flex justify-between items-center mb-2"><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Tren Pengeluaran</h3><span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-600 dark:text-slate-300">Rata-rata: Rp {Math.round(trendData.reduce((a,b)=>a+b.Pengeluaran,0)/activeMonthsCount).toLocaleString('id-ID')}/bln</span></div>
               <div className="h-32 w-full pt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ReBarChart data={trendData.slice(-12)} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barCategoryGap="20%">
+                  <ReBarChart data={trendData.slice(-12)} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} barCategoryGap="20%">
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} dy={10} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} />
                     <Bar dataKey="Pengeluaran" radius={[4, 4, 4, 4]}>{trendData.slice(-12).map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.month === reportMonth ? '#ef4444' : '#64748b'} />))}</Bar>
@@ -910,7 +930,7 @@ export default function ReportsTab({
               <div className="flex justify-between items-center mb-2"><h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Tren Pemasukan</h3><span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-600 dark:text-slate-300">Rata-rata: Rp {Math.round(trendData.reduce((a,b)=>a+b.Pemasukan,0)/activeMonthsCount).toLocaleString('id-ID')}/bln</span></div>
               <div className="h-32 w-full pt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ReBarChart data={trendData.slice(-12)} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barCategoryGap="20%">
+                  <ReBarChart data={trendData.slice(-12)} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} barCategoryGap="20%">
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} dy={10} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }} />
                     <Bar dataKey="Pemasukan" radius={[4, 4, 4, 4]}>{trendData.slice(-12).map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.month === reportMonth ? '#10b981' : '#64748b'} />))}</Bar>
@@ -928,7 +948,7 @@ export default function ReportsTab({
             <RenderDonutList data={localIncomePieData} colors={INCOME_COLORS} total={localTotalIncome} title="Pemasukan" type="income" showAll={showAllIncCategories} setShowAll={setShowAllIncCategories} />
 
             {/* RINCIAN PENGELUARAN (LIST EXPANDABLE) */}
-            <div className="space-y-4 pt-2 animate-in fade-in duration-300">
+            <div className="space-y-4 pt-2 animate-in fade-in duration-300 text-left">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg px-2">Rincian Pengeluaran</h3>
               
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
@@ -1023,7 +1043,7 @@ export default function ReportsTab({
               </div>
             </div>
 
-            <div className="space-y-4 pt-2 animate-in fade-in duration-300">
+            <div className="space-y-4 pt-2 animate-in fade-in duration-300 text-left">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg px-2">Rincian Pemasukan</h3>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-200">
                 <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-2">Detail Pemasukan</p>
@@ -1047,7 +1067,7 @@ export default function ReportsTab({
                           {isExpanded && (
                             <div className="mt-2 pl-4 pr-2 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl space-y-2 border border-slate-100 dark:border-slate-700 animate-in slide-in-from-top-2 duration-200">
                               {data.items.sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime()).map((item) => (
-                                <div key={item.id} className="flex justify-between items-center text-[10px] pb-2 last:pb-0 border-b border-slate-200 dark:border-slate-700 last:border-none">
+                                <div key={item.id} className="flex justify-between items-center text-[10px] pb-2 last:pb-0 border-b border-slate-200 dark:border-slate-700 last:border-none animate-in fade-in">
                                   <div className="flex flex-col text-left">
                                     <span className="text-slate-400 dark:text-slate-500 font-bold text-[9px] mb-0.5">{new Date(item.tDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} • {item.accountName}</span>
                                     <span className="text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] md:max-w-xs">{item.note || "Tanpa catatan"}</span>
@@ -1071,6 +1091,235 @@ export default function ReportsTab({
 
           </div>
         )}
+        {/* ================= VIEW 2: ANGGARAN ================= */}
+        {activeView === "anggaran" && (
+          <div className="space-y-6 animate-in fade-in duration-300 text-left">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-6 opacity-10"><Target size={100} className={currentTheme.text} /></div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-2">Anggaran Tersisa</p>
+              <h2 className={`text-3xl font-black mb-1 ${remainingBudget >= 0 ? "text-slate-800 dark:text-white" : "text-red-500"}`}>
+                Rp {remainingBudget.toLocaleString('id-ID')}
+              </h2>
+              <p className="text-[10px] font-bold text-slate-400">
+                Terpakai: Rp {totalSpentOnBudget.toLocaleString('id-ID')} / Limit: Rp {totalBudgetLimit.toLocaleString('id-ID')}
+              </p>
+              {totalBudgetLimit > 0 && (
+                <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-4">
+                  <div className={`h-full ${currentTheme.progressActive}`} style={{ width: `${overallBudgetPercentage}%` }} />
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Peta Jalan Anggaran</h3>
+                <button onClick={() => { triggerHaptic(); setShowAutoBudgetModal(true); }} className="px-3.5 py-1.5 bg-indigo-500 text-white font-black text-[10px] rounded-full flex items-center gap-1 cursor-pointer hover:bg-indigo-600 transition-colors active:scale-95 shadow-md shadow-indigo-500/10">
+                  🪄 Alokasi Cerdas
+                </button>
+              </div>
+
+              {totalBudgetLimit > 0 ? (
+                <>
+                  <div className="h-40 w-full pt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={budgetChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="areaBudgetFill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={currentTheme.budgetLine} stopOpacity={0.15}/>
+                            <stop offset="95%" stopColor={currentTheme.budgetLine} stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.12)" />
+                        <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: "bold", fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 8, fontWeight: "bold", fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Area type="monotone" dataKey="Terpakai" stroke={currentTheme.budgetLine} strokeWidth={3} fillOpacity={1} fill="url(#areaBudgetFill)" activeDot={{ r: 6, fill: "#ffffff", stroke: currentTheme.budgetLine, strokeWidth: 2 }} />
+                        <Line type="monotone" dataKey="Target" stroke="#cbd5e1" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                  {safeDailySpend > 0 && (
+                    <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-4 rounded-2xl flex items-center gap-4 border border-indigo-100 dark:border-indigo-900/30">
+                      <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-500"><Activity size={20}/></div>
+                      <div className="text-left"><p className="text-xs font-black text-slate-800 dark:text-slate-200">Batas Jajan Harian Aman</p><p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">Maksimal Rp {Math.floor(safeDailySpend).toLocaleString('id-ID')} / hari untuk bertahan hidup</p></div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="p-8 text-center bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl opacity-60"><p className="text-slate-400 text-xs font-bold">Atur anggaran di bawah untuk melihat performa cash-flow.</p></div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center px-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori Ber-Anggaran</p>
+                <button onClick={() => { triggerHaptic(); setBudgetInput(""); setNewBudgetCat(null); setShowAddBudgetModal(true); }} className={`px-2.5 py-1 text-[9px] font-black border rounded-lg flex items-center gap-1 cursor-pointer ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>
+                  <Plus size={10}/> Set Budget
+                </button>
+              </div>
+
+              {budgetCategories.length === 0 ? (
+                <p className="text-center text-xs text-slate-400 italic py-10 bg-white dark:bg-slate-900 rounded-[30px] border border-slate-100 dark:border-slate-800">Belum ada anggaran bulanan yang dibuat.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {budgetCategories.map(cat => {
+                    const spent = expGrouped[cat.name] || 0;
+                    const pct = Math.round((spent / cat.budgetLimit!) * 100);
+                    return (
+                      <div key={cat.id} onClick={() => { triggerHaptic(); setSelectedBudgetCat(cat); setBudgetInput(cat.budgetLimit!.toString()); }} className="bg-white dark:bg-slate-900 p-5 rounded-[24px] shadow-sm cursor-pointer hover:shadow-md transition-all border border-slate-100 dark:border-slate-800 flex flex-col justify-between text-left group">
+                        <div>
+                          <div className="flex justify-between items-start">
+                            <span className="text-xl">{cat.icon || "🏷️"}</span>
+                            <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${pct >= 100 ? 'bg-red-50 text-red-500 border-red-200 dark:bg-red-900/30' : pct >= 80 ? 'bg-amber-50 text-amber-500 border-amber-200 dark:bg-amber-900/30' : `${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}`}>{pct}%</span>
+                          </div>
+                          <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 mt-3 truncate">{cat.name}</h4>
+                          <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">{cat.expenseType === 'fixed' ? 'Fixed (Tetap)' : 'Variable'}</p>
+                          <div className="flex items-baseline gap-1 mt-2">
+                            <p className="text-base font-black text-slate-800 dark:text-white">Rp {spent.toLocaleString('id-ID')}</p>
+                            <p className="text-[10px] font-bold text-slate-400">/ Rp {cat.budgetLimit!.toLocaleString('id-ID')}</p>
+                          </div>
+                        </div>
+                        <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-4">
+                          <div className={`h-full ${pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : currentTheme.budgetFill}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ================= VIEW 3: LAPORAN ================= */}
+        {activeView === "laporan" && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-[24px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">Pencarian Mutasi Cerdas</p>
+              <div className="relative">
+                <Filter className="absolute left-3 top-3 text-slate-400" size={16} />
+                <input type="text" placeholder="Ketik apa saja (gaji, kopi, bca)..." className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white" value={globalSearch} onChange={(e) => setGlobalSearch(e.target.value)} />
+              </div>
+            </div>
+
+            {globalSearch.trim() && (
+              <div className="space-y-2 animate-in slide-in-from-top-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Hasil Pencarian ({searchResult.length})</p>
+                {searchResult.length === 0 ? (
+                  <p className="text-center py-10 text-slate-400 text-xs italic bg-white dark:bg-slate-900 rounded-3xl border border-slate-100">Tidak ada transaksi yang cocok.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {searchResult.map(t => {
+                      const isInc = t.type === 'income'; const isTr = t.type === 'transfer';
+                      return (
+                        <div key={t.id} className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex justify-between items-center text-left">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-sm">{getCategoryIcon(t.category)}</div>
+                            <div>
+                              <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block">{t.category}</span>
+                              <span className="text-[9px] font-bold text-slate-400">{new Date(`${t.tDate}T12:00:00`).toLocaleDateString('id-ID', {day:'numeric', month:'short'})} • {isTr ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName} {t.note ? `• ${t.note}` : ''}</span>
+                            </div>
+                          </div>
+                          <span className={`font-black text-xs shrink-0 ${isInc ? 'text-emerald-600' : isTr ? 'text-blue-500' : 'text-rose-500'}`}>{isInc ? '+' : '-'}${(t.splits?.reduce((s,x)=>s+x.amount,0)||t.amount).toLocaleString('id-ID')}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!globalSearch.trim() && (
+              <div className="space-y-3">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 text-left">Daftar Transaksi Bulanan</p>
+                {currentMonthTxs.length === 0 ? (
+                  <p className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs italic bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800">Tidak ada transaksi tercatat pada periode ini.</p>
+                ) : (
+                  currentMonthTxs.sort((a,b)=>new Date(b.tDate).getTime() - new Date(a.tDate).getTime()).map(t => {
+                    const isInc = t.type === 'income'; const isTr = t.type === 'transfer';
+                    return (
+                      <div key={t.id} className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex justify-between items-center text-left transition-colors">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-sm shrink-0">{getCategoryIcon(t.category)}</div>
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block">{t.category}</span>
+                            <span className="text-[9px] font-bold text-slate-400 block truncate max-w-[180px] sm:max-w-xs">{new Date(`${t.tDate}T12:00:00`).toLocaleDateString('id-ID', {day:'numeric', month:'short'})} • {isTr ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName} {t.note ? `• ${t.note}` : ''}</span>
+                          </div>
+                        </div>
+                        <span className={`font-black text-xs shrink-0 pl-2 ${isInc ? 'text-emerald-500' : isTr ? 'text-blue-500' : 'text-rose-500'}`}>{isInc ? '+' : '-'}{(t.splits?.reduce((s,x)=>s+x.amount,0)||t.amount).toLocaleString('id-ID')}</span>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= VIEW 4: KALENDER ================= */}
+        {activeView === "kalender" && (
+          <div className="space-y-6 animate-in fade-in duration-300 text-left">
+            <div className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-200">
+              
+              <div className="flex justify-between items-center mb-6 px-2">
+                <div>
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{periodDisplayTitle}</h3>
+                  <p className="text-[10px] font-bold text-slate-500">{trackedDays} hari terlacak pada periode ini</p>
+                </div>
+              </div>
+
+              {!isCustomDateRange ? (
+                <>
+                  <div className="grid grid-cols-7 mb-2">{['M', 'S', 'S', 'R', 'K', 'J', 'S'].map((day, i) => (<div key={i} className="text-center text-[10px] font-black text-slate-400 uppercase py-2">{day}</div>))}</div>
+                  
+                  <div className="grid grid-cols-7 gap-1 md:gap-2">
+                    {Array.from({length: firstDayOfWeek}).map((_, i) => (<div key={`empty-${i}`} className="aspect-square bg-slate-50/50 dark:bg-slate-800/10 rounded-xl font-bold"></div>))}
+                    {Array.from({length: daysInMonth}).map((_, i) => {
+                      const d = i + 1; const dateStr = `${reportMonth}-${String(d).padStart(2, '0')}`; const isToday = new Date().toLocaleDateString('en-CA') === dateStr;
+                      const inc = dailyIncomeMap[dateStr] || 0; const exp = dailyExpenseMap[dateStr] || 0; const hasData = inc > 0 || exp > 0;
+                      return (
+                        <div key={d} onClick={() => { if(hasData) { triggerHaptic(); setSelectedHeatmapDate(dateStr); } }} className={`aspect-square p-1 md:p-2 rounded-xl flex flex-col justify-between transition-all ${hasData ? 'cursor-pointer hover:scale-105 hover:shadow-md hover:z-10' : ''} ${isToday ? 'bg-blue-50 border-2 border-blue-500 dark:bg-blue-900/20' : hasData ? 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm' : 'bg-slate-50/50 dark:bg-slate-800/30 border border-transparent'}`}>
+                          <span className={`text-[10px] md:text-xs font-black ${isToday ? 'text-blue-600' : 'text-slate-700 dark:text-slate-300'} ${!hasData && !isToday ? 'opacity-40' : ''}`}>{d}</span>
+                          {hasData && (
+                            <div className="flex flex-col gap-0.5 mt-auto">
+                              {inc > 0 && <span className="text-[7px] opacity-85 font-black text-emerald-500 truncate leading-none">+{inc.toLocaleString('id-ID')}</span>}
+                              {exp > 0 && <span className="text-[7px] opacity-85 font-black text-red-500 truncate leading-none">-{exp.toLocaleString('id-ID')}</span>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div className="py-12 bg-slate-50 dark:bg-slate-900/50 rounded-2xl flex flex-col items-center justify-center border border-dashed border-slate-200 dark:border-slate-800 animate-in fade-in">
+                  <CalendarDays size={40} className="text-slate-300 dark:text-slate-600 mb-3" />
+                  <p className="text-sm font-black text-slate-500 dark:text-slate-400">Kalender Tidak Tersedia</p>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1 max-w-[200px] text-center">Tampilan grid kalender hanya didukung untuk mode bulanan standar.</p>
+                </div>
+              )}
+
+              <div className="mt-6 space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-bold">Pendapatan</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black">Rp {localTotalIncome.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-bold">Pengeluaran</span>
+                  <span className="text-red-500 dark:text-red-400 font-black">Rp {localTotalExpense.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-3 mt-1 border-t border-slate-100 border-slate-200 dark:border-slate-800/60">
+                  <span className="text-slate-500 dark:text-slate-400 font-bold">Arus Kas</span>
+                  <span className={`font-black ${localTotalIncome - localTotalExpense >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
+                    {localTotalIncome - localTotalExpense < 0 ? '-' : ''}Rp {Math.abs(localTotalIncome - localTotalExpense).toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
         {/* ================= BOTTOM SHEETS ================= */}
 
         {/* 1. BOTTOM SHEET TRANSAKSI HARIAN KALENDER */}
@@ -1118,7 +1367,7 @@ export default function ReportsTab({
               <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
               <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
                 <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Filter by Account</h3>
-                <button onClick={() => setShowAccountFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
+                <button onClick={() => setShowAccountFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-505 rounded-full transition-colors"><X size={16}/></button>
               </div>
               <div className="p-4 overflow-y-auto space-y-2">
                 <div onClick={() => { triggerHaptic(); setSelectedAccount("All"); setShowAccountFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedAccount === "All" ? `${currentTheme.bgLight} ${currentTheme.border} shadow-sm` : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent"}`}>
@@ -1227,228 +1476,225 @@ export default function ReportsTab({
         )}
 
         {/* ================= BOTTOM SHEETS MODAL ANGGARAN BARU & EDIT ================= */}
-      {(selectedBudgetCat || showAddBudgetModal) && (
-        <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => { setSelectedBudgetCat(null); setShowAddBudgetModal(false); }}>
-          <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col border border-slate-100 dark:border-slate-800 text-left" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-lg shadow-sm border border-slate-100 dark:border-slate-700">
-                  {selectedBudgetCat ? (selectedBudgetCat.icon || "🏷️") : "🎯"}
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">
-                    {selectedBudgetCat ? selectedBudgetCat.name : "Tambah Anggaran Baru"}
-                  </h3>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Atur Limit Bulanan</p>
-                </div>
-              </div>
-              <button onClick={() => { setSelectedBudgetCat(null); setShowAddBudgetModal(false); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={14}/></button>
-            </div>
-            
-            <div className="p-6 space-y-5">
-              
-              {/* OPSI KATEGORI (HANYA MUNCUL SAAT TAMBAH BARU) */}
-              {showAddBudgetModal && (
-                <div className="space-y-1 relative">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pilih Kategori Pengeluaran</label>
-                  <div 
-                    onClick={() => { triggerHaptic(); setShowBudgetCatSelector(!showBudgetCatSelector); }}
-                    className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      {newBudgetCat ? (
-                        <>
-                          <span className="mr-1">{newBudgetCat.icon || "🏷️"}</span>
-                          {newBudgetCat.name}
-                        </>
-                      ) : "Pilih Kategori..."}
-                    </div>
-                    <ChevronDown size={16} className="text-slate-400 shrink-0" />
+        {(selectedBudgetCat || showAddBudgetModal) && (
+          <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => { setSelectedBudgetCat(null); setShowAddBudgetModal(false); }}>
+            <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col border border-slate-100 dark:border-slate-800 text-left" onClick={e => e.stopPropagation()}>
+              <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-lg shadow-sm border border-slate-100 dark:border-slate-700">
+                    {selectedBudgetCat ? (selectedBudgetCat.icon || "🏷️") : "🎯"}
                   </div>
-
-                  {showBudgetCatSelector && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowBudgetCatSelector(false)}></div>
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-60 overflow-y-auto">
-                        {categories.filter(c => c.type === 'expense' && (!c.budgetLimit || c.budgetLimit === 0)).length === 0 ? (
-                          <div className="p-4 text-center text-xs font-bold text-slate-500">Semua kategori sudah diatur anggarannya.</div>
-                        ) : (
-                          categories.filter(c => c.type === 'expense' && (!c.budgetLimit || c.budgetLimit === 0)).sort((a,b) => a.name.localeCompare(b.name)).map(cat => (
-                            <div 
-                              key={cat.id} 
-                              onClick={() => { triggerHaptic(); setNewBudgetCat(cat); setShowBudgetCatSelector(false); }} 
-                              className="p-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-0 transition-colors"
-                            >
-                              <span className="text-lg">{cat.icon || "🏷️"}</span>
-                              <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{cat.name}</span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </>
-                  )}
+                  <div>
+                    <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">
+                      {selectedBudgetCat ? selectedBudgetCat.name : "Tambah Anggaran Baru"}
+                    </h3>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Atur Limit Bulanan</p>
+                  </div>
                 </div>
-              )}
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Nominal Anggaran (Rp)</label>
-                <input 
-                  type="number" 
-                  autoFocus={!!selectedBudgetCat}
-                  placeholder="Contoh: 500000" 
-                  autoComplete="off" data-lpignore="true" data-1p-ignore="true"
-                  className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm outline-blue-500 font-black text-slate-800 dark:text-slate-100 !bg-slate-50 dark:!bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
-                  value={budgetInput} 
-                  onChange={e => setBudgetInput(e.target.value)} 
-                />
-                {budgetInput && <p className="text-[10px] font-bold text-slate-500 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>Rp {Number(budgetInput).toLocaleString('id-ID')}</span></p>}
+                <button onClick={() => { setSelectedBudgetCat(null); setShowAddBudgetModal(false); }} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-500 rounded-full cursor-pointer transition-colors"><X size={14}/></button>
               </div>
+              
+              <div className="p-6 space-y-5">
+                {showAddBudgetModal && (
+                  <div className="space-y-1 relative">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pilih Kategori Pengeluaran</label>
+                    <div 
+                      onClick={() => { triggerHaptic(); setShowBudgetCatSelector(!showBudgetCatSelector); }}
+                      className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        {newBudgetCat ? (
+                          <>
+                            <span className="mr-1">{newBudgetCat.icon || "🏷️"}</span>
+                            {newBudgetCat.name}
+                          </>
+                        ) : "Pilih Kategori..."}
+                      </div>
+                      <ChevronDown size={16} className="text-slate-400 shrink-0" />
+                    </div>
 
-              <div className="flex gap-2 pt-2">
-                <button 
-                  onClick={() => {
-                    triggerHaptic();
-                    if (updateCategory) {
-                      const targetCat = selectedBudgetCat || newBudgetCat;
-                      if (!targetCat) return alert("Pilih kategori terlebih dahulu!");
-                      
-                      const val = Number(budgetInput);
-                      if (val <= 0) return alert("Nominal anggaran harus lebih dari 0!");
-                      
-                      updateCategory(targetCat.id, targetCat.name, val, targetCat.expenseType || "variable", targetCat.icon);
-                      setSelectedBudgetCat(null);
-                      setShowAddBudgetModal(false);
-                    }
-                  }} 
-                  className={`flex-1 py-3.5 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer transition-all active:scale-95 border ${currentTheme.activeBg.split(" ")[0]}`}
-                >
-                  Simpan Anggaran
-                </button>
-                
-                {/* TOMBOL HAPUS (HANYA MUNCUL SAAT EDIT/UPDATE) */}
-                {selectedBudgetCat && selectedBudgetCat.budgetLimit && selectedBudgetCat.budgetLimit > 0 && (
+                    {showBudgetCatSelector && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowBudgetCatSelector(false)}></div>
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-60 overflow-y-auto">
+                          {categories.filter(c => c.type === 'expense' && (!c.budgetLimit || c.budgetLimit === 0)).length === 0 ? (
+                            <div className="p-4 text-center text-xs font-bold text-slate-500">Semua kategori sudah diatur anggarannya.</div>
+                          ) : (
+                            categories.filter(c => c.type === 'expense' && (!c.budgetLimit || c.budgetLimit === 0)).sort((a,b) => a.name.localeCompare(b.name)).map(cat => (
+                              <div 
+                                key={cat.id} 
+                                onClick={() => { triggerHaptic(); setNewBudgetCat(cat); setShowBudgetCatSelector(false); }} 
+                                className="p-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-0 transition-colors"
+                              >
+                                <span className="text-lg">{cat.icon || "🏷️"}</span>
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{cat.name}</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Nominal Anggaran (Rp)</label>
+                  <input 
+                    type="number" 
+                    autoFocus={!!selectedBudgetCat}
+                    placeholder="Contoh: 500000" 
+                    autoComplete="off" data-lpignore="true" data-1p-ignore="true"
+                    className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm outline-blue-500 font-black text-slate-800 dark:text-slate-100 !bg-slate-50 dark:!bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                    value={budgetInput} 
+                    onChange={e => setBudgetInput(e.target.value)} 
+                  />
+                  {budgetInput && <p className="text-[10px] font-bold text-slate-500 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>Rp {Number(budgetInput).toLocaleString('id-ID')}</span></p>}
+                </div>
+
+                <div className="flex gap-2 pt-2">
                   <button 
                     onClick={() => {
                       triggerHaptic();
                       if (updateCategory) {
-                        updateCategory(selectedBudgetCat.id, selectedBudgetCat.name, null, selectedBudgetCat.expenseType || "variable", selectedBudgetCat.icon);
+                        const targetCat = selectedBudgetCat || newBudgetCat;
+                        if (!targetCat) return alert("Pilih kategori terlebih dahulu!");
+                        
+                        const val = Number(budgetInput);
+                        if (val <= 0) return alert("Nominal anggaran harus lebih dari 0!");
+                        
+                        updateCategory(targetCat.id, targetCat.name, val, targetCat.expenseType || "variable", targetCat.icon);
                         setSelectedBudgetCat(null);
+                        setShowAddBudgetModal(false);
                       }
                     }} 
-                    className="py-3.5 px-5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 dark:hover:bg-red-800/50 transition-colors cursor-pointer"
-                    title="Hapus Anggaran"
+                    className={`flex-1 py-3.5 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer transition-all active:scale-95 border ${currentTheme.activeBg.split(" ")[0]}`}
                   >
-                    <Trash2 size={16} />
+                    Simpan Anggaran
                   </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL ASISTEN BUDGET CERDAS */}
-      {showAutoBudgetModal && (
-        <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowAutoBudgetModal(false)}>
-          <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col border border-slate-100 dark:border-slate-800 max-h-[90vh]" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-5 border-b border-indigo-100 dark:border-indigo-900/30 flex justify-between items-center bg-indigo-50 dark:bg-indigo-900/20 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-lg shadow-sm border border-indigo-100 dark:border-indigo-700">🪄</div>
-                <div>
-                  <h3 className="font-black text-indigo-800 dark:text-indigo-100 text-sm">Asisten Pintar</h3>
-                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">ALOKASI PROPORSIONAL</p>
-                </div>
-              </div>
-              <button onClick={() => setShowAutoBudgetModal(false)} className="p-2 bg-indigo-100 dark:bg-indigo-800/50 hover:bg-indigo-200 dark:hover:bg-indigo-700 text-indigo-500 rounded-full cursor-pointer transition-colors"><X size={14}/></button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto space-y-5">
-              {!autoBudgetPreview ? (
-                <div className="space-y-4 animate-in fade-in duration-300">
-                  <div className="bg-indigo-50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 leading-relaxed text-center">
-                    Halo! Periode ini tersisa <span className="font-black text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded">{daysRemaining} Hari</span> lagi. Untuk bertahan hidup dengan aman, berapa sisa uang Anda saat ini?
-                  </div>
                   
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center pl-1 mb-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sisa Uang Anda (Rp)</label>
-                      {totalAvailableBalance > 0 && (parseFloat(autoBudgetIncome) || 0) === totalAvailableBalance && (
-                        <span className="text-[8px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/50 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">🪄 Diisi Otomatis</span>
-                      )}
-                    </div>
-                    <input 
-                      type="number" 
-                      autoFocus
-                      placeholder="Contoh: 3000000" 
-                      autoComplete="off" data-lpignore="true" data-1p-ignore="true"
-                      className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm outline-indigo-500 font-black text-slate-800 dark:text-slate-100 !bg-slate-50 dark:!bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
-                      value={autoBudgetIncome} 
-                      onChange={e => setAutoBudgetIncome(e.target.value)} 
-                    />
-                    <div className="flex justify-between items-start pl-1 mt-1">
-                      {autoBudgetIncome ? (
-                        <p className="text-[10px] font-bold text-slate-500">Terbaca: <span className="text-indigo-600 dark:text-indigo-400 font-black">Rp {(parseFloat(autoBudgetIncome) || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })}</span></p>
-                      ) : <span />}
-                      {totalAvailableBalance > 0 && (parseFloat(autoBudgetIncome) || 0) !== totalAvailableBalance && (
-                        <button onClick={() => { triggerHaptic(); setAutoBudgetIncome(totalAvailableBalance.toString()); }} className="text-[9px] font-bold text-indigo-500 hover:text-indigo-600 hover:underline cursor-pointer transition-colors">
-                          Gunakan Saldo Dompet
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <button onClick={handleGenerateAutoBudget} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer transition-all active:scale-95 border border-indigo-500">
-                    Kalkulasi Sekarang
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
-                  <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30 rounded-2xl">
-                    <div>
-                      <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Target Tabungan (20%)</p>
-                      <p className="text-[9px] font-bold text-emerald-500 dark:text-emerald-500/70 mt-0.5">Segera amankan uang ini ke Dompet Darurat</p>
-                    </div>
-                    <span className="text-sm font-black text-emerald-700 dark:text-emerald-300">Rp {autoBudgetPreview.savingsTotal.toLocaleString('id-ID')}</span>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Rekomendasi Batas Pengeluaran:</p>
-                    <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
-                      {autoBudgetPreview.categories.map((cat: any, idx: number) => (
-                        <div key={idx} className="p-3.5 flex justify-between items-center text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg">{cat.icon || "🏷️"}</span>
-                            <div>
-                              <span className="font-bold text-slate-800 dark:text-white block">{cat.name}</span>
-                              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase mt-1 inline-block ${cat.type === 'fixed' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'}`}>
-                                {cat.type === 'fixed' ? 'Tetap (Dipertahankan)' : 'Variabel (+Napas Baru)'}
-                              </span>
-                            </div>
-                          </div>
-                          <span className="font-black text-slate-700 dark:text-slate-300 text-right shrink-0">
-                            Rp {cat.limit.toLocaleString('id-ID')}
-                            {daysRemaining > 0 && <p className="text-[9px] font-bold text-slate-400 mt-1">{(cat.limit / daysRemaining).toLocaleString('id-ID', { maximumFractionDigits: 0 })}/hari</p>}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <button onClick={applyAutoBudget} className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer transition-all active:scale-95 border border-indigo-500">
-                      Terapkan Semua
+                  {selectedBudgetCat && selectedBudgetCat.budgetLimit && selectedBudgetCat.budgetLimit > 0 && (
+                    <button 
+                      onClick={() => {
+                        triggerHaptic();
+                        if (updateCategory) {
+                          updateCategory(selectedBudgetCat.id, selectedBudgetCat.name, null, selectedBudgetCat.expenseType || "variable", selectedBudgetCat.icon);
+                          setSelectedBudgetCat(null);
+                        }
+                      }} 
+                      className="py-3.5 px-5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 dark:hover:bg-red-800/50 transition-colors cursor-pointer"
+                      title="Hapus Anggaran"
+                    >
+                      <Trash2 size={16} />
                     </button>
-                    <button onClick={() => setAutoBudgetPreview(null)} className="py-3.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer transition-colors">
-                      Hitung Ulang
-                    </button>
-                  </div>
+                  )}
                 </div>
-              )}
-
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* MODAL ASISTEN BUDGET CERDAS */}
+        {showAutoBudgetModal && (
+          <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowAutoBudgetModal(false)}>
+            <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col border border-slate-100 dark:border-slate-800 max-h-[90vh]" onClick={e => e.stopPropagation()}>
+              <div className="px-6 py-5 border-b border-indigo-100 dark:border-indigo-900/30 flex justify-between items-center bg-indigo-50 dark:bg-indigo-900/20 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-lg shadow-sm border border-indigo-100 dark:border-indigo-700">🪄</div>
+                  <div>
+                    <h3 className="font-black text-indigo-800 dark:text-indigo-100 text-sm">Asisten Pintar</h3>
+                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">ALOKASI PROPORSIONAL</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowAutoBudgetModal(false)} className="p-2 bg-indigo-100 dark:bg-indigo-800/50 hover:bg-indigo-200 dark:hover:bg-indigo-700 text-indigo-500 rounded-full cursor-pointer transition-colors"><X size={14}/></button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto space-y-5">
+                {!autoBudgetPreview ? (
+                  <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="bg-indigo-50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 leading-relaxed text-center">
+                      Halo! Periode ini tersisa <span className="font-black text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded">{daysRemaining} Hari</span> lagi. Untuk bertahan hidup dengan aman, berapa sisa uang Anda saat ini?
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center pl-1 mb-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sisa Uang Anda (Rp)</label>
+                        {totalAvailableBalance > 0 && (parseFloat(autoBudgetIncome) || 0) === totalAvailableBalance && (
+                          <span className="text-[8px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/50 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">🪄 Diisi Otomatis</span>
+                        )}
+                      </div>
+                      <input 
+                        type="number" 
+                        autoFocus
+                        placeholder="Contoh: 3000000" 
+                        autoComplete="off" data-lpignore="true" data-1p-ignore="true"
+                        className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm outline-indigo-500 font-black text-slate-800 dark:text-slate-100 !bg-slate-50 dark:!bg-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                        value={autoBudgetIncome} 
+                        onChange={e => setAutoBudgetIncome(e.target.value)} 
+                      />
+                      <div className="flex justify-between items-start pl-1 mt-1">
+                        {autoBudgetIncome ? (
+                          <p className="text-[10px] font-bold text-slate-500">Terbaca: <span className="text-indigo-600 dark:text-indigo-400 font-black">Rp {(parseFloat(autoBudgetIncome) || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })}</span></p>
+                        ) : <span />}
+                        {totalAvailableBalance > 0 && (parseFloat(autoBudgetIncome) || 0) !== totalAvailableBalance && (
+                          <button onClick={() => { triggerHaptic(); setAutoBudgetIncome(totalAvailableBalance.toString()); }} className="text-[9px] font-bold text-indigo-500 hover:text-indigo-600 hover:underline cursor-pointer transition-colors">
+                            Gunakan Saldo Dompet
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <button onClick={handleGenerateAutoBudget} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer transition-all active:scale-95 border border-indigo-500">
+                      Kalkulasi Sekarang
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+                    <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/30 rounded-2xl">
+                      <div>
+                        <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Target Tabungan (20%)</p>
+                        <p className="text-[9px] font-bold text-emerald-500 dark:text-emerald-500/70 mt-0.5">Segera amankan uang ini ke Dompet Darurat</p>
+                      </div>
+                      <span className="text-sm font-black text-emerald-700 dark:text-emerald-300">Rp {autoBudgetPreview.savingsTotal.toLocaleString('id-ID')}</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Rekomendasi Batas Pengeluaran:</p>
+                      <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
+                        {autoBudgetPreview.categories.map((cat: any, idx: number) => (
+                          <div key={idx} className="p-3.5 flex justify-between items-center text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg">{cat.icon || "🏷️"}</span>
+                              <div>
+                                <span className="font-bold text-slate-800 dark:text-white block">{cat.name}</span>
+                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase mt-1 inline-block ${cat.type === 'fixed' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'}`}>
+                                  {cat.type === 'fixed' ? 'Tetap (Dipertahankan)' : 'Variabel (+Napas Baru)'}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="font-black text-slate-700 dark:text-slate-300 text-right shrink-0">
+                              Rp {cat.limit.toLocaleString('id-ID')}
+                              {daysRemaining > 0 && <p className="text-[9px] font-bold text-slate-400 mt-1">{(cat.limit / daysRemaining).toLocaleString('id-ID', { maximumFractionDigits: 0 })}/hari</p>}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button onClick={applyAutoBudget} className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer transition-all active:scale-95 border border-indigo-500">
+                        Terapkan Semua
+                      </button>
+                      <button onClick={() => setAutoBudgetPreview(null)} className="py-3.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                        Hitung Ulang
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </>
