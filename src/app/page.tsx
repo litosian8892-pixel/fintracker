@@ -93,7 +93,8 @@ export default function FintrackerApp() {
   const [isPremium, setIsPremium] = useState<boolean | null>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("fintracker_is_premium");
-      return stored === "true" ? true : stored === "false" ? false : null;
+      // FIX COLD START LOCK: Jika tidak ada record, default-kan ke false (jangan null) agar tidak mengunci layar loading
+      return stored === "true" ? true : stored === "false" ? false : false;
     }
     return null;
   });
@@ -399,14 +400,10 @@ export default function FintrackerApp() {
       });
     }, 2500);
 
+    // 1. JALUR KRITIS (DETIK 0): Ambil data saldo dompet instan agar UI langsung nyala
     const unsubAcc = onSnapshot(query(collection(db, `users/${user.uid}/accounts`), orderBy("order", "asc")), 
       (sn) => { setAccounts(sn.docs.map(d => ({ id: d.id, ...d.data() } as AccountData))); },
       (err) => { console.warn("Accounts sync error:", err); }
-    );
-    
-    const unsubCat = onSnapshot(collection(db, `users/${user.uid}/categories`), 
-      (sn) => { if (sn.empty) setupDefaultCategories(user.uid); else setCategories(sn.docs.map(d => ({ id: d.id, ...d.data() } as CategoryData))); },
-      (err) => { console.warn("Categories sync error:", err); }
     );
     
     const unsubProfile = onSnapshot(doc(db, `users/${user.uid}`), 
@@ -426,8 +423,23 @@ export default function FintrackerApp() {
         setIsPremium(localStorage.getItem("fintracker_is_premium") === "true");
       }
     );
+
+    // 2. JALUR NON-KRITIS (DETIK 1.2): Tunda pengambilan kategori agar tidak membebani antrean IndexedDB HP
+    let unsubCat: (() => void) | null = null;
+    const catTimer = setTimeout(() => {
+      unsubCat = onSnapshot(collection(db, `users/${user.uid}/categories`), 
+        (sn) => { if (sn.empty) setupDefaultCategories(user.uid); else setCategories(sn.docs.map(d => ({ id: d.id, ...d.data() } as CategoryData))); },
+        (err) => { console.warn("Categories sync error:", err); }
+      );
+    }, 1200);
     
-    return () => { clearTimeout(fallbackTimer); unsubAcc(); unsubCat(); unsubProfile(); };
+    return () => { 
+      clearTimeout(fallbackTimer); 
+      clearTimeout(catTimer);
+      unsubAcc(); 
+      if (unsubCat) (unsubCat as () => void)(); 
+      unsubProfile(); 
+    };
   }, [user]);
 
   useEffect(() => {
@@ -474,41 +486,53 @@ export default function FintrackerApp() {
 
   useEffect(() => {
     if (!user || (activeTab !== "reports" && activeTab !== "assets" && activeTab !== "home")) return; 
-    const [y, m] = reportMonth.split("-").map(Number);
-    let monthsBack = 0;
-    if (activeTab === "reports") monthsBack = 12; else if (activeTab === "assets") monthsBack = 1; else monthsBack = 0; 
-    const startOfRangeDate = new Date(y, m - 1 - monthsBack, 1);
-    const startYear = startOfRangeDate.getFullYear();
-    const startMonth = String(startOfRangeDate.getMonth() + 1).padStart(2, "0");
-    const startOfRange = `${startYear}-${startMonth}-01`;
-    const endOfRange = `${reportMonth}-31`;
-    const qReport = query(collection(db, `users/${user.uid}/transactions`), where("tDate", ">=", startOfRange), where("tDate", "<=", endOfRange));
-    const unsubReport = onSnapshot(qReport, (sn) => {
-      const data = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
-      data.sort((a, b) => {
-        const dateCompare = b.tDate.localeCompare(a.tDate);
-        if (dateCompare !== 0) return dateCompare;
-        const timeA = a.tTime || "00:00"; const timeB = b.tTime || "00:00";
-        const timeCompare = timeB.localeCompare(timeA);
-        if (timeCompare !== 0) return timeCompare;
+    
+    let unsubReport: (() => void) | null = null;
 
-        const getMillis = (t: any) => {
-          if (!t) return Date.now(); 
-          if (typeof t.toMillis === 'function') {
-            try { return t.toMillis(); } catch { return Date.now(); }
-          }
-          if (typeof t === 'object') {
-            if (t.seconds !== undefined) return t.seconds * 1000;
-            if (t._seconds !== undefined) return t._seconds * 1000;
-          }
-          const parsed = new Date(t).getTime();
-          return isNaN(parsed) ? Date.now() : parsed;
-        };
-        return getMillis(b.createdAt) - getMillis(a.createdAt);
-      }); 
-      setReportTransactions(data);
-    });
-    return () => unsubReport();
+    // 3. JALUR NON-KRITIS BERAT (DETIK 1.5): Tunda penarikan transaksi bulanan yang super banyak
+    // agar tidak menghambat pemuatan instan halaman depan saat Cold Start!
+    const reportTimer = setTimeout(() => {
+      const [y, m] = reportMonth.split("-").map(Number);
+      let monthsBack = 0;
+      if (activeTab === "reports") monthsBack = 12; else if (activeTab === "assets") monthsBack = 1; else monthsBack = 0; 
+      const startOfRangeDate = new Date(y, m - 1 - monthsBack, 1);
+      const startYear = startOfRangeDate.getFullYear();
+      const startMonth = String(startOfRangeDate.getMonth() + 1).padStart(2, "0");
+      const startOfRange = `${startYear}-${startMonth}-01`;
+      const endOfRange = `${reportMonth}-31`;
+      
+      const qReport = query(collection(db, `users/${user.uid}/transactions`), where("tDate", ">=", startOfRange), where("tDate", "<=", endOfRange));
+      unsubReport = onSnapshot(qReport, (sn) => {
+        const data = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
+        data.sort((a, b) => {
+          const dateCompare = b.tDate.localeCompare(a.tDate);
+          if (dateCompare !== 0) return dateCompare;
+          const timeA = a.tTime || "00:00"; const timeB = b.tTime || "00:00";
+          const timeCompare = timeB.localeCompare(timeA);
+          if (timeCompare !== 0) return timeCompare;
+
+          const getMillis = (t: any) => {
+            if (!t) return Date.now(); 
+            if (typeof t.toMillis === 'function') {
+              try { return t.toMillis(); } catch { return Date.now(); }
+            }
+            if (typeof t === 'object') {
+              if (t.seconds !== undefined) return t.seconds * 1000;
+              if (t._seconds !== undefined) return t._seconds * 1000;
+            }
+            const parsed = new Date(t).getTime();
+            return isNaN(parsed) ? Date.now() : parsed;
+          };
+          return getMillis(b.createdAt) - getMillis(a.createdAt);
+        }); 
+        setReportTransactions(data);
+      });
+    }, 1500);
+
+    return () => {
+      clearTimeout(reportTimer);
+      if (unsubReport) (unsubReport as () => void)();
+    };
   }, [user, reportMonth, activeTab]);
 
   useEffect(() => {
