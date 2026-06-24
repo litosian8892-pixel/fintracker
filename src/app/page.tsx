@@ -426,14 +426,14 @@ export default function FintrackerApp() {
       }
     );
 
-    // 2. JALUR NON-KRITIS (DETIK 1.2): Tunda pengambilan kategori agar tidak membebani antrean IndexedDB HP
+    // 2. JALUR KATEGORI INSTAN: Ambil langsung dari cache lokal (50ms untuk memberi ruang render UI)
     let unsubCat: (() => void) | null = null;
     const catTimer = setTimeout(() => {
       unsubCat = onSnapshot(collection(db, `users/${user.uid}/categories`), 
         (sn) => { if (sn.empty) setupDefaultCategories(user.uid); else setCategories(sn.docs.map(d => ({ id: d.id, ...d.data() } as CategoryData))); },
         (err) => { console.warn("Categories sync error:", err); }
       );
-    }, 1200);
+    }, 50);
     
     return () => { 
       clearTimeout(fallbackTimer); 
@@ -447,11 +447,12 @@ export default function FintrackerApp() {
   useEffect(() => {
     if (!user) return;
     let unsubTypes: any, unsubDebts: any, unsubSubs: any;
+    // Micro-delay 100ms agar tidak berbenturan dengan render Dompet di thread utama
     const timer = setTimeout(() => {
       unsubTypes = onSnapshot(query(collection(db, `users/${user.uid}/walletTypes`), orderBy("order", "asc")), (sn) => { if (sn.empty) setupDefaultWalletTypes(user.uid); else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() } as WalletTypeData))); });
       unsubDebts = onSnapshot(query(collection(db, `users/${user.uid}/debts`), orderBy("createdAt", "desc")), (sn) => { setDebts(sn.docs.map(d => ({ id: d.id, ...d.data() } as DebtData))); });
       unsubSubs = onSnapshot(query(collection(db, `users/${user.uid}/subscriptions`), orderBy("createdAt", "desc")), (sn) => { setSubscriptions(sn.docs.map(d => ({ id: d.id, ...d.data() } as SubscriptionData))); });
-    }, 2000);
+    }, 100);
     return () => { clearTimeout(timer); if(unsubTypes) unsubTypes(); if(unsubDebts) unsubDebts(); if(unsubSubs) unsubSubs(); };
   }, [user]);
 
@@ -531,12 +532,12 @@ export default function FintrackerApp() {
     };
 
     if (isColdStartRef.current) {
-      // JALUR TUNDA (DETIK 1.5): Hanya berjalan SEKALI saat pertama kali aplikasi dibuka (Cold Start)
+      // JALUR INSTAN (DETIK 0.1): Eksekusi instan mengambil dari memori lokal (Cache)
       setIsReportLoading(true);
       const reportTimer = setTimeout(() => {
         loadReportData();
         isColdStartRef.current = false; // Tandai cold start selesai
-      }, 1500);
+      }, 50);
 
       return () => {
         clearTimeout(reportTimer);
@@ -1074,7 +1075,7 @@ export default function FintrackerApp() {
     );
   }
 
-  if (loading || !pinChecked || (user && isPremium === null)) return <LoadingScreen />;
+  if (loading || !pinChecked) return <LoadingScreen />;
   if (!user) return <AuthScreen />;
 
   if (appPin && !isUnlocked) {
