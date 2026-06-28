@@ -947,6 +947,13 @@ export default function FintrackerApp() {
     setEditTTime(t.tTime || (() => { if (!t.createdAt) return "12:00"; let d = new Date(); if (t.createdAt.seconds) d = new Date(t.createdAt.seconds * 1000); else if (t.createdAt._seconds) d = new Date(t.createdAt._seconds * 1000); else d = new Date(t.createdAt); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; })()); 
     setEditTAdminFee(t.originalAmount !== undefined ? ((t.adminFee || 0) / (t.exchangeRate || 1)).toString() : (t.adminFee?.toString() || "")); 
     setEditTSplits(t.splits ? t.splits.map(s => ({ ...s, amount: t.originalAmount !== undefined ? (s.amount / (t.exchangeRate || 1)) : s.amount })) : []); 
+    
+    if ((t as any).tripId) {
+      setIsTravelMode(true);
+      setActiveTripName((t as any).tripId);
+    } else {
+      setIsTravelMode(false);
+    }
   };
 
   const handleUpdateTransaction = async () => {
@@ -1005,6 +1012,13 @@ export default function FintrackerApp() {
       // 3. UPDATE CATATAN RIWAYAT TRANSAKSI
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
       const updateData: any = { amount: newIdrAmount, type: editTType, accountId: editTAccountId, accountName: accounts.find(a => a.id === editTAccountId)?.name || "", note: editTNote, category: editTSplits.length > 0 ? "Split Transaksi" : (editTType === "transfer" ? "Transfer" : editTCategory), tDate: editTDate, tTime: editTTime, originalAmount: newRawAmount, originalCurrency: srcCurrency, exchangeRate: rateSource };
+      
+      if (isTravelMode) {
+        updateData.tripId = activeTripName || "Liburan";
+      } else {
+        updateData.tripId = null;
+      }
+
       if (editTType === "transfer") { updateData.toAccountId = editTToAccountId; updateData.toAccountName = accounts.find(a => a.id === editTToAccountId)?.name || ""; updateData.adminFee = newIdrAdminFee; updateData.splits = null; } else { updateData.toAccountId = null; updateData.toAccountName = null; updateData.adminFee = null; if (editTSplits.length > 0) { updateData.splits = editTSplits.map(s => ({ ...s, amount: s.amount * rateSource })); } else { updateData.splits = null; } }
       
       batch.update(tRef, updateData);
