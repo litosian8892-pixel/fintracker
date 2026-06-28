@@ -652,15 +652,7 @@ export default function DebtsTab({
                     >
                       PIUTANG ORANG
                     </button>
-                  </div>
-                  {!showAddForm && (
-                    <button 
-                      onClick={() => { triggerHaptic(); setShowAddForm(true); setEditingDebtId(null); setActiveKeypad(null); }}
-                      className={`shrink-0 px-3 py-2.5 rounded-xl border text-[10px] font-black flex items-center gap-1 transition-all active:scale-95 shadow-sm cursor-pointer ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}
-                    >
-                      <Plus size={14} strokeWidth={2.5}/> Baru
-                    </button>
-                  )}
+                   </div>
                 </div>
                 
                 <div className={`p-5 rounded-2xl transition-all duration-200 border text-left ${
@@ -930,15 +922,8 @@ export default function DebtsTab({
                 
                 <div className="flex justify-between items-start relative z-10 mb-1">
                   <p className="text-white/80 text-[10px] md:text-xs font-bold uppercase tracking-widest">Beban Tagihan Tetap</p>
-                  {!showAddSubForm && (
-                    <button 
-                      onClick={() => { triggerHaptic(); setShowAddSubForm(true); setEditingSubId(null); setActiveKeypad(null); }}
-                      className="px-3 py-1.5 bg-white/20 hover:bg-white/30 border border-white/30 text-white rounded-xl text-[10px] font-black flex items-center gap-1 shadow-sm backdrop-blur-sm transition-all active:scale-95 cursor-pointer"
-                    >
-                      <Plus size={12} strokeWidth={2.5}/> Baru
-                    </button>
-                  )}
                 </div>
+
 
                 <h2 className="text-3xl font-black tracking-tight text-white relative z-10 mb-2 mt-1">
                   {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalMonthlySubscriptions.toLocaleString('id-ID')}`}
@@ -1197,6 +1182,27 @@ export default function DebtsTab({
                 )}
               </div>
             </div>
+          )}
+
+          {/* 🚀 CONTEXT-AWARE INTELLIGENT FAB */}
+          {((mainTab === "debts" && !showAddForm) || (mainTab === "subscriptions" && !showAddSubForm)) && (
+            <button 
+              onClick={() => {
+                triggerHaptic();
+                if (mainTab === "debts") {
+                  setShowAddForm(true);
+                  setEditingDebtId(null);
+                } else {
+                  setShowAddSubForm(true);
+                  setEditingSubId(null);
+                }
+                setActiveKeypad(null);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className={`fixed bottom-24 right-6 z-50 p-4 text-white rounded-full shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer border ${currentTheme.fab} animate-in zoom-in-90`}
+            >
+              <Plus size={24} />
+            </button>
           )}
 
           </div>
