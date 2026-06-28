@@ -120,6 +120,14 @@ export default function FintrackerApp() {
   
   const [txLimit, setTxLimit] = useState(10);
   const [reportMonth, setReportMonth] = useState(() => getLocalDateString().slice(0, 7)); 
+  const [maxReportRange, setMaxReportRange] = useState(0);
+
+  // KECERDASAN BARU: Cegah aplikasi mengunduh ulang data saat pindah tab
+  useEffect(() => {
+    let needed = 0;
+    if (activeTab === "reports") needed = 12; else if (activeTab === "assets") needed = 1;
+    if (needed > maxReportRange) setMaxReportRange(needed);
+  }, [activeTab, maxReportRange]);
 
   const [prevMonthTransactions, setPrevMonthTransactions] = useState<TransactionData[]>([]);
 
@@ -488,15 +496,12 @@ export default function FintrackerApp() {
   }, [user, txLimit]);
 
   useEffect(() => {
-    if (!user || (activeTab !== "reports" && activeTab !== "assets" && activeTab !== "home")) return; 
-    
+    if (!user) return; 
     let unsubReport: (() => void) | null = null;
 
     const loadReportData = () => {
       const [y, m] = reportMonth.split("-").map(Number);
-      let monthsBack = 0;
-      if (activeTab === "reports") monthsBack = 12; else if (activeTab === "assets") monthsBack = 1; else monthsBack = 0; 
-      const startOfRangeDate = new Date(y, m - 1 - monthsBack, 1);
+      const startOfRangeDate = new Date(y, m - 1 - maxReportRange, 1);
       const startYear = startOfRangeDate.getFullYear();
       const startMonth = String(startOfRangeDate.getMonth() + 1).padStart(2, "0");
       const startOfRange = `${startYear}-${startMonth}-01`;
@@ -514,53 +519,39 @@ export default function FintrackerApp() {
 
           const getMillis = (t: any) => {
             if (!t) return Date.now(); 
-            if (typeof t.toMillis === 'function') {
-              try { return t.toMillis(); } catch { return Date.now(); }
-            }
-            if (typeof t === 'object') {
-              if (t.seconds !== undefined) return t.seconds * 1000;
-              if (t._seconds !== undefined) return t._seconds * 1000;
-            }
-            const parsed = new Date(t).getTime();
-            return isNaN(parsed) ? Date.now() : parsed;
+            if (typeof t.toMillis === 'function') { try { return t.toMillis(); } catch { return Date.now(); } }
+            if (typeof t === 'object') { if (t.seconds !== undefined) return t.seconds * 1000; if (t._seconds !== undefined) return t._seconds * 1000; }
+            const parsed = new Date(t).getTime(); return isNaN(parsed) ? Date.now() : parsed;
           };
           return getMillis(b.createdAt) - getMillis(a.createdAt);
         }); 
         setReportTransactions(data);
-        setIsReportLoading(false); // Matikan loading skeleton
+        setIsReportLoading(false);
       });
     };
 
     if (isColdStartRef.current) {
-      // JALUR INSTAN (DETIK 0.1): Eksekusi instan mengambil dari memori lokal (Cache)
       setIsReportLoading(true);
       const reportTimer = setTimeout(() => {
         loadReportData();
-        isColdStartRef.current = false; // Tandai cold start selesai
-      }, 50);
-
-      return () => {
-        clearTimeout(reportTimer);
-        if (unsubReport) (unsubReport as () => void)();
-      };
+        isColdStartRef.current = false;
+      }, 100); 
+      return () => { clearTimeout(reportTimer); if (unsubReport) (unsubReport as () => void)(); };
     } else {
-      // JALUR INSTAN (DETIK 0): Pindah tab / ganti bulan berikutnya langsung dimuat instan tanpa delay!
       setIsReportLoading(true);
       loadReportData();
-      return () => {
-        if (unsubReport) (unsubReport as () => void)();
-      };
+      return () => { if (unsubReport) (unsubReport as () => void)(); };
     }
-  }, [user, reportMonth, activeTab]);
+  }, [user, reportMonth, maxReportRange]); // DIBUAT KEBAL DARI TAB SWITCH
 
   useEffect(() => {
-    if (!user || activeTab !== "reports") return; 
+    if (!user) return; // DIBUAT KEBAL TAB SWITCH: Tarik data diam-diam tanpa dibatasi activeTab
     const prevMonth = getPrevMonth(reportMonth);
     const startOfPrev = `${prevMonth}-01`; const endOfPrev = `${prevMonth}-31`;
     const qPrev = query(collection(db, `users/${user.uid}/transactions`), where("tDate", ">=", startOfPrev), where("tDate", "<=", endOfPrev));
     const unsubPrev = onSnapshot(qPrev, (sn) => { setPrevMonthTransactions(sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData))); });
     return () => unsubPrev();
-  }, [user, reportMonth, activeTab]);
+  }, [user, reportMonth]);
 
   useEffect(() => {
     if (!user || !globalSearch) { setSearchResult([]); return; }
@@ -573,8 +564,10 @@ export default function FintrackerApp() {
     return () => unsubGlobal();
   }, [user, globalSearch]);
 
+  const hasHealedRef = useRef(false);
   useEffect(() => {
-    if (!user || categories.length === 0 || reportTransactions.length === 0) return;
+    if (!user || categories.length === 0 || reportTransactions.length === 0 || hasHealedRef.current) return;
+    
     const healData = async () => {
       const batch = writeBatch(db);
       let hasUpdates = false;
@@ -588,8 +581,10 @@ export default function FintrackerApp() {
         }
       });
       if (hasUpdates) await batch.commit();
+      hasHealedRef.current = true; // Kunci agar tidak berjalan berulang-ulang menyedot CPU
     };
-    const timeoutId = setTimeout(() => { if (typeof window !== 'undefined' && 'requestIdleCallback' in window) { (window as any).requestIdleCallback(() => healData()); } else { healData(); } }, 4000); 
+    
+    const timeoutId = setTimeout(() => { if (typeof window !== 'undefined' && 'requestIdleCallback' in window) { (window as any).requestIdleCallback(() => healData()); } else { healData(); } }, 5000); 
     return () => clearTimeout(timeoutId);
   }, [user, categories, reportTransactions]);
 
