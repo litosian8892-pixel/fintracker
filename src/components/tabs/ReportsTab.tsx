@@ -368,7 +368,7 @@ export default function ReportsTab({
   const [y, m] = reportMonth.split('-').map(Number);
   const prevDate = new Date(y, m - 2, 1);
   const prevMonthStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
-  const prevMonthTxs = filteredGlobalTxs.filter(t => t.tDate && t.tDate.startsWith(prevMonthStr) && (selectedAccount === "All" || t.accountName === selectedAccount));
+  const prevMonthTxs = filteredGlobalTxs.filter(t => t.tDate && t.tDate.startsWith(prevMonthStr));
   const prevAdmin = prevMonthTxs.filter(t => t.type === 'transfer' && t.adminFee).reduce((s,t) => s + t.adminFee!, 0);
   const localPrevTotalExpense = unrollSplits(prevMonthTxs.filter(t => t.type === 'expense')).reduce((s, t) => s + t.amount, 0) + prevAdmin;
   const localPrevTotalIncome = unrollSplits(prevMonthTxs.filter(t => t.type === 'income')).reduce((s, t) => s + t.amount, 0);
@@ -397,7 +397,7 @@ export default function ReportsTab({
   const lastTwelveMonthsList = getTwelveMonthsList(reportMonth);
 
   const trendData = lastTwelveMonthsList.map(month => {
-    const monthTxs = filteredGlobalTxs.filter(t => t.tDate && t.tDate.startsWith(month) && (selectedAccount === "All" || t.accountName === selectedAccount));
+    const monthTxs = filteredGlobalTxs.filter(t => t.tDate && t.tDate.startsWith(month));
     const inc = monthTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.splits?.reduce((s, split) => s + split.amount, 0) || t.amount), 0);
     const adminFees = monthTxs.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).reduce((sum, t) => sum + t.adminFee!, 0);
     const exp = monthTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.splits?.reduce((s, split) => s + split.amount, 0) || t.amount), 0) + adminFees;
@@ -427,7 +427,7 @@ export default function ReportsTab({
 
   let runExp = 0, runInc = 0;
   const dailyCumulativeData = effectiveDaysArray.map((dayStr, i) => {
-    const txs = currentMonthTxs.filter(t => t.tDate === dayStr && (selectedAccount === "All" || t.accountName === selectedAccount));
+    const txs = currentMonthTxs.filter(t => t.tDate === dayStr);
     const exp = txs.filter(t=>t.type==='expense').reduce((a,b)=>a+(b.splits?.reduce((s, sp)=>s+sp.amount,0)||b.amount),0) + txs.filter(t=>t.type==='transfer' && t.adminFee).reduce((a,b)=>a+b.adminFee!,0);
     const inc = txs.filter(t=>t.type==='income').reduce((a,b)=>a+(b.splits?.reduce((s, sp)=>s+sp.amount,0)||b.amount),0);
     runExp += exp; runInc += inc;
