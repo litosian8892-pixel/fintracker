@@ -666,8 +666,16 @@ export default function DebtsTab({
                   </h2>
                 </div>
 
-                {showAddForm && (
+                {!showAddForm ? (
+                  <button 
+                    onClick={() => { setShowAddForm(true); setEditingDebtId(null); setActiveKeypad(null); }} 
+                    className={`w-full py-3.5 bg-white hover:bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-all active:scale-[0.99] ${currentTheme.text}`}
+                  >
+                    <Plus size={16}/> {activeType === "debt" ? "Catat Utang Baru" : "Catat Piutang Baru"}
+                  </button>
+                ) : (
                   <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-left">
+``
                     <div className="flex justify-between items-center px-1">
                       <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">
                         {activeType === "debt" ? "Mencatat Utang Baru" : "Mencatat Piutang Baru"}
@@ -1183,21 +1191,7 @@ export default function DebtsTab({
             </div>
           )}
 
-          {mainTab === "debts" && (
-            <button 
-              onClick={() => {
-                setShowAddForm(!showAddForm);
-                setEditingDebtId(null);
-                setActiveKeypad(null);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className={`fixed bottom-24 right-6 z-50 p-4 text-white rounded-full shadow-2xl transition-all cursor-pointer border ${currentTheme.fab}`}
-            >
-              {showAddForm ? <X size={24} /> : <Plus size={24} />}
-            </button>
-          )}
-
-        </div>
+          </div>
       )}
 
       {isMobile && activeKeypad !== null && (
