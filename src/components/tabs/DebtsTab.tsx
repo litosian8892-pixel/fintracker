@@ -670,7 +670,6 @@ export default function DebtsTab({
 
                 {showAddForm && (
                   <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-left animate-in slide-in-from-top-2 duration-200">
-``
                     <div className="flex justify-between items-center px-1">
                       <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">
                         {activeType === "debt" ? "Mencatat Utang Baru" : "Mencatat Piutang Baru"}
