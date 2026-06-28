@@ -1318,35 +1318,33 @@ export default function HomeTab({
               )}
 
               {/* PUSAT KENDALI TRAVEL MODE TERSEMBUNYI */}
-              {!editingTransaction && (
-                <div className={`mt-4 rounded-2xl border transition-all duration-300 relative overflow-hidden ${isTravelMode ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 p-3' : 'bg-transparent border-slate-200 dark:border-slate-800 p-3'}`}>
-                  {isTravelMode && <div className="absolute -right-4 -top-4 w-16 h-16 bg-indigo-500/10 blur-xl rounded-full pointer-events-none"></div>}
-                  <div className="flex items-center justify-between gap-3 relative z-10">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-colors ${isTravelMode ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>✈️</div>
-                      <div>
-                        <h3 className={`text-[11px] font-black leading-tight ${isTravelMode ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-700 dark:text-slate-300'}`}>Travel Mode</h3>
-                        <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400">Sembunyikan dari Laporan</p>
-                      </div>
+              <div className={`mt-4 rounded-2xl border transition-all duration-300 relative overflow-hidden ${isTravelMode ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 p-3' : 'bg-transparent border-slate-200 dark:border-slate-800 p-3'}`}>
+                {isTravelMode && <div className="absolute -right-4 -top-4 w-16 h-16 bg-indigo-500/10 blur-xl rounded-full pointer-events-none"></div>}
+                <div className="flex items-center justify-between gap-3 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-colors ${isTravelMode ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>✈️</div>
+                    <div>
+                      <h3 className={`text-[11px] font-black leading-tight ${isTravelMode ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-700 dark:text-slate-300'}`}>Travel Mode</h3>
+                      <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400">Sembunyikan dari Laporan</p>
                     </div>
-                    <button type="button" onClick={() => toggleTravelMode && toggleTravelMode(!isTravelMode)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${isTravelMode ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
-                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${isTravelMode ? 'translate-x-5' : 'translate-x-1'}`} />
-                    </button>
                   </div>
-                  {isTravelMode && (
-                    <div className="mt-2.5 pt-2.5 border-t border-indigo-100 dark:border-indigo-500/20 animate-in slide-in-from-top-2 duration-200 relative z-10">
-                      <input 
-                        type="text" 
-                        value={activeTripName || ""} 
-                        onChange={(e) => updateTripName && updateTripName(e.target.value)} 
-                        placeholder="Nama Trip (misal: Trip Bali 2026)"
-                        autoComplete="off"
-                        className="w-full bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-500/30 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 transition-all placeholder:text-slate-400"
-                      />
-                    </div>
-                  )}
+                  <button type="button" onClick={() => toggleTravelMode && toggleTravelMode(!isTravelMode)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none cursor-pointer ${isTravelMode ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${isTravelMode ? 'translate-x-5' : 'translate-x-1'}`} />
+                  </button>
                 </div>
-              )}
+                {isTravelMode && (
+                  <div className="mt-2.5 pt-2.5 border-t border-indigo-100 dark:border-indigo-500/20 animate-in slide-in-from-top-2 duration-200 relative z-10">
+                    <input 
+                      type="text" 
+                      value={activeTripName || ""} 
+                      onChange={(e) => updateTripName && updateTripName(e.target.value)} 
+                      placeholder="Nama Trip (misal: Trip Bali 2026)"
+                      autoComplete="off"
+                      className="w-full bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-500/30 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 transition-all placeholder:text-slate-400"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex gap-3 shrink-0">
