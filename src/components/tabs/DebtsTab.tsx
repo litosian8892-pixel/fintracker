@@ -630,27 +630,37 @@ export default function DebtsTab({
             <div className="space-y-6 animate-in fade-in duration-200">
               
               <div className="bg-white dark:bg-slate-900/65 p-5 rounded-[26px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                <div className="flex gap-1.5 bg-slate-100/70 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
-                  <button 
-                    onClick={() => { setActiveType("debt"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                      activeType === "debt" 
-                        ? "bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 shadow-sm border border-slate-200 dark:border-slate-700" 
-                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-                    }`}
-                  >
-                    UTANG SAYA
-                  </button>
-                  <button 
-                    onClick={() => { setActiveType("receivable"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                      activeType === "receivable" 
-                        ? "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-700" 
-                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-                    }`}
-                  >
-                    PIUTANG ORANG
-                  </button>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 flex gap-1.5 bg-slate-100/70 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <button 
+                      onClick={() => { triggerHaptic(); setActiveType("debt"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
+                      className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                        activeType === "debt" 
+                          ? "bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 shadow-sm border border-slate-200 dark:border-slate-700" 
+                          : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      UTANG SAYA
+                    </button>
+                    <button 
+                      onClick={() => { triggerHaptic(); setActiveType("receivable"); setShowAddForm(false); setEditingDebtId(null); setActiveKeypad(null); }} 
+                      className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                        activeType === "receivable" 
+                          ? "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-700" 
+                          : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      PIUTANG ORANG
+                    </button>
+                  </div>
+                  {!showAddForm && (
+                    <button 
+                      onClick={() => { triggerHaptic(); setShowAddForm(true); setEditingDebtId(null); setActiveKeypad(null); }}
+                      className={`shrink-0 px-3 py-2.5 rounded-xl border text-[10px] font-black flex items-center gap-1 transition-all active:scale-95 shadow-sm cursor-pointer ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}
+                    >
+                      <Plus size={14} strokeWidth={2.5}/> Baru
+                    </button>
+                  )}
                 </div>
                 
                 <div className={`p-5 rounded-2xl transition-all duration-200 border text-left ${
@@ -666,15 +676,8 @@ export default function DebtsTab({
                   </h2>
                 </div>
 
-                {!showAddForm ? (
-                  <button 
-                    onClick={() => { setShowAddForm(true); setEditingDebtId(null); setActiveKeypad(null); }} 
-                    className={`w-full py-3.5 bg-white hover:bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-all active:scale-[0.99] ${currentTheme.text}`}
-                  >
-                    <Plus size={16}/> {activeType === "debt" ? "Catat Utang Baru" : "Catat Piutang Baru"}
-                  </button>
-                ) : (
-                  <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-left">
+                {showAddForm && (
+                  <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-left animate-in slide-in-from-top-2 duration-200">
 ``
                     <div className="flex justify-between items-center px-1">
                       <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">
@@ -924,24 +927,29 @@ export default function DebtsTab({
               {/* KARTU ATAS LANGGANAN INTEGRASI AKSEN TEMA GRADASI DUA WARNA PREMIUM */}
               <div className={`p-6 rounded-[26px] shadow-sm text-left relative overflow-hidden border border-white/10 bg-gradient-to-br ${currentTheme.subGradient}`}>
                 <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none text-white"><CalendarClock size={110} /></div>
-                <p className="text-white/80 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1 relative z-10">Beban Tagihan Tetap Bulan Ini</p>
-                <h2 className="text-3xl font-black tracking-tight text-white relative z-10 mb-2">
+                
+                <div className="flex justify-between items-start relative z-10 mb-1">
+                  <p className="text-white/80 text-[10px] md:text-xs font-bold uppercase tracking-widest">Beban Tagihan Tetap</p>
+                  {!showAddSubForm && (
+                    <button 
+                      onClick={() => { triggerHaptic(); setShowAddSubForm(true); setEditingSubId(null); setActiveKeypad(null); }}
+                      className="px-3 py-1.5 bg-white/20 hover:bg-white/30 border border-white/30 text-white rounded-xl text-[10px] font-black flex items-center gap-1 shadow-sm backdrop-blur-sm transition-all active:scale-95 cursor-pointer"
+                    >
+                      <Plus size={12} strokeWidth={2.5}/> Baru
+                    </button>
+                  )}
+                </div>
+
+                <h2 className="text-3xl font-black tracking-tight text-white relative z-10 mb-2 mt-1">
                   {isPrivacyMode ? 'Rp •••••••' : `Rp ${totalMonthlySubscriptions.toLocaleString('id-ID')}`}
                 </h2>
-                <p className="text-[10px] text-white/70 font-medium max-w-[85%] relative z-10 leading-relaxed">
+                <p className="text-[10px] text-white/80 font-medium max-w-[85%] relative z-10 leading-relaxed">
                   Pantau dan bayar kewajiban bulanan Anda dengan aman menggunakan sistem konfirmasi instan 1-Klik.
                 </p>
               </div>
 
-              {!showAddSubForm ? (
-                <button 
-                  onClick={() => { setShowAddSubForm(true); setEditingSubId(null); setActiveKeypad(null); }} 
-                  className={`w-full py-3.5 bg-white hover:bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-all active:scale-[0.99] ${currentTheme.text}`}
-                >
-                  <Plus size={16}/> Daftarkan Tagihan Baru
-                </button>
-              ) : (
-                <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-[24px] border border-slate-200 dark:border-slate-800 space-y-3.5 text-left shadow-sm">
+              {showAddSubForm && (
+                <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-[24px] border border-slate-200 dark:border-slate-800 space-y-3.5 text-left shadow-sm animate-in slide-in-from-top-2 duration-200">
                   <div className="flex justify-between items-center px-1 mb-1">
                     <h4 className="text-xs font-black text-slate-800 dark:text-slate-100">📋 Daftarkan Tagihan Baru</h4>
                     <button onClick={() => { setShowAddSubForm(false); setActiveKeypad(null); }} className="text-slate-400 hover:text-slate-655 dark:hover:text-slate-300"><X size={15}/></button>
