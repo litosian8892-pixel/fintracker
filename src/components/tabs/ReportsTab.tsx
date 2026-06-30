@@ -1636,8 +1636,8 @@ export default function ReportsTab({
                             <span className={`text-[10px] md:text-xs font-black ${isToday ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'} ${!hasData && !isToday ? 'opacity-40' : ''}`}>{d}</span>
                             {hasData && (
                               <div className="flex flex-col mt-auto w-full">
-                                {inc > 0 && <span className="text-[9px] md:text-[10px] tracking-tighter opacity-90 font-black text-emerald-600 dark:text-emerald-400 truncate w-full leading-tight">+{inc.toLocaleString('id-ID')}</span>}
-                                {exp > 0 && <span className="text-[9px] md:text-[10px] tracking-tighter opacity-90 font-black text-red-600 dark:text-red-400 truncate w-full leading-tight">-{exp.toLocaleString('id-ID')}</span>}
+                                {inc > 0 && <span className="text-[7.5px] sm:text-[8.5px] md:text-[10px] tracking-tighter opacity-90 font-black text-emerald-600 dark:text-emerald-400 truncate w-full leading-none mt-0.5">+{Intl.NumberFormat('id-ID', { notation: "compact", maximumFractionDigits: 1 }).format(inc)}</span>}
+                                {exp > 0 && <span className="text-[7.5px] sm:text-[8.5px] md:text-[10px] tracking-tighter opacity-90 font-black text-red-600 dark:text-red-400 truncate w-full leading-none mt-0.5">-{Intl.NumberFormat('id-ID', { notation: "compact", maximumFractionDigits: 1 }).format(exp)}</span>}
                               </div>
                             )}
                           </div>
