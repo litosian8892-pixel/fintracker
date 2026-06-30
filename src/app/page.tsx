@@ -637,35 +637,41 @@ export default function FintrackerApp() {
     if (isSubmittingRef.current) return; if (!user) return;
     isSubmittingRef.current = true; setIsSubmitting(true);
     try {
-      // Set default ke hari ini jika tidak dipilih
+      const batch = writeBatch(db);
       const actualStartDate = startDate || getLocalDateString();
       const exactTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
 
       if (type === "receivable" && accountId) {
         const accRef = doc(db, `users/${user.uid}/accounts/${accountId}`);
         const acc = accounts.find(a => a.id === accountId);
-        if (!acc) return alert("Dompet pengirim tidak ditemukan!");
-        await updateDoc(accRef, { balance: acc.balance - amount });
+        if (!acc) {
+          isSubmittingRef.current = false; setIsSubmitting(false);
+          return alert("Dompet pengirim tidak ditemukan!");
+        }
+        
+        batch.update(accRef, { balance: increment(-amount) });
         
         const cleanNote = note ? `${person} - ${note.trim()}` : person;
-        
-        // FIX: Gunakan actualStartDate dan exactTime agar riwayat sinkron dengan Tgl Pinjam
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { 
+        const txRef = doc(collection(db, `users/${user.uid}/transactions`));
+        batch.set(txRef, { 
           amount, type: "expense", accountId, accountName: acc.name, category: "Piutang", 
           note: cleanNote, tDate: actualStartDate, tTime: exactTime, createdAt: serverTimestamp() 
         });
       }
       
-      // FIX: Gunakan actualStartDate untuk createdAt si Utang agar urutannya benar di kalender
-      const debtCreatedAt = new Date(`${actualStartDate}T12:00:00`).toISOString();
+      // FIX: Format manual anti-error di browser Safari/iOS
+      const [yStr, mStr, dStr] = actualStartDate.split('-');
+      const debtCreatedAt = new Date(parseInt(yStr), parseInt(mStr) - 1, parseInt(dStr), 12, 0, 0).toISOString();
       
-      await addDoc(collection(db, `users/${user.uid}/debts`), { 
+      const debtRef = doc(collection(db, `users/${user.uid}/debts`));
+      batch.set(debtRef, { 
         type, personName: person, amount, paidAmount: 0, status: "active", 
         note, dueDate, createdAt: debtCreatedAt 
       });
       
+      await batch.commit();
       alert(type === "receivable" ? "Catatan berhasil ditambahkan & saldo dompet otomatis terpotong!" : "Utang berhasil dicatat!");
-    } catch (e) { alert("Gagal menambah catatan"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+    } catch (e) { console.error(e); alert("Gagal menambah catatan"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
   const handleDeleteDebt = async (id: string) => {
     if (isSubmittingRef.current) return; if (!user || !confirm("Hapus catatan ini secara permanen?")) return;

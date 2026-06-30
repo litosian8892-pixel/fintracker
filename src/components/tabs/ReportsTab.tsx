@@ -530,15 +530,23 @@ export default function ReportsTab({
 
   // FIX: FUNGSI EXCEL LOKAL AGAR MENURUTI FILTER TRIP & CUSTOM DATE
   const handleLocalExportToExcel = async () => {
-    if (currentMonthTxs.length === 0) return alert("Tidak ada data transaksi pada periode ini!");
+    const unrolledData = unrollSplits(currentMonthTxs);
+    if (unrolledData.length === 0) return alert("Tidak ada data transaksi pada periode ini!");
     triggerHaptic();
-    const excelData = currentMonthTxs.map((t, idx) => {
-      let categoryStr = t.category;
-      if (t.splits && t.splits.length > 0) categoryStr = "Split: " + t.splits.map(s => `${s.category} (Rp ${s.amount.toLocaleString('id-ID')})`).join(', ');
-      let noteStr = t.note || "-";
-      if (t.splits && t.splits.length > 0) { const splitNotes = t.splits.map(s => s.note).filter(Boolean); if (splitNotes.length > 0) { noteStr = `${noteStr} [Pecahan: ${splitNotes.join(', ')}]`; } }
-      return { "No": idx + 1, "Tanggal": t.tDate, "Waktu": t.tTime || "-", "Tipe": t.type === "income" ? "Pemasukan" : t.type === "expense" ? "Pengeluaran" : "Transfer", "Kategori": categoryStr, "Dompet": t.type === "transfer" ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName, "Nominal (Rp)": t.amount, "Catatan": noteStr };
+    
+    const excelData = unrolledData.map((t, idx) => {
+      return { 
+        "No": idx + 1, 
+        "Tanggal": t.tDate, 
+        "Waktu": t.tTime || "-", 
+        "Tipe": t.type === "income" ? "Pemasukan" : t.type === "expense" ? "Pengeluaran" : "Transfer", 
+        "Kategori": t.category, 
+        "Dompet": t.type === "transfer" ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName, 
+        "Nominal (Rp)": t.amount, 
+        "Catatan": t.note || "-" 
+      };
     });
+    
     const XLSX = await import("xlsx");
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
@@ -549,7 +557,8 @@ export default function ReportsTab({
   };
 
   const generatePrintHTML = () => {
-    const tableRows = currentMonthTxs.map(t => `
+    const unrolledData = unrollSplits(currentMonthTxs);
+    const tableRows = unrolledData.map(t => `
       <tr style="border-bottom: 1px solid #e2e8f0;">
         <td style="padding: 12px 10px; font-weight: 500;">${new Date(t.tDate).toLocaleDateString('id-ID', {day: '2-digit', month: 'short'})}</td>
         <td style="padding: 12px 10px; font-weight: bold;">${t.note || t.category}</td>
