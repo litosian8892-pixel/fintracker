@@ -528,32 +528,146 @@ export default function ReportsTab({
 
   const currentTheme = themeMap[accent];
 
-  // FIX: FUNGSI EXCEL LOKAL AGAR MENURUTI FILTER TRIP & CUSTOM DATE
+  // FITUR BARU: EXCEL PREMIUM MULTI-SHEET (DYNAMIC LAZY LOADING)
   const handleLocalExportToExcel = async () => {
     const unrolledData = unrollSplits(currentMonthTxs);
     if (unrolledData.length === 0) return alert("Tidak ada data transaksi pada periode ini!");
     triggerHaptic();
     
-    const excelData = unrolledData.map((t, idx) => {
-      return { 
-        "No": idx + 1, 
-        "Tanggal": t.tDate, 
-        "Waktu": t.tTime || "-", 
-        "Tipe": t.type === "income" ? "Pemasukan" : t.type === "expense" ? "Pengeluaran" : "Transfer", 
-        "Kategori": t.category, 
-        "Dompet": t.type === "transfer" ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName, 
-        "Nominal (Rp)": t.amount, 
-        "Catatan": t.note || "-" 
-      };
-    });
-    
-    const XLSX = await import("xlsx");
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan");
-    worksheet["!cols"] = [{ wch: 5 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 25 }, { wch: 25 }, { wch: 18 }, { wch: 35 }];
-    const fileName = `Laporan_${isCustomDateRange ? 'Custom' : reportMonth}${selectedTripFilter !== 'Non-Travel' ? '_Trip' : ''}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    try {
+      // 1. Dynamic Import (Hanya didownload saat tombol dipencet, HP/Aplikasi tetap ringan!)
+      const ExcelJS = (await import('exceljs')).default || await import('exceljs');
+      const FileSaver = (await import('file-saver')).default || await import('file-saver');
+      const saveAs = FileSaver.saveAs || FileSaver;
+
+      // 2. Inisiasi Workbook (File Excel)
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'Fintracker App';
+      wb.created = new Date();
+
+      // ==========================================
+      // SHEET 1: RINGKASAN (DASHBOARD)
+      // ==========================================
+      const ws1 = wb.addWorksheet('Ringkasan Laporan');
+      ws1.columns = [{ width: 25 }, { width: 25 }];
+      
+      // Judul Besar
+      ws1.mergeCells('A1:B2');
+      const titleCell = ws1.getCell('A1');
+      titleCell.value = 'LAPORAN KEUANGAN FINTRACKER';
+      titleCell.font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }; // Biru Gelap (Navy)
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // Data Ringkasan
+      ws1.getCell('A4').value = 'Periode Laporan:';
+      ws1.getCell('B4').value = periodDisplayTitle;
+      ws1.getCell('B4').font = { bold: true };
+
+      ws1.getCell('A6').value = 'Total Pemasukan:';
+      ws1.getCell('B6').value = localTotalIncome;
+      ws1.getCell('B6').font = { color: { argb: 'FF10B981' }, bold: true }; // Hijau
+
+      ws1.getCell('A7').value = 'Total Pengeluaran:';
+      ws1.getCell('B7').value = localTotalExpense;
+      ws1.getCell('B7').font = { color: { argb: 'FFEF4444' }, bold: true }; // Merah
+
+      ws1.getCell('A8').value = 'Arus Kas (Net):';
+      ws1.getCell('B8').value = localTotalIncome - localTotalExpense;
+      const netCell = ws1.getCell('B8');
+      netCell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      netCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: (localTotalIncome - localTotalExpense) >= 0 ? 'FF10B981' : 'FFEF4444' } };
+      
+      // Format Angka jadi Rupiah
+      ['B6', 'B7', 'B8'].forEach(cell => {
+        ws1.getCell(cell).numFmt = '"Rp"#,##0_ ;[Red]\-"Rp"#,##0';
+        ws1.getCell(cell).alignment = { horizontal: 'left' };
+      });
+
+      // ==========================================
+      // SHEET 2: ANALISIS KATEGORI
+      // ==========================================
+      const ws2 = wb.addWorksheet('Analisis Kategori');
+      ws2.columns = [
+        { header: 'Kategori Pengeluaran', key: 'cat', width: 35 },
+        { header: 'Tipe Kategori', key: 'type', width: 25 },
+        { header: 'Total (Rp)', key: 'total', width: 25 }
+      ];
+      
+      // Style Header Tabel 2
+      const headerRow2 = ws2.getRow(1);
+      headerRow2.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF475569' } }; // Abu-abu gelap
+
+      // Data Kategori
+      const categoryRows = Object.keys(expGrouped).map(k => ({
+        cat: k,
+        type: getCatType(k) === 'fixed' ? 'Tetap (Fixed)' : 'Variabel (Jajan)',
+        total: expGrouped[k]
+      })).sort((a,b) => b.total - a.total);
+
+      categoryRows.forEach(row => {
+        const addedRow = ws2.addRow(row);
+        addedRow.getCell('total').numFmt = '"Rp"#,##0_ ;[Red]\-"Rp"#,##0';
+        // Beri warna elegan untuk tipe kategori
+        if (row.type === 'Tetap (Fixed)') addedRow.getCell('type').font = { color: { argb: 'FF7C3AED' }, bold: true }; // Ungu
+        else addedRow.getCell('type').font = { color: { argb: 'FFD97706' }, bold: true }; // Orange
+      });
+
+      // ==========================================
+      // SHEET 3: DATA MENTAH (AUDIT TRAIL)
+      // ==========================================
+      const ws3 = wb.addWorksheet('Data Mentah', { views: [{ state: 'frozen', ySplit: 1 }] });
+      ws3.columns = [
+        { header: 'No', key: 'no', width: 6 },
+        { header: 'Tanggal', key: 'date', width: 15 },
+        { header: 'Waktu', key: 'time', width: 10 },
+        { header: 'Tipe', key: 'type', width: 15 },
+        { header: 'Kategori', key: 'category', width: 30 },
+        { header: 'Dompet', key: 'wallet', width: 35 },
+        { header: 'Nominal (Rp)', key: 'amount', width: 20 },
+        { header: 'Catatan', key: 'note', width: 50 }
+      ];
+
+      // Style Header Tabel 3
+      const headerRow3 = ws3.getRow(1);
+      headerRow3.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow3.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }; // Biru Gelap
+      headerRow3.alignment = { horizontal: 'center' };
+
+      unrolledData.forEach((t, idx) => {
+        const row = ws3.addRow({
+          no: idx + 1,
+          date: t.tDate,
+          time: t.tTime || "-",
+          type: t.type === "income" ? "Pemasukan" : t.type === "expense" ? "Pengeluaran" : "Transfer",
+          category: t.category,
+          wallet: t.type === "transfer" ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName,
+          amount: t.amount,
+          note: t.note || "-"
+        });
+
+        // Format Nominal & Warna
+        const amountCell = row.getCell('amount');
+        amountCell.numFmt = '"Rp"#,##0_ ;[Red]\-"Rp"#,##0';
+        if (t.type === 'expense') amountCell.font = { color: { argb: 'FFEF4444' }, bold: true };
+        else if (t.type === 'income') amountCell.font = { color: { argb: 'FF10B981' }, bold: true };
+        
+        row.getCell('no').alignment = { horizontal: 'center' };
+        row.getCell('date').alignment = { horizontal: 'center' };
+        row.getCell('time').alignment = { horizontal: 'center' };
+      });
+
+      // 3. Simpan dan Download File
+      const buffer = await wb.xlsx.writeBuffer();
+      const fileName = `Laporan_Premium_${isCustomDateRange ? 'Custom' : reportMonth}${selectedTripFilter !== 'Non-Travel' ? '_Trip' : ''}.xlsx`;
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, fileName);
+
+    } catch (error) {
+      console.error(error);
+      alert("Terjadi kesalahan saat membuat file Excel Premium.");
+    }
   };
 
   const generatePrintHTML = () => {
