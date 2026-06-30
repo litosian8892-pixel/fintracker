@@ -401,8 +401,14 @@ export default function HomeTab({
 
   const formatCurrencyTerbaca = (val: string, currencyCode?: string) => { if (!val) return `${getCurrencySymbol(currencyCode)} 0`; const parsed = safeEvaluate(val); const code = currencyCode || "IDR"; return new Intl.NumberFormat("id-ID", { style: "currency", currency: code.toUpperCase() === "IDR" ? "IDR" : code.toUpperCase(), minimumFractionDigits: 0, maximumFractionDigits: code.toUpperCase() === "IDR" ? 0 : 2 }).format(parsed); };
 
-  const handleTypeChange = (newType: "income" | "expense" | "transfer") => { setTType(newType); setTAccountId(""); setTToAccountId(""); setSplits([]); if (newType !== "transfer") setTCategory(""); };
-  const handleEditTypeChange = (newType: "income" | "expense" | "transfer") => { setEditTType(newType); setEditTAccountId(""); setEditTToAccountId(""); setEditTSplits([]); if (newType !== "transfer") setEditTCategory(""); };
+  const handleTypeChange = (newType: "income" | "expense" | "transfer") => { 
+    flushSync(() => { setTType(newType); setTAccountId(""); setTToAccountId(""); setSplits([]); if (newType !== "transfer") setTCategory(""); });
+    if (noteInputRef.current) noteInputRef.current.focus();
+  };
+  const handleEditTypeChange = (newType: "income" | "expense" | "transfer") => { 
+    flushSync(() => { setEditTType(newType); setEditTAccountId(""); setEditTToAccountId(""); setEditTSplits([]); if (newType !== "transfer") setEditTCategory(""); });
+    if (noteInputRef.current) noteInputRef.current.focus();
+  };
 
   useEffect(() => { 
     if (tType === "transfer") { 
