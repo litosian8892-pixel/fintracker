@@ -1058,24 +1058,6 @@ export default function FintrackerApp() {
   const prevTotalExpense = prevCombinedExpense.reduce((a, b) => a + b.amount, 0);
   const prevTotalIncome = prevMonthTransactions.filter(t => !(t as any).tripId && t.type === 'income').reduce((a, b) => a + b.amount, 0);
 
-  const handleExportToExcel = async () => {
-    const monthlyTransactions = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
-    if (monthlyTransactions.length === 0) return alert("Tidak ada data transaksi di bulan ini!");
-    const excelData = monthlyTransactions.map((t, idx) => {
-      let categoryStr = t.category;
-      if (t.splits && t.splits.length > 0) categoryStr = "Split: " + t.splits.map(s => `${s.category} (Rp ${s.amount.toLocaleString('id-ID')})`).join(', ');
-      let noteStr = t.note || "-";
-      if (t.splits && t.splits.length > 0) { const splitNotes = t.splits.map(s => s.note).filter(Boolean); if (splitNotes.length > 0) { noteStr = `${noteStr} [Pecahan: ${splitNotes.join(', ')}]`; } }
-      return { "No": idx + 1, "Tanggal": t.tDate, "Waktu": t.tTime || "-", "Tipe": t.type === "income" ? "Pemasukan" : t.type === "expense" ? "Pengeluaran" : "Transfer", "Kategori": categoryStr, "Dompet": t.type === "transfer" ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName, "Nominal (Rp)": t.amount, "Catatan": noteStr };
-    });
-    const XLSX = await import("xlsx");
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan");
-    worksheet["!cols"] = [{ wch: 5 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 25 }, { wch: 25 }, { wch: 18 }, { wch: 35 }];
-    XLSX.writeFile(workbook, `Fintracker_Laporan_${reportMonth}.xlsx`);
-  };
-
   if (isOldDomain) {
     return (
       <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 transition-colors duration-200">
@@ -1201,7 +1183,7 @@ export default function FintrackerApp() {
               />
             )}
             {activeTab === "reports" && (
-              <ReportsTab reportMonth={reportMonth} setReportMonth={setReportMonth} handleExportToExcel={handleExportToExcel} totalIncome={totalIncome} totalExpense={totalExpense} pieData={pieData} incomeCategoryList={incomeCategoryList} barData={barData} categories={categories} reportTransactions={reportTransactions} globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult} prevTotalIncome={prevTotalIncome} prevTotalExpense={prevTotalExpense} isPrivacyMode={isPrivacyMode} accounts={accounts} updateCategory={handleEditCategory} />
+              <ReportsTab reportMonth={reportMonth} setReportMonth={setReportMonth} totalIncome={totalIncome} totalExpense={totalExpense} pieData={pieData} incomeCategoryList={incomeCategoryList} barData={barData} categories={categories} reportTransactions={reportTransactions} globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult} prevTotalIncome={prevTotalIncome} prevTotalExpense={prevTotalExpense} isPrivacyMode={isPrivacyMode} accounts={accounts} updateCategory={handleEditCategory} />
             )}
             {activeTab === "debts" && (
               <DebtsTab debts={debts} accounts={accounts} categories={categories} handleAddDebt={handleAddDebt} handleEditDebt={handleEditDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} subscriptions={subscriptions} handleAddSubscription={handleAddSubscription} handleEditSubscription={handleEditSubscription} handlePaySubscription={handlePaySubscription} handleDeleteSubscription={handleDeleteSubscription} isPrivacyMode={isPrivacyMode} />

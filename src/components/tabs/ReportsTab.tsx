@@ -118,7 +118,7 @@ const getCategoryIcon = (catName: string) => {
 };
 
 interface ReportsTabProps {
-  reportMonth: string; setReportMonth: (val: string) => void; handleExportToExcel: () => void;
+  reportMonth: string; setReportMonth: (val: string) => void;
   totalIncome: number; totalExpense: number; pieData: { name: string; value: number }[];
   incomeCategoryList: { name: string; value: number }[]; barData: { date: string; amount: number }[];
   categories: CategoryData[]; reportTransactions: TransactionData[];
@@ -129,7 +129,7 @@ interface ReportsTabProps {
 }
 
 export default function ReportsTab({
-  reportMonth, setReportMonth, handleExportToExcel, categories, reportTransactions, globalSearch, setGlobalSearch, searchResult, isPrivacyMode = false, accounts = [], updateCategory, prevTotalIncome, prevTotalExpense, pieData, incomeCategoryList, barData
+  reportMonth, setReportMonth, categories, reportTransactions, globalSearch, setGlobalSearch, searchResult, isPrivacyMode = false, accounts = [], updateCategory, prevTotalIncome, prevTotalExpense, pieData, incomeCategoryList, barData
 }: ReportsTabProps) {
   
   // EXTRA FILTER UNTUK TRAVEL MODE
