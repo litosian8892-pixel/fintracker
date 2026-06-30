@@ -175,6 +175,7 @@ export default function DebtsTab({
 
   const [subAccSelector, setSubAccSelector] = useState<"add" | "edit" | null>(null);
   const [subCatSelector, setSubCatSelector] = useState<"add" | "edit" | null>(null);
+  const [debtAccSelector, setDebtAccSelector] = useState(false);
 
   const [activeKeypad, setActiveKeypad] = useState<"add" | "edit" | "pay" | "add-sub" | "edit-sub" | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -702,12 +703,11 @@ export default function DebtsTab({
                       );
                     })}
                   </div>
-                )}
+               )}
               </div>
             </div>
 
-// === SELESAI PART 1 - HARAP BALAS UNTUK MENERIMA PART 2 ===
-) : (
+          ) : (
             <div className="space-y-6 text-left animate-in fade-in duration-200">
               {/* KARTU ATAS LANGGANAN INTEGRASI AKSEN TEMA GRADASI DUA WARNA PREMIUM */}
               <div className={`p-6 rounded-[26px] shadow-sm text-left relative overflow-hidden border border-white/10 bg-gradient-to-br ${currentTheme.subGradient}`}>
@@ -846,7 +846,7 @@ export default function DebtsTab({
           <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 z-10 flex flex-col h-[85vh] sm:h-[85vh] border-t border-slate-200 dark:border-slate-800">
             
             {/* Dynamic Header */}
-            <div className={`p-6 ${currentTheme.activePill.split(' ')[0]} text-white shrink-0 transition-colors duration-300 relative`}>
+            <div className={`p-6 ${showAddSubForm || editingSubId ? currentTheme.activePill.split(' ')[0] : (activeType === 'debt' ? 'bg-red-600' : 'bg-emerald-500')} text-white shrink-0 transition-colors duration-300 relative`}>
               <button type="button" onClick={closeDrawer} className="absolute top-4 left-4 p-1.5 hover:bg-white/10 text-white rounded-full"><X size={16} /></button>
               <div className="flex items-center justify-between mt-4">
                 <div className="flex items-center gap-3">
@@ -857,11 +857,14 @@ export default function DebtsTab({
                     <span className="text-[10px] font-black text-white/70 uppercase tracking-widest block mb-1">
                       {editingDebtId ? "Koreksi Catatan" : editingSubId ? "Koreksi Langganan" : showAddForm ? "Catat Baru" : "Daftarkan Langganan"}
                     </span>
-                    <div className="text-xl font-black leading-tight flex items-baseline gap-1">
-                      {showAddForm || editingDebtId ? (activeType === "debt" ? "Utang Saya" : "Piutang Orang") : "Beban Tagihan Tetap"}
+                    <div className="text-3xl font-black leading-none flex items-baseline gap-1">
+                      {(showAddForm || editingDebtId) 
+                        ? (editingDebtId ? (editAmount ? safeEvaluate(editAmount).toLocaleString("id-ID") : "0") : (amount ? safeEvaluate(amount).toLocaleString("id-ID") : "0"))
+                        : (editingSubId ? (editSubAmount ? safeEvaluate(editSubAmount).toLocaleString("id-ID") : "0") : (subAmount ? safeEvaluate(subAmount).toLocaleString("id-ID") : "0"))}
                     </div>
                   </div>
                 </div>
+                <div className="text-xs font-black bg-white/10 border border-white/20 px-3 py-1.5 rounded-xl uppercase tracking-wider">IDR</div>
               </div>
             </div>
 
@@ -931,17 +934,17 @@ export default function DebtsTab({
                   {!editingDebtId && activeType === "receivable" && (
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Sumber Dana (Dompet)</label>
-                      <div className="relative">
-                        <Wallet className="absolute left-3.5 top-3.5 text-slate-400" size={15}/>
-                        <select 
-                          className="w-full pl-10 pr-3 py-3.5 bg-slate-50 dark:bg-slate-900 rounded-2xl text-xs font-bold outline-none cursor-pointer border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white focus:border-blue-500 appearance-none" 
-                          value={sourceAccountId} 
-                          onChange={e => setSourceAccountId(e.target.value)}
-                        >
-                          <option value="" disabled>Kirim dari Dompet...</option>
-                          {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} (Saldo: Rp {acc.balance.toLocaleString('id-ID')})</option>)}
-                        </select>
-                        <ChevronDown className="absolute right-4 top-4 text-slate-400 pointer-events-none" size={14} />
+                      <div 
+                        onClick={() => { triggerHaptic(); setDebtAccSelector(true); }}
+                        className="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <Wallet size={14} className="text-slate-400 shrink-0" />
+                          <span className="truncate text-slate-700 dark:text-slate-300">
+                            {sourceAccountId ? (accounts.find(a => a.id === sourceAccountId)?.name || "Pilih Dompet...") : "Pilih dompet sumber dana..."}
+                          </span>
+                        </div>
+                        <ChevronDown size={14} className="text-slate-400 shrink-0" />
                       </div>
                     </div>
                   )}
@@ -1072,12 +1075,11 @@ export default function DebtsTab({
               <button type="button" onClick={closeDrawer} className="py-3.5 px-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer transition-all">Batal</button>
             </div>
 
-          </div>
+        </div>
         </div>
       )}
 
-// === SELESAI PART 2 - HARAP BALAS UNTUK MENERIMA PART 3 ===
-{/* FLOATING KEYPAD DRAWER UNTUK KALKULATOR MOBILE */}
+      {/* FLOATING KEYPAD DRAWER UNTUK KALKULATOR MOBILE */}
       {isMobile && activeKeypad !== null && (
         <div className="relative">
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
@@ -1177,6 +1179,58 @@ export default function DebtsTab({
               >
                 Ya
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* BOTTOM SHEET: PILIH DOMPET PIUTANG ORANG */}
+      {/* ========================================== */}
+      {debtAccSelector && (
+        <div className="fixed inset-0 z-[190] flex items-end justify-center bg-slate-900/60 animate-in fade-in duration-200">
+          <div className="absolute inset-0 z-0" onClick={() => setDebtAccSelector(false)}></div>
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[32px] shadow-2xl p-6 pb-8 overflow-hidden z-10 flex flex-col max-h-[85vh] border-t border-slate-200 dark:border-slate-800 text-left animate-in slide-in-from-bottom duration-300">
+            <div className="w-full flex justify-center pb-2"><div className="w-12 h-1 bg-slate-200 dark:bg-slate-800 rounded-full"></div></div>
+            <div className="flex justify-between items-center mb-6 pt-2">
+              <div className="flex items-center gap-2">
+                <Wallet size={18} className={currentTheme.text} />
+                <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Pilih Dompet Sumber Dana</h3>
+              </div>
+              <button type="button" onClick={() => setDebtAccSelector(false)} className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-505 rounded-full cursor-pointer transition-colors"><X size={14} className="text-slate-700 dark:text-slate-300" /></button>
+            </div>
+            <div className="overflow-y-auto no-scrollbar pr-1">
+              <div className="grid grid-cols-2 gap-3">
+                {accounts.map(acc => {
+                  const isSelected = sourceAccountId === acc.id;
+                  return (
+                    <div 
+                      key={acc.id}
+                      onClick={() => { triggerHaptic(); setSourceAccountId(acc.id); setDebtAccSelector(false); }}
+                      className={`p-4 rounded-2xl border text-left flex flex-col justify-between relative transition-all active:scale-95 cursor-pointer h-28 ${
+                        isSelected 
+                          ? currentTheme.payAccSelected
+                          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        {acc.logo ? (
+                          <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                            <Wallet size={16} />
+                          </div>
+                        )}
+                        {isSelected && <div className={`w-4 h-4 rounded-full text-white flex items-center justify-center text-[8px] font-black ${currentTheme.activeBg}`}>✓</div>}
+                      </div>
+                      <div className="mt-2 min-w-0">
+                        <p className="text-xs font-black text-slate-800 dark:text-white truncate leading-none mb-1">{acc.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate leading-none">Rp {acc.balance.toLocaleString("id-ID")}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
