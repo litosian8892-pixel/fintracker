@@ -564,22 +564,27 @@ export default function ReportsTab({
       ws1.getCell('B4').value = periodDisplayTitle;
       ws1.getCell('B4').font = { bold: true };
 
-      ws1.getCell('A6').value = 'Total Pemasukan:';
-      ws1.getCell('B6').value = localTotalIncome;
-      ws1.getCell('B6').font = { color: { argb: 'FF10B981' }, bold: true }; // Hijau
+      // TAMBAHAN: INFO LABEL FILTER AGAR JELAS
+      ws1.getCell('A5').value = 'Filter Data:';
+      ws1.getCell('B5').value = selectedTripFilter === "Non-Travel" ? "Rutin (Tanpa Liburan)" : selectedTripFilter === "All" ? "Gabungan (Semua Data)" : `Trip: ${selectedTripFilter}`;
+      ws1.getCell('B5').font = { bold: true, color: { argb: 'FF6366F1' } };
 
-      ws1.getCell('A7').value = 'Total Pengeluaran:';
-      ws1.getCell('B7').value = localTotalExpense;
-      ws1.getCell('B7').font = { color: { argb: 'FFEF4444' }, bold: true }; // Merah
+      ws1.getCell('A7').value = 'Total Pemasukan:';
+      ws1.getCell('B7').value = localTotalIncome;
+      ws1.getCell('B7').font = { color: { argb: 'FF10B981' }, bold: true }; // Hijau
 
-      ws1.getCell('A8').value = 'Arus Kas (Net):';
-      ws1.getCell('B8').value = localTotalIncome - localTotalExpense;
-      const netCell = ws1.getCell('B8');
+      ws1.getCell('A8').value = 'Total Pengeluaran:';
+      ws1.getCell('B8').value = localTotalExpense;
+      ws1.getCell('B8').font = { color: { argb: 'FFEF4444' }, bold: true }; // Merah
+
+      ws1.getCell('A9').value = 'Arus Kas (Net):';
+      ws1.getCell('B9').value = localTotalIncome - localTotalExpense;
+      const netCell = ws1.getCell('B9');
       netCell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       netCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: (localTotalIncome - localTotalExpense) >= 0 ? 'FF10B981' : 'FFEF4444' } };
       
       // Format Angka jadi Rupiah
-      ['B6', 'B7', 'B8'].forEach(cell => {
+      ['B7', 'B8', 'B9'].forEach(cell => {
         ws1.getCell(cell).numFmt = '"Rp"#,##0_ ;[Red]\-"Rp"#,##0';
         ws1.getCell(cell).alignment = { horizontal: 'left' };
       });
@@ -626,7 +631,8 @@ export default function ReportsTab({
         { header: 'Kategori', key: 'category', width: 30 },
         { header: 'Dompet', key: 'wallet', width: 35 },
         { header: 'Nominal (Rp)', key: 'amount', width: 20 },
-        { header: 'Catatan', key: 'note', width: 50 }
+        { header: 'Catatan', key: 'note', width: 45 },
+        { header: 'Label Trip', key: 'trip', width: 20 } // KOLOM BARU UNTUK TRAVEL MODE
       ];
 
       // Style Header Tabel 3
@@ -644,7 +650,8 @@ export default function ReportsTab({
           category: t.category,
           wallet: t.type === "transfer" ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName,
           amount: t.amount,
-          note: t.note || "-"
+          note: t.note || "-",
+          trip: (t as any).tripId || "Rutin" // ISI DATA LABEL TRIP
         });
 
         // Format Nominal & Warna
@@ -656,6 +663,15 @@ export default function ReportsTab({
         row.getCell('no').alignment = { horizontal: 'center' };
         row.getCell('date').alignment = { horizontal: 'center' };
         row.getCell('time').alignment = { horizontal: 'center' };
+        
+        // Warnai kolom Trip kalau itu transaksi liburan
+        if ((t as any).tripId) {
+          row.getCell('trip').font = { color: { argb: 'FF6366F1' }, bold: true };
+          row.getCell('trip').alignment = { horizontal: 'center' };
+        } else {
+          row.getCell('trip').font = { color: { argb: 'FF94A3B8' } };
+          row.getCell('trip').alignment = { horizontal: 'center' };
+        }
       });
 
       // 3. Simpan dan Download File
