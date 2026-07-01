@@ -189,6 +189,7 @@ export default function ReportsTab({
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
   const [newBudgetCat, setNewBudgetCat] = useState<CategoryData | null>(null);
   const [showBudgetCatSelector, setShowBudgetCatSelector] = useState(false);
+  const [budgetCatSearch, setBudgetCatSearch] = useState("");
 
   // JALAN PINTAS: CUSTOM DATE RANGE (Siklus Gajian Fleksibel)
   const [isCustomDateRange, setIsCustomDateRange] = useState(false);
@@ -1881,13 +1882,13 @@ export default function ReportsTab({
                   <div className="space-y-1 relative">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pilih Kategori Pengeluaran</label>
                     <div 
-                      onClick={() => { triggerHaptic(); setShowBudgetCatSelector(!showBudgetCatSelector); }}
+                      onClick={() => { triggerHaptic(); setShowBudgetCatSelector(true); setBudgetCatSearch(""); }}
                       className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     >
                       <div className="flex items-center gap-2 truncate">
                         {newBudgetCat ? (
                           <>
-                            <span className="mr-1">{newBudgetCat.icon || "🏷️"}</span>
+                            <span className="mr-2">{newBudgetCat.icon || "🏷️"}</span>
                             {newBudgetCat.name}
                           </>
                         ) : "Pilih Kategori..."}
@@ -1895,26 +1896,51 @@ export default function ReportsTab({
                       <ChevronDown size={16} className="text-slate-400 shrink-0" />
                     </div>
 
+                    {/* MODAL BOTTOM SHEET PILIH KATEGORI ANGGARAN (PREMIUM) */}
                     {showBudgetCatSelector && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setShowBudgetCatSelector(false)}></div>
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-60 overflow-y-auto no-scrollbar">
-                          {categories.filter(c => c.type === 'expense' && (!c.budgetLimit || c.budgetLimit === 0)).length === 0 ? (
-                            <div className="p-4 text-center text-xs font-bold text-slate-500">Semua kategori sudah diatur anggarannya.</div>
-                          ) : (
-                            categories.filter(c => c.type === 'expense' && (!c.budgetLimit || c.budgetLimit === 0)).sort((a,b) => a.name.localeCompare(b.name)).map(cat => (
-                              <div 
-                                key={cat.id} 
-                                onClick={() => { triggerHaptic(); setNewBudgetCat(cat); setShowBudgetCatSelector(false); }} 
-                                className="p-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-0 transition-colors"
-                              >
-                                <span className="text-lg">{cat.icon || "🏷️"}</span>
-                                <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{cat.name}</span>
+                      <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={(e) => { e.stopPropagation(); setShowBudgetCatSelector(false); }}>
+                        <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-100 dark:border-slate-800" onClick={e => e.stopPropagation()}>
+                          <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
+                            <h3 className="font-black text-slate-800 dark:text-white flex items-center gap-2 text-sm"><span>🏷️</span> Pilih Kategori Anggaran</h3>
+                            <button type="button" onClick={() => setShowBudgetCatSelector(false)} className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full cursor-pointer transition-colors"><X size={14}/></button>
+                          </div>
+                          
+                          <div className="p-4 bg-white dark:bg-slate-900 shrink-0 border-b border-slate-100 dark:border-slate-800">
+                            <input type="text" placeholder="Cari kategori pengeluaran..." className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white" value={budgetCatSearch} onChange={(e) => setBudgetCatSearch(e.target.value)} />
+                          </div>
+                          
+                          <div className="p-5 overflow-y-auto no-scrollbar bg-white dark:bg-slate-900 text-left">
+                            {categories.filter(c => c.type === 'expense' && (!c.budgetLimit || c.budgetLimit === 0)).length === 0 ? (
+                              <p className="text-center text-xs font-bold text-slate-500 py-8">🎉 Semua kategori pengeluaran sudah diatur anggarannya!</p>
+                            ) : (
+                              <div className="grid grid-cols-2 gap-4">
+                                {/* KOLOM VARIABEL */}
+                                <div className="space-y-2">
+                                  <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-orange-100 dark:border-orange-900/30 z-10"><p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">🟠 Variabel</p></div>
+                                  <div className="flex flex-col gap-1.5">
+                                    {categories.filter(c => c.type === "expense" && (!c.budgetLimit || c.budgetLimit === 0) && c.expenseType !== "fixed" && c.name.toLowerCase().includes(budgetCatSearch.toLowerCase())).sort((a,b) => a.name.localeCompare(b.name)).map(cat => (
+                                      <button key={cat.id} type="button" onClick={() => { triggerHaptic(); setNewBudgetCat(cat); setShowBudgetCatSelector(false); }} className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold border cursor-pointer bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-100/50 dark:hover:bg-slate-800/80 transition-all flex items-center gap-2">
+                                        <span className="w-5 text-center shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span><span className="truncate flex-1 text-left">{cat.name}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                {/* KOLOM TETAP */}
+                                <div className="space-y-2 border-l border-slate-100 dark:border-slate-800 pl-4">
+                                  <div className="sticky top-0 bg-white dark:bg-slate-900 pb-2 border-b border-purple-100 dark:border-purple-900/30 z-10"><p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">🟣 Tetap</p></div>
+                                  <div className="flex flex-col gap-1.5">
+                                    {categories.filter(c => c.type === "expense" && (!c.budgetLimit || c.budgetLimit === 0) && c.expenseType === "fixed" && c.name.toLowerCase().includes(budgetCatSearch.toLowerCase())).sort((a,b) => a.name.localeCompare(b.name)).map(cat => (
+                                      <button key={cat.id} type="button" onClick={() => { triggerHaptic(); setNewBudgetCat(cat); setShowBudgetCatSelector(false); }} className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold border cursor-pointer bg-slate-50 text-slate-800 dark:bg-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-100/50 dark:hover:bg-slate-800/80 transition-all flex items-center gap-2">
+                                        <span className="w-5 text-center shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span><span className="truncate flex-1 text-left">{cat.name}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
                               </div>
-                            ))
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 )}
