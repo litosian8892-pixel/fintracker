@@ -637,7 +637,15 @@ export default function HomeTab({
     for (const cat of categories) {
       if (cat.type === 'expense' && cat.budgetLimit && cat.budgetLimit > 0) {
         const spent = expenseByCategory[cat.name] || 0; const percentage = (spent / cat.budgetLimit) * 100;
-        if (percentage >= 100) { budgetWarning = { text: `Gawat! Pengeluaran '${cat.name}' sudah melebihi batas budget bulan ini.`, icon: "🚨", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30", border: "border-rose-100 dark:border-rose-900/30" }; break; } else if (percentage >= 80) { budgetWarning = { text: `Hati-hati, pengeluaran '${cat.name}' sudah mencapai ${percentage.toFixed(0)}% dari batas budgetmu!`, icon: "⚠️", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-100 dark:border-amber-900/30" }; }
+        if (percentage > 100) { 
+          budgetWarning = { text: `Gawat! Pengeluaran '${cat.name}' sudah melebihi batas budget bulan ini.`, icon: "🚨", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30", border: "border-rose-100 dark:border-rose-900/30" }; 
+          break; 
+        } else if (percentage === 100) {
+          budgetWarning = { text: `Perhatian! Anggaran untuk '${cat.name}' sudah pas habis tak bersisa (100%).`, icon: "🛑", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" }; 
+          break; 
+        } else if (percentage >= 80) { 
+          budgetWarning = { text: `Hati-hati, pengeluaran '${cat.name}' sudah mencapai ${percentage.toFixed(0)}% dari batas budgetmu!`, icon: "⚠️", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-100 dark:border-amber-900/30" }; 
+        }
       }
     }
     if (budgetWarning) return budgetWarning;
