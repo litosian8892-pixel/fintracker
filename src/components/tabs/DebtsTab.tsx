@@ -1162,12 +1162,12 @@ export default function DebtsTab({
                 .
               </button>
               
-              {["(", "0", ")"].map((char) => (
+              {["00", "0", "000"].map((char) => (
                 <button 
                   key={char} 
                   type="button" 
                   onClick={() => handleKeypadPress(char)} 
-                  className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-850" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/10`}
+                  className={`bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 py-3.5 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10`}
                 >
                   {char}
                 </button>

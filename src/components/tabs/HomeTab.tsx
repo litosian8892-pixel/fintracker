@@ -1028,13 +1028,6 @@ export default function HomeTab({
                     <div className="relative">
                       <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("amount"); setActiveEditSplitKeypadIndex(null); } }} className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-white focus:border-blue-500" placeholder="0" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
                     </div>
-                    {/* QUICK NOMINAL PILLS */}
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1.5 pb-0.5 px-0.5">
-                      <button type="button" onClick={() => { triggerHaptic(); setEditTAmount((editTAmount || "0") + "000"); }} className={`shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-black border transition-all cursor-pointer active:scale-95 shadow-sm ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>+000</button>
-                      <button type="button" onClick={() => { triggerHaptic(); setEditTAmount((safeEvaluate(editTAmount) + 10000).toString()); }} className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all cursor-pointer active:scale-95 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">+10 Rb</button>
-                      <button type="button" onClick={() => { triggerHaptic(); setEditTAmount((safeEvaluate(editTAmount) + 50000).toString()); }} className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all cursor-pointer active:scale-95 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">+50 Rb</button>
-                      <button type="button" onClick={() => { triggerHaptic(); setEditTAmount((safeEvaluate(editTAmount) + 100000).toString()); }} className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all cursor-pointer active:scale-95 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">+100 Rb</button>
-                    </div>
                     <div className="flex justify-between items-start px-1 mt-1 min-h-[16px]">
                       {editTAmount ? <p className="text-[10px] font-bold text-slate-400">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editTAmount, selectedSourceAcc?.currency)}</span></p> : <div></div>}
                       {/* UX Premium: Live Overdraft Warning (Mencegah dompet minus) */}
@@ -1049,13 +1042,6 @@ export default function HomeTab({
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
                   <div className="relative">
                     <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("amount"); setActiveSplitKeypadIndex(null); } }} className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-white focus:border-blue-500" placeholder="0" value={tAmount} onChange={(e) => setTAmount(e.target.value)} />
-                  </div>
-                  {/* QUICK NOMINAL PILLS */}
-                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1.5 pb-0.5 px-0.5">
-                    <button type="button" onClick={() => { triggerHaptic(); setTAmount((tAmount || "0") + "000"); }} className={`shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-black border transition-all cursor-pointer active:scale-95 shadow-sm ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>+000</button>
-                    <button type="button" onClick={() => { triggerHaptic(); setTAmount((safeEvaluate(tAmount) + 10000).toString()); }} className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all cursor-pointer active:scale-95 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">+10 Rb</button>
-                    <button type="button" onClick={() => { triggerHaptic(); setTAmount((safeEvaluate(tAmount) + 50000).toString()); }} className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all cursor-pointer active:scale-95 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">+50 Rb</button>
-                    <button type="button" onClick={() => { triggerHaptic(); setTAmount((safeEvaluate(tAmount) + 100000).toString()); }} className="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all cursor-pointer active:scale-95 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">+100 Rb</button>
                   </div>
                   <div className="flex justify-between items-start px-1 mt-1 min-h-[16px]">
                     {tAmount ? <p className="text-[10px] font-bold text-slate-400">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(tAmount, selectedSourceAcc?.currency)}</span></p> : <div></div>}
@@ -1713,8 +1699,8 @@ export default function HomeTab({
                 <button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/45 dark:border-slate-800/10">{num}</button>
               ))}
               <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress(".") : handleKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
-              {["(", "0", ")"].map((char) => (
-                <button key={char} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(char) : handleKeypadPress(char)} className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/10`}>{char}</button>
+              {["00", "0", "000"].map((char) => (
+                <button key={char} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(char) : handleKeypadPress(char)} className={`bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 py-3.5 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10`}>{char}</button>
               ))}
               <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("Ya") : handleKeypadPress("Ya")} className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}>Ya</button>
             </div>
@@ -1747,8 +1733,8 @@ export default function HomeTab({
                 <button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/45 dark:border-slate-800/10">{num}</button>
               ))}
               <button type="button" onClick={() => handleSplitKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
-              {["(", "0", ")"].map((char) => (
-                <button key={char} type="button" onClick={() => handleSplitKeypadPress(char)} className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/10`}>{char}</button>
+              {["00", "0", "000"].map((char) => (
+                <button key={char} type="button" onClick={() => handleSplitKeypadPress(char)} className={`bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 py-3.5 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10`}>{char}</button>
               ))}
               <button type="button" onClick={() => handleSplitKeypadPress("Ya")} className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}>Ya</button>
             </div>
@@ -1781,8 +1767,8 @@ export default function HomeTab({
                 <button key={num} type="button" onClick={() => handleEditSplitKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/45 dark:border-slate-800/10">{num}</button>
               ))}
               <button type="button" onClick={() => handleEditSplitKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
-              {["(", "0", ")"].map((char) => (
-                <button key={char} type="button" onClick={() => handleEditSplitKeypadPress(char)} className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/10`}>{char}</button>
+              {["00", "0", "000"].map((char) => (
+                <button key={char} type="button" onClick={() => handleEditSplitKeypadPress(char)} className={`bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 py-3.5 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10`}>{char}</button>
               ))}
               <button type="button" onClick={() => handleEditSplitKeypadPress("Ya")} className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}>Ya</button>
             </div>
