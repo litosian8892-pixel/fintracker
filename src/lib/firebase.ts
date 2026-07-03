@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getStorage } from "firebase/storage"; // FITUR BARU: Import Cloud Storage
 // Import single tab manager untuk kestabilan di HP
 import { initializeFirestore, persistentLocalCache, persistentSingleTabManager } from "firebase/firestore";
 
@@ -38,4 +39,7 @@ if (typeof window !== "undefined") {
   db = getFirestore(app);
 }
 
-export { app, auth, googleProvider, db };
+// Inisialisasi Cloud Storage untuk fitur Upload Struk
+const storage = getStorage(app);
+
+export { app, auth, googleProvider, db, storage };

@@ -147,6 +147,7 @@ export default function FintrackerApp() {
   const [editTDate, setEditTDate] = useState("");
   const [editTTime, setEditTTime] = useState(""); 
   const [editTAdminFee, setEditTAdminFee] = useState(""); 
+  const [editTReceiptUrl, setEditTReceiptUrl] = useState<string>(""); // FITUR BARU: DIGITAL RECEIPT
   const [activeEditKeypad, setActiveEditKeypad] = useState<"amount" | "adminFee" | null>(null);
   
   const [editTSplits, setEditTSplits] = useState<SplitItemData[]>([]);
@@ -326,6 +327,7 @@ export default function FintrackerApp() {
   const [tCategory, setTCategory] = useState("");
   const [tDate, setTDate] = useState(() => getLocalDateString());
   const [tTime, setTTime] = useState(() => { const now = new Date(); return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`; });
+  const [tReceiptUrl, setTReceiptUrl] = useState<string>(""); // FITUR BARU: DIGITAL RECEIPT
 
   // FITUR PINTAR: Real-Time Auto-Refresh Jam & Tanggal (Ticking Clock)
   useEffect(() => {
@@ -871,13 +873,13 @@ export default function FintrackerApp() {
         
         const newTxRef = doc(collection(db, `users/${user.uid}/transactions`));
         batch.set(newTxRef, { 
-          amount: idrAmount, type: "transfer", accountId: tAccountId, toAccountId: tToAccountId, accountName: sourceAcc.name, toAccountName: destAcc.name, note: tNote || "Transfer Dana", category: "Transfer", tDate, tTime, adminFee: idrAdminFee, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, createdAt: serverTimestamp() 
+          amount: idrAmount, type: "transfer", accountId: tAccountId, toAccountId: tToAccountId, accountName: sourceAcc.name, toAccountName: destAcc.name, note: tNote || "Transfer Dana", category: "Transfer", tDate, tTime, adminFee: idrAdminFee, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, receiptUrl: tReceiptUrl || null, createdAt: serverTimestamp() 
         });
       } else {
           const balanceModifier = tType === "income" ? rawAmount : -rawAmount;
           batch.update(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: increment(balanceModifier) });
         
-        const docData: any = { amount: idrAmount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: tNote, category: (customSplits && customSplits.length > 0) ? "Split Transaksi" : tCategory, tDate, tTime, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, createdAt: serverTimestamp() };
+        const docData: any = { amount: idrAmount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: tNote, category: (customSplits && customSplits.length > 0) ? "Split Transaksi" : tCategory, tDate, tTime, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, receiptUrl: tReceiptUrl || null, createdAt: serverTimestamp() };
         if (isTravelMode) docData.tripId = activeTripName || "Liburan"; // Injeksi Tag Liburan
         if (customSplits && customSplits.length > 0) docData.splits = customSplits.map(s => ({ ...s, amount: s.amount * rateSource }));
         
@@ -887,7 +889,7 @@ export default function FintrackerApp() {
       
       await batch.commit();
 
-      setTAmount(""); setTNote(""); setTAdminFee(""); setTCategory(""); setTAccountId(""); setTToAccountId(""); 
+      setTAmount(""); setTNote(""); setTAdminFee(""); setTCategory(""); setTAccountId(""); setTToAccountId(""); setTReceiptUrl(""); 
       const now = new Date(); setTTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
       alert("Transaksi Sukses!");
     } catch (e) { 
@@ -952,6 +954,7 @@ export default function FintrackerApp() {
     setEditTType(t.type as any); setEditTAccountId(t.accountId); setEditTToAccountId(t.toAccountId || ""); setEditTNote(t.note || ""); setEditTCategory(t.category); setEditTDate(t.tDate); 
     setEditTTime(t.tTime || (() => { if (!t.createdAt) return "12:00"; let d = new Date(); if (t.createdAt.seconds) d = new Date(t.createdAt.seconds * 1000); else if (t.createdAt._seconds) d = new Date(t.createdAt._seconds * 1000); else d = new Date(t.createdAt); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; })()); 
     setEditTAdminFee(t.originalAmount !== undefined ? ((t.adminFee || 0) / (t.exchangeRate || 1)).toString() : (t.adminFee?.toString() || "")); 
+    setEditTReceiptUrl(t.receiptUrl || "");
     setEditTSplits(t.splits ? t.splits.map(s => ({ ...s, amount: t.originalAmount !== undefined ? (s.amount / (t.exchangeRate || 1)) : s.amount })) : []); 
     
     if ((t as any).tripId) {
@@ -1017,7 +1020,7 @@ export default function FintrackerApp() {
 
       // 3. UPDATE CATATAN RIWAYAT TRANSAKSI
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
-      const updateData: any = { amount: newIdrAmount, type: editTType, accountId: editTAccountId, accountName: accounts.find(a => a.id === editTAccountId)?.name || "", note: editTNote, category: editTSplits.length > 0 ? "Split Transaksi" : (editTType === "transfer" ? "Transfer" : editTCategory), tDate: editTDate, tTime: editTTime, originalAmount: newRawAmount, originalCurrency: srcCurrency, exchangeRate: rateSource };
+      const updateData: any = { amount: newIdrAmount, type: editTType, accountId: editTAccountId, accountName: accounts.find(a => a.id === editTAccountId)?.name || "", note: editTNote, category: editTSplits.length > 0 ? "Split Transaksi" : (editTType === "transfer" ? "Transfer" : editTCategory), tDate: editTDate, tTime: editTTime, originalAmount: newRawAmount, originalCurrency: srcCurrency, exchangeRate: rateSource, receiptUrl: editTReceiptUrl || null };
       
       if (isTravelMode) {
         updateData.tripId = activeTripName || "Liburan";
@@ -1180,6 +1183,8 @@ export default function FintrackerApp() {
                 activeTripName={activeTripName}
                 updateTripName={handleUpdateTripName}
                 isReportLoading={isReportLoading} // UX: Teruskan status loading agar beranda tahu kapan harus nampilin skeleton
+                tReceiptUrl={tReceiptUrl} setTReceiptUrl={setTReceiptUrl}
+                editTReceiptUrl={editTReceiptUrl} setEditTReceiptUrl={setEditTReceiptUrl}
               />
             )}
             {activeTab === "reports" && (

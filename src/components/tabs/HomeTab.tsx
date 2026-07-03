@@ -3,6 +3,9 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { flushSync } from "react-dom";
 import { AccountData, CategoryData, SplitItemData, TransactionData } from "../../types";
+import imageCompression from "browser-image-compression";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "../../lib/firebase";
 import { 
   ArrowUpRight, 
   ArrowDownRight, 
@@ -75,6 +78,12 @@ interface HomeTabProps {
   setEditTSplits: (splits: SplitItemData[]) => void;
   updateCategory?: (id: string, newName: string, newBudget: number | null, expenseType: "fixed" | "variable", newIcon?: string) => Promise<void>;
   
+  // FITUR BARU: DIGITAL RECEIPT
+  tReceiptUrl?: string;
+  setTReceiptUrl?: (url: string) => void;
+  editTReceiptUrl?: string;
+  setEditTReceiptUrl?: (url: string) => void;
+
   // TRAVEL MODE PROPS
   isTravelMode?: boolean;
   toggleTravelMode?: (val: boolean) => void;
@@ -202,7 +211,7 @@ const formatTime = (createdAt: any) => {
 };
 
 // 🪄 UX PREMIUM: Komponen Swipeable khusus untuk Beranda (HomeTab)
-const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, getRowIcon, isOpen, onOpen, onClose }: any) => {
+const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, getRowIcon, isOpen, onOpen, onClose, onViewReceipt }: any) => {
   const [dragOffset, setDragOffset] = useState(0);
   const startX = useRef<number | null>(null);
   const isDragging = useRef(false);
@@ -282,6 +291,20 @@ const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, g
             </div>
           </div>
         )}
+        
+        {/* TOMBOL LIHAT STRUK */}
+        {t.receiptUrl && (
+          <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 pointer-events-auto">
+            <button 
+              type="button" 
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onViewReceipt(t.receiptUrl); }}
+              className={`w-full py-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-colors border shadow-sm ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border} active:scale-95 cursor-pointer`}
+            >
+              📸 Lihat Struk Lampiran
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -321,7 +344,8 @@ const AnimatedNumber = ({ value, isPrivacyMode, prefix = "Rp ", privacyText = "R
 };
 
 export default function HomeTab({
-  reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory, isTravelMode, toggleTravelMode, activeTripName, updateTripName, isReportLoading
+  reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory, isTravelMode, toggleTravelMode, activeTripName, updateTripName, isReportLoading,
+  tReceiptUrl, setTReceiptUrl, editTReceiptUrl, setEditTReceiptUrl
 }: HomeTabProps) {
   const parseTime12 = (timeStr: string) => {
     if (!timeStr) return { hour12: "12", minute: "00", period: "PM" };
@@ -387,6 +411,44 @@ export default function HomeTab({
   // STATE BARU: Buffer Ekspresi untuk Kalkulator Koreksi Pecahan
   const [activeEditSplitKeypadIndex, setActiveEditSplitKeypadIndex] = useState<number | null>(null);
   const [activeEditSplitExpression, setActiveEditSplitExpression] = useState<string>("");
+
+  // STATE BARU: DIGITAL RECEIPT (FASE 21)
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [viewingReceiptUrl, setViewingReceiptUrl] = useState<string | null>(null);
+
+  const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingReceipt(true);
+      triggerHaptic();
+
+      // 1. Kompresi Super Cerdas (Maks 200KB agar offline-first tetap ngebut)
+      const options = { maxSizeMB: 0.2, maxWidthOrHeight: 1280, useWebWorker: true };
+      const compressedFile = await imageCompression(file, options);
+
+      // 2. Upload ke Firebase Cloud Storage
+      if (storage) {
+        const fileRef = ref(storage, `receipts/${editingTransaction ? 'edit' : 'new'}_${Date.now()}.jpg`);
+        await uploadBytes(fileRef, compressedFile);
+        const url = await getDownloadURL(fileRef);
+
+        // 3. Set URL ke state
+        if (editingTransaction && setEditTReceiptUrl) {
+          setEditTReceiptUrl(url);
+        } else if (setTReceiptUrl) {
+          setTReceiptUrl(url);
+        }
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Gagal mengunggah struk. Pastikan koneksi internet stabil.");
+    } finally {
+      setIsUploadingReceipt(false);
+    }
+  };
 
   useEffect(() => { const handleResize = () => setIsMobile(window.innerWidth < 768); handleResize(); window.addEventListener("resize", handleResize); return () => window.removeEventListener("resize", handleResize); }, []);
   useEffect(() => { if (editingTransaction) { setIsDrawerOpen(true); } }, [editingTransaction]);
@@ -858,13 +920,14 @@ export default function HomeTab({
                       isOpen={openSwipeId === t.id}
                       onOpen={() => setOpenSwipeId(t.id)}
                       onClose={() => setOpenSwipeId(null)}
-                      onEdit={() => { triggerHaptic(); onEditTransaction(t); }}
-                      onDelete={() => { triggerHaptic(); onDeleteTransaction(t); }}
-                    />
-                  ))}
-                </div>
+                    onEdit={() => { triggerHaptic(); onEditTransaction(t); }}
+                    onDelete={() => { triggerHaptic(); onDeleteTransaction(t); }}
+                    onViewReceipt={(url: string) => { triggerHaptic(); setViewingReceiptUrl(url); }}
+                  />
+                ))}
               </div>
-            );
+            </div>
+          );
           })
         )}
       </div>
@@ -1343,21 +1406,56 @@ export default function HomeTab({
                   </button>
                 </div>
                 {isTravelMode && (
-                  <div className="mt-2.5 pt-2.5 border-t border-indigo-100 dark:border-indigo-500/20 animate-in slide-in-from-top-2 duration-200 relative z-10">
-                    <input 
-                      type="text" 
-                      value={activeTripName || ""} 
-                      onChange={(e) => updateTripName && updateTripName(e.target.value)} 
-                      placeholder="Nama Trip (misal: Trip Bali 2026)"
-                      autoComplete="off"
-                      className="w-full bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-500/30 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 transition-all placeholder:text-slate-400"
-                    />
-                  </div>
-                )}
+              <div className="mt-2.5 pt-2.5 border-t border-indigo-100 dark:border-indigo-500/20 animate-in slide-in-from-top-2 duration-200 relative z-10">
+                <input 
+                  type="text" 
+                  value={activeTripName || ""} 
+                  onChange={(e) => updateTripName && updateTripName(e.target.value)} 
+                  placeholder="Nama Trip (misal: Trip Bali 2026)"
+                  autoComplete="off"
+                  className="w-full bg-white dark:bg-slate-950 border border-indigo-200 dark:border-indigo-500/30 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 transition-all placeholder:text-slate-400"
+                />
               </div>
-            </div>
+            )}
+          </div>
 
-            <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex gap-3 shrink-0">
+          {/* FITUR BARU: TOMBOL DIGITAL RECEIPT (FASE 21) */}
+          <div className="space-y-1 mt-4 relative z-10">
+            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Lampiran Struk (Opsional)</label>
+            <div className="flex gap-2">
+              <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleReceiptUpload} />
+              <button 
+                type="button" 
+                onClick={() => { triggerHaptic(); fileInputRef.current?.click(); }}
+                disabled={isUploadingReceipt}
+                className={`flex-1 p-3 border border-dashed rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 transition-all shadow-sm ${isUploadingReceipt ? 'bg-slate-100 text-slate-400 border-slate-200' : `bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-300 dark:border-slate-700 cursor-pointer`}`}
+              >
+                {isUploadingReceipt ? (
+                  <span className="animate-pulse flex items-center gap-2">⏳ Mengompres & Mengunggah...</span>
+                ) : (
+                  <><span>📸</span> {(editingTransaction ? editTReceiptUrl : tReceiptUrl) ? 'Ganti Foto Struk' : 'Ambil Foto / Pilih Struk'}</>
+                )}
+              </button>
+              
+              {/* PREVIEW GAMBAR STRUK MINI */}
+              {(editingTransaction ? editTReceiptUrl : tReceiptUrl) && !isUploadingReceipt && (
+                <div className="relative shrink-0 animate-in zoom-in-95 duration-200">
+                  <img src={(editingTransaction ? editTReceiptUrl : tReceiptUrl) || ""} alt="Struk" className="w-11 h-11 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shadow-sm" />
+                  <button 
+                    type="button" 
+                    onClick={() => { triggerHaptic(); editingTransaction ? setEditTReceiptUrl?.("") : setTReceiptUrl?.(""); }}
+                    className="absolute -top-1.5 -right-1.5 bg-rose-500 hover:bg-rose-600 text-white p-0.5 rounded-full shadow-md cursor-pointer transition-transform active:scale-90"
+                  >
+                    <X size={10} strokeWidth={3} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex gap-3 shrink-0">
               {editingTransaction ? (
                 <button 
                   type="button" 
@@ -1839,33 +1937,41 @@ export default function HomeTab({
               </div>
             </div>
             <div className="flex gap-2 mt-6">
-              <button 
-                type="button" 
-                onClick={async () => { 
-                  if (updateCategory && editingCat) { 
-                    triggerHaptic(); 
-                    await updateCategory(
-                      editingCat.id, 
-                      editCatName, 
-                      editingCat.budgetLimit || null, 
-                      editingCat.expenseType || "variable", 
-                      editCatIcon
-                    ); 
-                    setEditingCat(null); 
-                    setShowCatModal(false); 
-                    alert("Kategori berhasil diperbarui!"); 
-                  } 
-                }} 
-                className={`flex-1 py-2.5 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer border ${currentTheme.fab}`}
-              >
-                Simpan
-              </button>
-              <button type="button" onClick={() => setEditingCat(null)} className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer transition-colors">Batal</button>
-            </div>
-          </div>
+          <button 
+            type="button" 
+            onClick={async () => { 
+              if (updateCategory && editingCat) { 
+                triggerHaptic(); 
+                await updateCategory(
+                  editingCat.id, 
+                  editCatName, 
+                  editingCat.budgetLimit || null, 
+                  editingCat.expenseType || "variable", 
+                  editCatIcon
+                ); 
+                setEditingCat(null); 
+                setShowCatModal(false); 
+                alert("Kategori berhasil diperbarui!"); 
+              } 
+            }} 
+            className={`flex-1 py-2.5 text-white rounded-xl text-xs font-black shadow-lg cursor-pointer border ${currentTheme.fab}`}
+          >
+            Simpan
+          </button>
+          <button type="button" onClick={() => setEditingCat(null)} className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer transition-colors">Batal</button>
         </div>
-      )}
-
+      </div>
     </div>
-  );
+  )}
+
+  {/* FULLSCREEN DIGITAL RECEIPT VIEWER (FASE 21) */}
+  {viewingReceiptUrl && (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setViewingReceiptUrl(null)}>
+      <button type="button" className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors z-10 cursor-pointer active:scale-90"><X size={20} /></button>
+      <img src={viewingReceiptUrl} alt="Detail Struk" className="max-w-full max-h-[90vh] object-contain p-4 animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()} />
+    </div>
+  )}
+
+</div>
+);
 }

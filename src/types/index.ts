@@ -40,6 +40,7 @@ export interface TransactionData {
   originalAmount?: number;    
   originalCurrency?: string;  
   exchangeRate?: number;      
+  receiptUrl?: string;        // FITUR BARU: URL STRUK DIGITAL (Fase 21)
 }
 
 export interface CategoryData { 
