@@ -409,8 +409,13 @@ export default function HomeTab({
       setIsUploadingReceipt(true);
       triggerHaptic();
 
-      // 1. Kompresi Ekstrem (Maks 100KB, Resolusi 800px) agar enteng di database utama
-      const options = { maxSizeMB: 0.1, maxWidthOrHeight: 800, useWebWorker: true };
+      // 1. Kompresi "Sweet Spot" (Maks 300KB, Resolusi 1600px, Kualitas 85%) Teks Super Tajam
+      const options = { 
+        maxSizeMB: 0.3, 
+        maxWidthOrHeight: 1600, 
+        useWebWorker: true,
+        initialQuality: 0.85
+      };
       const compressedFile = await imageCompression(file, options);
 
       // 2. JURUS PAMUNGKAS: Ubah ke Base64 (Simpan Text ke Firestore, Kebal Blokir Kominfo!)
