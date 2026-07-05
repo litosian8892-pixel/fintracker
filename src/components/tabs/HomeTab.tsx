@@ -1424,12 +1424,10 @@ export default function HomeTab({
                   className="w-14 h-14 shrink-0 rounded-xl overflow-hidden cursor-pointer relative group bg-slate-200 dark:bg-slate-800"
                   onClick={() => { triggerHaptic(); setViewingReceiptUrl((editingTransaction ? editTReceiptUrl : tReceiptUrl) || ""); }}
                 >
-                  {/* KODE ANTI BUG iOS & ALAT DETEKSI BLOKIR JARINGAN HP */}
-                  <img 
-                    src={(editingTransaction ? editTReceiptUrl : tReceiptUrl) || ""} 
-                    alt="Struk" 
-                    className="absolute inset-0 w-full h-full object-cover" 
-                    onError={(e) => { e.currentTarget.src = "https://placehold.co/200x200/1e293b/white?text=Diblokir"; }}
+                  {/* KODE ANTI BUG iOS SUPER KUAT (BACKGROUND IMAGE) */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    style={{ backgroundImage: `url(${(editingTransaction ? editTReceiptUrl : tReceiptUrl) || ""})` }}
                   />
                   <div className="absolute inset-0 z-10 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Search size={16} className="text-white" />
@@ -1985,14 +1983,12 @@ export default function HomeTab({
           <X size={20} />
         </button>
       </div>
-      {/* GAMBAR ABSOLUT (ANTI BLACK SCREEN iOS/MOBILE) */}
+      {/* GAMBAR ABSOLUT DENGAN BACKGROUND-IMAGE (ANTI BLACK SCREEN 100%) */}
       <div className="absolute inset-0 z-10 p-4 pt-20 pb-10 pointer-events-none flex items-center justify-center">
-        <img 
-          src={viewingReceiptUrl} 
-          alt="Detail Struk" 
-          className="w-full h-full object-contain animate-in zoom-in-95 duration-300 pointer-events-auto" 
-          onClick={(e) => e.stopPropagation()} 
-          onError={(e) => { e.currentTarget.src = "https://placehold.co/600x800/1e293b/white?text=Terblokir+Koneksi/DNS+HP"; }}
+        <div 
+          className="w-full h-full bg-contain bg-center bg-no-repeat animate-in zoom-in-95 duration-300 pointer-events-auto drop-shadow-2xl"
+          style={{ backgroundImage: `url(${viewingReceiptUrl})` }}
+          onClick={(e) => e.stopPropagation()}
         />
       </div>
     </div>
