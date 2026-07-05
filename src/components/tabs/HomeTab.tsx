@@ -409,40 +409,31 @@ export default function HomeTab({
       setIsUploadingReceipt(true);
       triggerHaptic();
 
-      // 1. Kompresi Super Cerdas (Maks 200KB agar offline-first tetap ngebut)
-      const options = { maxSizeMB: 0.2, maxWidthOrHeight: 1280, useWebWorker: true };
+      // 1. Kompresi Ekstrem (Maks 100KB, Resolusi 800px) agar enteng di database utama
+      const options = { maxSizeMB: 0.1, maxWidthOrHeight: 800, useWebWorker: true };
       const compressedFile = await imageCompression(file, options);
 
-      // 2. Upload ke ImgBB API (PLAN B - Tanpa Kartu)
-          const formData = new FormData();
-          formData.append("image", compressedFile);
-          
-          const IMGBB_API_KEY = "a41e75c8d31eda9afae7a59324c23fb3";
-          const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-            method: "POST",
-            body: formData,
-          });
-          
-          const data = await res.json();
-          if (!data.success) {
-            throw new Error(data.error?.message || "Gagal mengunggah ke server ImgBB.");
-          }
+      // 2. JURUS PAMUNGKAS: Ubah ke Base64 (Simpan Text ke Firestore, Kebal Blokir Kominfo!)
+      const base64data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(compressedFile);
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+      });
 
-          const url = data.data.url; // Link gambar dari ImgBB
-
-          // 3. Set URL ke state
-          if (editingTransaction && setEditTReceiptUrl) {
-            setEditTReceiptUrl(url);
-          } else if (setTReceiptUrl) {
-            setTReceiptUrl(url);
-          }
-        } catch (error: any) {
-          console.error("Upload error:", error);
-          alert(`Gagal mengunggah struk!\n\nAlasan: ${error.message || "Periksa koneksi internet Anda."}`);
-        } finally {
-          setIsUploadingReceipt(false);
-        }
-      };
+      // 3. Set Teks Gambar Base64 ke State
+      if (editingTransaction && setEditTReceiptUrl) {
+        setEditTReceiptUrl(base64data);
+      } else if (setTReceiptUrl) {
+        setTReceiptUrl(base64data);
+      }
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      alert(`Gagal memproses struk!\n\nAlasan: ${error.message || "Gagal membaca file gambar."}`);
+    } finally {
+      setIsUploadingReceipt(false);
+    }
+  };
 
   useEffect(() => { const handleResize = () => setIsMobile(window.innerWidth < 768); handleResize(); window.addEventListener("resize", handleResize); return () => window.removeEventListener("resize", handleResize); }, []);
   useEffect(() => { if (editingTransaction) { setIsDrawerOpen(true); } }, [editingTransaction]);
