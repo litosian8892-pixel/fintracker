@@ -697,12 +697,16 @@ export default function FintrackerApp() {
     isSubmittingRef.current = true; setIsSubmitting(true);
     try {
       await updateDoc(doc(db, `users/${user.uid}/debts/${debtId}`), { paidAmount: newPaidAmount, status: newStatus });
+      // FIX ZONA WAKTU & INJEKSI TALI GHAIB (DEBT ID)
+      const exactTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
+      const localDate = getLocalDateString();
+      
       if (debt.type === "debt") {
         await updateDoc(doc(db, `users/${user.uid}/accounts/${accountId}`), { balance: acc.balance - payAmount });
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount: payAmount, type: "expense", accountId, accountName: acc.name, category: categoryName, note: transactionNote, tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp() });
+        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount: payAmount, type: "expense", accountId, accountName: acc.name, category: categoryName, note: transactionNote, tDate: localDate, tTime: exactTime, createdAt: serverTimestamp(), debtId: debtId });
       } else {
         await updateDoc(doc(db, `users/${user.uid}/accounts/${accountId}`), { balance: acc.balance + payAmount });
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount: payAmount, type: "income", accountId, accountName: acc.name, category: categoryName, note: transactionNote, tDate: new Date().toISOString().split('T')[0], createdAt: serverTimestamp() });
+        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount: payAmount, type: "income", accountId, accountName: acc.name, category: categoryName, note: transactionNote, tDate: localDate, tTime: exactTime, createdAt: serverTimestamp(), debtId: debtId });
       }
       alert("Pembayaran berhasil dicatat & saldo otomatis diperbarui!");
     } catch (e) { alert("Gagal memproses pembayaran"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
@@ -936,6 +940,19 @@ export default function FintrackerApp() {
             batch.update(doc(db, `users/${user.uid}/accounts/${t.accountId}`), { balance: increment(modifier) }); 
           }
         }
+
+        // TALI GHAIB: KEMBALIKAN SALDO UTANG JIKA CICILAN DIHAPUS (ROLLBACK)
+        if ((t as any).debtId) {
+          const dId = (t as any).debtId;
+          const linkedDebt = debts.find(d => d.id === dId);
+          if (linkedDebt) {
+            const rawAmount = t.originalAmount !== undefined ? t.originalAmount : t.amount;
+            batch.update(doc(db, `users/${user.uid}/debts/${dId}`), {
+              paidAmount: increment(-rawAmount),
+              status: "active" // Status kembali aktif jika cicilan dihapus
+            });
+          }
+        }
       }
       
       batch.delete(doc(db, `users/${user.uid}/transactions/${t.id}`));
@@ -1018,7 +1035,24 @@ export default function FintrackerApp() {
         }
       });
 
-      // 3. UPDATE CATATAN RIWAYAT TRANSAKSI
+      // 3.5. SINKRONISASI RELASI UTANG (TALI GHAIB)
+      if ((oldT as any).debtId) {
+        const dId = (oldT as any).debtId;
+        const linkedDebt = debts.find(d => d.id === dId);
+        if (linkedDebt) {
+          const oldRawAmount = oldT.originalAmount !== undefined ? oldT.originalAmount : oldT.amount;
+          const diffAmount = newRawAmount - oldRawAmount; // Hitung selisih nominal baru vs lama
+          const expectedPaidAmount = linkedDebt.paidAmount + diffAmount;
+          const newStatus = expectedPaidAmount >= linkedDebt.amount ? "paid" : "active";
+          
+          batch.update(doc(db, `users/${user.uid}/debts/${dId}`), { 
+            paidAmount: increment(diffAmount),
+            status: newStatus
+          });
+        }
+      }
+
+      // 4. UPDATE CATATAN RIWAYAT TRANSAKSI
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
       const updateData: any = { amount: newIdrAmount, type: editTType, accountId: editTAccountId, accountName: accounts.find(a => a.id === editTAccountId)?.name || "", note: editTNote, category: editTSplits.length > 0 ? "Split Transaksi" : (editTType === "transfer" ? "Transfer" : editTCategory), tDate: editTDate, tTime: editTTime, originalAmount: newRawAmount, originalCurrency: srcCurrency, exchangeRate: rateSource, receiptUrl: editTReceiptUrl || null };
       
