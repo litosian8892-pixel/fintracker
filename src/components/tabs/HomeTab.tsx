@@ -1971,15 +1971,17 @@ export default function HomeTab({
 
   {/* FULLSCREEN DIGITAL RECEIPT VIEWER (FASE 21) */}
   {viewingReceiptUrl && (
-    <div className="fixed inset-0 z-[400] bg-black flex flex-col animate-in fade-in duration-200">
-      <div className="flex items-center justify-between p-4 pb-4 bg-gradient-to-b from-black/80 to-transparent absolute top-0 w-full z-10">
-        <span className="text-white text-xs font-bold px-3 py-1.5 bg-white/20 rounded-full backdrop-blur-md flex items-center gap-1.5"><span>📸</span> Struk Digital</span>
-        <button type="button" onClick={() => setViewingReceiptUrl(null)} className="p-2 bg-white/20 text-white rounded-full active:scale-90 transition-transform backdrop-blur-md cursor-pointer">
+    <div className="fixed inset-0 z-[400] bg-black animate-in fade-in duration-200" onClick={() => setViewingReceiptUrl(null)}>
+      {/* HEADER ABSOLUT */}
+      <div className="absolute top-0 left-0 right-0 p-4 pb-6 bg-gradient-to-b from-black/80 to-transparent z-20 flex items-center justify-between">
+        <span className="text-white text-xs font-bold px-3 py-1.5 bg-white/20 rounded-full backdrop-blur-md flex items-center gap-1.5 shadow-sm"><span>📸</span> Struk Digital</span>
+        <button type="button" onClick={() => setViewingReceiptUrl(null)} className="p-2 bg-white/20 text-white rounded-full active:scale-90 transition-transform backdrop-blur-md cursor-pointer shadow-sm">
           <X size={20} />
         </button>
       </div>
-      <div className="flex-1 w-full h-full p-2 overflow-hidden flex items-center justify-center mt-14 mb-4" onClick={() => setViewingReceiptUrl(null)}>
-        <img src={viewingReceiptUrl} alt="Detail Struk" className="w-full h-full object-contain animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()} />
+      {/* GAMBAR ABSOLUT (ANTI BLACK SCREEN iOS/MOBILE) */}
+      <div className="absolute inset-0 z-10 flex items-center justify-center p-2 pt-16">
+        <img src={viewingReceiptUrl} alt="Detail Struk" className="max-w-full max-h-full object-contain animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()} />
       </div>
     </div>
   )}
