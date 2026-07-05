@@ -519,9 +519,9 @@ export default function DebtsTab({
           )}
 
           {showPayModal && (
-            <div className="fixed inset-0 z-[180] flex items-end justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 text-left">
+            <div className="fixed inset-0 z-[180] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 text-left">
               <div className="absolute inset-0 z-0" onClick={() => { setShowPayModal(false); setActiveKeypad(null); }}></div>
-              <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[32px] shadow-2xl overflow-hidden z-10 flex flex-col border-t border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom duration-300">
+              <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden z-10 flex flex-col max-h-[85vh] border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300">
                 
                 {/* Header Elegan */}
                 <div className={`p-6 ${currentTheme.activePill.split(' ')[0]} text-white shrink-0 relative`}>
