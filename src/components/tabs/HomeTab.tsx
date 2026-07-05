@@ -1421,11 +1421,17 @@ export default function HomeTab({
             ) : (editingTransaction ? editTReceiptUrl : tReceiptUrl) ? (
               <div className="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-900 flex items-center gap-3 animate-in zoom-in-95 duration-200 shadow-sm">
                 <div 
-                  className="w-14 h-14 shrink-0 rounded-xl overflow-hidden cursor-pointer relative group"
+                  className="w-14 h-14 shrink-0 rounded-xl overflow-hidden cursor-pointer relative group bg-slate-200 dark:bg-slate-800"
                   onClick={() => { triggerHaptic(); setViewingReceiptUrl((editingTransaction ? editTReceiptUrl : tReceiptUrl) || ""); }}
                 >
-                  <img src={(editingTransaction ? editTReceiptUrl : tReceiptUrl) || ""} alt="Struk" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* KODE ANTI BUG iOS & ALAT DETEKSI BLOKIR JARINGAN HP */}
+                  <img 
+                    src={(editingTransaction ? editTReceiptUrl : tReceiptUrl) || ""} 
+                    alt="Struk" 
+                    className="absolute inset-0 w-full h-full object-cover" 
+                    onError={(e) => { e.currentTarget.src = "https://placehold.co/200x200/1e293b/white?text=Diblokir"; }}
+                  />
+                  <div className="absolute inset-0 z-10 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Search size={16} className="text-white" />
                   </div>
                 </div>
@@ -1980,8 +1986,14 @@ export default function HomeTab({
         </button>
       </div>
       {/* GAMBAR ABSOLUT (ANTI BLACK SCREEN iOS/MOBILE) */}
-      <div className="absolute inset-0 z-10 flex items-center justify-center p-2 pt-16">
-        <img src={viewingReceiptUrl} alt="Detail Struk" className="max-w-full max-h-full object-contain animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()} />
+      <div className="absolute inset-0 z-10 p-4 pt-20 pb-10 pointer-events-none flex items-center justify-center">
+        <img 
+          src={viewingReceiptUrl} 
+          alt="Detail Struk" 
+          className="w-full h-full object-contain animate-in zoom-in-95 duration-300 pointer-events-auto" 
+          onClick={(e) => e.stopPropagation()} 
+          onError={(e) => { e.currentTarget.src = "https://placehold.co/600x800/1e293b/white?text=Terblokir+Koneksi/DNS+HP"; }}
+        />
       </div>
     </div>
   )}
