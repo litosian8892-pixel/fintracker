@@ -289,20 +289,6 @@ const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, g
             </div>
           </div>
         )}
-        
-        {/* TOMBOL LIHAT STRUK */}
-        {t.receiptUrl && (
-          <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 pointer-events-auto">
-            <button 
-              type="button" 
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => { e.stopPropagation(); onViewReceipt(t.receiptUrl); }}
-              className={`w-full py-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-colors border shadow-sm ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border} active:scale-95 cursor-pointer`}
-            >
-              📸 Lihat Struk Lampiran
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -1423,38 +1409,53 @@ export default function HomeTab({
                 </div>
               )}
 
-              {/* FITUR BARU: TOMBOL DIGITAL RECEIPT (FASE 21) */}
-              <div className="space-y-1 mt-4 relative z-10">
-            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Lampiran Struk (Opsional)</label>
-            <div className="flex gap-2">
-              <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleReceiptUpload} />
+             {/* FITUR BARU: TOMBOL DIGITAL RECEIPT (FASE 21) */}
+          <div className="space-y-2 mt-4 relative z-10">
+            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Lampiran Struk</label>
+            <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleReceiptUpload} />
+            
+            {isUploadingReceipt ? (
+              <div className="w-full p-4 border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center gap-2">
+                <span className="animate-pulse text-xs font-bold text-slate-500 dark:text-slate-400">⏳ Sedang memproses gambar...</span>
+              </div>
+            ) : (editingTransaction ? editTReceiptUrl : tReceiptUrl) ? (
+              <div className="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-900 flex items-center gap-3 animate-in zoom-in-95 duration-200 shadow-sm">
+                <div 
+                  className="w-14 h-14 shrink-0 rounded-xl overflow-hidden cursor-pointer relative group"
+                  onClick={() => { triggerHaptic(); setViewingReceiptUrl((editingTransaction ? editTReceiptUrl : tReceiptUrl) || ""); }}
+                >
+                  <img src={(editingTransaction ? editTReceiptUrl : tReceiptUrl) || ""} alt="Struk" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Search size={16} className="text-white" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-black text-slate-800 dark:text-white truncate">Struk Terlampir</p>
+                  <button 
+                    type="button" 
+                    onClick={() => { triggerHaptic(); setViewingReceiptUrl((editingTransaction ? editTReceiptUrl : tReceiptUrl) || ""); }} 
+                    className="text-[10px] font-bold text-blue-500 hover:text-blue-600 dark:text-blue-400 mt-0.5 cursor-pointer flex items-center gap-1"
+                  >
+                    🔍 Lihat Fullscreen
+                  </button>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => { triggerHaptic(); editingTransaction ? setEditTReceiptUrl?.("") : setTReceiptUrl?.(""); }}
+                  className="p-3 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-colors cursor-pointer shrink-0"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ) : (
               <button 
                 type="button" 
                 onClick={() => { triggerHaptic(); fileInputRef.current?.click(); }}
-                disabled={isUploadingReceipt}
-                className={`flex-1 p-3 border border-dashed rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 transition-all shadow-sm ${isUploadingReceipt ? 'bg-slate-100 text-slate-400 border-slate-200' : `bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-300 dark:border-slate-700 cursor-pointer`}`}
+                className="w-full p-3.5 border border-dashed rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 transition-all shadow-sm bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-300 dark:border-slate-700 cursor-pointer"
               >
-                {isUploadingReceipt ? (
-                  <span className="animate-pulse flex items-center gap-2">⏳ Mengompres & Mengunggah...</span>
-                ) : (
-                  <><span>📸</span> {(editingTransaction ? editTReceiptUrl : tReceiptUrl) ? 'Ganti Foto Struk' : 'Ambil Foto / Pilih Struk'}</>
-                )}
+                <span>📸</span> Ambil Foto / Pilih Struk
               </button>
-              
-              {/* PREVIEW GAMBAR STRUK MINI */}
-              {(editingTransaction ? editTReceiptUrl : tReceiptUrl) && !isUploadingReceipt && (
-                <div className="relative shrink-0 animate-in zoom-in-95 duration-200">
-                  <img src={(editingTransaction ? editTReceiptUrl : tReceiptUrl) || ""} alt="Struk" className="w-11 h-11 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shadow-sm" />
-                  <button 
-                    type="button" 
-                    onClick={() => { triggerHaptic(); editingTransaction ? setEditTReceiptUrl?.("") : setTReceiptUrl?.(""); }}
-                    className="absolute -top-1.5 -right-1.5 bg-rose-500 hover:bg-rose-600 text-white p-0.5 rounded-full shadow-md cursor-pointer transition-transform active:scale-90"
-                  >
-                    <X size={10} strokeWidth={3} />
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
         </div>
@@ -1970,9 +1971,16 @@ export default function HomeTab({
 
   {/* FULLSCREEN DIGITAL RECEIPT VIEWER (FASE 21) */}
   {viewingReceiptUrl && (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setViewingReceiptUrl(null)}>
-      <button type="button" className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors z-10 cursor-pointer active:scale-90"><X size={20} /></button>
-      <img src={viewingReceiptUrl} alt="Detail Struk" className="max-w-full max-h-[90vh] object-contain p-4 animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()} />
+    <div className="fixed inset-0 z-[400] bg-black flex flex-col animate-in fade-in duration-200">
+      <div className="flex items-center justify-between p-4 pb-4 bg-gradient-to-b from-black/80 to-transparent absolute top-0 w-full z-10">
+        <span className="text-white text-xs font-bold px-3 py-1.5 bg-white/20 rounded-full backdrop-blur-md flex items-center gap-1.5"><span>📸</span> Struk Digital</span>
+        <button type="button" onClick={() => setViewingReceiptUrl(null)} className="p-2 bg-white/20 text-white rounded-full active:scale-90 transition-transform backdrop-blur-md cursor-pointer">
+          <X size={20} />
+        </button>
+      </div>
+      <div className="flex-1 w-full h-full p-2 overflow-hidden flex items-center justify-center mt-14 mb-4" onClick={() => setViewingReceiptUrl(null)}>
+        <img src={viewingReceiptUrl} alt="Detail Struk" className="w-full h-full object-contain animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()} />
+      </div>
     </div>
   )}
 
