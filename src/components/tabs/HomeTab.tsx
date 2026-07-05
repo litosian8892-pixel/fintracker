@@ -4,8 +4,6 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { flushSync } from "react-dom";
 import { AccountData, CategoryData, SplitItemData, TransactionData } from "../../types";
 import imageCompression from "browser-image-compression";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "../../lib/firebase";
 import { 
   ArrowUpRight, 
   ArrowDownRight, 
@@ -429,26 +427,36 @@ export default function HomeTab({
       const options = { maxSizeMB: 0.2, maxWidthOrHeight: 1280, useWebWorker: true };
       const compressedFile = await imageCompression(file, options);
 
-      // 2. Upload ke Firebase Cloud Storage
-      if (storage) {
-        const fileRef = ref(storage, `receipts/${editingTransaction ? 'edit' : 'new'}_${Date.now()}.jpg`);
-        await uploadBytes(fileRef, compressedFile);
-        const url = await getDownloadURL(fileRef);
+      // 2. Upload ke ImgBB API (PLAN B - Tanpa Kartu)
+          const formData = new FormData();
+          formData.append("image", compressedFile);
+          
+          const IMGBB_API_KEY = "a41e75c8d31eda9afae7a59324c23fb3";
+          const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+            method: "POST",
+            body: formData,
+          });
+          
+          const data = await res.json();
+          if (!data.success) {
+            throw new Error(data.error?.message || "Gagal mengunggah ke server ImgBB.");
+          }
 
-        // 3. Set URL ke state
-        if (editingTransaction && setEditTReceiptUrl) {
-          setEditTReceiptUrl(url);
-        } else if (setTReceiptUrl) {
-          setTReceiptUrl(url);
+          const url = data.data.url; // Link gambar dari ImgBB
+
+          // 3. Set URL ke state
+          if (editingTransaction && setEditTReceiptUrl) {
+            setEditTReceiptUrl(url);
+          } else if (setTReceiptUrl) {
+            setTReceiptUrl(url);
+          }
+        } catch (error: any) {
+          console.error("Upload error:", error);
+          alert(`Gagal mengunggah struk!\n\nAlasan: ${error.message || "Periksa koneksi internet Anda."}`);
+        } finally {
+          setIsUploadingReceipt(false);
         }
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Gagal mengunggah struk. Pastikan koneksi internet stabil.");
-    } finally {
-      setIsUploadingReceipt(false);
-    }
-  };
+      };
 
   useEffect(() => { const handleResize = () => setIsMobile(window.innerWidth < 768); handleResize(); window.addEventListener("resize", handleResize); return () => window.removeEventListener("resize", handleResize); }, []);
   useEffect(() => { if (editingTransaction) { setIsDrawerOpen(true); } }, [editingTransaction]);
