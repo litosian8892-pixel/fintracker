@@ -1408,7 +1408,8 @@ export default function HomeTab({
              {/* FITUR BARU: TOMBOL DIGITAL RECEIPT (FASE 21) */}
           <div className="space-y-2 mt-4 relative z-10">
             <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Lampiran Struk</label>
-            <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleReceiptUpload} />
+            {/* Hapus capture="environment" agar iOS/Android memunculkan opsi Galeri */}
+            <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleReceiptUpload} />
             
             {isUploadingReceipt ? (
               <div className="w-full p-4 border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center gap-2">
