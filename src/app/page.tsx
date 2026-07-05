@@ -15,7 +15,10 @@ import BottomNav from "../components/layout/BottomNav";
 
 import { X, Lock, ChevronDown, Fingerprint, Crown, CheckCircle2, MessageCircle, Rocket, ArrowRight } from "lucide-react";
 
-const HomeTab = dynamic(() => import("../components/tabs/HomeTab"), { ssr: false });
+// TURBO BOOST: HomeTab di-import secara Eager (Langsung) agar render 0-detik
+import HomeTab from "../components/tabs/HomeTab";
+
+// Tab lainnya biarkan Lazy Load (Dynamic) agar memori HP tetap enteng
 const ReportsTab = dynamic(() => import("../components/tabs/ReportsTab"), { ssr: false });
 const AssetsTab = dynamic(() => import("../components/tabs/AssetsTab"), { ssr: false });
 const SettingsTab = dynamic(() => import("../components/tabs/SettingsTab"), { ssr: false });
@@ -49,7 +52,14 @@ const getLocalDateString = (dateInput = new Date()) => {
 
 export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  
+  // TURBO BOOST: Cek ingatan lokal. Jika sebelumnya sudah login, JANGAN tampilkan layar loading terlalu lama!
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !localStorage.getItem("fintracker_has_logged_in");
+    }
+    return true;
+  });
 
   // 🍞 APPLE-STYLE TOAST STATE
   const [toast, setToast] = useState<{message: string, type: "success" | "error" | "warning", id: number} | null>(null);
@@ -381,6 +391,8 @@ export default function FintrackerApp() {
       clearTimeout(authFallbackTimer);
       setUser(u); 
       if (u) {
+        // TURBO BOOST: Simpan ingatan bahwa user ini sudah pernah login
+        localStorage.setItem("fintracker_has_logged_in", "true");
         const checkGhostDocument = async () => {
           try {
             const userRef = doc(db, "users", u.uid);
