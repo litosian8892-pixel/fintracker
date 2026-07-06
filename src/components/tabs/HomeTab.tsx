@@ -786,7 +786,7 @@ export default function HomeTab({
   // === SELESAI PART 1 - HARAP BALAS UNTUK MENERIMA PART 2 ===
   return (
     <div className="space-y-6 text-left relative min-h-[calc(100vh-120px)] transition-colors duration-200">
-      {/* SUNTIKAN ATURAN CSS UNTUK MENYEMBUNYIKAN BATANG SCROLLBAR SECARA LOKAL */}
+      {/* SUNTIKAN ATURAN CSS UNTUK MENYEMBUNYIKAN SCROLLBAR & MESIN NEUMORPHISM 3D */}
       <style dangerouslySetInnerHTML={{__html: `
         .no-scrollbar::-webkit-scrollbar {
           display: none !important;
@@ -794,6 +794,30 @@ export default function HomeTab({
         .no-scrollbar {
           -ms-overflow-style: none !important;
           scrollbar-width: none !important;
+        }
+        
+        /* 💡 ENGINE MECHANICAL NUMPAD (NEUMORPHISM 3D) */
+        .btn-neumorphic {
+          background: #f1f5f9;
+          box-shadow: 4px 4px 8px rgba(148, 163, 184, 0.4), -4px -4px 8px rgba(255, 255, 255, 1);
+          border: 1px solid rgba(255, 255, 255, 0.6);
+          transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-neumorphic:active {
+          box-shadow: inset 4px 4px 8px rgba(148, 163, 184, 0.4), inset -4px -4px 8px rgba(255, 255, 255, 1);
+          border: 1px solid transparent;
+          transform: scale(0.97);
+        }
+        
+        /* 🌙 DARK MODE ENGINE */
+        .dark .btn-neumorphic {
+          background: #0f172a;
+          box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.8), -4px -4px 10px rgba(30, 41, 59, 0.5);
+          border: 1px solid rgba(30, 41, 59, 0.4);
+        }
+        .dark .btn-neumorphic:active {
+          box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.8), inset -4px -4px 8px rgba(30, 41, 59, 0.5);
+          border: 1px solid transparent;
         }
       `}} />
       
@@ -1848,31 +1872,31 @@ export default function HomeTab({
       {isMobile && activeKeypad && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
-          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200/50 dark:border-slate-800/80 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
-            <div className="flex justify-between items-center mb-3 px-1 text-left">
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-slate-100 dark:bg-slate-900 border-t border-slate-200/50 dark:border-slate-800/80 p-5 pb-8 transition-transform duration-300 md:max-w-md md:mx-auto md:rounded-t-[32px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
+            <div className="flex justify-between items-center mb-5 px-2 text-left">
               <span className={`text-[10px] font-black uppercase tracking-widest ${currentTheme.text}`}>{activeKeypad === "amount" ? "Kalkulator Nominal" : "Kalkulator Biaya Admin"}</span>
-              <button onClick={() => setActiveKeypad(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 text-xs font-bold flex items-center gap-1.5 cursor-pointer">Selesai <X size={14} /></button>
+              <button onClick={() => setActiveKeypad(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer">Selesai <X size={14} /></button>
             </div>
-            <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-slate-100 font-black text-sm">
+            <div className="grid grid-cols-4 gap-4 text-slate-700 dark:text-slate-300 font-black text-lg">
               {["+", "-", "*", "/"].map((op) => (
-                <button key={op} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(op) : handleKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/20">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>
+                <button key={op} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(op) : handleKeypadPress(op)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>
               ))}
               {["7", "8", "9"].map((num) => (
-                <button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
+                <button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center">{num}</button>
               ))}
-              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("C") : handleKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold">C</button>
+              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("C") : handleKeypadPress("C")} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center text-red-600 dark:text-red-500">C</button>
               {["4", "5", "6"].map((num) => (
-                <button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
+                <button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center">{num}</button>
               ))}
-              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("⌫") : handleKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 flex items-center justify-center transition-all select-none">⌫</button>
+              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("⌫") : handleKeypadPress("⌫")} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center text-rose-500">⌫</button>
               {["1", "2", "3"].map((num) => (
-                <button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/45 dark:border-slate-800/10">{num}</button>
+                <button key={num} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(num) : handleKeypadPress(num)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center">{num}</button>
               ))}
-              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress(".") : handleKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
+              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress(".") : handleKeypadPress(".")} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center">.</button>
               {["00", "0", "000"].map((char) => (
-                <button key={char} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(char) : handleKeypadPress(char)} className={`bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 py-3.5 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10`}>{char}</button>
+                <button key={char} type="button" onClick={() => editingTransaction ? handleEditKeypadPress(char) : handleKeypadPress(char)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center text-base">{char}</button>
               ))}
-              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("Ya") : handleKeypadPress("Ya")} className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}>Ya</button>
+              <button type="button" onClick={() => editingTransaction ? handleEditKeypadPress("Ya") : handleKeypadPress("Ya")} className={`py-4 text-white rounded-2xl shadow-[0_8px_16px_rgba(0,0,0,0.15)] active:shadow-inner active:scale-95 transition-all flex items-center justify-center border ${currentTheme.fab}`}>Ya</button>
             </div>
           </div>
         </>
@@ -1882,31 +1906,31 @@ export default function HomeTab({
       {isMobile && activeSplitKeypadIndex !== null && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveSplitKeypadIndex(null)}></div>
-          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200/50 dark:border-slate-800/80 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
-            <div className="flex justify-between items-center mb-3 text-left">
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-slate-100 dark:bg-slate-900 border-t border-slate-200/50 dark:border-slate-800/80 p-5 pb-8 transition-transform duration-300 md:max-w-md md:mx-auto md:rounded-t-[32px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
+            <div className="flex justify-between items-center mb-5 px-2 text-left">
               <span className={`text-[10px] font-black uppercase tracking-widest ${currentTheme.text}`}>Kalkulator Pecahan #{activeSplitKeypadIndex + 1}</span>
-              <button onClick={() => setActiveSplitKeypadIndex(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 text-xs font-bold flex items-center gap-1.5 cursor-pointer">Selesai <X size={14} /></button>
+              <button onClick={() => setActiveSplitKeypadIndex(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer">Selesai <X size={14} /></button>
             </div>
-            <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-slate-100 font-black text-sm">
+            <div className="grid grid-cols-4 gap-4 text-slate-700 dark:text-slate-300 font-black text-lg">
               {["+", "-", "*", "/"].map((op) => (
-                <button key={op} type="button" onClick={() => handleSplitKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/20">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>
+                <button key={op} type="button" onClick={() => handleSplitKeypadPress(op)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>
               ))}
               {["7", "8", "9"].map((num) => (
-                <button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
+                <button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center">{num}</button>
               ))}
-              <button type="button" onClick={() => handleSplitKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold">C</button>
+              <button type="button" onClick={() => handleSplitKeypadPress("C")} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center text-red-600 dark:text-red-500">C</button>
               {["4", "5", "6"].map((num) => (
-                <button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
+                <button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center">{num}</button>
               ))}
-              <button type="button" onClick={() => handleSplitKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 flex items-center justify-center transition-all select-none">⌫</button>
+              <button type="button" onClick={() => handleSplitKeypadPress("⌫")} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center text-rose-500">⌫</button>
               {["1", "2", "3"].map((num) => (
-                <button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/45 dark:border-slate-800/10">{num}</button>
+                <button key={num} type="button" onClick={() => handleSplitKeypadPress(num)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center">{num}</button>
               ))}
-              <button type="button" onClick={() => handleSplitKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
+              <button type="button" onClick={() => handleSplitKeypadPress(".")} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center">.</button>
               {["00", "0", "000"].map((char) => (
-                <button key={char} type="button" onClick={() => handleSplitKeypadPress(char)} className={`bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 py-3.5 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10`}>{char}</button>
+                <button key={char} type="button" onClick={() => handleSplitKeypadPress(char)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center text-base">{char}</button>
               ))}
-              <button type="button" onClick={() => handleSplitKeypadPress("Ya")} className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}>Ya</button>
+              <button type="button" onClick={() => handleSplitKeypadPress("Ya")} className={`py-4 text-white rounded-2xl shadow-[0_8px_16px_rgba(0,0,0,0.15)] active:shadow-inner active:scale-95 transition-all flex items-center justify-center border ${currentTheme.fab}`}>Ya</button>
             </div>
           </div>
         </>
@@ -1916,31 +1940,31 @@ export default function HomeTab({
       {isMobile && activeEditSplitKeypadIndex !== null && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveEditSplitKeypadIndex(null)}></div>
-          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200/50 dark:border-slate-800/80 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
-            <div className="flex justify-between items-center mb-3 text-left">
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-slate-100 dark:bg-slate-900 border-t border-slate-200/50 dark:border-slate-800/80 p-5 pb-8 transition-transform duration-300 md:max-w-md md:mx-auto md:rounded-t-[32px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
+            <div className="flex justify-between items-center mb-5 px-2 text-left">
               <span className={`text-[10px] font-black uppercase tracking-widest ${currentTheme.text}`}>Kalkulator Pecahan Koreksi #{activeEditSplitKeypadIndex + 1}</span>
-              <button onClick={() => setActiveEditSplitKeypadIndex(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 text-xs font-bold flex items-center gap-1.5 cursor-pointer">Selesai <X size={14} /></button>
+              <button onClick={() => setActiveEditSplitKeypadIndex(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer">Selesai <X size={14} /></button>
             </div>
-            <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-slate-100 font-black text-sm">
+            <div className="grid grid-cols-4 gap-4 text-slate-700 dark:text-slate-300 font-black text-lg">
               {["+", "-", "*", "/"].map((op) => (
-                <button key={op} type="button" onClick={() => handleEditSplitKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/20">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>
+                <button key={op} type="button" onClick={() => handleEditSplitKeypadPress(op)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>
               ))}
               {["7", "8", "9"].map((num) => (
-                <button key={num} type="button" onClick={() => handleEditSplitKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
+                <button key={num} type="button" onClick={() => handleEditSplitKeypadPress(num)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center">{num}</button>
               ))}
-              <button type="button" onClick={() => handleEditSplitKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold">C</button>
+              <button type="button" onClick={() => handleEditSplitKeypadPress("C")} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center text-red-600 dark:text-red-500">C</button>
               {["4", "5", "6"].map((num) => (
-                <button key={num} type="button" onClick={() => handleEditSplitKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
+                <button key={num} type="button" onClick={() => handleEditSplitKeypadPress(num)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center">{num}</button>
               ))}
-              <button type="button" onClick={() => handleEditSplitKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 flex items-center justify-center transition-all select-none">⌫</button>
+              <button type="button" onClick={() => handleEditSplitKeypadPress("⌫")} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center text-rose-500">⌫</button>
               {["1", "2", "3"].map((num) => (
-                <button key={num} type="button" onClick={() => handleEditSplitKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/45 dark:border-slate-800/10">{num}</button>
+                <button key={num} type="button" onClick={() => handleEditSplitKeypadPress(num)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center">{num}</button>
               ))}
-              <button type="button" onClick={() => handleEditSplitKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
+              <button type="button" onClick={() => handleEditSplitKeypadPress(".")} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center">.</button>
               {["00", "0", "000"].map((char) => (
-                <button key={char} type="button" onClick={() => handleEditSplitKeypadPress(char)} className={`bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 py-3.5 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10`}>{char}</button>
+                <button key={char} type="button" onClick={() => handleEditSplitKeypadPress(char)} className="py-4 btn-neumorphic rounded-2xl flex items-center justify-center text-base">{char}</button>
               ))}
-              <button type="button" onClick={() => handleEditSplitKeypadPress("Ya")} className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}>Ya</button>
+              <button type="button" onClick={() => handleEditSplitKeypadPress("Ya")} className={`py-4 text-white rounded-2xl shadow-[0_8px_16px_rgba(0,0,0,0.15)] active:shadow-inner active:scale-95 transition-all flex items-center justify-center border ${currentTheme.fab}`}>Ya</button>
             </div>
           </div>
         </>
