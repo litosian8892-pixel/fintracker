@@ -388,6 +388,19 @@ export default function HomeTab({
   const [activeKeypad, setActiveKeypad] = useState<"amount" | "adminFee" | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
+  // 🔥 STATE MESIN FISIKA (HUJAN KOIN & BLACK HOLE)
+  const [fxType, setFxType] = useState<"income" | "expense" | null>(null);
+  const triggerSaveFX = (type: "income" | "expense" | "transfer") => {
+    setFxType(type === "income" ? "income" : "expense");
+    if (typeof window !== "undefined" && navigator.vibrate) {
+      // Getar Pemasukan (Detak kecil kayak koin) vs Pengeluaran (Getar berat kayak kesedot)
+      if (type === "income") navigator.vibrate([30, 80, 30, 80, 30]); 
+      else navigator.vibrate([200, 100, 250, 100, 300]); 
+    }
+    // Hapus efek dari layar setelah 1.5 detik
+    setTimeout(() => setFxType(null), 1500); 
+  };
+
   const [editingCat, setEditingCat] = useState<CategoryData | null>(null);
   const [editCatName, setEditCatName] = useState("");
   const [editCatIcon, setEditCatIcon] = useState("");
@@ -826,7 +839,53 @@ export default function HomeTab({
           box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.8), inset -4px -4px 8px rgba(30, 41, 59, 0.5);
           border: 1px solid transparent;
         }
+
+        /* 🌪️ ENGINE FISIKA (COINS & BLACK HOLE) */
+        @keyframes coinFall {
+          0% { transform: translateY(-100px) rotateY(0deg) rotateX(0deg) scale(1); opacity: 1; }
+          80% { opacity: 1; }
+          100% { transform: translateY(100vh) rotateY(720deg) rotateX(360deg) scale(0.5); opacity: 0; }
+        }
+        @keyframes blackholeSuck {
+          0% { transform: scale(0) rotate(0deg); opacity: 0; filter: blur(0px); }
+          20% { transform: scale(1.5) rotate(90deg); opacity: 1; filter: blur(2px); }
+          100% { transform: scale(0) rotate(720deg); opacity: 0; filter: blur(10px); }
+        }
+        @keyframes screenShake {
+          0%, 100% { transform: translateX(0) translateY(0); }
+          20% { transform: translateX(-6px) translateY(3px) rotate(-1deg); }
+          40% { transform: translateX(6px) translateY(-3px) rotate(1deg); }
+          60% { transform: translateX(-6px) translateY(3px) rotate(-1deg); }
+          80% { transform: translateX(6px) translateY(-3px) rotate(1deg); }
+        }
       `}} />
+      
+      {/* 🔮 LAYER OVERLAY FISIKA 3D (Z-INDEX SUPER TINGGI) */}
+      {fxType === "income" && (
+        <div className="fixed inset-0 z-[99999] pointer-events-none flex justify-center items-start overflow-hidden">
+          {[...Array(35)].map((_, i) => {
+            const left = Math.random() * 100;
+            const delay = Math.random() * 0.4;
+            const duration = 0.8 + Math.random() * 0.7;
+            const size = 25 + Math.random() * 25;
+            return (
+              <div key={i} className="absolute top-0 rounded-full shadow-[inset_0_0_15px_rgba(180,83,9,0.9),0_5px_10px_rgba(0,0,0,0.3)] border border-yellow-200 bg-gradient-to-br from-yellow-300 via-yellow-500 to-amber-600 flex items-center justify-center" 
+                   style={{ left: `${left}%`, width: size, height: size, animation: `coinFall ${duration}s ${delay}s ease-in forwards` }}>
+                <span className="text-yellow-100 font-black" style={{fontSize: size*0.4, textShadow: '0 1px 2px rgba(0,0,0,0.3)'}}>Rp</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      
+      {fxType === "expense" && (
+        <div className="fixed inset-0 z-[99999] pointer-events-none flex justify-center items-center bg-black/10" style={{ animation: 'screenShake 0.6s ease-in-out' }}>
+          <div className="w-64 h-64 md:w-80 md:h-80 rounded-full bg-gradient-to-tr from-rose-950 via-black to-indigo-950 shadow-[0_0_150px_rgba(225,29,72,0.8),inset_0_0_50px_rgba(0,0,0,1)] flex items-center justify-center border border-rose-500/20" style={{ animation: 'blackholeSuck 1s cubic-bezier(0.4, 0, 0.2, 1) forwards' }}>
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-dashed border-rose-500/40" style={{ animation: 'blackholeSuck 0.8s ease-in reverse forwards' }} />
+            <div className="absolute w-16 h-16 md:w-20 md:h-20 bg-black rounded-full shadow-[0_0_40px_rgba(0,0,0,1)]" />
+          </div>
+        </div>
+      )}
       
       {/* HEADER TAB TRANSAKSI */}
       <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
@@ -1571,7 +1630,6 @@ export default function HomeTab({
                       if (editSourceAcc) {
                         let availableBalance = editSourceAcc.balance;
                         
-                        // Algoritma Pintar: Jika dompet asal tidak diganti, uang yang bisa dipakai = Saldo saat ini + Saldo transaksi lama yang dibatalkan
                         if (editingTransaction.accountId === editTAccountId && (editingTransaction.type === "expense" || editingTransaction.type === "transfer")) {
                           const oldRawAmount = editingTransaction.originalAmount !== undefined ? editingTransaction.originalAmount : editingTransaction.amount;
                           availableBalance += oldRawAmount;
@@ -1579,11 +1637,12 @@ export default function HomeTab({
                         
                         if (safeEvaluate(editTAmount) > availableBalance) {
                           alert(`Transaksi Ditolak!\n\nSaldo dompet tidak mencukupi.\nMaksimal dana yang bisa digunakan adalah ${formatCurrencyTerbaca(availableBalance.toString(), editSourceAcc.currency)}.`);
-                          return; // BLOCK EKSEKUSI
+                          return; 
                         }
                       }
                     }
 
+                    triggerSaveFX(editTType); // 🔥 TRIGGER ANIMASI FISIKA
                     handleUpdateTransaction(); 
                     closeMainDrawer(); 
                   }} 
@@ -1601,10 +1660,11 @@ export default function HomeTab({
                     if (tType === "expense" || tType === "transfer") {
                       if (selectedSourceAcc && safeEvaluate(tAmount) > selectedSourceAcc.balance) {
                         alert(`Transaksi Ditolak!\n\nSaldo dompet "${selectedSourceAcc.name}" tidak mencukupi.\nSisa saldo: ${formatCurrencyTerbaca(selectedSourceAcc.balance.toString(), selectedSourceAcc.currency)}.`);
-                        return; // BLOCK EKSEKUSI
+                        return; 
                       }
                     }
 
+                    triggerSaveFX(tType); // 🔥 TRIGGER ANIMASI FISIKA
                     if(splits.length > 0) handleTransaction(splits); else handleTransaction(); 
                     closeMainDrawer(); 
                   }} 
