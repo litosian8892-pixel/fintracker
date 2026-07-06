@@ -53,13 +53,9 @@ const getLocalDateString = (dateInput = new Date()) => {
 export default function FintrackerApp() {
   const [user, setUser] = useState<User | null>(null);
   
-  // TURBO BOOST: Cek ingatan lokal. Jika sebelumnya sudah login, JANGAN tampilkan layar loading terlalu lama!
-  const [loading, setLoading] = useState(() => {
-    if (typeof window !== "undefined") {
-      return !localStorage.getItem("fintracker_has_logged_in");
-    }
-    return true;
-  });
+  // FIX FLICKER: Selalu mulai dengan state loading true agar Firebase Auth punya waktu 
+  // memverifikasi token lokal. Ini mencegah AuthScreen (Layar Login) berkedip.
+  const [loading, setLoading] = useState(true);
 
   // 🍞 APPLE-STYLE TOAST STATE
   const [toast, setToast] = useState<{message: string, type: "success" | "error" | "warning", id: number} | null>(null);
