@@ -840,23 +840,21 @@ export default function HomeTab({
           border: 1px solid transparent;
         }
 
-        /* 🌪️ ENGINE FISIKA (COINS & BLACK HOLE) */
+        /* 🌪️ ENGINE FISIKA (COINS & FLYING BILLS) */
         @keyframes coinFall {
           0% { transform: translateY(-100px) rotateY(0deg) rotateX(0deg) scale(1); opacity: 1; }
           80% { opacity: 1; }
           100% { transform: translateY(100vh) rotateY(720deg) rotateX(360deg) scale(0.5); opacity: 0; }
         }
-        @keyframes blackholeSuck {
-          0% { transform: scale(0) rotate(0deg); opacity: 0; filter: blur(0px); }
-          20% { transform: scale(1.5) rotate(90deg); opacity: 1; filter: blur(2px); }
-          100% { transform: scale(0) rotate(720deg); opacity: 0; filter: blur(10px); }
+        @keyframes billFly {
+          0% { transform: translateY(100px) rotateY(0deg) rotateX(0deg) rotateZ(0deg) scale(0.5); opacity: 0; }
+          15% { opacity: 1; transform: translateY(0px) rotateY(45deg) rotateX(20deg) rotateZ(10deg) scale(1); }
+          100% { transform: translateY(-80vh) rotateY(360deg) rotateX(180deg) rotateZ(90deg) scale(0.8); opacity: 0; }
         }
-        @keyframes screenShake {
-          0%, 100% { transform: translateX(0) translateY(0); }
-          20% { transform: translateX(-6px) translateY(3px) rotate(-1deg); }
-          40% { transform: translateX(6px) translateY(-3px) rotate(1deg); }
-          60% { transform: translateX(-6px) translateY(3px) rotate(-1deg); }
-          80% { transform: translateX(6px) translateY(-3px) rotate(1deg); }
+        @keyframes redPulse {
+          0% { background-color: transparent; }
+          20% { background-color: rgba(225, 29, 72, 0.15); }
+          100% { background-color: transparent; }
         }
       `}} />
       
@@ -878,12 +876,25 @@ export default function HomeTab({
         </div>
       )}
       
+      {/* 💸 ANIMASI UANG MELAYANG KELUAR (PENGELUARAN YANG ELEGAN) */}
       {fxType === "expense" && (
-        <div className="fixed inset-0 z-[99999] pointer-events-none flex justify-center items-center bg-black/10" style={{ animation: 'screenShake 0.6s ease-in-out' }}>
-          <div className="w-64 h-64 md:w-80 md:h-80 rounded-full bg-gradient-to-tr from-rose-950 via-black to-indigo-950 shadow-[0_0_150px_rgba(225,29,72,0.8),inset_0_0_50px_rgba(0,0,0,1)] flex items-center justify-center border border-rose-500/20" style={{ animation: 'blackholeSuck 1s cubic-bezier(0.4, 0, 0.2, 1) forwards' }}>
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-dashed border-rose-500/40" style={{ animation: 'blackholeSuck 0.8s ease-in reverse forwards' }} />
-            <div className="absolute w-16 h-16 md:w-20 md:h-20 bg-black rounded-full shadow-[0_0_40px_rgba(0,0,0,1)]" />
-          </div>
+        <div className="fixed inset-0 z-[99999] pointer-events-none overflow-hidden flex justify-center" style={{ animation: 'redPulse 1s ease-out forwards' }}>
+          {[...Array(20)].map((_, i) => {
+            const left = 10 + Math.random() * 80; // Tersebar acak
+            const delay = Math.random() * 0.3; // Muncul bergantian
+            const duration = 0.8 + Math.random() * 0.6;
+            const width = 40 + Math.random() * 30; // Ukuran kertas beda-beda
+            const height = width * 0.5;
+            
+            return (
+              <div key={i} className="absolute bottom-0 rounded-sm shadow-[0_5px_15px_rgba(225,29,72,0.4)] border border-rose-400/50 bg-gradient-to-br from-rose-500 via-red-500 to-rose-700 flex items-center justify-center" 
+                   style={{ left: `${left}%`, width: `${width}px`, height: `${height}px`, animation: `billFly ${duration}s ${delay}s cubic-bezier(0.2, 1, 0.3, 1) forwards` }}>
+                <div className="w-[80%] h-[60%] border border-rose-300/30 rounded-[2px] flex items-center justify-center">
+                  <span className="text-rose-100 font-black" style={{fontSize: height*0.35, opacity: 0.8}}>-Rp</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
       
