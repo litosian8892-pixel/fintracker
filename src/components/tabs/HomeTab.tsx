@@ -388,19 +388,6 @@ export default function HomeTab({
   const [activeKeypad, setActiveKeypad] = useState<"amount" | "adminFee" | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // 🔥 STATE MESIN FISIKA (HUJAN KOIN & BLACK HOLE)
-  const [fxType, setFxType] = useState<"income" | "expense" | null>(null);
-  const triggerSaveFX = (type: "income" | "expense" | "transfer") => {
-    setFxType(type === "income" ? "income" : "expense");
-    if (typeof window !== "undefined" && navigator.vibrate) {
-      // Getar Pemasukan (Detak kecil kayak koin) vs Pengeluaran (Getar berat kayak kesedot)
-      if (type === "income") navigator.vibrate([30, 80, 30, 80, 30]); 
-      else navigator.vibrate([200, 100, 250, 100, 300]); 
-    }
-    // Hapus efek dari layar setelah 1.5 detik
-    setTimeout(() => setFxType(null), 1500); 
-  };
-
   const [editingCat, setEditingCat] = useState<CategoryData | null>(null);
   const [editCatName, setEditCatName] = useState("");
   const [editCatIcon, setEditCatIcon] = useState("");
@@ -839,42 +826,7 @@ export default function HomeTab({
           box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.8), inset -4px -4px 8px rgba(30, 41, 59, 0.5);
           border: 1px solid transparent;
         }
-
-        /* ✨ PREMIUM SUCCESS ANIMATION (APPLE PAY STYLE) */
-        @keyframes premiumFadeOut {
-          0% { opacity: 1; }
-          80% { opacity: 1; transform: scale(1); }
-          100% { opacity: 0; transform: scale(0.95); pointer-events: none; }
-        }
-        @keyframes premiumPopIn {
-          0% { opacity: 0; transform: scale(0.85); }
-          50% { opacity: 1; transform: scale(1.05); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-        @keyframes drawCheck {
-          0% { stroke-dashoffset: 50; opacity: 0; }
-          10% { opacity: 1; }
-          100% { stroke-dashoffset: 0; opacity: 1; }
-        }
       `}} />
-      
-      {/* ✨ ANIMASI SUCCESS PREMIUM (APPLE PAY STYLE) */}
-      {fxType && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-none bg-slate-900/30 dark:bg-black/50 backdrop-blur-sm" style={{ animation: 'premiumFadeOut 1.5s ease-out forwards' }}>
-          <div className="bg-white/95 dark:bg-slate-900/95 p-8 rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] flex flex-col items-center gap-5 border border-white/50 dark:border-slate-700/50 backdrop-blur-xl min-w-[200px]" style={{ animation: 'premiumPopIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center relative ${fxType === 'income' ? 'bg-emerald-50 dark:bg-emerald-900/30' : 'bg-rose-50 dark:bg-rose-900/30'}`}>
-              <div className={`absolute inset-0 rounded-full animate-ping opacity-20 ${fxType === 'income' ? 'bg-emerald-400' : 'bg-rose-400'}`} style={{ animationDuration: '1.5s' }} />
-              {/* Animasi menggambar SVG Centang / Checkmark */}
-              <svg className={`w-10 h-10 ${fxType === 'income' ? 'text-emerald-500' : 'text-rose-500'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" style={{ strokeDasharray: 50, strokeDashoffset: 50, animation: 'drawCheck 0.4s ease-out 0.2s forwards' }} />
-              </svg>
-            </div>
-            <span className="text-base font-black text-slate-800 dark:text-white tracking-tight">
-              {fxType === 'income' ? 'Pemasukan Tercatat' : 'Pengeluaran Tercatat'}
-            </span>
-          </div>
-        </div>
-      )}
       
       {/* HEADER TAB TRANSAKSI */}
       <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
@@ -1631,7 +1583,6 @@ export default function HomeTab({
                       }
                     }
 
-                    triggerSaveFX(editTType); // 🔥 TRIGGER ANIMASI FISIKA
                     handleUpdateTransaction(); 
                     closeMainDrawer(); 
                   }} 
@@ -1653,7 +1604,6 @@ export default function HomeTab({
                       }
                     }
 
-                    triggerSaveFX(tType); // 🔥 TRIGGER ANIMASI FISIKA
                     if(splits.length > 0) handleTransaction(splits); else handleTransaction(); 
                     closeMainDrawer(); 
                   }} 
