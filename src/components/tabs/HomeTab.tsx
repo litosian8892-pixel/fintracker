@@ -1885,7 +1885,7 @@ export default function HomeTab({
       {activeAccSelector && (
         <div className="fixed inset-0 z-[190] flex items-end justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="absolute inset-0 z-0" onClick={() => { setActiveAccSelector(null); setAccModalTab("pribadi"); }}></div>
-          <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[32px] shadow-2xl p-6 pb-8 overflow-hidden animate-in slide-in-from-bottom duration-300 z-10 flex flex-col max-h-[85vh] border-t border-slate-200 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[32px] shadow-2xl p-6 pb-8 overflow-hidden animate-in slide-in-from-bottom duration-300 z-10 flex flex-col h-[65vh] border-t border-slate-200 dark:border-slate-800">
             <div className="w-full flex justify-center pb-2"><div className="w-12 h-1 bg-slate-200 dark:bg-slate-800 rounded-full"></div></div>
             <div className="flex justify-between items-center mb-4 pt-2">
               <div className="flex items-center gap-2">
@@ -1922,7 +1922,7 @@ export default function HomeTab({
                     </div>
                   )}
 
-                  <div className="overflow-y-auto no-scrollbar pr-1 text-left">
+                  <div className="overflow-y-auto no-scrollbar pr-1 text-left flex-1">
                     <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-200" key={accModalTab}>
                       {(accModalTab === "pribadi" || savingsAccounts.length === 0 ? regularAccounts : savingsAccounts).map(acc => {
                         const activeId = activeAccSelector === "source" ? (editingTransaction ? editTAccountId : tAccountId) : (editingTransaction ? editTToAccountId : tToAccountId);
