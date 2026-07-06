@@ -217,27 +217,39 @@ const formatTime = (createdAt: any) => {
 const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, getRowIcon, isOpen, onOpen, onClose, onViewReceipt }: any) => {
   const [dragOffset, setDragOffset] = useState(0);
   const startX = useRef<number | null>(null);
+  const startY = useRef<number | null>(null); // Sensor Scroll Vertikal
   const isDragging = useRef(false);
-  const hasMoved = useRef(false); // Sensor Tap vs Swipe
-  const MAX_SWIPE = -70; // Lebih pendek karena hanya sisa 1 tombol (Hapus)
+  const hasMoved = useRef(false); // Sensor Tap vs Swipe vs Scroll
+  const MAX_SWIPE = -70;
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     isDragging.current = true;
-    hasMoved.current = false; // Reset sensor
+    hasMoved.current = false;
     startX.current = e.clientX;
+    startY.current = e.clientY;
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging.current || startX.current === null) return;
-    const diff = e.clientX - startX.current;
+    if (!isDragging.current || startX.current === null || startY.current === null) return;
     
-    // Jika bergeser lebih dari 5px, tandai sebagai SWIPE bukan TAP
-    if (Math.abs(diff) > 5) hasMoved.current = true; 
+    const diffX = e.clientX - startX.current;
+    const diffY = e.clientY - startY.current;
     
-    let newOffset = isOpen ? MAX_SWIPE + diff : diff;
+    // Jika jari bergeser lebih dari 5px (entah X atau Y), ini BUKAN TAP!
+    if (Math.abs(diffX) > 5 || Math.abs(diffY) > 5) {
+      hasMoved.current = true; 
+    }
+
+    // UX FIX: Jika geseran ke bawah/atas (Scroll) lebih dominan dari geseran ke samping,
+    // jangan ikut geser kartunya agar daftar transaksi tidak goyang saat di-scroll.
+    if (Math.abs(diffY) > Math.abs(diffX) && !isOpen) {
+      return; 
+    }
+    
+    let newOffset = isOpen ? MAX_SWIPE + diffX : diffX;
     if (newOffset > 0) newOffset = 0;
-    if (newOffset < MAX_SWIPE - 20) newOffset = MAX_SWIPE - 20; // Efek membal di ujung
+    if (newOffset < MAX_SWIPE - 20) newOffset = MAX_SWIPE - 20;
     setDragOffset(newOffset);
   };
   
@@ -246,21 +258,20 @@ const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, g
     isDragging.current = false;
     e.currentTarget.releasePointerCapture(e.pointerId);
     
-    // Logika Pintar: TAP vs SWIPE
     if (!hasMoved.current && startX.current !== null) {
       if (isOpen) {
-        onClose(); // Jika sedang digeser dan di-tap, tutup geserannya
+        onClose(); 
       } else {
-        onEdit(); // TAP MURNI: Langsung masuk mode Edit
+        onEdit();
       }
     } else {
-      // SWIPE LOGIC
       if (!isOpen && dragOffset < -30) onOpen();
       else if (isOpen && dragOffset > MAX_SWIPE + 20) onClose();
     }
     
     setDragOffset(0);
     startX.current = null;
+    startY.current = null;
   };
 
   const isTransfer = t.type === "transfer"; 
