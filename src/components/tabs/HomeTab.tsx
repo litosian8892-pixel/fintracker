@@ -1881,13 +1881,12 @@ export default function HomeTab({
         </>
       )}
 
-      {/* BOTTOM SHEET: PILIH DOMPET */}
+      {/* CENTERED MODAL: PILIH DOMPET */}
       {activeAccSelector && (
-        <div className="fixed inset-0 z-[190] flex items-end justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[190] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="absolute inset-0 z-0" onClick={() => { setActiveAccSelector(null); setAccModalTab("pribadi"); }}></div>
-          <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[32px] shadow-2xl p-6 pb-8 overflow-hidden animate-in slide-in-from-bottom duration-300 z-10 flex flex-col h-[65vh] border-t border-slate-200 dark:border-slate-800">
-            <div className="w-full flex justify-center pb-2"><div className="w-12 h-1 bg-slate-200 dark:bg-slate-800 rounded-full"></div></div>
-            <div className="flex justify-between items-center mb-4 pt-2">
+          <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-[32px] shadow-2xl p-6 overflow-hidden animate-in zoom-in-95 duration-200 z-10 flex flex-col h-[65vh] border border-slate-200 dark:border-slate-800">
+            <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
                 <Wallet size={18} className={currentTheme.text} />
                 <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Pilih Dompet</h3>
