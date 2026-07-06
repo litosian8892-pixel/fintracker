@@ -840,61 +840,39 @@ export default function HomeTab({
           border: 1px solid transparent;
         }
 
-        /* 🌪️ ENGINE FISIKA (COINS & FLYING BILLS) */
-        @keyframes coinFall {
-          0% { transform: translateY(-100px) rotateY(0deg) rotateX(0deg) scale(1); opacity: 1; }
-          80% { opacity: 1; }
-          100% { transform: translateY(100vh) rotateY(720deg) rotateX(360deg) scale(0.5); opacity: 0; }
+        /* ✨ PREMIUM SUCCESS ANIMATION (APPLE PAY STYLE) */
+        @keyframes premiumFadeOut {
+          0% { opacity: 1; }
+          80% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(0.95); pointer-events: none; }
         }
-        @keyframes billFly {
-          0% { transform: translateY(100px) rotateY(0deg) rotateX(0deg) rotateZ(0deg) scale(0.5); opacity: 0; }
-          15% { opacity: 1; transform: translateY(0px) rotateY(45deg) rotateX(20deg) rotateZ(10deg) scale(1); }
-          100% { transform: translateY(-80vh) rotateY(360deg) rotateX(180deg) rotateZ(90deg) scale(0.8); opacity: 0; }
+        @keyframes premiumPopIn {
+          0% { opacity: 0; transform: scale(0.85); }
+          50% { opacity: 1; transform: scale(1.05); }
+          100% { opacity: 1; transform: scale(1); }
         }
-        @keyframes redPulse {
-          0% { background-color: transparent; }
-          20% { background-color: rgba(225, 29, 72, 0.15); }
-          100% { background-color: transparent; }
+        @keyframes drawCheck {
+          0% { stroke-dashoffset: 50; opacity: 0; }
+          10% { opacity: 1; }
+          100% { stroke-dashoffset: 0; opacity: 1; }
         }
       `}} />
       
-      {/* 🔮 LAYER OVERLAY FISIKA 3D (Z-INDEX SUPER TINGGI) */}
-      {fxType === "income" && (
-        <div className="fixed inset-0 z-[99999] pointer-events-none flex justify-center items-start overflow-hidden">
-          {[...Array(35)].map((_, i) => {
-            const left = Math.random() * 100;
-            const delay = Math.random() * 0.4;
-            const duration = 0.8 + Math.random() * 0.7;
-            const size = 25 + Math.random() * 25;
-            return (
-              <div key={i} className="absolute top-0 rounded-full shadow-[inset_0_0_15px_rgba(180,83,9,0.9),0_5px_10px_rgba(0,0,0,0.3)] border border-yellow-200 bg-gradient-to-br from-yellow-300 via-yellow-500 to-amber-600 flex items-center justify-center" 
-                   style={{ left: `${left}%`, width: size, height: size, animation: `coinFall ${duration}s ${delay}s ease-in forwards` }}>
-                <span className="text-yellow-100 font-black" style={{fontSize: size*0.4, textShadow: '0 1px 2px rgba(0,0,0,0.3)'}}>Rp</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      
-      {/* 💸 ANIMASI UANG MELAYANG KELUAR (PENGELUARAN YANG ELEGAN) */}
-      {fxType === "expense" && (
-        <div className="fixed inset-0 z-[99999] pointer-events-none overflow-hidden flex justify-center" style={{ animation: 'redPulse 1s ease-out forwards' }}>
-          {[...Array(20)].map((_, i) => {
-            const left = 10 + Math.random() * 80; // Tersebar acak
-            const delay = Math.random() * 0.3; // Muncul bergantian
-            const duration = 0.8 + Math.random() * 0.6;
-            const width = 40 + Math.random() * 30; // Ukuran kertas beda-beda
-            const height = width * 0.5;
-            
-            return (
-              <div key={i} className="absolute bottom-0 rounded-sm shadow-[0_5px_15px_rgba(225,29,72,0.4)] border border-rose-400/50 bg-gradient-to-br from-rose-500 via-red-500 to-rose-700 flex items-center justify-center" 
-                   style={{ left: `${left}%`, width: `${width}px`, height: `${height}px`, animation: `billFly ${duration}s ${delay}s cubic-bezier(0.2, 1, 0.3, 1) forwards` }}>
-                <div className="w-[80%] h-[60%] border border-rose-300/30 rounded-[2px] flex items-center justify-center">
-                  <span className="text-rose-100 font-black" style={{fontSize: height*0.35, opacity: 0.8}}>-Rp</span>
-                </div>
-              </div>
-            );
-          })}
+      {/* ✨ ANIMASI SUCCESS PREMIUM (APPLE PAY STYLE) */}
+      {fxType && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-none bg-slate-900/30 dark:bg-black/50 backdrop-blur-sm" style={{ animation: 'premiumFadeOut 1.5s ease-out forwards' }}>
+          <div className="bg-white/95 dark:bg-slate-900/95 p-8 rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] flex flex-col items-center gap-5 border border-white/50 dark:border-slate-700/50 backdrop-blur-xl min-w-[200px]" style={{ animation: 'premiumPopIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center relative ${fxType === 'income' ? 'bg-emerald-50 dark:bg-emerald-900/30' : 'bg-rose-50 dark:bg-rose-900/30'}`}>
+              <div className={`absolute inset-0 rounded-full animate-ping opacity-20 ${fxType === 'income' ? 'bg-emerald-400' : 'bg-rose-400'}`} style={{ animationDuration: '1.5s' }} />
+              {/* Animasi menggambar SVG Centang / Checkmark */}
+              <svg className={`w-10 h-10 ${fxType === 'income' ? 'text-emerald-500' : 'text-rose-500'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" style={{ strokeDasharray: 50, strokeDashoffset: 50, animation: 'drawCheck 0.4s ease-out 0.2s forwards' }} />
+              </svg>
+            </div>
+            <span className="text-base font-black text-slate-800 dark:text-white tracking-tight">
+              {fxType === 'income' ? 'Pemasukan Tercatat' : 'Pengeluaran Tercatat'}
+            </span>
+          </div>
         </div>
       )}
       
