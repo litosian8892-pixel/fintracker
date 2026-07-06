@@ -1894,24 +1894,69 @@ export default function HomeTab({
               <button type="button" onClick={() => setActiveAccSelector(null)} className="p-1.5 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 rounded-full transition-colors cursor-pointer"><X size={14} className="text-slate-700 dark:text-slate-300" /></button>
             </div>
             <div className="overflow-y-auto no-scrollbar pr-1 text-left">
-              <div className="grid grid-cols-2 gap-3">
-                {(activeAccSelector === "source" ? availableSourceAccounts : accounts).map(acc => {
-                  const activeId = activeAccSelector === "source" ? (editingTransaction ? editTAccountId : tAccountId) : (editingTransaction ? editTToAccountId : tToAccountId);
-                  const isSelected = activeId === acc.id;
-                  return (
-                    <div key={acc.id} onClick={() => { triggerHaptic(); handleSelectAccount(acc.id); }} className={`p-4 rounded-2xl border text-left flex flex-col justify-between relative transition-all active:scale-95 cursor-pointer h-28 ${isSelected ? currentTheme.activeAccCard : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
-                      <div className="flex justify-between items-start">
-                        {acc.logo ? ( <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white" /> ) : ( <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500"><Wallet size={16} /></div> )}
-                        {isSelected && ( <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow ${currentTheme.checkCircle}`}>✓</div> )}
+              {(() => {
+                // Logika Pintar: Pisahkan dompet berdasarkan properti isSavings
+                const renderAccounts = activeAccSelector === "source" ? availableSourceAccounts : accounts;
+                const regularAccounts = renderAccounts.filter(a => !a.isSavings);
+                const savingsAccounts = renderAccounts.filter(a => a.isSavings);
+
+                return (
+                  <div className="space-y-6">
+                    {/* DOMPET PRIBADI SECTION */}
+                    {regularAccounts.length > 0 && (
+                      <div className="space-y-3">
+                        {/* Judul ini hanya muncul jika ada dompet Tabungan agar tidak rancu di mode Pengeluaran biasa */}
+                        {savingsAccounts.length > 0 && (
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 pl-1">Dompet Pribadi ({regularAccounts.length})</h4>
+                        )}
+                        <div className="grid grid-cols-2 gap-3">
+                          {regularAccounts.map(acc => {
+                            const activeId = activeAccSelector === "source" ? (editingTransaction ? editTAccountId : tAccountId) : (editingTransaction ? editTToAccountId : tToAccountId);
+                            const isSelected = activeId === acc.id;
+                            return (
+                              <div key={acc.id} onClick={() => { triggerHaptic(); handleSelectAccount(acc.id); }} className={`p-4 rounded-2xl border text-left flex flex-col justify-between relative transition-all active:scale-95 cursor-pointer h-28 ${isSelected ? currentTheme.activeAccCard : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
+                                <div className="flex justify-between items-start">
+                                  {acc.logo ? ( <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white" /> ) : ( <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500"><Wallet size={16} /></div> )}
+                                  {isSelected && ( <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow ${currentTheme.checkCircle}`}>✓</div> )}
+                                </div>
+                                <div className="mt-2 min-w-0">
+                                  <p className="text-xs font-black text-slate-800 dark:text-white truncate leading-none mb-1">{acc.name}</p>
+                                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate leading-none">{getCurrencySymbol(acc.currency)} {acc.balance.toLocaleString("id-ID")}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <div className="mt-2 min-w-0">
-                        <p className="text-xs font-black text-slate-800 dark:text-white truncate leading-none mb-1">{acc.name}</p>
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate leading-none">{getCurrencySymbol(acc.currency)} {acc.balance.toLocaleString("id-ID")}</p>
+                    )}
+
+                    {/* TABUNGAN SECTION */}
+                    {savingsAccounts.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 pl-1">Tabungan ({savingsAccounts.length})</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          {savingsAccounts.map(acc => {
+                            const activeId = activeAccSelector === "source" ? (editingTransaction ? editTAccountId : tAccountId) : (editingTransaction ? editTToAccountId : tToAccountId);
+                            const isSelected = activeId === acc.id;
+                            return (
+                              <div key={acc.id} onClick={() => { triggerHaptic(); handleSelectAccount(acc.id); }} className={`p-4 rounded-2xl border text-left flex flex-col justify-between relative transition-all active:scale-95 cursor-pointer h-28 ${isSelected ? currentTheme.activeAccCard : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
+                                <div className="flex justify-between items-start">
+                                  {acc.logo ? ( <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white" /> ) : ( <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500"><Wallet size={16} /></div> )}
+                                  {isSelected && ( <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow ${currentTheme.checkCircle}`}>✓</div> )}
+                                </div>
+                                <div className="mt-2 min-w-0">
+                                  <p className="text-xs font-black text-slate-800 dark:text-white truncate leading-none mb-1">{acc.name}</p>
+                                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate leading-none">{getCurrencySymbol(acc.currency)} {acc.balance.toLocaleString("id-ID")}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
