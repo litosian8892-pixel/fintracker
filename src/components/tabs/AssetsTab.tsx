@@ -67,45 +67,15 @@ const themeMap = {
 const getCardDesign = (type: string, isInvest?: boolean) => {
   const t = type.toLowerCase();
   if (isInvest || t.includes("invest") || t.includes("crypto") || t.includes("saham")) {
-    return { 
-      bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
-      icon: <BarChart3 size={18} className="text-amber-500 dark:text-amber-400" />, 
-      iconBg: "bg-amber-50 dark:bg-amber-900/50", 
-      chip: "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400", 
-      progressBar: "bg-amber-500"
-    };
+    return { bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", icon: <BarChart3 size={18} className="text-amber-500 dark:text-amber-400" />, iconBg: "bg-amber-50 dark:bg-amber-900/50", chip: "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400", progressBar: "bg-amber-500" };
   } else if (t.includes("bank") || t.includes("kartu") || t.includes("credit") || t.includes("savings")) {
-    return { 
-      bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
-      icon: <CreditCard size={18} className="text-blue-600 dark:text-blue-400" />, 
-      iconBg: "bg-blue-50 dark:bg-blue-900/50", 
-      chip: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", 
-      progressBar: "bg-blue-500"
-    };
+    return { bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", icon: <CreditCard size={18} className="text-blue-600 dark:text-blue-400" />, iconBg: "bg-blue-50 dark:bg-blue-900/50", chip: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", progressBar: "bg-blue-500" };
   } else if (t.includes("wallet") || t.includes("gopay") || t.includes("ovo") || t.includes("dana") || t.includes("pay")) {
-    return { 
-      bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
-      icon: <Smartphone size={18} className="text-purple-600 dark:text-purple-400" />, 
-      iconBg: "bg-purple-50 dark:bg-purple-900/50", 
-      chip: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
-      progressBar: "bg-purple-500" 
-    };
+    return { bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", icon: <Smartphone size={18} className="text-purple-600 dark:text-purple-400" />, iconBg: "bg-purple-50 dark:bg-purple-900/50", chip: "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400", progressBar: "bg-purple-500" };
   } else if (t.includes("cash") || t.includes("dompet") || t.includes("tunai")) {
-    return { 
-      bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
-      icon: <Banknote size={18} className="text-emerald-600" />, 
-      iconBg: "bg-emerald-50 dark:bg-emerald-900/50", 
-      chip: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
-      progressBar: "bg-emerald-500" 
-    };
+    return { bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", icon: <Banknote size={18} className="text-emerald-600" />, iconBg: "bg-emerald-50 dark:bg-emerald-900/50", chip: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400", progressBar: "bg-emerald-500" };
   } else {
-    return { 
-      bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", 
-      icon: <Wallet size={18} className="text-slate-600 dark:text-slate-400" />, 
-      iconBg: "bg-slate-50 dark:bg-slate-800/50", 
-      chip: "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
-      progressBar: "bg-slate-500" 
-    };
+    return { bg: "bg-white dark:bg-slate-900 shadow-sm border border-transparent dark:border-slate-700/50", icon: <Wallet size={18} className="text-slate-600 dark:text-slate-400" />, iconBg: "bg-slate-50 dark:bg-slate-800/50", chip: "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400", progressBar: "bg-slate-500" };
   }
 };
 
@@ -126,18 +96,10 @@ const formatCurrencyTerbaca = (val: string | number, currencyCode?: string) => {
   const parsed = typeof val === 'string' ? parseFloat(val) : val;
   if (isNaN(parsed)) return `${getCurrencySymbol(currencyCode)} 0`;
   const code = currencyCode || "IDR";
-  
-  // Format khusus untuk Kripto/Unit yang butuh desimal lebih panjang
   if (["BTC", "ETH", "GRAM", "LOT"].includes(code.toUpperCase())) {
     return `${getCurrencySymbol(code)} ${parsed.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 6 })}`;
   }
-  
-  return new Intl.NumberFormat("id-ID", { 
-    style: "currency", 
-    currency: code.toUpperCase() === "IDR" ? "IDR" : code.toUpperCase(), 
-    minimumFractionDigits: 0, 
-    maximumFractionDigits: code.toUpperCase() === "IDR" ? 0 : 2 
-  }).format(parsed);
+  return new Intl.NumberFormat("id-ID", { style: "currency", currency: code.toUpperCase() === "IDR" ? "IDR" : code.toUpperCase(), minimumFractionDigits: 0, maximumFractionDigits: code.toUpperCase() === "IDR" ? 0 : 2 }).format(parsed);
 };
 
 const safeEvaluate = (expr: string): number => {
@@ -187,14 +149,9 @@ interface AssetsTabProps {
   isPrivacyMode?: boolean; accCurrency?: string; setAccCurrency?: (val: string) => void; editAccCurrency?: string; setEditAccCurrency?: (val: string) => void;
   exchangeRates?: Record<string, number>; handleUpdateGlobalRates?: (rates: Record<string, number>) => void;
   reportTransactions?: TransactionData[]; reportMonth?: string; setReportMonth?: (val: string) => void;
-  
-  // --- PROPS BARU UNTUK INVESTASI (OPSIONAL, DENGAN FALLBACK LOKAL JIKA PAGE.TSX BELUM UPDATE) ---
-  accIsInvestment?: boolean; setAccIsInvestment?: (val: boolean) => void;
-  editAccIsInvestment?: boolean; setEditAccIsInvestment?: (val: boolean) => void;
-  accAverageBuyPrice?: string; setAccAverageBuyPrice?: (val: string) => void;
-  editAccAverageBuyPrice?: string; setEditAccAverageBuyPrice?: (val: string) => void;
-  accLastExchangeRate?: string; setAccLastExchangeRate?: (val: string) => void;
-  editAccLastExchangeRate?: string; setEditAccLastExchangeRate?: (val: string) => void;
+  accIsInvestment?: boolean; setAccIsInvestment?: (val: boolean) => void; editAccIsInvestment?: boolean; setEditAccIsInvestment?: (val: boolean) => void;
+  accAverageBuyPrice?: string; setAccAverageBuyPrice?: (val: string) => void; editAccAverageBuyPrice?: string; setEditAccAverageBuyPrice?: (val: string) => void;
+  accLastExchangeRate?: string; setAccLastExchangeRate?: (val: string) => void; editAccLastExchangeRate?: string; setEditAccLastExchangeRate?: (val: string) => void;
   handleUpdateInvestmentRate?: (id: string, newRate: number) => void;
 }
 
@@ -210,145 +167,177 @@ export default function AssetsTab({
   accLastExchangeRate, setAccLastExchangeRate, editAccLastExchangeRate, setEditAccLastExchangeRate, handleUpdateInvestmentRate
 }: AssetsTabProps) {
   
-  // STATE NAVIGASI VIEW & FALLBACK INTERN
   const [activeSubTab, setActiveSubTab] = useState<"net_worth" | "akun" | "investasi" | "aset">("akun"); 
   const [detailAccId, setDetailAccId] = useState<string | null>(null);
   const [isManageOpen, setIsManageOpen] = useState(false);
-  
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [walletGroup, setWalletGroup] = useState<"pribadi" | "bisnis">("pribadi");
   
   const [localAccCurrency, setLocalAccCurrency] = useState("IDR");
   const [localEditAccCurrency, setLocalEditAccCurrency] = useState("IDR");
-
-  // Fallback Local States jika page.tsx belum diupdate
   const [localAccIsInv, setLocalAccIsInv] = useState(false);
   const [localEditAccIsInv, setLocalEditAccIsInv] = useState(false);
   const [localAccAvgPrice, setLocalAccAvgPrice] = useState("");
   const [localEditAccAvgPrice, setLocalEditAccAvgPrice] = useState("");
   const [localAccLastRate, setLocalAccLastRate] = useState("");
   const [localEditAccLastRate, setLocalEditAccLastRate] = useState("");
-  
-  // State untuk Quick Update Rate Portofolio
   const [updatingRateAcc, setUpdatingRateAcc] = useState<AccountData | null>(null);
   const [newRateInput, setNewRateInput] = useState("");
 
   const [localBalanceOverride, setLocalBalanceOverride] = useState<Record<string, number>>({});
   const [localNameOverride, setLocalNameOverride] = useState<Record<string, string>>({});
-  const [localInvRatesOverride, setLocalInvRatesOverride] = useState<Record<string, number>>({}); // Mock offline mark-to-market
+  const [localInvRatesOverride, setLocalInvRatesOverride] = useState<Record<string, number>>({});
 
   const detailMonthScrollRef = useRef<HTMLDivElement>(null);
   const monthScrollRef = useRef<HTMLDivElement>(null);
-
   const [accent, setAccent] = useState<keyof typeof themeMap>("blue");
-
-  // UX PREMIUM: State Kalkulator Pintar Fintracker
   const [activeKeypad, setActiveKeypad] = useState<"balance" | "target" | "buyPrice" | "lastRate" | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+
+  // 🔥 ENGINE SIHIR DRAG-AND-DROP TRANSFER 🔥
+  const [dragState, setDragState] = useState<{
+    isDragging: boolean;
+    acc: AccountData | null;
+    x: number;
+    y: number;
+    hoveredId: string | null;
+  }>({ isDragging: false, acc: null, x: 0, y: 0, hoveredId: null });
+  
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const startTouchPos = useRef({ x: 0, y: 0 });
+
+  const handlePointerDown = (e: React.PointerEvent, acc: AccountData) => {
+    // Abaikan jika sedang milih detil
+    if (detailAccId) return;
+    
+    startTouchPos.current = { x: e.clientX, y: e.clientY };
+    longPressTimer.current = setTimeout(() => {
+      triggerHaptic();
+      setDragState({
+        isDragging: true,
+        acc,
+        x: e.clientX,
+        y: e.clientY,
+        hoveredId: null
+      });
+    }, 400); // 400ms tahan untuk memanggil Sihir Transfer
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragState.isDragging && longPressTimer.current) {
+      if (Math.abs(e.clientX - startTouchPos.current.x) > 10 || Math.abs(e.clientY - startTouchPos.current.y) > 10) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent, acc: AccountData) => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+      // Jika diangkat sebelum 400ms (hanya sebuah Tap/Klik biasa)
+      if (!dragState.isDragging) {
+        triggerHaptic();
+        setDetailAccId(acc.id);
+      }
+    }
+  };
+
+  // 🌍 Global Move/Up Listeners (Mencegah jari lari dari elemen)
+  useEffect(() => {
+    if (!dragState.isDragging) return;
+
+    const handleGlobalMove = (e: PointerEvent | TouchEvent) => {
+      const clientX = 'touches' in e ? e.touches[0].clientX : (e as PointerEvent).clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : (e as PointerEvent).clientY;
+      
+      setDragState(prev => {
+        if (!prev.isDragging) return prev;
+        
+        // Cek benturan elemen (Collision Detection)
+        const elements = document.elementsFromPoint(clientX, clientY);
+        const target = elements.find(el => el.getAttribute('data-acc-id') && el.getAttribute('data-acc-id') !== prev.acc?.id);
+        const hoveredId = target ? target.getAttribute('data-acc-id') : null;
+        
+        // Haptic feedback kecil saat menabrak dompet tujuan yang sah
+        if (hoveredId !== prev.hoveredId && hoveredId) triggerHaptic();
+        
+        return { ...prev, x: clientX, y: clientY, hoveredId };
+      });
+    };
+
+    const handleGlobalUp = () => {
+      setDragState(prev => {
+        if (prev.isDragging && prev.hoveredId && prev.acc) {
+          triggerHaptic();
+          const targetAcc = accounts.find(a => a.id === prev.hoveredId);
+          if (targetAcc) {
+            setTimeout(() => {
+              // SUNTIKKAN EVENT RAHASIA KE DALAM WINDOW
+              window.dispatchEvent(new CustomEvent("fintracker_dnd_transfer", {
+                detail: { sourceId: prev.acc!.id, destId: targetAcc.id }
+              }));
+              alert(`🔥 SIHIR TRANSFER BERHASIL!\n\nPersiapan transfer dari [${prev.acc!.name}] ke [${targetAcc.name}] telah dipancarkan.\n\n(Nantinya ini akan otomatis membuka Laci Numpad Transfer di Beranda Bos!)`);
+            }, 100);
+          }
+        }
+        return { isDragging: false, acc: null, x: 0, y: 0, hoveredId: null };
+      });
+    };
+
+    // Kunci scroll layar saat menyeret agar mulus
+    document.addEventListener('pointermove', handleGlobalMove, { passive: false });
+    document.addEventListener('pointerup', handleGlobalUp);
+    document.addEventListener('touchmove', handleGlobalMove, { passive: false });
+    document.addEventListener('touchend', handleGlobalUp);
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+
+    return () => {
+      document.removeEventListener('pointermove', handleGlobalMove);
+      document.removeEventListener('pointerup', handleGlobalUp);
+      document.removeEventListener('touchmove', handleGlobalMove);
+      document.removeEventListener('touchend', handleGlobalUp);
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [dragState.isDragging, accounts]);
+
   useEffect(() => { const handleResize = () => setIsMobile(window.innerWidth < 768); handleResize(); window.addEventListener("resize", handleResize); return () => window.removeEventListener("resize", handleResize); }, []);
   
   const handleKeypadPress = (key: string) => {
     triggerHaptic();
     let currentVal = ""; let setVal: any = null;
-    
     if (activeKeypad === "balance") { currentVal = editingAccId ? editAccBalance : accBalance; setVal = editingAccId ? setEditAccBalance : setAccBalance; }
     else if (activeKeypad === "target") { currentVal = editingAccId ? editAccTargetBalance : accTargetBalance; setVal = editingAccId ? setEditAccTargetBalance : setAccTargetBalance; }
     else if (activeKeypad === "buyPrice") { currentVal = editingAccId ? (editAccAverageBuyPrice || "") : (accAverageBuyPrice || ""); setVal = editingAccId ? setEditAccAverageBuyPrice : setAccAverageBuyPrice; }
-    else if (activeKeypad === "lastRate") { 
-      if (updatingRateAcc) { currentVal = newRateInput; setVal = setNewRateInput; }
-      else { currentVal = editingAccId ? (editAccLastExchangeRate || "") : (accLastExchangeRate || ""); setVal = editingAccId ? setEditAccLastExchangeRate : setAccLastExchangeRate; }
-    }
-    
+    else if (activeKeypad === "lastRate") { if (updatingRateAcc) { currentVal = newRateInput; setVal = setNewRateInput; } else { currentVal = editingAccId ? (editAccLastExchangeRate || "") : (accLastExchangeRate || ""); setVal = editingAccId ? setEditAccLastExchangeRate : setAccLastExchangeRate; } }
     if (!setVal) return;
     currentVal = currentVal?.toString() || "";
-    
     if (key === "⌫") setVal(currentVal.slice(0, -1));
     else if (key === "C") setVal("");
     else if (key === "=") { const evaluated = safeEvaluate(currentVal); setVal(evaluated > 0 ? evaluated.toString() : ""); }
-    else if (key === "Ya") { 
-      const evaluated = safeEvaluate(currentVal); 
-      if(currentVal) setVal(evaluated >= 0 ? evaluated.toString() : ""); 
-      setActiveKeypad(null); 
-    }
+    else if (key === "Ya") { const evaluated = safeEvaluate(currentVal); if(currentVal) setVal(evaluated >= 0 ? evaluated.toString() : ""); setActiveKeypad(null); }
     else setVal(currentVal + key);
   };
 
-  useEffect(() => {
-    if (detailAccId) {
-      const timer = setTimeout(() => { if (detailMonthScrollRef.current) detailMonthScrollRef.current.scrollLeft = detailMonthScrollRef.current.scrollWidth; }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [detailAccId]);
+  useEffect(() => { if (detailAccId) { const timer = setTimeout(() => { if (detailMonthScrollRef.current) detailMonthScrollRef.current.scrollLeft = detailMonthScrollRef.current.scrollWidth; }, 50); return () => clearTimeout(timer); } }, [detailAccId]);
+  useEffect(() => { if (activeSubTab === "aset" || activeSubTab === "investasi") { const timer = setTimeout(() => { if (monthScrollRef.current) monthScrollRef.current.scrollLeft = monthScrollRef.current.scrollWidth; }, 50); return () => clearTimeout(timer); } }, [activeSubTab]);
+  useEffect(() => { const updateAccent = () => { const stored = localStorage.getItem("fintracker_accent") as any; if (stored && ["blue", "emerald", "purple", "amber", "rose"].includes(stored)) setAccent(stored); }; updateAccent(); window.addEventListener("accent_color_changed", updateAccent); return () => window.removeEventListener("accent_color_changed", updateAccent); }, []);
+  const triggerHaptic = () => { if (typeof window !== "undefined" && localStorage.getItem("fintracker_haptic") !== "false") { if (navigator.vibrate) navigator.vibrate(15); try { const AudioCtx = window.AudioContext || (window as any).webkitAudioContext; if (!AudioCtx) return; const ctx = new AudioCtx(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.type = "sine"; osc.frequency.setValueAtTime(600, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05); gain.gain.setValueAtTime(0.15, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.05); } catch (e) {} } };
 
-  useEffect(() => {
-    if (activeSubTab === "aset" || activeSubTab === "investasi") {
-      const timer = setTimeout(() => { if (monthScrollRef.current) monthScrollRef.current.scrollLeft = monthScrollRef.current.scrollWidth; }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [activeSubTab]);
-
-  useEffect(() => {
-    const updateAccent = () => {
-      const stored = localStorage.getItem("fintracker_accent") as any;
-      if (stored && ["blue", "emerald", "purple", "amber", "rose"].includes(stored)) setAccent(stored);
-    };
-    updateAccent();
-    window.addEventListener("accent_color_changed", updateAccent);
-    return () => window.removeEventListener("accent_color_changed", updateAccent);
-  }, []);
-
-  const triggerHaptic = () => { 
-    if (typeof window !== "undefined" && localStorage.getItem("fintracker_haptic") !== "false") {
-      if (navigator.vibrate) navigator.vibrate(15); 
-      try {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(600, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.05);
-      } catch (e) {}
-    }
-  };
-
-  // Resolusi State Props vs Local
-  const currency = accCurrency !== undefined ? accCurrency : localAccCurrency;
-  const setCurrency = setAccCurrency !== undefined ? setAccCurrency : setLocalAccCurrency;
-  const editCurrency = editAccCurrency !== undefined ? editAccCurrency : localEditAccCurrency;
-  const setEditCurrency = setEditAccCurrency !== undefined ? setEditAccCurrency : setLocalEditAccCurrency;
-
-  const isInv = accIsInvestment !== undefined ? accIsInvestment : localAccIsInv;
-  const setIsInv = setAccIsInvestment !== undefined ? setAccIsInvestment : setLocalAccIsInv;
-  const editIsInv = editAccIsInvestment !== undefined ? editAccIsInvestment : localEditAccIsInv;
-  const setEditIsInv = setEditAccIsInvestment !== undefined ? setEditAccIsInvestment : setLocalEditAccIsInv;
-
-  const avgPrice = accAverageBuyPrice !== undefined ? accAverageBuyPrice : localAccAvgPrice;
-  const setAvgPrice = setAccAverageBuyPrice !== undefined ? setAccAverageBuyPrice : setLocalAccAvgPrice;
-  const editAvgPrice = editAccAverageBuyPrice !== undefined ? editAccAverageBuyPrice : localEditAccAvgPrice;
-  const setEditAvgPrice = setEditAccAverageBuyPrice !== undefined ? setEditAccAverageBuyPrice : setLocalEditAccAvgPrice;
-
-  const lastRate = accLastExchangeRate !== undefined ? accLastExchangeRate : localAccLastRate;
-  const setLastRate = setAccLastExchangeRate !== undefined ? setAccLastExchangeRate : setLocalAccLastRate;
-  const editLastRate = editAccLastExchangeRate !== undefined ? editAccLastExchangeRate : localEditAccLastRate;
-  const setEditLastRate = setEditAccLastExchangeRate !== undefined ? setEditAccLastExchangeRate : setLocalEditAccLastRate;
+  const currency = accCurrency !== undefined ? accCurrency : localAccCurrency; const setCurrency = setAccCurrency !== undefined ? setAccCurrency : setLocalAccCurrency;
+  const editCurrency = editAccCurrency !== undefined ? editAccCurrency : localEditAccCurrency; const setEditCurrency = setEditAccCurrency !== undefined ? setEditAccCurrency : setLocalEditAccCurrency;
+  const isInv = accIsInvestment !== undefined ? accIsInvestment : localAccIsInv; const setIsInv = setAccIsInvestment !== undefined ? setAccIsInvestment : setLocalAccIsInv;
+  const editIsInv = editAccIsInvestment !== undefined ? editAccIsInvestment : localEditAccIsInv; const setEditIsInv = setEditAccIsInvestment !== undefined ? setEditAccIsInvestment : setLocalEditAccIsInv;
+  const avgPrice = accAverageBuyPrice !== undefined ? accAverageBuyPrice : localAccAvgPrice; const setAvgPrice = setAccAverageBuyPrice !== undefined ? setAccAverageBuyPrice : setLocalAccAvgPrice;
+  const editAvgPrice = editAccAverageBuyPrice !== undefined ? editAccAverageBuyPrice : localEditAccAvgPrice; const setEditAvgPrice = setEditAccAverageBuyPrice !== undefined ? setEditAccAverageBuyPrice : setLocalEditAccAvgPrice;
+  const lastRate = accLastExchangeRate !== undefined ? accLastExchangeRate : localAccLastRate; const setLastRate = setAccLastExchangeRate !== undefined ? setAccLastExchangeRate : setLocalAccLastRate;
+  const editLastRate = editAccLastExchangeRate !== undefined ? editAccLastExchangeRate : localEditAccLastRate; const setEditLastRate = setEditAccLastExchangeRate !== undefined ? setEditAccLastExchangeRate : setLocalEditAccLastRate;
 
   useEffect(() => { if (editingAccId) setIsManageOpen(true); }, [editingAccId]);
-
-  const getRate = (curCode?: string, historicalRate?: number, accountId?: string) => { 
-    if (accountId && localInvRatesOverride[accountId] !== undefined) return localInvRatesOverride[accountId];
-    if (historicalRate) return historicalRate; // Portofolio selalu utamakan rate tersimpan (Mark-to-Market)
-    if (!curCode || curCode === "IDR") return 1; 
-    if (exchangeRates && exchangeRates[curCode] !== undefined) return exchangeRates[curCode]; 
-    return 1; 
-  };
+  const getRate = (curCode?: string, historicalRate?: number, accountId?: string) => { if (accountId && localInvRatesOverride[accountId] !== undefined) return localInvRatesOverride[accountId]; if (historicalRate) return historicalRate; if (!curCode || curCode === "IDR") return 1; if (exchangeRates && exchangeRates[curCode] !== undefined) return exchangeRates[curCode]; return 1; };
 
   const renderAreaChart = (data: any[], defaultColor: string, dataKey: string) => {
     const strokeGradientId = `strokeGeom${dataKey}${defaultColor.replace('#', '')}`;
@@ -361,9 +350,7 @@ export default function AssetsTab({
               <linearGradient id={strokeGradientId} x1="0" y1="0" x2="1" y2="0">
                 {stops.map((stop, index) => <stop key={index} offset={stop.offset} stopColor={stop.color} />)}
               </linearGradient>
-              <linearGradient id={`areaNeutralGradient${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.12}/><stop offset="95%" stopColor="#94a3b8" stopOpacity={0}/>
-              </linearGradient>
+              <linearGradient id={`areaNeutralGradient${dataKey}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#94a3b8" stopOpacity={0.12}/><stop offset="95%" stopColor="#94a3b8" stopOpacity={0}/></linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.15)" />
             <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#94a3b8", fontWeight: "bold" }} tickLine={false} axisLine={false} minTickGap={30} dy={10} />
@@ -376,99 +363,28 @@ export default function AssetsTab({
     );
   };
 
-  const updatedAccounts = accounts.map(a => {
-    let balance = a.balance;
-    let name = a.name;
-    let overrideRate = a.lastExchangeRate;
-    if (localBalanceOverride[a.id] !== undefined) balance = localBalanceOverride[a.id];
-    if (localNameOverride[a.id] !== undefined) name = localNameOverride[a.id];
-    if (localInvRatesOverride[a.id] !== undefined) overrideRate = localInvRatesOverride[a.id];
-    return { ...a, balance, name, lastExchangeRate: overrideRate };
-  });
-
+  const updatedAccounts = accounts.map(a => { let balance = a.balance; let name = a.name; let overrideRate = a.lastExchangeRate; if (localBalanceOverride[a.id] !== undefined) balance = localBalanceOverride[a.id]; if (localNameOverride[a.id] !== undefined) name = localNameOverride[a.id]; if (localInvRatesOverride[a.id] !== undefined) overrideRate = localInvRatesOverride[a.id]; return { ...a, balance, name, lastExchangeRate: overrideRate }; });
   const personalActiveAccounts = updatedAccounts.filter(a => !a.isSavings && !a.isBusiness && !a.isInvestment);
   const businessActiveAccounts = updatedAccounts.filter(a => !a.isSavings && a.isBusiness && !a.isInvestment);
   const investmentAccounts = updatedAccounts.filter(a => a.isInvestment);
   const emergencyAccounts = updatedAccounts.filter(a => a.isSavings && !a.savingsGoalTitle && !a.isInvestment);
   const dreamGoals = updatedAccounts.filter(a => a.isSavings && a.savingsGoalTitle && !a.isInvestment);
-
   const detailAcc = useMemo(() => updatedAccounts.find(a => a.id === detailAccId), [updatedAccounts, detailAccId]);
-
   const totalPersonal = personalActiveAccounts.reduce((sum, curr) => curr.excludeFromTotal ? sum : sum + (curr.balance * getRate(curr.currency, curr.lastExchangeRate, curr.id)), 0);
   const totalBusiness = businessActiveAccounts.reduce((sum, curr) => sum + (curr.balance * getRate(curr.currency, curr.lastExchangeRate, curr.id)), 0);
   const totalInvestment = investmentAccounts.reduce((sum, curr) => sum + (curr.balance * getRate(curr.currency, curr.lastExchangeRate, curr.id)), 0);
   const totalAssets = emergencyAccounts.reduce((sum, curr) => sum + (curr.balance * getRate(curr.currency, curr.lastExchangeRate, curr.id)), 0) + dreamGoals.reduce((sum, curr) => sum + (curr.balance * getRate(curr.currency, curr.lastExchangeRate, curr.id)), 0);
-  
   const totalActiveBalance = totalPersonal + totalBusiness;
-
   const activeAccountIds = useMemo(() => new Set(personalActiveAccounts.concat(businessActiveAccounts).map(a => a.id)), [personalActiveAccounts, businessActiveAccounts]);
   const assetAccountIds = useMemo(() => new Set(emergencyAccounts.concat(dreamGoals).map(a => a.id)), [emergencyAccounts, dreamGoals]);
 
-  const historicalNetWorthData = useMemo(() => {
-    let runningBalance = totalPersonal + totalBusiness + totalAssets + totalInvestment;
-    const data = [];
-    const today = new Date();
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(today); d.setDate(d.getDate() - i);
-      const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0');
-      const dateStr = `${year}-${month}-${day}`;
-      const dayName = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-      data.unshift({ name: dayName, dateStr, Balance: runningBalance });
-      const dayTxs = reportTransactions.filter(t => t.tDate === dateStr);
-      const dayInc = dayTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-      const dayExp = dayTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-      const adminFees = dayTxs.filter(t => t.type === 'transfer' && t.adminFee).reduce((sum, t) => sum + t.adminFee!, 0);
-      runningBalance = runningBalance - dayInc + dayExp + adminFees; 
-    }
-    return data;
-  }, [totalPersonal, totalBusiness, totalAssets, totalInvestment, reportTransactions]);
-
-  const historicalAccountsData = useMemo(() => {
-    let runningBalance = totalPersonal + totalBusiness;
-    const data = [];
-    const today = new Date();
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(today); d.setDate(d.getDate() - i);
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const dayName = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-      data.unshift({ name: dayName, dateStr, Balance: runningBalance });
-      const dayTxs = reportTransactions.filter(t => t.tDate === dateStr);
-      const dayInc = dayTxs.filter(t => t.type === 'income' && activeAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0);
-      const dayExp = dayTxs.filter(t => t.type === 'expense' && activeAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0);
-      const tToAst = dayTxs.filter(t => t.type === 'transfer' && activeAccountIds.has(t.accountId) && assetAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0);
-      const tFromAst = dayTxs.filter(t => t.type === 'transfer' && assetAccountIds.has(t.accountId) && activeAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0);
-      const adminFees = dayTxs.filter(t => t.type === 'transfer' && t.adminFee && activeAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.adminFee!, 0);
-      runningBalance = runningBalance - dayInc + dayExp + tToAst - tFromAst + adminFees;
-    }
-    return data;
-  }, [totalPersonal, totalBusiness, activeAccountIds, assetAccountIds, reportTransactions]);
-const historicalAssetsData = useMemo(() => {
-    let runningBalance = totalAssets;
-    const data = [];
-    const today = new Date();
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(today); d.setDate(d.getDate() - i);
-      const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0');
-      const dateStr = `${year}-${month}-${day}`;
-      const dayName = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-      data.unshift({ name: dayName, dateStr, Balance: runningBalance });
-
-      const dayTxs = reportTransactions.filter(t => t.tDate === dateStr);
-      const dayInc = dayTxs.filter(t => t.type === 'income' && assetAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0);
-      const dayExp = dayTxs.filter(t => t.type === 'expense' && assetAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0);
-      const transfersFromActive = dayTxs.filter(t => t.type === 'transfer' && activeAccountIds.has(t.accountId) && assetAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0);
-      const transfersToActive = dayTxs.filter(t => t.type === 'transfer' && assetAccountIds.has(t.accountId) && activeAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0);
-
-      runningBalance = runningBalance - dayInc + dayExp - transfersFromActive + transfersToActive;
-    }
-    return data;
-  }, [totalAssets, activeAccountIds, assetAccountIds, reportTransactions]);
-  
+  const historicalNetWorthData = useMemo(() => { let runningBalance = totalPersonal + totalBusiness + totalAssets + totalInvestment; const data = []; const today = new Date(); for (let i = 0; i < 30; i++) { const d = new Date(today); d.setDate(d.getDate() - i); const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); const dateStr = `${year}-${month}-${day}`; const dayName = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }); data.unshift({ name: dayName, dateStr, Balance: runningBalance }); const dayTxs = reportTransactions.filter(t => t.tDate === dateStr); const dayInc = dayTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0); const dayExp = dayTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0); const adminFees = dayTxs.filter(t => t.type === 'transfer' && t.adminFee).reduce((sum, t) => sum + t.adminFee!, 0); runningBalance = runningBalance - dayInc + dayExp + adminFees; } return data; }, [totalPersonal, totalBusiness, totalAssets, totalInvestment, reportTransactions]);
+  const historicalAccountsData = useMemo(() => { let runningBalance = totalPersonal + totalBusiness; const data = []; const today = new Date(); for (let i = 0; i < 30; i++) { const d = new Date(today); d.setDate(d.getDate() - i); const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; const dayName = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }); data.unshift({ name: dayName, dateStr, Balance: runningBalance }); const dayTxs = reportTransactions.filter(t => t.tDate === dateStr); const dayInc = dayTxs.filter(t => t.type === 'income' && activeAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0); const dayExp = dayTxs.filter(t => t.type === 'expense' && activeAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0); const tToAst = dayTxs.filter(t => t.type === 'transfer' && activeAccountIds.has(t.accountId) && assetAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0); const tFromAst = dayTxs.filter(t => t.type === 'transfer' && assetAccountIds.has(t.accountId) && activeAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0); const adminFees = dayTxs.filter(t => t.type === 'transfer' && t.adminFee && activeAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.adminFee!, 0); runningBalance = runningBalance - dayInc + dayExp + tToAst - tFromAst + adminFees; } return data; }, [totalPersonal, totalBusiness, activeAccountIds, assetAccountIds, reportTransactions]);
+  const historicalAssetsData = useMemo(() => { let runningBalance = totalAssets; const data = []; const today = new Date(); for (let i = 0; i < 30; i++) { const d = new Date(today); d.setDate(d.getDate() - i); const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); const dateStr = `${year}-${month}-${day}`; const dayName = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }); data.unshift({ name: dayName, dateStr, Balance: runningBalance }); const dayTxs = reportTransactions.filter(t => t.tDate === dateStr); const dayInc = dayTxs.filter(t => t.type === 'income' && assetAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0); const dayExp = dayTxs.filter(t => t.type === 'expense' && assetAccountIds.has(t.accountId)).reduce((sum, t) => sum + t.amount, 0); const transfersFromActive = dayTxs.filter(t => t.type === 'transfer' && activeAccountIds.has(t.accountId) && assetAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0); const transfersToActive = dayTxs.filter(t => t.type === 'transfer' && assetAccountIds.has(t.accountId) && activeAccountIds.has(t.toAccountId || "")).reduce((sum, t) => sum + t.amount, 0); runningBalance = runningBalance - dayInc + dayExp - transfersFromActive + transfersToActive; } return data; }, [totalAssets, activeAccountIds, assetAccountIds, reportTransactions]);
   const detailTxs = useMemo(() => {
     return reportTransactions.filter(t => t.tDate?.startsWith(reportMonth || "") && (t.accountId === detailAccId || t.toAccountId === detailAccId));
   }, [reportTransactions, reportMonth, detailAccId]);
 
-  // FIX: Transfer antar dompet tidak lagi dihitung sebagai "Pengeluaran" atau "Pemasukan" agar angka masuk akal
   const detailInc = useMemo(() => { return detailTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0); }, [detailTxs]);
   const detailExp = useMemo(() => { return detailTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0); }, [detailTxs]);
 
@@ -476,19 +392,6 @@ const historicalAssetsData = useMemo(() => {
     const detailExpGrouped = detailTxs.filter(t => t.type === 'expense').reduce((acc: Record<string, number>, t) => { acc[t.category] = (acc[t.category] || 0) + t.amount; return acc; }, {});
     return Object.keys(detailExpGrouped).map(k => ({ name: k, value: detailExpGrouped[k] })).sort((a,b) => b.value - a.value);
   }, [detailTxs]);
-
-  const getLatestTxForAccount = (accId: string) => {
-    const latest = reportTransactions.find(t => t.accountId === accId || t.toAccountId === accId);
-    if (!latest) return null;
-    const isIncome = latest.type === 'income' || (latest.type === 'transfer' && latest.toAccountId === accId);
-    const dateObj = new Date(latest.tDate);
-    const todayStr = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-    let dayLabel = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-    if (latest.tDate === todayStr) dayLabel = "Hari Ini"; else if (latest.tDate === yesterdayStr) dayLabel = "Kemarin";
-    return { category: latest.category, amount: latest.amount, note: latest.note || latest.category, isIncome, dayLabel };
-  };
 
   const monthlySavingsSummary = useMemo(() => {
     let totalDeposit = 0; let totalWithdraw = 0;
@@ -507,13 +410,26 @@ const historicalAssetsData = useMemo(() => {
   const activeWalletsToRender = walletGroup === "pribadi" ? personalActiveAccounts : businessActiveAccounts;
   const currentTheme = themeMap[accent];
   
-  // --- RENDERING MULAI ---
   return (
-    <div className="space-y-6 animate-in fade-in pb-20">
+    <div className="space-y-6 animate-in fade-in pb-20 select-none">
       
+      {/* 👻 GHOST CARD OVERLAY (MUNCUL SAAT DI-DRAG) */}
+      {dragState.isDragging && dragState.acc && (
+        <div 
+          className="fixed z-[999] pointer-events-none opacity-90 scale-105 drop-shadow-2xl bg-white dark:bg-slate-800 p-4 rounded-3xl border-2 border-blue-500 shadow-blue-500/40 flex flex-col items-center justify-center"
+          style={{ 
+            left: dragState.x - 60, top: dragState.y - 60, width: '120px', height: '120px',
+            transform: 'rotate(-5deg)' // Efek miring premium saat diangkat
+          }}
+        >
+          {dragState.acc.logo ? ( <img src={dragState.acc.logo} className="w-10 h-10 rounded-xl object-cover mb-2" alt="logo" /> ) : ( <Wallet size={32} className="text-blue-500 mb-2" /> )}
+          <span className="text-xs font-black text-slate-800 dark:text-slate-100 text-center leading-none">{dragState.acc.name}</span>
+          <span className="text-[9px] font-bold text-slate-500 mt-1 uppercase">Tarik ke Tujuan</span>
+        </div>
+      )}
+
       {detailAccId && detailAcc ? (
-        
-        // VIEW A: DETAIL AKUN (Tetap Sama dengan Kode Awal)
+        // VIEW A: DETAIL AKUN
         <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
           <div className="flex justify-between items-center px-2 animate-in fade-in duration-200">
             <div className="flex items-center gap-3">
@@ -523,10 +439,7 @@ const historicalAssetsData = useMemo(() => {
             
             <button onClick={() => {
               triggerHaptic();
-              
-              // Helper: Membasmi koma sampah JavaScript agar jadi angka bulat/cantik
               const cleanNum = (num: number | undefined | null) => num ? Number(num.toFixed(4)).toString() : "";
-
               setEditingAccId(detailAcc.id); setEditAccName(detailAcc.name); setEditAccBalance(cleanNum(detailAcc.balance) || "0"); setEditAccLogo(detailAcc.logo || "");
               setEditAccIsSavings(!!detailAcc.isSavings); setEditAccIsBusiness(!!detailAcc.isBusiness); setEditAccTargetBalance(cleanNum(detailAcc.targetBalance));
               setEditAccExcludeFromTotal(!!detailAcc.excludeFromTotal); setEditAccSavingsGoalTitle(detailAcc.savingsGoalTitle || "");
@@ -568,7 +481,6 @@ const historicalAssetsData = useMemo(() => {
             </div>
           </div>
           
-          {/* Laporan Pengeluaran Detail (Sama seperti sebelumnya) */}
           {detailExp > 0 ? (
             <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex justify-between items-center mb-6">
@@ -598,9 +510,7 @@ const historicalAssetsData = useMemo(() => {
 
       ) : (
 
-        // =============================================================
-        // VIEW B: DASHBOARD / LIST UTAMA (4 TAB BERSARANG)
-        // =============================================================
+        // VIEW B: DASHBOARD / LIST UTAMA
         <>
           <div className="text-center mb-2">
             <h2 className={`font-black text-2xl tracking-tight mb-4 ${currentTheme.text}`}>
@@ -615,16 +525,13 @@ const historicalAssetsData = useMemo(() => {
             </div>
           </div>
 
-          {/* TAB 1: NILAI BERSIH */}
           {activeSubTab === "net_worth" && (
             <div className="space-y-4 animate-in slide-in-from-left-4 duration-300">
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-1">Nilai Bersih</p>
                 <h2 className="text-3xl font-black text-slate-800 dark:text-white text-center mb-6">{isPrivacyMode ? 'Rp •••••••' : `Rp ${(totalPersonal + totalBusiness + totalAssets + totalInvestment).toLocaleString('id-ID')}`}</h2>
                 {renderAreaChart(historicalNetWorthData, "#ef4444", "Balance")}
-                <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-2"><span>{historicalNetWorthData[0]?.name}</span><span>{historicalNetWorthData[historicalNetWorthData.length - 1]?.name}</span></div>
               </div>
-
               <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800 p-4">
                 <div className="text-center"><p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Dompet</p><p className="text-xs md:text-sm font-black text-blue-600 dark:text-blue-400">Rp {(totalPersonal + totalBusiness).toLocaleString('id-ID')}</p></div>
                 <div className="text-center"><p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Investasi</p><p className="text-xs md:text-sm font-black text-amber-600 dark:text-amber-400">Rp {totalInvestment.toLocaleString('id-ID')}</p></div>
@@ -633,7 +540,6 @@ const historicalAssetsData = useMemo(() => {
             </div>
           )}
 
-          {/* TAB 2: AKUN / LIKUID */}
           {activeSubTab === "akun" && (
             <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -642,7 +548,6 @@ const historicalAssetsData = useMemo(() => {
                 {renderAreaChart(historicalAccountsData, "#ef4444", "Balance")}
               </div>
 
-              {/* Layout Container untuk Switcher Pribadi/Bisnis yang ada di kode awal (Sama persis) */}
               <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center bg-slate-50 dark:bg-slate-800/50 px-4 gap-2 text-left">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{walletGroup === "pribadi" ? `Dompet Pribadi (${personalActiveAccounts.length})` : <><Briefcase size={12} className="text-amber-500 shrink-0 inline mr-1" /> Dompet Bisnis ({businessActiveAccounts.length})</>}</span>
@@ -652,8 +557,8 @@ const historicalAssetsData = useMemo(() => {
                       <button onClick={() => { triggerHaptic(); setWalletGroup("bisnis"); }} className={`px-3 py-1 rounded-md text-[9px] font-black transition-all cursor-pointer ${walletGroup === "bisnis" ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 shadow-sm" : "text-slate-400"}`}>Bisnis</button>
                     </div>
                     <div className="flex bg-slate-200/50 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800">
-                      <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("grid"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "grid" ? `bg-white dark:bg-slate-800 shadow-sm ${currentTheme.text}` : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}><LayoutGrid size={14} /></button>
-                      <button onClick={(e) => { e.stopPropagation(); triggerHaptic(); setViewMode("list"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "list" ? `bg-white dark:bg-slate-800 shadow-sm ${currentTheme.text}` : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}><List size={14} /></button>
+                      <button onClick={() => { triggerHaptic(); setViewMode("grid"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "grid" ? `bg-white dark:bg-slate-800 shadow-sm ${currentTheme.text}` : "text-slate-400"}`}><LayoutGrid size={14} /></button>
+                      <button onClick={() => { triggerHaptic(); setViewMode("list"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "list" ? `bg-white dark:bg-slate-800 shadow-sm ${currentTheme.text}` : "text-slate-400"}`}><List size={14} /></button>
                     </div>
                   </div>
                 </div>
@@ -668,8 +573,22 @@ const historicalAssetsData = useMemo(() => {
                       const accRate = getRate(acc.currency, acc.lastExchangeRate, acc.id);
                       const accIdrBalance = acc.balance * accRate;
                       const pct = totalActiveBalance > 0 ? Math.round((accIdrBalance / totalActiveBalance) * 100) : 0;
+                      
+                      const isDragged = dragState.acc?.id === acc.id;
+                      const isHovered = dragState.hoveredId === acc.id;
+                      
                       return (
-                        <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition-all border border-slate-100 dark:border-slate-800 flex flex-col justify-between min-h-[140px] text-left">
+                        <div 
+                          key={acc.id} 
+                          data-acc-id={acc.id}
+                          onPointerDown={(e) => handlePointerDown(e, acc)}
+                          onPointerUp={(e) => handlePointerUp(e, acc)}
+                          onPointerCancel={(e) => handlePointerUp(e, acc)}
+                          className={`bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition-all flex flex-col justify-between min-h-[140px] text-left border relative
+                            ${isDragged ? 'opacity-40 scale-95 border-blue-500/30' : 'border-slate-100 dark:border-slate-800'}
+                            ${isHovered ? 'ring-4 ring-blue-500 scale-105 shadow-blue-500/40 z-20 border-transparent bg-blue-50/50 dark:bg-blue-900/20' : ''}
+                          `}
+                        >
                           <div>
                             <div className="flex justify-between items-start">
                               {acc.logo ? ( <img src={acc.logo} className="w-8 h-8 rounded-lg object-cover" alt="logo" /> ) : ( <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
@@ -682,6 +601,7 @@ const historicalAssetsData = useMemo(() => {
                             <p className="text-[9px] font-bold text-slate-400 uppercase leading-none mt-0.5">{acc.currency || "IDR"} • {acc.type}</p>
                             <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none mt-1.5">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
                           </div>
+                          {isHovered && <div className="absolute inset-0 bg-blue-500/10 rounded-3xl animate-pulse pointer-events-none"></div>}
                         </div>
                       );
                     })}
@@ -691,8 +611,21 @@ const historicalAssetsData = useMemo(() => {
                     {activeWalletsToRender.map((acc) => {
                       const design = getCardDesign(acc.type);
                       const symbol = getCurrencySymbol(acc.currency);
+                      const isDragged = dragState.acc?.id === acc.id;
+                      const isHovered = dragState.hoveredId === acc.id;
+                      
                       return (
-                        <div key={acc.id} onClick={() => { triggerHaptic(); setDetailAccId(acc.id); }} className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
+                        <div 
+                          key={acc.id} 
+                          data-acc-id={acc.id}
+                          onPointerDown={(e) => handlePointerDown(e, acc)}
+                          onPointerUp={(e) => handlePointerUp(e, acc)}
+                          onPointerCancel={(e) => handlePointerUp(e, acc)}
+                          className={`p-4 flex justify-between items-center cursor-pointer transition-all relative
+                            ${isDragged ? 'opacity-40 bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}
+                            ${isHovered ? 'ring-2 ring-inset ring-blue-500 bg-blue-50 dark:bg-blue-900/20 z-20' : ''}
+                          `}
+                        >
                           <div className="flex items-center gap-3">
                             {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-cover" alt="logo" /> ) : ( <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
                             <div className="text-left"><p className="text-sm font-bold text-slate-800 dark:text-slate-100">{acc.name}</p><p className="text-[9px] font-bold text-slate-400 uppercase">{acc.currency || "IDR"} • {acc.type}</p></div>
@@ -703,10 +636,19 @@ const historicalAssetsData = useMemo(() => {
                     })}
                   </div>
                 )}
+                
+                {/* HINT UNTUK PENGGUNA */}
+                {activeWalletsToRender.length > 1 && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 py-2 px-4 text-center border-t border-blue-100 dark:border-blue-900/30">
+                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                      <span>💡</span> Tip: Tahan & Geser dompet untuk Transfer Instan!
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
-{/* TAB 3: INVESTASI (PORTOFOLIO KHUSUS FASE 14) */}
+
           {activeSubTab === "investasi" && (
             <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -747,7 +689,6 @@ const historicalAssetsData = useMemo(() => {
                             <p className="text-xs font-bold text-slate-500 dark:text-slate-400">~ Rp {isPrivacyMode ? `••••••` : totalIdr.toLocaleString('id-ID')}</p>
                           </div>
                           
-                          {/* Indikator PnL (Cuan / Rugi) */}
                           <div className={`mt-3 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-black ${isProfit ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
                             {isProfit ? <ArrowUp size={10} strokeWidth={3}/> : <ArrowDown size={10} strokeWidth={3}/>}
                             <span>{isProfit ? '+' : ''}Rp {Math.abs(pnlVal).toLocaleString('id-ID')} ({isProfit ? '+' : ''}{pnlPct.toFixed(2)}%)</span>
@@ -761,7 +702,6 @@ const historicalAssetsData = useMemo(() => {
             </div>
           )}
 
-          {/* SELEKTOR BULAN HISTORIS (Muncul di Tab Aset untuk cek mutasi) */}
           {activeSubTab === "aset" && setReportMonth && (
             <div ref={monthScrollRef} className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-track-transparent dark:scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark] scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 animate-in fade-in duration-200">
               {[11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((i) => {
@@ -780,18 +720,15 @@ const historicalAssetsData = useMemo(() => {
             </div>
           )}
 
-          {/* TAB 4: ASET (DANA DARURAT & IMPIAN) YANG KINI SUDAH KEMBALI 100% */}
           {activeSubTab === "aset" && (
             <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
               
-              {/* Grafik Area Chart */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm">
                 <h2 className="text-3xl font-black text-slate-800 dark:text-white text-center mb-1">{isPrivacyMode ? 'Rp •••••••' : `Rp ${totalAssets.toLocaleString('id-ID')}`}</h2>
                 <p className="text-[10px] font-bold text-slate-500 text-center mb-6">Total Nilai Aset Tabungan Fisik & Impian</p>
                 {renderAreaChart(historicalAssetsData, "#10b981", "Balance")}
               </div>
 
-              {/* KARTU ALIRAN MUTASI TABUNGAN BULANAN */}
               <div className="bg-white dark:bg-slate-900 p-5 rounded-[24px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 text-left">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="border-r border-slate-200 dark:border-slate-800 pr-2">
@@ -822,7 +759,6 @@ const historicalAssetsData = useMemo(() => {
                 </div>
               </div>
 
-              {/* DAFTAR RIWAYAT MUTASI ASET BULAN INI */}
               <div className="bg-white dark:bg-slate-900 p-5 rounded-[24px] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
                   <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">Riwayat Aktivitas Tabungan</h3>
@@ -872,7 +808,6 @@ const historicalAssetsData = useMemo(() => {
                 </div>
               </div>
 
-              {/* Grid List Kartu Aset / Impian */}
               {(emergencyAccounts.length === 0 && dreamGoals.length === 0) ? (
                 <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm p-10 flex flex-col items-center justify-center text-center">
                   <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mb-4"><Activity size={32} className="text-emerald-500 dark:text-emerald-400"/></div>
@@ -910,16 +845,12 @@ const historicalAssetsData = useMemo(() => {
             </div>
           )}
 
-          {/* FLOATING ACTION BUTTON (+) */}
           <button onClick={() => { triggerHaptic(); setIsManageOpen(true); }} className={`fixed bottom-24 md:bottom-10 right-6 w-14 h-14 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40 cursor-pointer ${currentTheme.fab}`}>
             <Plus size={28} strokeWidth={2.5} />
           </button>
         </>
       )}
 
-      {/* =============================================================
-          MODAL 1: KELOLA AKUN (DENGAN TAMBAHAN FORM INVESTASI)
-          ============================================================= */}
       {isManageOpen && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => { setIsManageOpen(false); setEditingAccId(null); }}>
           <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800" onClick={e => e.stopPropagation()}>
@@ -952,8 +883,6 @@ const historicalAssetsData = useMemo(() => {
                           <option value="BTC">₿ Bitcoin (BTC)</option><option value="ETH">⟠ Ethereum (ETH)</option><option value="LOT">Lembar/Lot Saham</option><option value="GRAM">Gram (Emas/Perak)</option>
                         </optgroup>
                       )}
-                      
-                      {/* TAMPILKAN MATA UANG KUSTOM HASIL INPUT PENGGUNA */}
                       <optgroup label="Kustom / Tambahan">
                         {exchangeRates && Object.keys(exchangeRates)
                           .filter(k => !["IDR", "USD", "SGD", "EUR", "JPY", "GBP", "AUD", "MYR", "SAR", "BTC", "ETH", "GRAM", "LOT"].includes(k))
@@ -965,12 +894,10 @@ const historicalAssetsData = useMemo(() => {
 
                   <div className={`space-y-1 p-3 rounded-xl border ${currentTheme.auditBox}`}>
                     <label className={`text-[9px] font-black uppercase tracking-widest ${currentTheme.text}`}>{ (editingAccId ? editIsInv : isInv) ? 'Jumlah Kepemilikan (Unit)' : 'Saldo Saat Ini' }</label>
-                    {/* KALKULATOR FINTRACKER: Tolak keyboard asli HP, munculkan kalkulator pintar di bawah layar */}
                     <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("balance"); }} data-1p-ignore="true" data-lpignore="true" autoComplete="off" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccBalance : accBalance} onChange={(e) => { editingAccId ? setEditAccBalance(e.target.value) : setAccBalance(e.target.value); }} />
                     {(editingAccId ? editAccBalance : accBalance) && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editingAccId ? editAccBalance : accBalance, editingAccId ? editCurrency : currency)}</span></p>}
                   </div>
 
-                  {/* KHUSUS JIKA MODE INVESTASI (Fase 14) */}
                   {(editingAccId ? editIsInv : isInv) ? (
                     <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                       <div className="space-y-1">
@@ -1005,7 +932,6 @@ const historicalAssetsData = useMemo(() => {
                     </div>
                   )}
 
-                  {/* KHUSUS JIKA MODE TABUNGAN */}
                   {(editingAccId ? editAccIsSavings : accIsSavings) && !(editingAccId ? editIsInv : isInv) && (
                     <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                       <div className="space-y-1">
@@ -1047,7 +973,6 @@ const historicalAssetsData = useMemo(() => {
                   </div>
                 </div>
 
-                {/* DAFTAR AKUN YANG ADA (Sama seperti sebelumnya) */}
                 {!editingAccId && (
                   <div className="space-y-2 pb-6">
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest pl-1">Daftar Dompet & Aset Anda</p>
@@ -1076,7 +1001,6 @@ const historicalAssetsData = useMemo(() => {
         </div>
       )}
 
-      {/* MODAL 2: UPDATE VALUASI (MANUAL MARK-TO-MARKET PORTOFOLIO) */}
       {updatingRateAcc && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setUpdatingRateAcc(null)}>
           <div className="bg-white dark:bg-slate-950 w-full max-w-sm rounded-t-[30px] sm:rounded-[30px] shadow-2xl p-6 border border-slate-100 dark:border-slate-800 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
@@ -1110,7 +1034,6 @@ const historicalAssetsData = useMemo(() => {
         </div>
       )}
 
-      {/* FLOATING KEYPAD DRAWER UNTUK ASET (Kalkulator Fintracker kesayangan Bos!) */}
       {isMobile && activeKeypad && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
@@ -1120,7 +1043,6 @@ const historicalAssetsData = useMemo(() => {
                 {activeKeypad === "balance" ? "Kalkulator Saldo" : activeKeypad === "target" ? "Kalkulator Target" : "Kalkulator"}
               </span>
               <button onClick={() => {
-                 // Otomatis bersihkan rumus matematika pas ditutup
                  const setVal = activeKeypad === "balance" ? (editingAccId ? setEditAccBalance : setAccBalance) : activeKeypad === "target" ? (editingAccId ? setEditAccTargetBalance : setAccTargetBalance) : null;
                  const curVal = activeKeypad === "balance" ? (editingAccId ? editAccBalance : accBalance) : activeKeypad === "target" ? (editingAccId ? editAccTargetBalance : accTargetBalance) : "";
                  if(setVal) { const evaluated = safeEvaluate(curVal as string); if(curVal) setVal(evaluated >= 0 ? evaluated.toString() : ""); }
@@ -1155,4 +1077,3 @@ const historicalAssetsData = useMemo(() => {
     </div>
   );
 }
-        
