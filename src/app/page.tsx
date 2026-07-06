@@ -108,6 +108,12 @@ export default function FintrackerApp() {
     }
     return null;
   });
+
+  // GAMIFICATION STATES 🔥
+  const [healthScore, setHealthScore] = useState(800);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
+  const [lastLogDate, setLastLogDate] = useState("");
   
   const [appPin, setAppPin] = useState<string | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -439,6 +445,12 @@ export default function FintrackerApp() {
           setIsPremium(premiumStatus);
           localStorage.setItem("fintracker_is_premium", premiumStatus.toString());
           if (data.rates) setExchangeRates(prev => ({ ...prev, ...data.rates }));
+          
+          // GAMIFICATION SYNC 🔥
+          setHealthScore(data.healthScore ?? 800);
+          setCurrentStreak(data.currentStreak ?? 0);
+          setLongestStreak(data.longestStreak ?? 0);
+          setLastLogDate(data.lastLogDate ?? "");
         } else { setIsPremium(false); localStorage.setItem("fintracker_is_premium", "false"); }
       },
       (err) => { 
@@ -903,6 +915,37 @@ export default function FintrackerApp() {
         batch.set(newTxRef, docData);
       }
       
+      // LOGIKA GAMIFIKASI (STREAK & HEALTH SCORE) 🔥
+      const todayStr = getLocalDateString(new Date());
+      if (lastLogDate !== todayStr) {
+        let newStreak = currentStreak;
+        let newLongest = longestStreak;
+        let newScore = healthScore;
+        
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = getLocalDateString(yesterday);
+
+        if (lastLogDate === yesterdayStr) {
+          // Lanjut Streak
+          newStreak += 1;
+          newScore = Math.min(1000, newScore + 2); // Naik 2 poin tiap hari
+        } else {
+          // Bolong Streak
+          if (lastLogDate) newScore = Math.max(0, newScore - 10); // Penalti 10 poin
+          newStreak = 1;
+        }
+
+        if (newStreak > newLongest) newLongest = newStreak;
+        
+        batch.update(doc(db, `users/${user.uid}`), {
+          currentStreak: newStreak,
+          longestStreak: newLongest,
+          healthScore: newScore,
+          lastLogDate: todayStr
+        });
+      }
+
       await batch.commit();
 
       setTAmount(""); setTNote(""); setTAdminFee(""); setTCategory(""); setTAccountId(""); setTToAccountId(""); setTReceiptUrl(""); 
@@ -1209,6 +1252,7 @@ export default function FintrackerApp() {
           <div className="space-y-6 w-full">
             {activeTab === "home" && (
               <HomeTab 
+                healthScore={healthScore} currentStreak={currentStreak} longestStreak={longestStreak} // GAMIFICATION PROPS 🔥
                 reportMonth={reportMonth} setReportMonth={setReportMonth}
                 tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
                 tTime={tTime} setTTime={setTTime}

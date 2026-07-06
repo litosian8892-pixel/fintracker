@@ -81,3 +81,17 @@ export interface SubscriptionData {
   category: string;         
   createdAt?: string;
 }
+
+export interface UserData {
+  uid: string;
+  name: string;
+  email: string;
+  photoURL: string;
+  isPremium: boolean;
+  rates?: Record<string, number>;
+  healthScore?: number;
+  currentStreak?: number;
+  longestStreak?: number;
+  lastLogDate?: string;
+  createdAt?: any;
+}
