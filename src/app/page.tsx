@@ -223,6 +223,33 @@ export default function FintrackerApp() {
     return () => mediaQuery.removeEventListener("change", applyTheme);
   }, [theme]);
 
+  // 📡 ANTENA PENANGKAP SIHIR DRAG-AND-DROP TRANSFER DARI TAB ASET
+  useEffect(() => {
+    const handleDndTransfer = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { sourceId, destId } = customEvent.detail;
+      
+      if (sourceId && destId) {
+        // 1. Pindah tab ke Beranda
+        setActiveTab("home");
+        
+        // 2. Set mode ke Transfer
+        setTType("transfer");
+        
+        // 3. Set Dompet Asal & Tujuan
+        setTAccountId(sourceId);
+        setTToAccountId(destId);
+        
+        // Catatan: Karena tAmount masih kosong, HomeTab akan otomatis 
+        // membuka Drawer + Numpad karena mendeteksi ada Tipe Transfer 
+        // yang belum selesai dimasukkan nominalnya.
+      }
+    };
+
+    window.addEventListener("fintracker_dnd_transfer", handleDndTransfer);
+    return () => window.removeEventListener("fintracker_dnd_transfer", handleDndTransfer);
+  }, []);
+
   const triggerHapticFeedback = () => { 
     if (typeof window !== "undefined" && localStorage.getItem("fintracker_haptic") !== "false") {
       if (navigator.vibrate) navigator.vibrate(15); 
