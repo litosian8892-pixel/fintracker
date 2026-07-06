@@ -274,11 +274,10 @@ export default function AssetsTab({
           const targetAcc = accounts.find(a => a.id === prev.hoveredId);
           if (targetAcc) {
             setTimeout(() => {
-              // SUNTIKKAN EVENT RAHASIA KE DALAM WINDOW
+              // SUNTIKKAN EVENT RAHASIA KE DALAM WINDOW (TANPA ALERT LAGI)
               window.dispatchEvent(new CustomEvent("fintracker_dnd_transfer", {
                 detail: { sourceId: prev.acc!.id, destId: targetAcc.id }
               }));
-              alert(`🔥 SIHIR TRANSFER BERHASIL!\n\nPersiapan transfer dari [${prev.acc!.name}] ke [${targetAcc.name}] telah dipancarkan.\n\n(Nantinya ini akan otomatis membuka Laci Numpad Transfer di Beranda Bos!)`);
             }, 100);
           }
         }

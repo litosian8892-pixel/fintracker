@@ -469,6 +469,13 @@ export default function HomeTab({
   useEffect(() => { const handleResize = () => setIsMobile(window.innerWidth < 768); handleResize(); window.addEventListener("resize", handleResize); return () => window.removeEventListener("resize", handleResize); }, []);
   useEffect(() => { if (editingTransaction) { setIsDrawerOpen(true); } }, [editingTransaction]);
   
+  // 📡 PENANGKAP SINYAL BUKA LACI OTOMATIS DARI DRAG & DROP
+  useEffect(() => {
+    const forceOpen = () => setIsDrawerOpen(true);
+    window.addEventListener("fintracker_force_open_drawer", forceOpen);
+    return () => window.removeEventListener("fintracker_force_open_drawer", forceOpen);
+  }, []);
+
   // Efek auto-focus dipindah ke tombol FAB menggunakan flushSync agar lolos dari blokir sekuriti iOS
 
   useEffect(() => { if (!tAmount || safeEvaluate(tAmount) === 0) { setSplits([]); } }, [tAmount]);

@@ -240,9 +240,10 @@ export default function FintrackerApp() {
         setTAccountId(sourceId);
         setTToAccountId(destId);
         
-        // Catatan: Karena tAmount masih kosong, HomeTab akan otomatis 
-        // membuka Drawer + Numpad karena mendeteksi ada Tipe Transfer 
-        // yang belum selesai dimasukkan nominalnya.
+        // 4. Buka Laci secara otomatis setelah komponen Beranda selesai render (Delay 150ms)
+        setTimeout(() => {
+          window.dispatchEvent(new Event("fintracker_force_open_drawer"));
+        }, 150);
       }
     };
 
