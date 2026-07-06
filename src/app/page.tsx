@@ -956,6 +956,44 @@ export default function FintrackerApp() {
     } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
 
+  const handleDailyCheckIn = async () => {
+    if (!user) return;
+    const todayStr = getLocalDateString(new Date());
+    if (lastLogDate === todayStr) {
+      alert("Sistem: Kamu sudah mengamankan streak hari ini!");
+      return;
+    }
+
+    let newStreak = currentStreak;
+    let newLongest = longestStreak;
+    let newScore = healthScore;
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = getLocalDateString(yesterday);
+
+    if (lastLogDate === yesterdayStr) {
+      newStreak += 1;
+      newScore = Math.min(1000, newScore + 2);
+    } else {
+      if (lastLogDate) newScore = Math.max(0, newScore - 10);
+      newStreak = 1;
+    }
+    if (newStreak > newLongest) newLongest = newStreak;
+
+    try {
+      await updateDoc(doc(db, `users/${user.uid}`), {
+        currentStreak: newStreak,
+        longestStreak: newLongest,
+        healthScore: newScore,
+        lastLogDate: todayStr
+      });
+      alert("Mantap! Hari tanpa pengeluaran (No-Spend Day) tercatat.\nRuntutanmu tetap aman! 🔥");
+    } catch (e) {
+      alert("Gagal melakukan klaim runtutan harian.");
+    }
+  };
+
   const handleDeleteTransaction = async (t: TransactionData) => {
     if (isSubmittingRef.current) return; 
     if (!user) return;
@@ -1252,7 +1290,7 @@ export default function FintrackerApp() {
           <div className="space-y-6 w-full">
             {activeTab === "home" && (
               <HomeTab 
-                healthScore={healthScore} currentStreak={currentStreak} longestStreak={longestStreak} // GAMIFICATION PROPS 🔥
+                healthScore={healthScore} currentStreak={currentStreak} longestStreak={longestStreak} lastLogDate={lastLogDate} handleDailyCheckIn={handleDailyCheckIn} // GAMIFICATION PROPS 🔥
                 reportMonth={reportMonth} setReportMonth={setReportMonth}
                 tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
                 tTime={tTime} setTTime={setTTime}

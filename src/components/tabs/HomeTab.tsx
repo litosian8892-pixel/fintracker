@@ -25,6 +25,8 @@ interface HomeTabProps {
   healthScore?: number;
   currentStreak?: number;
   longestStreak?: number;
+  lastLogDate?: string;
+  handleDailyCheckIn?: () => void;
   reportMonth: string;
   setReportMonth: (val: string) => void;
   tType: "income" | "expense" | "transfer";
@@ -331,7 +333,7 @@ const AnimatedNumber = ({ value, isPrivacyMode, prefix = "Rp ", privacyText = "R
 };
 
 export default function HomeTab({
-  healthScore = 800, currentStreak = 0, longestStreak = 0,
+  healthScore = 800, currentStreak = 0, longestStreak = 0, lastLogDate = "", handleDailyCheckIn,
   reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory, isTravelMode, toggleTravelMode, activeTripName, updateTripName, isReportLoading,
   tReceiptUrl, setTReceiptUrl, editTReceiptUrl, setEditTReceiptUrl
 }: HomeTabProps) {
@@ -881,9 +883,20 @@ export default function HomeTab({
           <div className="w-10 h-10 rounded-full bg-white/60 dark:bg-slate-900/60 shadow-sm flex items-center justify-center text-xl shrink-0 backdrop-blur-md">
             {currentStreak >= 7 ? '🚀' : currentStreak > 0 ? '🔥' : '🧊'}
           </div>
-          <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 leading-none mb-1">Runtutan</p>
-            <p className={`text-base font-black leading-none ${currentStreak > 0 ? 'text-orange-600 dark:text-orange-500' : currentTheme.text}`}>
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-start">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 leading-none mb-1">Runtutan</p>
+              {lastLogDate !== getTodayDateString() && (
+                <button 
+                  type="button" 
+                  onClick={(e) => { e.stopPropagation(); triggerHaptic(); if(handleDailyCheckIn) handleDailyCheckIn(); }}
+                  className="text-[8px] font-black bg-orange-500 text-white px-1.5 py-0.5 rounded animate-pulse shadow-sm active:scale-90 transition-transform cursor-pointer"
+                >
+                  KLAIM STREAK
+                </button>
+              )}
+            </div>
+            <p className={`text-base font-black leading-none mt-0.5 ${currentStreak > 0 ? 'text-orange-600 dark:text-orange-500' : currentTheme.text}`}>
               {currentStreak} <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Hari Terjaga</span>
             </p>
           </div>
