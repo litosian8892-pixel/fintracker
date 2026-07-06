@@ -218,27 +218,47 @@ const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, g
   const [dragOffset, setDragOffset] = useState(0);
   const startX = useRef<number | null>(null);
   const isDragging = useRef(false);
-  const MAX_SWIPE = -100;
+  const hasMoved = useRef(false); // Sensor Tap vs Swipe
+  const MAX_SWIPE = -70; // Lebih pendek karena hanya sisa 1 tombol (Hapus)
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     isDragging.current = true;
+    hasMoved.current = false; // Reset sensor
     startX.current = e.clientX;
     e.currentTarget.setPointerCapture(e.pointerId);
   };
+  
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging.current || startX.current === null) return;
     const diff = e.clientX - startX.current;
+    
+    // Jika bergeser lebih dari 5px, tandai sebagai SWIPE bukan TAP
+    if (Math.abs(diff) > 5) hasMoved.current = true; 
+    
     let newOffset = isOpen ? MAX_SWIPE + diff : diff;
     if (newOffset > 0) newOffset = 0;
     if (newOffset < MAX_SWIPE - 20) newOffset = MAX_SWIPE - 20; // Efek membal di ujung
     setDragOffset(newOffset);
   };
+  
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging.current) return;
     isDragging.current = false;
     e.currentTarget.releasePointerCapture(e.pointerId);
-    if (!isOpen && dragOffset < -40) onOpen();
-    else if (isOpen && dragOffset > MAX_SWIPE + 20) onClose();
+    
+    // Logika Pintar: TAP vs SWIPE
+    if (!hasMoved.current && startX.current !== null) {
+      if (isOpen) {
+        onClose(); // Jika sedang digeser dan di-tap, tutup geserannya
+      } else {
+        onEdit(); // TAP MURNI: Langsung masuk mode Edit
+      }
+    } else {
+      // SWIPE LOGIC
+      if (!isOpen && dragOffset < -30) onOpen();
+      else if (isOpen && dragOffset > MAX_SWIPE + 20) onClose();
+    }
+    
     setDragOffset(0);
     startX.current = null;
   };
@@ -248,17 +268,16 @@ const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, g
 
   return (
     <div className="relative rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800/80 shadow-sm">
-      {/* TOMBOL TERSEMBUNYI DI BALIK LAYAR */}
-      <div className="absolute inset-y-0 right-0 flex items-center justify-end px-3 gap-2.5 w-1/2 z-0">
-        <button onClick={() => { onClose(); onEdit(); }} className="w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-all shadow-md active:scale-90"><Edit3 size={15} strokeWidth={2.5} /></button>
-        <button onClick={() => { onClose(); onDelete(); }} className="w-10 h-10 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center transition-all shadow-md active:scale-90"><Trash2 size={15} strokeWidth={2.5} /></button>
+      {/* TOMBOL TERSEMBUNYI DI BALIK LAYAR (Hanya Hapus Saja) */}
+      <div className="absolute inset-y-0 right-0 flex items-center justify-end px-3 gap-2 w-1/3 z-0">
+        <button onClick={() => { onClose(); onDelete(); }} className="w-12 h-12 bg-rose-500 hover:bg-rose-600 text-white rounded-xl flex items-center justify-center transition-all shadow-md active:scale-90"><Trash2 size={18} strokeWidth={2.5} /></button>
       </div>
       
-      {/* KARTU TRANSAKSI YANG BISA DIGESER */}
+      {/* KARTU TRANSAKSI YANG BISA DIGESER DAN DI-TAP */}
       <div
         onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} onPointerLeave={handlePointerUp}
         style={{ transform: `translateX(${isDragging.current ? dragOffset : (isOpen ? MAX_SWIPE : 0)}px)`, touchAction: "pan-y" }}
-        className={`relative z-10 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-3 flex flex-col cursor-grab active:cursor-grabbing shadow-sm ${isDragging.current ? 'duration-0' : 'transition-transform duration-300 ease-out'}`}
+        className={`relative z-10 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-3 flex flex-col cursor-pointer active:scale-[0.98] shadow-sm ${isDragging.current ? 'duration-0' : 'transition-all duration-300 ease-out'}`}
       >
         <div className="flex items-center justify-between w-full pointer-events-none">
           <div className="flex items-center gap-3 min-w-0">
