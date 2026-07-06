@@ -4,7 +4,7 @@ import {
   Download, ChevronDown, ArrowUp, ArrowDown, X, Printer, 
   BarChart3, PieChart as PieIcon, CalendarDays, Activity, Filter, 
   TrendingDown, TrendingUp, AlertCircle, Check, ChevronRight,
-  Target, Plus, Trash2, Calendar
+  Target, Plus, Trash2, Calendar, Search
 } from "lucide-react";
 import { 
   PieChart as RePieChart, Pie, Cell, ResponsiveContainer, Tooltip, 
@@ -190,6 +190,7 @@ export default function ReportsTab({
   const [newBudgetCat, setNewBudgetCat] = useState<CategoryData | null>(null);
   const [showBudgetCatSelector, setShowBudgetCatSelector] = useState(false);
   const [budgetCatSearch, setBudgetCatSearch] = useState("");
+  const [budgetSearch, setBudgetSearch] = useState(""); // STATE PENCARIAN ANGGARAN BARU
 
   // JALAN PINTAS: CUSTOM DATE RANGE (Siklus Gajian Fleksibel)
   const [isCustomDateRange, setIsCustomDateRange] = useState(false);
@@ -496,8 +497,22 @@ export default function ReportsTab({
   }, [currentMonthTxs, reportMonth, daysInMonth]);
 
   const budgetCategories = useMemo(() => {
-    return categories.filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0).sort((a, b) => a.name.localeCompare(b.name));
-  }, [categories]);
+    return categories
+      .filter(c => c.type === 'expense' && c.budgetLimit && c.budgetLimit > 0)
+      .sort((a, b) => {
+        // Logika Pintar: Urutkan dari Pemakaian Terbesar (Terboros) -> Terkecil
+        const spentA = expGrouped[a.name] || 0;
+        const spentB = expGrouped[b.name] || 0;
+        if (spentB !== spentA) return spentB - spentA;
+        // Jika pemakaiannya sama (misal Rp 0), urutkan abjad
+        return a.name.localeCompare(b.name);
+      });
+  }, [categories, expGrouped]);
+
+  const filteredBudgetCategories = useMemo(() => {
+    if (!budgetSearch.trim()) return budgetCategories;
+    return budgetCategories.filter(c => c.name.toLowerCase().includes(budgetSearch.toLowerCase()));
+  }, [budgetCategories, budgetSearch]);
 
   const totalBudgetLimit = budgetCategories.reduce((sum, c) => sum + (c.budgetLimit || 0), 0);
   const totalSpentOnBudget = budgetCategories.reduce((sum, cat) => sum + (expGrouped[cat.name] || 0), 0); // FIX: TYPO SINKRONISASI
@@ -1313,9 +1328,30 @@ export default function ReportsTab({
                     )}
                   </div>
 
+                  {/* Pencarian Anggaran Dinamis */}
+                  {budgetCategories.length > 0 && (
+                    <div className="relative animate-in fade-in duration-300">
+                      <Search className="absolute left-4 top-3.5 text-slate-400" size={16} />
+                      <input 
+                        type="text" 
+                        placeholder="Cari kategori anggaran..." 
+                        className="w-full pl-11 pr-4 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[20px] text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white shadow-sm transition-colors"
+                        value={budgetSearch} 
+                        onChange={(e) => setBudgetSearch(e.target.value)} 
+                      />
+                    </div>
+                  )}
+
+                  {/* Pesan Jika Kategori Tidak Ditemukan */}
+                  {filteredBudgetCategories.length === 0 && budgetSearch && (
+                    <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-xs font-bold bg-white dark:bg-slate-900 rounded-[24px] border border-dashed border-slate-200 dark:border-slate-800 animate-in fade-in">
+                      Kategori "{budgetSearch}" tidak ditemukan.
+                    </div>
+                  )}
+
                   {/* Grid Kategori */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {budgetCategories.map(cat => {
+                    {filteredBudgetCategories.map(cat => {
                       const spent = expGrouped[cat.name] || 0;
                       const pct = Math.round((spent / cat.budgetLimit!) * 100);
                       const isOver = pct >= 100;
