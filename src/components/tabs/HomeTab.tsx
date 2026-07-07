@@ -677,7 +677,8 @@ export default function HomeTab({
       ); 
     }
     return filtered;
-  }, [transactions, reportMonth, selectedAccountIdFilter, searchQueryInput, searchAllMonths]);
+  // 🔥 BUG FIXED: Tambahkan selectedDateFilter ke dalam array dependencies agar React nge-render ulang
+  }, [transactions, reportMonth, selectedAccountIdFilter, searchQueryInput, searchAllMonths, selectedDateFilter]);
 
   const monthlySummary = useMemo(() => { 
     let income = 0; let expense = 0; 
