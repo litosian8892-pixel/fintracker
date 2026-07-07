@@ -18,7 +18,8 @@ import {
   EyeOff, 
   Edit3, 
   Trash2, 
-  Wallet
+  Wallet,
+  CalendarDays
 } from "lucide-react";
 
 interface HomeTabProps {
@@ -408,6 +409,9 @@ export default function HomeTab({
   const [selectedAccountIdFilter, setSelectedAccountIdFilter] = useState("all");
   const [showAccountFilterDropdown, setShowAccountFilterDropdown] = useState(false);
   const [searchAllMonths, setSearchAllMonths] = useState(false);
+  
+  // 🔥 STATE BARU: Filter Tanggal Presisi
+  const [selectedDateFilter, setSelectedDateFilter] = useState("");
 
   const [activeAccSelector, setActiveAccSelector] = useState<"source" | "dest" | null>(null);
   const [accModalTab, setAccModalTab] = useState<"pribadi" | "tabungan">("pribadi");
@@ -656,6 +660,12 @@ export default function HomeTab({
     let filtered = transactions;
     if (!searchQueryInput.trim() || !searchAllMonths) { filtered = filtered.filter(t => t.tDate && t.tDate.startsWith(reportMonth)); }
     if (selectedAccountIdFilter !== "all") { filtered = filtered.filter(t => t.accountId === selectedAccountIdFilter || t.toAccountId === selectedAccountIdFilter); }
+    
+    // 🎯 LOGIKA FILTER TANGGAL SPESIFIK
+    if (selectedDateFilter) { 
+      filtered = filtered.filter(t => t.tDate === selectedDateFilter); 
+    }
+
     if (searchQueryInput.trim()) { 
       const q = searchQueryInput.toLowerCase(); 
       filtered = filtered.filter(t => 
@@ -861,9 +871,35 @@ export default function HomeTab({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2.5 shrink-0 ml-2">
+        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+          
+          {/* 🗓️ TOMBOL FILTER TANGGAL (INVISIBLE NATIVE PICKER) */}
+          <div className="relative flex items-center">
+            <input 
+              type="date" 
+              value={selectedDateFilter}
+              onChange={(e) => { 
+                triggerHaptic(); 
+                const d = e.target.value;
+                setSelectedDateFilter(d); 
+                // Otomatis sinkronisasi pindah bulan (Pintar!)
+                if (d) setReportMonth(d.slice(0, 7)); 
+              }}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <button type="button" className={`p-2 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${selectedDateFilter ? 'text-blue-600 bg-blue-50 dark:bg-blue-950/30' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+              <CalendarDays size={18} />
+            </button>
+            
+            {/* Tombol X (Hapus Filter) */}
+            {selectedDateFilter && (
+              <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); triggerHaptic(); setSelectedDateFilter(""); }} className="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 z-20 shadow-sm active:scale-90"><X size={10} strokeWidth={3} /></button>
+            )}
+          </div>
+
           <button type="button" onClick={() => { triggerHaptic(); setIsSearchExpanded(!isSearchExpanded); }} className={`p-2 rounded-xl transition-colors cursor-pointer ${isSearchExpanded ? 'text-blue-600 bg-blue-50 dark:bg-blue-950/30' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}><Search size={18} /></button>
-          <div className="relative">
+          
+          <div className="relative ml-1">
             <button type="button" onClick={() => setShowAccountFilterDropdown(!showAccountFilterDropdown)} className={`text-[10px] font-black px-2.5 py-1.5 rounded-lg border flex items-center gap-1 cursor-pointer select-none ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>{selectedAccountIdFilter === "all" ? "All" : accounts.find(a => a.id === selectedAccountIdFilter)?.name || "All"}<ChevronDown size={10} /></button>
             {showAccountFilterDropdown && (
               <>
