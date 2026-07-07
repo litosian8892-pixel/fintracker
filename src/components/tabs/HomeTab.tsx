@@ -19,7 +19,8 @@ import {
   Edit3, 
   Trash2, 
   Wallet,
-  CalendarDays
+  CalendarDays,
+  Copy
 } from "lucide-react";
 
 interface HomeTabProps {
@@ -782,6 +783,32 @@ export default function HomeTab({
 
   const formatDayHeader = (dateStr: string) => { const d = new Date(dateStr); const dayNum = d.getDate(); const dayName = d.toLocaleDateString("id-ID", { weekday: "short" }); const monthYear = d.toLocaleDateString("id-ID", { month: "2-digit", year: "numeric" }).replace(/\//g, "/"); return { dayNum, dayName, monthYear }; };
   const closeMainDrawer = () => { setIsDrawerOpen(false); setEditingTransaction(null); setActiveKeypad(null); setNoteSuggestions([]); };
+
+  // 🔥 FITUR BARU: TOMBOL DUPLIKAT (QUICK COPY)
+  const handleDuplicateClick = () => {
+    triggerHaptic();
+    
+    // 1. Pindahkan semua state Edit ke state Buat Baru
+    setTType(editTType);
+    setTAmount(editTAmount);
+    setTAccountId(editTAccountId);
+    setTToAccountId(editTToAccountId);
+    setTCategory(editTCategory);
+    setTNote(editTNote);
+    setTAdminFee(editTAdminFee);
+    if (setTReceiptUrl && editTReceiptUrl) setTReceiptUrl(editTReceiptUrl);
+    
+    // Tangani Pecahan (Split Bill)
+    setSplits(editTSplits.map(s => ({ category: s.category, amount: s.amount, note: s.note })));
+    
+    // 2. Set Waktu Transaksi ke HARI INI & DETIK INI (Biar gak nimpa tanggal yang lama)
+    const now = new Date();
+    setTDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
+    setTTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+    
+    // 3. Keluar dari Mode Edit (Laci otomatis berubah jadi Mode Catat Baru yang sudah Terisi)
+    setEditingTransaction(null);
+  };
 
   const activeCategoryObject = useMemo(() => {
     const activeName = editingTransaction ? editTCategory : tCategory; if (!activeName) return null;
@@ -1608,36 +1635,48 @@ export default function HomeTab({
 
         <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex gap-3 shrink-0">
               {editingTransaction ? (
-                <button 
-                  type="button" 
-                  onClick={() => { 
-                    triggerHaptic(); 
-                    
-                    // UX Premium: Hard-Block Overdraft untuk Mode Edit
-                    if (editTType === "expense" || editTType === "transfer") {
-                      const editSourceAcc = accounts.find(a => a.id === editTAccountId);
-                      if (editSourceAcc) {
-                        let availableBalance = editSourceAcc.balance;
-                        
-                        if (editingTransaction.accountId === editTAccountId && (editingTransaction.type === "expense" || editingTransaction.type === "transfer")) {
-                          const oldRawAmount = editingTransaction.originalAmount !== undefined ? editingTransaction.originalAmount : editingTransaction.amount;
-                          availableBalance += oldRawAmount;
-                        }
-                        
-                        if (safeEvaluate(editTAmount) > availableBalance) {
-                          alert(`Transaksi Ditolak!\n\nSaldo dompet tidak mencukupi.\nMaksimal dana yang bisa digunakan adalah ${formatCurrencyTerbaca(availableBalance.toString(), editSourceAcc.currency)}.`);
-                          return; 
+                <>
+                  <button 
+                    type="button" 
+                    onClick={() => { 
+                      triggerHaptic(); 
+                      
+                      // UX Premium: Hard-Block Overdraft untuk Mode Edit
+                      if (editTType === "expense" || editTType === "transfer") {
+                        const editSourceAcc = accounts.find(a => a.id === editTAccountId);
+                        if (editSourceAcc) {
+                          let availableBalance = editSourceAcc.balance;
+                          
+                          if (editingTransaction.accountId === editTAccountId && (editingTransaction.type === "expense" || editingTransaction.type === "transfer")) {
+                            const oldRawAmount = editingTransaction.originalAmount !== undefined ? editingTransaction.originalAmount : editingTransaction.amount;
+                            availableBalance += oldRawAmount;
+                          }
+                          
+                          if (safeEvaluate(editTAmount) > availableBalance) {
+                            alert(`Transaksi Ditolak!\n\nSaldo dompet tidak mencukupi.\nMaksimal dana yang bisa digunakan adalah ${formatCurrencyTerbaca(availableBalance.toString(), editSourceAcc.currency)}.`);
+                            return; 
+                          }
                         }
                       }
-                    }
 
-                    handleUpdateTransaction(); 
-                    closeMainDrawer(); 
-                  }} 
-                  className={`flex-1 py-3.5 text-white rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer border ${currentTheme.fab}`}
-                >
-                  Simpan Koreksi
-                </button>
+                      handleUpdateTransaction(); 
+                      closeMainDrawer(); 
+                    }} 
+                    className={`flex-1 py-3.5 text-white rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer border ${currentTheme.fab}`}
+                  >
+                    Simpan Koreksi
+                  </button>
+                  
+                  {/* 👯 TOMBOL DUPLIKAT (QUICK COPY) */}
+                  <button 
+                    type="button" 
+                    onClick={handleDuplicateClick}
+                    className="px-4 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 rounded-xl transition-all cursor-pointer border border-indigo-200 dark:border-indigo-800/60 flex items-center justify-center shadow-sm active:scale-95"
+                    title="Salin sebagai Transaksi Baru Hari Ini"
+                  >
+                    <Copy size={18} strokeWidth={2.5} />
+                  </button>
+                </>
               ) : (
                 <button 
                   type="button" 
