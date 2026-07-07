@@ -1248,9 +1248,18 @@ export default function FintrackerApp() {
           <Sidebar user={null} activeTab={"home" as any} setActiveTab={() => {}} onLogout={() => {}} isPrivacyMode={false} togglePrivacyMode={() => {}} />
           <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
             <MobileHeader user={null} onLogout={() => {}} isPrivacyMode={false} togglePrivacyMode={() => {}} />
-            <div className="max-w-5xl w-full mx-auto p-4 md:p-8 flex-1 flex flex-col justify-center items-center h-[60vh]">
-               <div className="w-12 h-12 border-4 border-slate-200 dark:border-slate-800 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin mb-4"></div>
-               <p className="text-[10px] text-slate-400 font-black animate-pulse uppercase tracking-widest">Membuka Brankas...</p>
+            {/* ⚡ NATIVE SKELETON UI: Rangka desain tanpa tulisan aneh */}
+            <div className="max-w-5xl w-full mx-auto p-4 md:p-8 w-full animate-pulse mt-2 md:mt-0">
+               {/* Rangka Kartu Total Saldo */}
+               <div className="h-44 w-full bg-slate-200/70 dark:bg-slate-800/50 rounded-[30px] mb-6"></div>
+               {/* Rangka Laci Numpad & Menu */}
+               <div className="h-20 w-full bg-slate-200/70 dark:bg-slate-800/50 rounded-[24px] mb-8"></div>
+               {/* Rangka Daftar Transaksi */}
+               <div className="space-y-4">
+                 <div className="h-24 w-full bg-slate-200/70 dark:bg-slate-800/50 rounded-3xl"></div>
+                 <div className="h-24 w-full bg-slate-200/70 dark:bg-slate-800/50 rounded-3xl"></div>
+                 <div className="h-24 w-full bg-slate-200/70 dark:bg-slate-800/50 rounded-3xl"></div>
+               </div>
             </div>
           </div>
           <BottomNav activeTab={"home" as any} setActiveTab={() => {}} />
