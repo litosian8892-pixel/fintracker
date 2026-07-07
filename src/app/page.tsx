@@ -583,12 +583,12 @@ export default function FintrackerApp() {
 
     if (isColdStartRef.current) {
       setIsReportLoading(true);
-      // ⚡ TURBO LAZY LOAD: Tunda 2000ms pada Cold Start agar HP kentang sekalipun
-      // tidak nge-freeze saat membaca ribuan transaksi dari IndexedDB.
+      // ⚡ TURBO COLD START: Eksekusi dengan micro-delay 50ms agar App Shell punya
+      // waktu merender frame pertamanya, sebelum Firebase membaca IndexedDB.
       const reportTimer = setTimeout(() => {
         loadReportData();
         isColdStartRef.current = false;
-      }, 2000); 
+      }, 50); 
       return () => { clearTimeout(reportTimer); if (unsubReport) (unsubReport as () => void)(); };
     } else {
       setIsReportLoading(true);
@@ -1233,12 +1233,15 @@ export default function FintrackerApp() {
     );
   }
 
-  if (loading || !pinChecked) {
+  // ⚡ SEAMLESS RENDER: Tahan UI utama sampai Auth selesai DAN Data Esensial siap.
+  // Ini mencegah "Flicker/Data Hilang Bentar" saat komponen HomeTab memaksa render sebelum data Firebase masuk.
+  const isReadyToRender = !loading && pinChecked && (user ? !isReportLoading : true);
+
+  if (!isReadyToRender) {
     const isBypassingAuth = typeof window !== 'undefined' && localStorage.getItem("fintracker_has_logged_in") === "true";
     const needsPin = typeof window !== 'undefined' && !!localStorage.getItem("fintracker_pin");
     
-    // ⚡ TURBO COLD-START: Jika tidak dikunci PIN & pernah login, bypass layar Loading putih!
-    // Langsung render UI App Shell 0-detik agar aplikasi terasa secepat kilat.
+    // Tampilkan App Shell sampai data database (isReportLoading) benar-benar terisi (isReadyToRender = true)
     if (isBypassingAuth && !needsPin) {
       return (
         <main className="min-h-screen bg-slate-50 dark:bg-slate-950 md:flex transition-colors duration-200">
@@ -1247,7 +1250,7 @@ export default function FintrackerApp() {
             <MobileHeader user={null} onLogout={() => {}} isPrivacyMode={false} togglePrivacyMode={() => {}} />
             <div className="max-w-5xl w-full mx-auto p-4 md:p-8 flex-1 flex flex-col justify-center items-center h-[60vh]">
                <div className="w-12 h-12 border-4 border-slate-200 dark:border-slate-800 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin mb-4"></div>
-               <p className="text-[10px] text-slate-400 font-black animate-pulse uppercase tracking-widest">Sinkronisasi Offline...</p>
+               <p className="text-[10px] text-slate-400 font-black animate-pulse uppercase tracking-widest">Membuka Brankas...</p>
             </div>
           </div>
           <BottomNav activeTab={"home" as any} setActiveTab={() => {}} />
