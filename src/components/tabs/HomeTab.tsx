@@ -1199,19 +1199,36 @@ export default function HomeTab({
                 </div>
               )}
 
-              {/* INPUT CATATAN DENGAN AUTOCOMPLETE */}
+              {/* INPUT CATATAN DENGAN AUTOCOMPLETE & QUICK CLEAR */}
               <div className="space-y-1 relative z-[60] mb-2 animate-in slide-in-from-top-2 duration-300">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan (Beli Apa?)</label>
-                <input 
-                  ref={noteInputRef}
-                  type="text" 
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white relative z-[70]" 
-                  placeholder="Ketik 2 huruf untuk saran otomatis..." 
-                  value={editingTransaction ? editTNote : tNote} 
-                  onChange={(e) => handleNoteChange(e.target.value)}
-                  onFocus={() => { if(isMobile) setActiveKeypad(null); }}
-                  autoComplete="off"
-                />
+                <div className="relative z-[70]">
+                  <input 
+                    ref={noteInputRef}
+                    type="text" 
+                    className="w-full pl-3.5 pr-11 py-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white" 
+                    placeholder="Ketik 2 huruf untuk saran otomatis..." 
+                    value={editingTransaction ? editTNote : tNote} 
+                    onChange={(e) => handleNoteChange(e.target.value)}
+                    onFocus={() => { if(isMobile) setActiveKeypad(null); }}
+                    autoComplete="off"
+                  />
+                  {/* TOMBOL SAPU BERSIH (Hanya muncul jika ada teks) */}
+                  {(editingTransaction ? editTNote : tNote) && (
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        triggerHaptic();
+                        handleNoteChange(""); // Kosongkan teks & tutup saran
+                        if (noteInputRef.current) noteInputRef.current.focus(); // Tahan keyboard tetap terbuka
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-slate-200/60 dark:bg-slate-800/80 rounded-full transition-all active:scale-90 cursor-pointer shadow-sm"
+                      title="Bersihkan catatan"
+                    >
+                      <X size={12} strokeWidth={3} />
+                    </button>
+                  )}
+                </div>
                 
                 {/* AUTOCOMPLETE DROPDOWN */}
                 {noteSuggestions.length > 0 && (
