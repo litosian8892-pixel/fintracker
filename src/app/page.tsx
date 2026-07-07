@@ -505,12 +505,13 @@ export default function FintrackerApp() {
   useEffect(() => {
     if (!user) return;
     let unsubTypes: any, unsubDebts: any, unsubSubs: any;
-    // Micro-delay 100ms agar tidak berbenturan dengan render Dompet di thread utama
+    // ⚡ TURBO LAZY LOAD: Delay 1500ms! 
+    // Tab Utang & Langganan tidak dilihat di awal, biarkan thread CPU fokus me-render Beranda!
     const timer = setTimeout(() => {
       unsubTypes = onSnapshot(query(collection(db, `users/${user.uid}/walletTypes`), orderBy("order", "asc")), (sn) => { if (sn.empty) setupDefaultWalletTypes(user.uid); else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() } as WalletTypeData))); });
       unsubDebts = onSnapshot(query(collection(db, `users/${user.uid}/debts`), orderBy("createdAt", "desc")), (sn) => { setDebts(sn.docs.map(d => ({ id: d.id, ...d.data() } as DebtData))); });
       unsubSubs = onSnapshot(query(collection(db, `users/${user.uid}/subscriptions`), orderBy("createdAt", "desc")), (sn) => { setSubscriptions(sn.docs.map(d => ({ id: d.id, ...d.data() } as SubscriptionData))); });
-    }, 100);
+    }, 1500);
     return () => { clearTimeout(timer); if(unsubTypes) unsubTypes(); if(unsubDebts) unsubDebts(); if(unsubSubs) unsubSubs(); };
   }, [user]);
 
@@ -582,10 +583,12 @@ export default function FintrackerApp() {
 
     if (isColdStartRef.current) {
       setIsReportLoading(true);
+      // ⚡ TURBO LAZY LOAD: Tunda 2000ms pada Cold Start agar HP kentang sekalipun
+      // tidak nge-freeze saat membaca ribuan transaksi dari IndexedDB.
       const reportTimer = setTimeout(() => {
         loadReportData();
         isColdStartRef.current = false;
-      }, 100); 
+      }, 2000); 
       return () => { clearTimeout(reportTimer); if (unsubReport) (unsubReport as () => void)(); };
     } else {
       setIsReportLoading(true);
@@ -595,12 +598,16 @@ export default function FintrackerApp() {
   }, [user, reportMonth, maxReportRange]); // DIBUAT KEBAL DARI TAB SWITCH
 
   useEffect(() => {
-    if (!user) return; // DIBUAT KEBAL TAB SWITCH: Tarik data diam-diam tanpa dibatasi activeTab
-    const prevMonth = getPrevMonth(reportMonth);
-    const startOfPrev = `${prevMonth}-01`; const endOfPrev = `${prevMonth}-31`;
-    const qPrev = query(collection(db, `users/${user.uid}/transactions`), where("tDate", ">=", startOfPrev), where("tDate", "<=", endOfPrev));
-    const unsubPrev = onSnapshot(qPrev, (sn) => { setPrevMonthTransactions(sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData))); });
-    return () => unsubPrev();
+    if (!user) return; 
+    let unsubPrev: any;
+    // ⚡ SUPER LAZY LOAD: Data bulan lalu hanyalah sekunder, kita berikan prioritas paling akhir (2.5 Detik).
+    const timer = setTimeout(() => {
+      const prevMonth = getPrevMonth(reportMonth);
+      const startOfPrev = `${prevMonth}-01`; const endOfPrev = `${prevMonth}-31`;
+      const qPrev = query(collection(db, `users/${user.uid}/transactions`), where("tDate", ">=", startOfPrev), where("tDate", "<=", endOfPrev));
+      unsubPrev = onSnapshot(qPrev, (sn) => { setPrevMonthTransactions(sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData))); });
+    }, 2500);
+    return () => { clearTimeout(timer); if (unsubPrev) unsubPrev(); };
   }, [user, reportMonth]);
 
   useEffect(() => {
@@ -1226,7 +1233,30 @@ export default function FintrackerApp() {
     );
   }
 
-  if (loading || !pinChecked) return <LoadingScreen />;
+  if (loading || !pinChecked) {
+    const isBypassingAuth = typeof window !== 'undefined' && localStorage.getItem("fintracker_has_logged_in") === "true";
+    const needsPin = typeof window !== 'undefined' && !!localStorage.getItem("fintracker_pin");
+    
+    // ⚡ TURBO COLD-START: Jika tidak dikunci PIN & pernah login, bypass layar Loading putih!
+    // Langsung render UI App Shell 0-detik agar aplikasi terasa secepat kilat.
+    if (isBypassingAuth && !needsPin) {
+      return (
+        <main className="min-h-screen bg-slate-50 dark:bg-slate-950 md:flex transition-colors duration-200">
+          <Sidebar user={null} activeTab={"home" as any} setActiveTab={() => {}} onLogout={() => {}} isPrivacyMode={false} togglePrivacyMode={() => {}} />
+          <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
+            <MobileHeader user={null} onLogout={() => {}} isPrivacyMode={false} togglePrivacyMode={() => {}} />
+            <div className="max-w-5xl w-full mx-auto p-4 md:p-8 flex-1 flex flex-col justify-center items-center h-[60vh]">
+               <div className="w-12 h-12 border-4 border-slate-200 dark:border-slate-800 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin mb-4"></div>
+               <p className="text-[10px] text-slate-400 font-black animate-pulse uppercase tracking-widest">Sinkronisasi Offline...</p>
+            </div>
+          </div>
+          <BottomNav activeTab={"home" as any} setActiveTab={() => {}} />
+        </main>
+      );
+    }
+    
+    return <LoadingScreen />;
+  }
   if (!user) return <AuthScreen />;
 
   if (appPin && !isUnlocked) {
