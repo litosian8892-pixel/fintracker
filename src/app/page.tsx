@@ -372,6 +372,9 @@ export default function FintrackerApp() {
   // FITUR PINTAR: Real-Time Auto-Refresh Jam & Tanggal (Ticking Clock)
   useEffect(() => {
     const syncRealTime = () => {
+      // ⚡ BATTERY SAVER: Jangan jalankan kalkulasi (re-render) jika HP sedang mati layar/di background!
+      if (document.hidden || document.visibilityState !== "visible") return;
+
       // Hanya update otomatis jika user belum mengetik nominal & tidak sedang mode edit
       if (!tAmount && !editingTransaction) {
         const now = new Date();
@@ -610,15 +613,25 @@ export default function FintrackerApp() {
     return () => { clearTimeout(timer); if (unsubPrev) unsubPrev(); };
   }, [user, reportMonth]);
 
+  // ⚡ OPTIMASI PENCARIAN (ANTI-LAG & ANTI KEBOCORAN BILLING FIREBASE): 
+  // Mengubah onSnapshot menjadi getDocs dengan Debounce 400ms. 
+  // Mencegah HP nge-freeze / spam kuota read database saat user mengetik cepat.
   useEffect(() => {
     if (!user || !globalSearch) { setSearchResult([]); return; }
-    const qGlobal = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(500));
-    const unsubGlobal = onSnapshot(qGlobal, (sn) => {
-      const allTxs = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
-      const filtered = allTxs.filter(t => (t.note && t.note.toLowerCase().includes(globalSearch.toLowerCase())) || t.category.toLowerCase().includes(globalSearch.toLowerCase()));
-      setSearchResult(filtered);
-    });
-    return () => unsubGlobal();
+    
+    const searchTimer = setTimeout(async () => {
+      try {
+        const qGlobal = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(500));
+        const sn = await getDocs(qGlobal);
+        const allTxs = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
+        const filtered = allTxs.filter(t => (t.note && t.note.toLowerCase().includes(globalSearch.toLowerCase())) || t.category.toLowerCase().includes(globalSearch.toLowerCase()));
+        setSearchResult(filtered);
+      } catch (e) {
+        console.error("Search error:", e);
+      }
+    }, 400); // Tunggu jari user diam 400ms baru jalankan query pencarian
+
+    return () => clearTimeout(searchTimer);
   }, [user, globalSearch]);
 
   const hasHealedRef = useRef(false);
