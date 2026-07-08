@@ -171,7 +171,7 @@ export default function AssetsTab({
   const [detailAccId, setDetailAccId] = useState<string | null>(null);
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [walletGroup, setWalletGroup] = useState<"pribadi" | "bisnis">("pribadi");
+  const [walletGroup, setWalletGroup] = useState<"pribadi" | "bisnis" | "terpisah">("pribadi");
   
   const [localAccCurrency, setLocalAccCurrency] = useState("IDR");
   const [localEditAccCurrency, setLocalEditAccCurrency] = useState("IDR");
@@ -378,8 +378,9 @@ export default function AssetsTab({
   };
 
   const updatedAccounts = accounts.map(a => { let balance = a.balance; let name = a.name; let overrideRate = a.lastExchangeRate; if (localBalanceOverride[a.id] !== undefined) balance = localBalanceOverride[a.id]; if (localNameOverride[a.id] !== undefined) name = localNameOverride[a.id]; if (localInvRatesOverride[a.id] !== undefined) overrideRate = localInvRatesOverride[a.id]; return { ...a, balance, name, lastExchangeRate: overrideRate }; });
-  const personalActiveAccounts = updatedAccounts.filter(a => !a.isSavings && !a.isBusiness && !a.isInvestment);
-  const businessActiveAccounts = updatedAccounts.filter(a => !a.isSavings && a.isBusiness && !a.isInvestment);
+  const personalActiveAccounts = updatedAccounts.filter(a => !a.isSavings && !a.isBusiness && !a.isInvestment && !a.excludeFromTotal);
+  const businessActiveAccounts = updatedAccounts.filter(a => !a.isSavings && a.isBusiness && !a.isInvestment && !a.excludeFromTotal);
+  const separatedAccounts = updatedAccounts.filter(a => !a.isSavings && !a.isInvestment && a.excludeFromTotal);
   const investmentAccounts = updatedAccounts.filter(a => a.isInvestment);
   const emergencyAccounts = updatedAccounts.filter(a => a.isSavings && !a.savingsGoalTitle && !a.isInvestment);
   const dreamGoals = updatedAccounts.filter(a => a.isSavings && a.savingsGoalTitle && !a.isInvestment);
@@ -421,7 +422,7 @@ export default function AssetsTab({
     return { totalDeposit, totalWithdraw };
   }, [reportTransactions, reportMonth, accounts]);
 
-  const activeWalletsToRender = walletGroup === "pribadi" ? personalActiveAccounts : businessActiveAccounts;
+  const activeWalletsToRender = walletGroup === "pribadi" ? personalActiveAccounts : walletGroup === "bisnis" ? businessActiveAccounts : separatedAccounts;
   const currentTheme = themeMap[accent];
   
   return (
@@ -564,11 +565,19 @@ export default function AssetsTab({
 
               <div className="bg-white dark:bg-slate-900 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center bg-slate-50 dark:bg-slate-800/50 px-4 gap-2 text-left">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{walletGroup === "pribadi" ? `Dompet Pribadi (${personalActiveAccounts.length})` : <><Briefcase size={12} className="text-amber-500 shrink-0 inline mr-1" /> Dompet Bisnis ({businessActiveAccounts.length})</>}</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    {walletGroup === "pribadi" 
+                      ? `Dompet Pribadi (${personalActiveAccounts.length})` 
+                      : walletGroup === "bisnis"
+                        ? <><Briefcase size={12} className="text-amber-500 shrink-0 inline mr-1 -mt-0.5" /> Dompet Bisnis ({businessActiveAccounts.length})</>
+                        : `Dompet Terpisah 🔒 (${separatedAccounts.length})`
+                    }
+                  </span>
                   <div className="flex items-center gap-2.5">
                     <div className="flex bg-slate-200/50 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800">
-                      <button onClick={() => { triggerHaptic(); setWalletGroup("pribadi"); }} className={`px-3 py-1 rounded-md text-[9px] font-black transition-all cursor-pointer ${walletGroup === "pribadi" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-400"}`}>Pribadi</button>
-                      <button onClick={() => { triggerHaptic(); setWalletGroup("bisnis"); }} className={`px-3 py-1 rounded-md text-[9px] font-black transition-all cursor-pointer ${walletGroup === "bisnis" ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 shadow-sm" : "text-slate-400"}`}>Bisnis</button>
+                      <button onClick={() => { triggerHaptic(); setWalletGroup("pribadi"); }} className={`px-3 py-1 rounded-md text-[9px] font-black transition-all cursor-pointer ${walletGroup === "pribadi" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}>Pribadi</button>
+                      <button onClick={() => { triggerHaptic(); setWalletGroup("bisnis"); }} className={`px-3 py-1 rounded-md text-[9px] font-black transition-all cursor-pointer ${walletGroup === "bisnis" ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 shadow-sm" : "text-slate-400 hover:text-amber-600/70"}`}>Bisnis</button>
+                      <button onClick={() => { triggerHaptic(); setWalletGroup("terpisah"); }} className={`px-3 py-1 rounded-md text-[9px] font-black transition-all cursor-pointer ${walletGroup === "terpisah" ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}>Terpisah 🔒</button>
                     </div>
                     <div className="flex bg-slate-200/50 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800">
                       <button onClick={() => { triggerHaptic(); setViewMode("grid"); }} className={`p-1 rounded-md transition-all cursor-pointer ${viewMode === "grid" ? `bg-white dark:bg-slate-800 shadow-sm ${currentTheme.text}` : "text-slate-400"}`}><LayoutGrid size={14} /></button>
@@ -578,7 +587,7 @@ export default function AssetsTab({
                 </div>
 
                 {activeWalletsToRender.length === 0 ? (
-                  <div className="p-12 text-center animate-in fade-in duration-300"><p className="text-slate-400 dark:text-slate-500 text-xs italic">{walletGroup === "pribadi" ? "Belum ada dompet pribadi." : "Belum ada dompet bisnis."}</p></div>
+                  <div className="p-12 text-center animate-in fade-in duration-300"><p className="text-slate-400 dark:text-slate-500 text-xs italic">{walletGroup === "pribadi" ? "Belum ada dompet pribadi." : walletGroup === "bisnis" ? "Belum ada dompet bisnis." : "Belum ada dompet yang disembunyikan."}</p></div>
                 ) : viewMode === "grid" ? (
                   <div className="p-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 animate-in fade-in duration-300">
                     {activeWalletsToRender.map((acc) => {
