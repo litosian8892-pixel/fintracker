@@ -1024,20 +1024,21 @@ export default function HomeTab({
             {currentStreak >= 7 ? '🚀' : currentStreak > 0 ? '🔥' : '🧊'}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-start">
-              <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 leading-none mb-1">Runtutan</p>
+            <div className="flex justify-between items-center gap-1">
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-none mb-1 truncate">Runtutan</p>
               {lastLogDate !== getTodayDateString() && (
                 <button 
                   type="button" 
                   onClick={(e) => { e.stopPropagation(); triggerHaptic(); if(handleDailyCheckIn) handleDailyCheckIn(); }}
-                  className="text-[8px] font-black bg-orange-500 text-white px-1.5 py-0.5 rounded animate-pulse shadow-sm active:scale-90 transition-transform cursor-pointer"
+                  className="text-[8px] md:text-[9px] font-black bg-orange-500 hover:bg-orange-600 text-white px-2 py-0.5 rounded shadow-sm active:scale-90 transition-all cursor-pointer flex-shrink-0"
                 >
-                  KLAIM STREAK
+                  <span className="md:hidden">KLAIM</span>
+                  <span className="hidden md:inline">KLAIM STREAK</span>
                 </button>
               )}
             </div>
-            <p className={`text-base font-black leading-none mt-0.5 ${currentStreak > 0 ? 'text-orange-600 dark:text-orange-500' : currentTheme.text}`}>
-              {currentStreak} <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Hari Terjaga</span>
+            <p className={`text-base font-black leading-none mt-0.5 truncate ${currentStreak > 0 ? 'text-orange-600 dark:text-orange-500' : currentTheme.text}`}>
+              {currentStreak} <span className="text-[9px] md:text-[10px] font-bold text-slate-400 dark:text-slate-500 ml-0.5">Hari</span>
             </p>
           </div>
         </div>
