@@ -92,6 +92,9 @@ interface HomeTabProps {
   setTReceiptUrl?: (url: string) => void;
   editTReceiptUrl?: string;
   setEditTReceiptUrl?: (url: string) => void;
+  
+  // SMART SPLITBILL DATABASE LINK
+  onProcessSmartSplit?: (walletId: string, category: string, myPortion: number, friendsDebts: {name: string, amount: number}[], totalAmount: number, receiptBase64: string | null) => void;
 
   // TRAVEL MODE PROPS
   isTravelMode?: boolean;
@@ -375,6 +378,7 @@ const AnimatedNumber = ({ value, isPrivacyMode, prefix = "Rp ", privacyText = "R
 };
 
 export default function HomeTab({
+  onProcessSmartSplit,
   healthScore = 800, currentStreak = 0, longestStreak = 0, lastLogDate = "", handleDailyCheckIn,
   reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory, isTravelMode, toggleTravelMode, activeTripName, updateTripName, isReportLoading,
   tReceiptUrl, setTReceiptUrl, editTReceiptUrl, setEditTReceiptUrl
@@ -2302,11 +2306,17 @@ export default function HomeTab({
     </div>
   )}
 
-  {/* 📸 MODAL KASIR TONGKRONGAN (OCR TAHAP 1) */}
+  {/* 📸 MODAL SMART SPLITBILL (OCR FINAL) */}
   <SmartSplitModal 
     isOpen={showScanner} 
     onClose={() => setShowScanner(false)} 
     currentTheme={currentTheme} 
+    accounts={accounts}
+    categories={categories}
+    onSave={(w, c, m, f, t, r) => {
+      if (onProcessSmartSplit) onProcessSmartSplit(w, c, m, f, t, r);
+      setShowScanner(false);
+    }}
   />
 
 </div>

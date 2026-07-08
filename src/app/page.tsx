@@ -1038,6 +1038,78 @@ export default function FintrackerApp() {
     }
   };
 
+  // 🧠 ENGINE UTAMA SMART SPLITBILL (ATOMIC BATCH WRITE)
+  const handleProcessSmartSplit = async (walletId: string, categoryName: string, myPortion: number, friendsDebts: {name: string, amount: number}[], totalAmount: number, receiptB64: string | null) => {
+    if (isSubmittingRef.current) return;
+    if (!user) return;
+    isSubmittingRef.current = true; setIsSubmitting(true);
+    
+    try {
+      const batch = writeBatch(db);
+      const sourceAcc = accounts.find(a => a.id === walletId);
+      if (!sourceAcc) throw new Error("Dompet sumber dana tidak ditemukan!");
+      
+      // Proteksi Anti-Minus
+      if (totalAmount > sourceAcc.balance) {
+         throw new Error(`Saldo dompet "${sourceAcc.name}" tidak mencukupi untuk menalangi tagihan sebesar Rp ${totalAmount.toLocaleString('id-ID')}!`);
+      }
+
+      const rateSource = exchangeRates[sourceAcc.currency || "IDR"] || sourceAcc.lastExchangeRate || 1;
+      const now = new Date();
+      const tDate = getLocalDateString(now);
+      const tTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const idrTotalAmount = totalAmount * rateSource;
+
+      // 1. POTONG SALDO DOMPET UTAMA (Nalangi seluruh tagihan struk)
+      batch.update(doc(db, `users/${user.uid}/accounts/${walletId}`), { balance: increment(-totalAmount) });
+      
+      // 2. CATAT PENGELUARAN PORSI PRIBADI (Jika Bos ikutan makan)
+      if (myPortion > 0) {
+         const idrMyPortion = myPortion * rateSource;
+         const myTxRef = doc(collection(db, `users/${user.uid}/transactions`));
+         batch.set(myTxRef, {
+           amount: idrMyPortion, type: "expense", accountId: walletId, accountName: sourceAcc.name,
+           category: categoryName, note: "Porsi Saya (Smart SplitBill)", tDate, tTime,
+           originalAmount: myPortion, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource,
+           receiptUrl: receiptB64, createdAt: serverTimestamp()
+         });
+      }
+      
+      // 3. CATAT PIUTANG TEMAN (Otomatis masuk Tab Utang & Riwayat Pengeluaran)
+      for (const f of friendsDebts) {
+         if (f.amount <= 0) continue;
+         const fIdr = f.amount * rateSource;
+         
+         // A. Riwayat Pengeluaran Piutang (Tab Beranda)
+         const fTxRef = doc(collection(db, `users/${user.uid}/transactions`));
+         batch.set(fTxRef, {
+           amount: fIdr, type: "expense", accountId: walletId, accountName: sourceAcc.name,
+           category: "Piutang", note: `Tagihan ${f.name} (Smart SplitBill)`, tDate, tTime,
+           originalAmount: f.amount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource,
+           receiptUrl: receiptB64, createdAt: serverTimestamp()
+         });
+         
+         // B. Tali Ghaib & Catatan Utang Asli (Tab Utang Piutang)
+         const debtRef = doc(collection(db, `users/${user.uid}/debts`));
+         const [yStr, mStr, dStr] = tDate.split('-');
+         const debtCreatedAt = new Date(parseInt(yStr), parseInt(mStr) - 1, parseInt(dStr), 12, 0, 0).toISOString();
+         
+         batch.set(debtRef, {
+           type: "receivable", personName: f.name, amount: f.amount, paidAmount: 0,
+           status: "active", note: "Tagihan Kasir Tongkrongan", dueDate: "", createdAt: debtCreatedAt
+         });
+      }
+      
+      await batch.commit();
+      alert("Smart SplitBill Berhasil! 🎉\n\nSaldo dompet otomatis terpotong dan piutang tongkrongan sudah tercatat di Tab Utang.");
+    } catch (e: any) {
+      alert(`Gagal memproses SplitBill:\n\n${e.message}`);
+    } finally {
+      isSubmittingRef.current = false; setIsSubmitting(false);
+    }
+  };
+
   const handleDeleteTransaction = async (t: TransactionData) => {
     if (isSubmittingRef.current) return; 
     if (!user) return;
@@ -1369,6 +1441,7 @@ export default function FintrackerApp() {
           <div className="space-y-6 w-full">
             {activeTab === "home" && (
               <HomeTab 
+                onProcessSmartSplit={handleProcessSmartSplit}
                 healthScore={healthScore} currentStreak={currentStreak} longestStreak={longestStreak} lastLogDate={lastLogDate} handleDailyCheckIn={handleDailyCheckIn} // GAMIFICATION PROPS 🔥
                 reportMonth={reportMonth} setReportMonth={setReportMonth}
                 tType={tType} setTType={setTType} tDate={tDate} setTDate={setTDate}
