@@ -20,12 +20,8 @@ import {
   Trash2, 
   Wallet,
   CalendarDays,
-  Copy,
-  ScanLine,
-  ArrowRight,
-  Sparkles
+  Copy
 } from "lucide-react";
-import SmartSplitModal from "../shared/SmartSplitModal";
 
 interface HomeTabProps {
   healthScore?: number;
@@ -1232,24 +1228,11 @@ export default function HomeTab({
             <div className="p-6 space-y-4 overflow-y-auto no-scrollbar bg-white dark:bg-slate-950 flex-1">
               
               {!editingTransaction && (
-                <>
-                  <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl mb-3">
-                    <button type="button" onClick={() => handleTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "expense" ? "bg-red-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
-                    <button type="button" onClick={() => handleTypeChange("income")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "income" ? "bg-emerald-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowUpRight size={12} /> Pemasukan</button>
-                    <button type="button" onClick={() => handleTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "transfer" ? currentTheme.activePill : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowRightLeft size={12} strokeWidth={2.5} /> Transfer</button>
-                  </div>
-                  
-                  {/* 📸 TOMBOL SMART SPLITBILL (PREMIUM) */}
-                  {tType === "expense" && (
-                    <button 
-                      type="button" 
-                      onClick={() => { triggerHaptic(); setShowScanner(true); }}
-                      className="w-full mb-4 py-3.5 rounded-2xl border border-indigo-200 dark:border-indigo-800/60 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40 flex items-center justify-center gap-2 text-xs font-black transition-all active:scale-95 cursor-pointer hover:shadow-md text-indigo-700 dark:text-indigo-400"
-                    >
-                      <Sparkles size={16} className="text-indigo-500 dark:text-indigo-400" /> Gunakan AI Smart SplitBill
-                    </button>
-                  )}
-                </>
+                <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl mb-2">
+                  <button type="button" onClick={() => handleTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "expense" ? "bg-red-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
+                  <button type="button" onClick={() => handleTypeChange("income")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "income" ? "bg-emerald-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowUpRight size={12} /> Pemasukan</button>
+                  <button type="button" onClick={() => handleTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "transfer" ? currentTheme.activePill : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowRightLeft size={12} strokeWidth={2.5} /> Transfer</button>
+                </div>
               )}
 
               {editingTransaction && (
@@ -2306,19 +2289,6 @@ export default function HomeTab({
     </div>
   )}
 
-  {/* 📸 MODAL SMART SPLITBILL (OCR FINAL) */}
-  <SmartSplitModal 
-    isOpen={showScanner} 
-    onClose={() => setShowScanner(false)} 
-    currentTheme={currentTheme} 
-    accounts={accounts}
-    categories={categories}
-    onSave={(w, c, m, f, t, r) => {
-      if (onProcessSmartSplit) onProcessSmartSplit(w, c, m, f, t, r);
-      setShowScanner(false);
-    }}
-  />
-
-</div>
+  </div>
 );
 }
