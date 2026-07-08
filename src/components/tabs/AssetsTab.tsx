@@ -211,6 +211,8 @@ export default function AssetsTab({
     if (detailAccId) return;
     
     startTouchPos.current = { x: e.clientX, y: e.clientY };
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    
     longPressTimer.current = setTimeout(() => {
       triggerHaptic();
       setDragState({
@@ -225,6 +227,7 @@ export default function AssetsTab({
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!dragState.isDragging && longPressTimer.current) {
+      // SENSOR JARI: Jika geser lebih dari 10px, batalkan niat klik/drag (Asumsi user sedang scroll)
       if (Math.abs(e.clientX - startTouchPos.current.x) > 10 || Math.abs(e.clientY - startTouchPos.current.y) > 10) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
@@ -236,11 +239,23 @@ export default function AssetsTab({
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
+      
       // Jika diangkat sebelum 400ms (hanya sebuah Tap/Klik biasa)
       if (!dragState.isDragging) {
-        triggerHaptic();
-        setDetailAccId(acc.id);
+        // Double check: Pastikan jari tidak tergeser jauh sebelum dilepas
+        if (Math.abs(e.clientX - startTouchPos.current.x) < 10 && Math.abs(e.clientY - startTouchPos.current.y) < 10) {
+          triggerHaptic();
+          setDetailAccId(acc.id);
+        }
       }
+    }
+  };
+
+  const handlePointerCancel = () => {
+    // Dipanggil oleh HP ketika OS mengambil alih sentuhan (misal: mulai scroll cepat)
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
     }
   };
 
@@ -581,8 +596,9 @@ export default function AssetsTab({
                           key={acc.id} 
                           data-acc-id={acc.id}
                           onPointerDown={(e) => handlePointerDown(e, acc)}
+                          onPointerMove={handlePointerMove}
                           onPointerUp={(e) => handlePointerUp(e, acc)}
-                          onPointerCancel={(e) => handlePointerUp(e, acc)}
+                          onPointerCancel={handlePointerCancel}
                           className={`bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition-all flex flex-col justify-between min-h-[140px] text-left border relative
                             ${isDragged ? 'opacity-40 scale-95 border-blue-500/30' : 'border-slate-100 dark:border-slate-800'}
                             ${isHovered ? 'ring-4 ring-blue-500 scale-105 shadow-blue-500/40 z-20 border-transparent bg-blue-50/50 dark:bg-blue-900/20' : ''}
@@ -618,8 +634,9 @@ export default function AssetsTab({
                           key={acc.id} 
                           data-acc-id={acc.id}
                           onPointerDown={(e) => handlePointerDown(e, acc)}
+                          onPointerMove={handlePointerMove}
                           onPointerUp={(e) => handlePointerUp(e, acc)}
-                          onPointerCancel={(e) => handlePointerUp(e, acc)}
+                          onPointerCancel={handlePointerCancel}
                           className={`p-4 flex justify-between items-center cursor-pointer transition-all relative
                             ${isDragged ? 'opacity-40 bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}
                             ${isHovered ? 'ring-2 ring-inset ring-blue-500 bg-blue-50 dark:bg-blue-900/20 z-20' : ''}
