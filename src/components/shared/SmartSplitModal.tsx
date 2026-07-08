@@ -67,38 +67,63 @@ export default function SmartSplitModal({ isOpen, onClose, currentTheme, account
     let extractedTax = 0;
     let extractedService = 0;
 
-    const priceRegex = /([\d]{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)\s*$/;
-
     lines.forEach((line) => {
-      let cleanLine = line.trim();
+      // 1. Bersihkan noise OCR umum (huruf O atau o dibaca sebagai angka 0)
+      let cleanLine = line.trim().replace(/[Oo]/g, '0');
       if (cleanLine.length < 5) return;
 
-      const match = cleanLine.match(priceRegex);
-      if (match) {
-        const priceStr = match[1].replace(/[^\d]/g, ''); 
+      // 2. HUNTER MODE: Cari SEMUA pola angka ribuan/jutaan (Cth: 22.000, 66,000, 1.500.000)
+      const priceMatches = cleanLine.match(/\b\d{1,3}(?:[.,]\d{3})+\b/g);
+      
+      // Fallback: Jika struk tidak pakai titik/koma (Cth: 66000)
+      const fallbackMatch = cleanLine.match(/\b\d{4,7}\b/g);
+      
+      const matches = priceMatches || fallbackMatch;
+
+      if (matches && matches.length > 0) {
+        // 3. Ambil angka TERAKHIR di baris tersebut (Biasanya total harga, bukan harga per porsi)
+        const lastMatch = matches[matches.length - 1];
+        const priceStr = lastMatch.replace(/[^\d]/g, ''); 
         const price = parseInt(priceStr, 10);
         
-        if (price > 1000) { 
-           let name = cleanLine.replace(match[0], '').trim();
+        if (price > 500) { 
+           // 4. Pisahkan nama makanan dari angkanya
+           const nameIndex = cleanLine.lastIndexOf(lastMatch);
+           let name = cleanLine.substring(0, nameIndex).trim();
+           
+           // 5. Bersihkan sisa-sisa qty (misal: "Dimsum Mix 3 x 22.000" jadi "Dimsum Mix")
+           name = name.replace(/[\d\s.,xX*]+$/, '').trim(); 
            name = name.replace(/^[^a-zA-Z]+/, ''); 
+           
            if (name.length < 2) return;
 
            const lower = name.toLowerCase();
+           
+           // Abaikan kata kunci ini agar tidak tercatat sebagai nama makanan
+           if (lower.includes('total') || lower.includes('subtotal') || lower.includes('tunai') || lower.includes('cash') || lower.includes('kembali') || lower.includes('change') || lower.includes('debit') || lower.includes('qris') || lower.includes('pay') || lower.includes('diskon') || lower.includes('discount')) {
+             return; 
+           }
+
+           // Tangkap Pajak & Service Charge otomatis
            if (lower.includes('tax') || lower.includes('pajak') || lower.includes('pb1') || lower.includes('ppn')) {
              extractedTax += price;
            } else if (lower.includes('service') || lower.includes('servis') || lower.includes('svc')) {
              extractedService += price;
-           } else if (lower.includes('total') || lower.includes('cash') || lower.includes('change') || lower.includes('kembali') || lower.includes('card') || lower.includes('debit') || lower.includes('qris') || lower.includes('pay') || lower.includes('subtotal') || lower.includes('amount')) {
-             // Abaikan
            } else {
-             extractedItems.push({ id: Math.random().toString(36).substr(2, 9), name: name.substring(0, 30), price, owner: 'Saya' });
+             // Berhasil mengekstrak nama menu & harganya!
+             extractedItems.push({ 
+               id: Math.random().toString(36).substr(2, 9), 
+               name: name.substring(0, 30), 
+               price, 
+               owner: 'Saya' 
+             });
            }
         }
       }
     });
+
     return { extractedItems, extractedTax, extractedService };
   };
-
   const handleScan = async () => {
     if (!imagePreview) return;
     triggerHaptic();
