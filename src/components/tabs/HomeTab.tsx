@@ -337,6 +337,7 @@ const AnimatedNumber = ({ value, isPrivacyMode, prefix = "Rp ", privacyText = "R
   
   useEffect(() => {
     let startTimestamp: number | null = null;
+    let animationFrameId: number;
     const duration = 1200; // Durasi muter 1.2 detik (Sangat premium)
     const startValue = displayValue;
     const endValue = value;
@@ -351,12 +352,17 @@ const AnimatedNumber = ({ value, isPrivacyMode, prefix = "Rp ", privacyText = "R
       setDisplayValue(Math.floor(startValue + (endValue - startValue) * easeOut));
       
       if (progress < 1) {
-        window.requestAnimationFrame(step);
+        animationFrameId = window.requestAnimationFrame(step);
       } else {
         setDisplayValue(endValue);
       }
     };
-    window.requestAnimationFrame(step);
+    animationFrameId = window.requestAnimationFrame(step);
+    
+    // 🧹 MEMORY LEAK FIX: Matikan background loop saat komponen di-unmount (pindah tab)
+    return () => {
+      if (animationFrameId) window.cancelAnimationFrame(animationFrameId);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
@@ -1299,7 +1305,21 @@ export default function HomeTab({
               {editingTransaction ? (
                 editTSplits.length === 0 && (
                   <div className="space-y-1 relative z-10">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
+                    <div className="flex justify-between items-end px-1 mb-1">
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
+                      {/* 💎 KURAS MAKSIMAL BUTTON (DENGAN ROLLBACK MATH UNTUK MODE EDIT) */}
+                      {(editTType === "expense" || editTType === "transfer") && selectedSourceAcc && (
+                        <button type="button" onClick={() => { 
+                          triggerHaptic(); 
+                          const oldRawAmount = editingTransaction.accountId === editTAccountId ? (editingTransaction.originalAmount !== undefined ? editingTransaction.originalAmount : editingTransaction.amount) : 0;
+                          const availableBalance = selectedSourceAcc.balance + oldRawAmount;
+                          if (availableBalance > 0) {
+                            setEditTAmount(availableBalance.toString()); 
+                            if(isMobile) setActiveKeypad(null); 
+                          }
+                        }} className="text-[9px] font-black text-blue-500 hover:text-blue-600 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800/50 px-2 py-0.5 rounded shadow-sm cursor-pointer active:scale-95 transition-all">Maks: {formatCurrencyTerbaca((selectedSourceAcc.balance + (editingTransaction.accountId === editTAccountId ? (editingTransaction.originalAmount !== undefined ? editingTransaction.originalAmount : editingTransaction.amount) : 0)).toString(), selectedSourceAcc.currency)}</button>
+                      )}
+                    </div>
                     <div className="relative">
                       <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("amount"); setActiveEditSplitKeypadIndex(null); } }} className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-white focus:border-blue-500" placeholder="0" value={editTAmount} onChange={(e) => setEditTAmount(e.target.value)} />
                     </div>
@@ -1314,7 +1334,17 @@ export default function HomeTab({
                 )
               ) : (
                 <div className="space-y-1 relative z-10">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
+                  <div className="flex justify-between items-end px-1 mb-1">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Nominal ({selectedSourceAcc?.currency || "IDR"})</label>
+                    {/* 💎 KURAS MAKSIMAL BUTTON */}
+                    {(tType === "expense" || tType === "transfer") && selectedSourceAcc && selectedSourceAcc.balance > 0 && (
+                      <button type="button" onClick={() => { 
+                        triggerHaptic(); 
+                        setTAmount(selectedSourceAcc.balance.toString()); 
+                        if(isMobile) setActiveKeypad(null); 
+                      }} className="text-[9px] font-black text-blue-500 hover:text-blue-600 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800/50 px-2 py-0.5 rounded shadow-sm cursor-pointer active:scale-95 transition-all">Maks: {formatCurrencyTerbaca(selectedSourceAcc.balance.toString(), selectedSourceAcc.currency)}</button>
+                    )}
+                  </div>
                   <div className="relative">
                     <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) { setActiveKeypad("amount"); setActiveSplitKeypadIndex(null); } }} className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-white focus:border-blue-500" placeholder="0" value={tAmount} onChange={(e) => setTAmount(e.target.value)} />
                   </div>
