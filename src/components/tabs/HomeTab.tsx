@@ -1080,27 +1080,6 @@ export default function HomeTab({
         </button>
       </div>
 
-      {/* 📸 BANNER KASIR TONGKRONGAN (OCR SPLIT BILL) */}
-      <div 
-        onClick={() => { triggerHaptic(); setShowScanner(true); }}
-        className="mt-4 p-4 rounded-[20px] border flex items-center justify-between cursor-pointer active:scale-95 transition-all shadow-sm bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-950 border-slate-700 animate-in fade-in slide-in-from-bottom-5 duration-700"
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center shrink-0 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-            <ScanLine size={20} />
-          </div>
-          <div className="text-left">
-            <p className="text-[13px] font-black text-white flex items-center gap-1.5">
-              Kasir Tongkrongan <span className="text-[8px] bg-blue-600 px-1.5 py-0.5 rounded text-white font-bold tracking-wider">BETA</span>
-            </p>
-            <p className="text-[10px] font-bold text-slate-400 mt-0.5 leading-tight">Makan bareng? Scan struknya,<br/>biar AI yang bagi utangnya.</p>
-          </div>
-        </div>
-        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0">
-          <ArrowRight size={16} />
-        </div>
-      </div>
-
       {/* DAILY GROUPED TRANSACTION HISTORY LIST */}
       <div className="space-y-4">
         {isReportLoading ? (
@@ -1248,11 +1227,24 @@ export default function HomeTab({
             <div className="p-6 space-y-4 overflow-y-auto no-scrollbar bg-white dark:bg-slate-950 flex-1">
               
               {!editingTransaction && (
-                <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl mb-2">
-                  <button type="button" onClick={() => handleTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "expense" ? "bg-red-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
-                  <button type="button" onClick={() => handleTypeChange("income")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "income" ? "bg-emerald-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowUpRight size={12} /> Pemasukan</button>
-                  <button type="button" onClick={() => handleTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "transfer" ? currentTheme.activePill : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowRightLeft size={12} strokeWidth={2.5} /> Transfer</button>
-                </div>
+                <>
+                  <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl mb-3">
+                    <button type="button" onClick={() => handleTypeChange("expense")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "expense" ? "bg-red-600 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowDownRight size={12} /> Pengeluaran</button>
+                    <button type="button" onClick={() => handleTypeChange("income")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "income" ? "bg-emerald-500 text-white shadow" : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowUpRight size={12} /> Pemasukan</button>
+                    <button type="button" onClick={() => handleTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "transfer" ? currentTheme.activePill : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowRightLeft size={12} strokeWidth={2.5} /> Transfer</button>
+                  </div>
+                  
+                  {/* 📸 TOMBOL KASIR TONGKRONGAN (PINDAHAN DARI BERANDA) */}
+                  {tType === "expense" && (
+                    <button 
+                      type="button" 
+                      onClick={() => { triggerHaptic(); setShowScanner(true); }}
+                      className={`w-full mb-4 py-3 rounded-2xl border-2 border-dashed flex items-center justify-center gap-2 text-xs font-black transition-all active:scale-95 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 ${currentTheme.bgLight} ${currentTheme.border} ${currentTheme.text}`}
+                    >
+                      <ScanLine size={16} /> Gunakan AI Kasir Tongkrongan
+                    </button>
+                  )}
+                </>
               )}
 
               {editingTransaction && (
