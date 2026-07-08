@@ -326,7 +326,23 @@ export default function DebtsTab({
   const filteredDebts = debts.filter(d => d.type === activeType);
   const totalActive = filteredDebts.filter(d => d.status === "active").reduce((a, b) => a + (b.amount - b.paidAmount), 0);
   const totalMonthlySubscriptions = subscriptions.reduce((acc, sub) => acc + (sub.cycle === 'monthly' ? sub.amount : sub.amount / 12), 0);
-  const currentDebtsList = filteredDebts.filter(d => statusFilter === "active" ? d.status === "active" : d.status === "paid");
+  
+  // 🧠 SMART SORTING: Urutkan berdasarkan Jatuh Tempo terdekat / Lewat Waktu (Overdue)
+  const currentDebtsList = filteredDebts
+    .filter(d => statusFilter === "active" ? d.status === "active" : d.status === "paid")
+    .sort((a, b) => {
+      // Jika mode 'Lunas', tidak perlu diurutkan ulang
+      if (statusFilter === "paid") return 0; 
+      
+      // Jika mode 'Belum Lunas', utamakan yang ada tanggal jatuh tempo!
+      if (a.dueDate && !b.dueDate) return -1;
+      if (!a.dueDate && b.dueDate) return 1;
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(); // Terdekat di atas
+      }
+      return 0; // Sama-sama tidak ada jatuh tempo
+    });
+    
   const selectedDebt = debts.find(d => d.id === selectedDebtId);
   const currentTheme = themeMap[accent];
 

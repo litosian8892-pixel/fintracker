@@ -911,7 +911,32 @@ export default function AssetsTab({
                   <div className={`space-y-1 p-3 rounded-xl border ${currentTheme.auditBox}`}>
                     <label className={`text-[9px] font-black uppercase tracking-widest ${currentTheme.text}`}>{ (editingAccId ? editIsInv : isInv) ? 'Jumlah Kepemilikan (Unit)' : 'Saldo Saat Ini' }</label>
                     <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("balance"); }} data-1p-ignore="true" data-lpignore="true" autoComplete="off" placeholder="0" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccBalance : accBalance} onChange={(e) => { editingAccId ? setEditAccBalance(e.target.value) : setAccBalance(e.target.value); }} />
-                    {(editingAccId ? editAccBalance : accBalance) && <p className="text-[10px] font-bold text-slate-400 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editingAccId ? editAccBalance : accBalance, editingAccId ? editCurrency : currency)}</span></p>}
+                    {(editingAccId ? editAccBalance : accBalance) && (
+                      <div className="flex flex-col gap-0.5 mt-1 pl-1">
+                        <p className="text-[10px] font-bold text-slate-400">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(editingAccId ? editAccBalance : accBalance, editingAccId ? editCurrency : currency)}</span></p>
+                        {/* 💱 LIVE IDR CONVERTER (OFFLINE AI) */}
+                        {(() => {
+                          const activeCur = editingAccId ? editCurrency : currency;
+                          const isInvestmentType = editingAccId ? editIsInv : isInv;
+                          const balanceVal = safeEvaluate(editingAccId ? editAccBalance : accBalance);
+                          
+                          let currentRate = 1;
+                          if (isInvestmentType) {
+                            const rateVal = safeEvaluate(editingAccId ? editLastRate : lastRate);
+                            currentRate = rateVal > 0 ? rateVal : 1;
+                          } else {
+                            if (activeCur && activeCur !== "IDR" && exchangeRates?.[activeCur]) {
+                              currentRate = exchangeRates[activeCur];
+                            }
+                          }
+                          
+                          if (currentRate !== 1 && balanceVal > 0) {
+                            return <p className="text-[9px] font-black text-emerald-500 dark:text-emerald-400">~ Setara: Rp {(balanceVal * currentRate).toLocaleString('id-ID')}</p>;
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    )}
                   </div>
 
                   {(editingAccId ? editIsInv : isInv) ? (
