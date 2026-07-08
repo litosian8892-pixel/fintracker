@@ -192,10 +192,10 @@ export default function SmartSplitModal({ isOpen, onClose, currentTheme }: Smart
   };
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-slate-900/90 backdrop-blur-md animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md animate-in fade-in duration-300">
       <div className="absolute inset-0 z-0" onClick={() => step !== "scanning" && onClose()}></div>
       
-      <div className="bg-white dark:bg-slate-950 w-full md:max-w-md rounded-t-[32px] md:rounded-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom md:zoom-in-95 duration-400 z-10 flex flex-col h-[90vh] md:h-[85vh] border border-slate-200 dark:border-slate-800">
+      <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-400 z-10 flex flex-col max-h-[85vh] border border-slate-200 dark:border-slate-800 relative">
         
         {/* HEADER PREMIUM (MIDNIGHT SLATE GRADIENT) */}
         <div className="p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white shrink-0 relative overflow-hidden border-b border-slate-700/50">
