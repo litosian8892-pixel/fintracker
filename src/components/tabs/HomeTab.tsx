@@ -22,7 +22,8 @@ import {
   CalendarDays,
   Copy,
   ScanLine,
-  ArrowRight
+  ArrowRight,
+  Sparkles
 } from "lucide-react";
 import SmartSplitModal from "../shared/SmartSplitModal";
 
@@ -1234,14 +1235,14 @@ export default function HomeTab({
                     <button type="button" onClick={() => handleTypeChange("transfer")} className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${tType === "transfer" ? currentTheme.activePill : "text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"}`}><ArrowRightLeft size={12} strokeWidth={2.5} /> Transfer</button>
                   </div>
                   
-                  {/* 📸 TOMBOL KASIR TONGKRONGAN (PINDAHAN DARI BERANDA) */}
+                  {/* 📸 TOMBOL SMART SPLITBILL (PREMIUM) */}
                   {tType === "expense" && (
                     <button 
                       type="button" 
                       onClick={() => { triggerHaptic(); setShowScanner(true); }}
-                      className={`w-full mb-4 py-3 rounded-2xl border-2 border-dashed flex items-center justify-center gap-2 text-xs font-black transition-all active:scale-95 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 ${currentTheme.bgLight} ${currentTheme.border} ${currentTheme.text}`}
+                      className="w-full mb-4 py-3.5 rounded-2xl border border-indigo-200 dark:border-indigo-800/60 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40 flex items-center justify-center gap-2 text-xs font-black transition-all active:scale-95 cursor-pointer hover:shadow-md text-indigo-700 dark:text-indigo-400"
                     >
-                      <ScanLine size={16} /> Gunakan AI Kasir Tongkrongan
+                      <Sparkles size={16} className="text-indigo-500 dark:text-indigo-400" /> Gunakan AI Smart SplitBill
                     </button>
                   )}
                 </>
