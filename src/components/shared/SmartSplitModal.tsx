@@ -35,6 +35,7 @@ export default function SmartSplitModal({ isOpen, onClose, currentTheme, account
   const [items, setItems] = useState<ParsedItem[]>([]);
   const [tax, setTax] = useState(0);
   const [service, setService] = useState(0);
+  const [rawOcrText, setRawOcrText] = useState(""); // DIAGNOSTIC STATE
   
   // Database Selectors
   const [selectedWallet, setSelectedWallet] = useState("");
@@ -61,69 +62,69 @@ export default function SmartSplitModal({ isOpen, onClose, currentTheme, account
     }
   };
 
-  const parseReceiptText = (text: string) => {
+  const parseReceiptText = (rawText: string) => {
+    // 🧠 1. NORMALISASI ANGKA: Lem kembali spasi halusinasi (cth: "66 . 000" atau "66 000" jadi "66000")
+    let text = rawText.replace(/(\d)\s*[.,]?\s*(\d{3})\b/g, '$1$2');
+    // Jalankan 2x untuk menyapu bersih jutaan (cth: 1 500 000)
+    text = text.replace(/(\d)\s*[.,]?\s*(\d{3})\b/g, '$1$2');
+
     const lines = text.split('\n');
     const extractedItems: ParsedItem[] = [];
     let extractedTax = 0;
     let extractedService = 0;
+    let pendingName = ""; // Simpan teks gantung jika Tesseract memutus baris
 
     lines.forEach((line) => {
-      // 1. Bersihkan noise OCR umum (huruf O atau o dibaca sebagai angka 0)
       let cleanLine = line.trim().replace(/[Oo]/g, '0');
-      if (cleanLine.length < 5) return;
+      if (cleanLine.length < 2) return;
 
-      // 2. HUNTER MODE: Cari SEMUA pola angka ribuan/jutaan (Cth: 22.000, 66,000, 1.500.000)
-      const priceMatches = cleanLine.match(/\b\d{1,3}(?:[.,]\d{3})+\b/g);
-      
-      // Fallback: Jika struk tidak pakai titik/koma (Cth: 66000)
-      const fallbackMatch = cleanLine.match(/\b\d{4,7}\b/g);
-      
-      const matches = priceMatches || fallbackMatch;
+      // 🎯 2. HUNTER MODE: Cari pola angka 4-8 digit murni (Ribuan - Jutaan)
+      const matches = cleanLine.match(/\b\d{4,8}\b/g);
 
       if (matches && matches.length > 0) {
-        // 3. Ambil angka TERAKHIR di baris tersebut (Biasanya total harga, bukan harga per porsi)
-        const lastMatch = matches[matches.length - 1];
-        const priceStr = lastMatch.replace(/[^\d]/g, ''); 
-        const price = parseInt(priceStr, 10);
+        const lastMatch = matches[matches.length - 1]; // Ambil angka paling kanan (Harga)
+        const price = parseInt(lastMatch, 10);
         
         if (price > 500) { 
-           // 4. Pisahkan nama makanan dari angkanya
-           const nameIndex = cleanLine.lastIndexOf(lastMatch);
-           let name = cleanLine.substring(0, nameIndex).trim();
-           
-           // 5. Bersihkan sisa-sisa qty (misal: "Dimsum Mix 3 x 22.000" jadi "Dimsum Mix")
+           // Potong string untuk memisahkan nama menu dari angka harga
+           let name = cleanLine.substring(0, cleanLine.lastIndexOf(lastMatch)).trim();
+           // Buang sisa-sisa qty (contoh: "3 x 22000" ➔ sisa "3 x" dibuang)
            name = name.replace(/[\d\s.,xX*]+$/, '').trim(); 
-           name = name.replace(/^[^a-zA-Z]+/, ''); 
+           name = name.replace(/^[^a-zA-Z]+/, '').trim(); 
            
-           if (name.length < 2) return;
-
-           const lower = name.toLowerCase();
-           
-           // Abaikan kata kunci ini agar tidak tercatat sebagai nama makanan
-           if (lower.includes('total') || lower.includes('subtotal') || lower.includes('tunai') || lower.includes('cash') || lower.includes('kembali') || lower.includes('change') || lower.includes('debit') || lower.includes('qris') || lower.includes('pay') || lower.includes('diskon') || lower.includes('discount')) {
-             return; 
+           // Sambung teks dari baris sebelumnya kalau AI mutusin kertasnya
+           if (name.length < 2 && pendingName.length >= 2) {
+             name = pendingName;
            }
 
-           // Tangkap Pajak & Service Charge otomatis
-           if (lower.includes('tax') || lower.includes('pajak') || lower.includes('pb1') || lower.includes('ppn')) {
-             extractedTax += price;
-           } else if (lower.includes('service') || lower.includes('servis') || lower.includes('svc')) {
-             extractedService += price;
-           } else {
-             // Berhasil mengekstrak nama menu & harganya!
-             extractedItems.push({ 
-               id: Math.random().toString(36).substr(2, 9), 
-               name: name.substring(0, 30), 
-               price, 
-               owner: 'Saya' 
-             });
+           if (name.length >= 2) {
+             const lower = name.toLowerCase();
+             // Deteksi Baris Total (Abaikan)
+             if (lower.includes('total') || lower.includes('tunai') || lower.includes('cash') || lower.includes('kembali') || lower.includes('change') || lower.includes('debit') || lower.includes('qris') || lower.includes('pay') || lower.includes('diskon') || lower.includes('discount')) {
+               pendingName = ""; return; 
+             }
+
+             // Tangkap Pajak & Service
+             if (lower.includes('tax') || lower.includes('pajak') || lower.includes('pb1') || lower.includes('ppn') || lower.includes('rest')) {
+               extractedTax += price;
+             } else if (lower.includes('service') || lower.includes('servis') || lower.includes('svc') || lower.includes('charge')) {
+               extractedService += price;
+             } else {
+               extractedItems.push({ id: Math.random().toString(36).substr(2, 9), name: name.substring(0, 30), price, owner: 'Saya' });
+             }
            }
+           pendingName = ""; 
         }
+      } else {
+        // Jika tidak ada harga di baris ini, simpan teksnya sebagai kandidat "Nama Makanan" untuk baris bawah
+        const lettersOnly = cleanLine.replace(/[^a-zA-Z]/g, '');
+        if (lettersOnly.length > 3) pendingName = cleanLine;
       }
     });
 
-    return { extractedItems, extractedTax, extractedService };
+    return { extractedItems, extractedTax, extractedService, rawText };
   };
+
   const handleScan = async () => {
     if (!imagePreview) return;
     triggerHaptic();
@@ -132,13 +133,13 @@ export default function SmartSplitModal({ isOpen, onClose, currentTheme, account
     try {
       const result = await Tesseract.recognize(imagePreview, 'ind+eng', { 
         logger: m => {
-          if (m.status === "recognizing text") { setScanStatus("Mengekstrak teks struk..."); setScanProgress(m.progress); } 
+          if (m.status === "recognizing text") { setScanStatus("Mengekstrak teks..."); setScanProgress(m.progress); } 
           else { setScanStatus("Memuat mesin AI..."); }
         } 
       });
 
-      const { extractedItems, extractedTax, extractedService } = parseReceiptText(result.data.text);
-      setItems(extractedItems); setTax(extractedTax); setService(extractedService);
+      const { extractedItems, extractedTax, extractedService, rawText } = parseReceiptText(result.data.text);
+      setItems(extractedItems); setTax(extractedTax); setService(extractedService); setRawOcrText(rawText);
       triggerHaptic(); setStep("review");
     } catch (error) {
       console.error(error); alert("Gagal membaca struk. Pastikan foto terang dan teks terbaca jelas."); setStep("upload");
@@ -196,7 +197,7 @@ export default function SmartSplitModal({ isOpen, onClose, currentTheme, account
   };
 
   const handleReset = () => {
-    triggerHaptic(); setStep("upload"); setImagePreview(null); setItems([]); setTax(0); setService(0); setFriends(["Saya"]); setSelectedWallet(""); setSelectedCategory("");
+    triggerHaptic(); setStep("upload"); setImagePreview(null); setItems([]); setTax(0); setService(0); setFriends(["Saya"]); setSelectedWallet(""); setSelectedCategory(""); setRawOcrText("");
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (cameraInputRef.current) cameraInputRef.current.value = "";
   };
@@ -277,7 +278,15 @@ export default function SmartSplitModal({ isOpen, onClose, currentTheme, account
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-1.5"><Receipt size={12}/> Hasil Ekstrak Cerdas</p>
                 <div className="space-y-3">
-                  {items.length === 0 ? ( <p className="text-xs font-bold text-rose-500 italic text-center py-4 bg-rose-50 dark:bg-rose-900/20 rounded-xl">Data tidak terbaca dengan baik. Silakan masukkan secara manual.</p> ) : items.map((item, index) => (
+                  {items.length === 0 ? ( 
+                    <div className="bg-rose-50 dark:bg-rose-900/20 p-4 rounded-xl space-y-3">
+                      <p className="text-xs font-bold text-rose-500 italic text-center">Data tidak terbaca dengan baik. AI buta warna!</p>
+                      <div className="p-3 bg-white dark:bg-slate-950 rounded-lg border border-rose-200 dark:border-rose-800/50">
+                        <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Teks Mentah Tesseract:</p>
+                        <textarea readOnly className="w-full h-24 text-[10px] bg-transparent outline-none text-slate-600 dark:text-slate-400 font-mono resize-none" value={rawOcrText || "Kosong"}></textarea>
+                      </div>
+                    </div>
+                  ) : items.map((item, index) => (
                     <div key={item.id} className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl relative">
                       <button onClick={() => handleDeleteItem(item.id)} className="absolute -top-2 -right-2 bg-rose-500 text-white p-1 rounded-full shadow-sm hover:scale-110 transition-transform cursor-pointer"><X size={10} strokeWidth={3}/></button>
                       <div className="flex gap-2 mb-2">
