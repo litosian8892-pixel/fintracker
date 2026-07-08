@@ -20,8 +20,11 @@ import {
   Trash2, 
   Wallet,
   CalendarDays,
-  Copy
+  Copy,
+  ScanLine,
+  ArrowRight
 } from "lucide-react";
+import SmartSplitModal from "../shared/SmartSplitModal";
 
 interface HomeTabProps {
   healthScore?: number;
@@ -403,6 +406,7 @@ export default function HomeTab({
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showCatModal, setShowCatModal] = useState(false);
+  const [showScanner, setShowScanner] = useState(false); // 📸 STATE OCR KASIR TONGKRONGAN
   const [searchQuery, setSearchQuery] = useState("");
   const [activeKeypad, setActiveKeypad] = useState<"amount" | "adminFee" | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -1074,6 +1078,27 @@ export default function HomeTab({
         >
           {assistantMode === "galak" ? "🌶️" : "👼"}
         </button>
+      </div>
+
+      {/* 📸 BANNER KASIR TONGKRONGAN (OCR SPLIT BILL) */}
+      <div 
+        onClick={() => { triggerHaptic(); setShowScanner(true); }}
+        className="mt-4 p-4 rounded-[20px] border flex items-center justify-between cursor-pointer active:scale-95 transition-all shadow-sm bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-950 border-slate-700 animate-in fade-in slide-in-from-bottom-5 duration-700"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center shrink-0 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+            <ScanLine size={20} />
+          </div>
+          <div className="text-left">
+            <p className="text-[13px] font-black text-white flex items-center gap-1.5">
+              Kasir Tongkrongan <span className="text-[8px] bg-blue-600 px-1.5 py-0.5 rounded text-white font-bold tracking-wider">BETA</span>
+            </p>
+            <p className="text-[10px] font-bold text-slate-400 mt-0.5 leading-tight">Makan bareng? Scan struknya,<br/>biar AI yang bagi utangnya.</p>
+          </div>
+        </div>
+        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0">
+          <ArrowRight size={16} />
+        </div>
       </div>
 
       {/* DAILY GROUPED TRANSACTION HISTORY LIST */}
@@ -2283,6 +2308,13 @@ export default function HomeTab({
       </div>
     </div>
   )}
+
+  {/* 📸 MODAL KASIR TONGKRONGAN (OCR TAHAP 1) */}
+  <SmartSplitModal 
+    isOpen={showScanner} 
+    onClose={() => setShowScanner(false)} 
+    currentTheme={currentTheme} 
+  />
 
 </div>
 );
