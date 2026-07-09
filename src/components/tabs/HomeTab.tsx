@@ -867,7 +867,7 @@ export default function HomeTab({
 
   // === SELESAI PART 1 - HARAP BALAS UNTUK MENERIMA PART 2 ===
   return (
-    <div className="space-y-6 text-left relative min-h-[calc(100vh-120px)] transition-colors duration-200">
+    <div className="space-y-6 text-left relative min-h-[calc(100vh-120px)] pb-[100px] transition-colors duration-200">
       {/* SUNTIKAN ATURAN CSS UNTUK MENYEMBUNYIKAN SCROLLBAR & MESIN NEUMORPHISM 3D */}
       <style dangerouslySetInnerHTML={{__html: `
         .no-scrollbar::-webkit-scrollbar {
@@ -1056,9 +1056,10 @@ export default function HomeTab({
       </div>
 
       {/* WIDGET SMART FINANCIAL INSIGHTS & SAKLAR MODE GALAK 🌶️ */}
-      <div className={`p-4 rounded-[20px] border ${smartInsight.bg} ${smartInsight.border} flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700 relative`}>
-        <div className="text-xl shrink-0 leading-none pt-0.5">{smartInsight.icon}</div>
-        <div className="min-w-0 pr-6">
+      <div className={`p-4 rounded-[20px] border ${smartInsight.bg} ${smartInsight.border} flex items-start gap-3 shadow-lg backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-700 relative overflow-hidden`}>
+        <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 blur-2xl rounded-full pointer-events-none"></div>
+        <div className="text-xl shrink-0 leading-none pt-0.5 relative z-10">{smartInsight.icon}</div>
+        <div className="min-w-0 pr-6 relative z-10">
           <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${smartInsight.color}`}>
             {assistantMode === "galak" ? "Fintracker Roaster 🔥" : "Fintracker Assistant"}
           </p>
@@ -1115,7 +1116,7 @@ export default function HomeTab({
                   <span className={`text-xs font-black ${dailyNet > 0 ? "text-emerald-500" : dailyNet < 0 ? "text-rose-500" : "text-slate-400"}`}>{isPrivacyMode ? "Rp ••" : `${dailyNet > 0 ? "+" : ""}${dailyNet.toLocaleString("id-ID")}`}</span>
                 </div>
 
-                <div className="space-y-2 overflow-x-hidden p-1 -mx-1">
+                <div className="space-y-2.5 overflow-x-hidden p-1 -mx-1">
                   {list.map((t) => (
                     <SwipeableHomeCard 
                       key={t.id}
@@ -1149,7 +1150,7 @@ export default function HomeTab({
             if (noteInputRef.current) {
               noteInputRef.current.focus();
             }
-          }} className={`fixed bottom-28 md:bottom-10 right-6 md:right-8 z-40 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-lg transition-all cursor-pointer active:scale-95 border ${currentTheme.fab} animate-in zoom-in-90`}>
+          }} className={`fixed bottom-[95px] md:bottom-10 right-6 md:right-8 z-40 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-[0_10px_25px_rgba(0,0,0,0.3)] transition-all cursor-pointer hover:scale-105 active:scale-95 border ${currentTheme.fab} animate-in zoom-in-90`}>
             <Plus size={28} strokeWidth={2.5} />
           </button>
 
