@@ -1150,7 +1150,7 @@ export default function HomeTab({
             if (noteInputRef.current) {
               noteInputRef.current.focus();
             }
-          }} className={`fixed bottom-[95px] md:bottom-10 right-6 md:right-8 z-40 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-[0_10px_25px_rgba(0,0,0,0.3)] transition-all cursor-pointer hover:scale-105 active:scale-95 border ${currentTheme.fab} animate-in zoom-in-90`}>
+          }} className={`fixed bottom-28 md:bottom-10 right-6 md:right-8 z-40 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-lg transition-all cursor-pointer active:scale-95 border ${currentTheme.fab} animate-in zoom-in-90`}>
             <Plus size={28} strokeWidth={2.5} />
           </button>
 
