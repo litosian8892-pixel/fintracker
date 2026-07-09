@@ -1846,7 +1846,7 @@ export default function ReportsTab({
           </div>
         )}
 
-        {/* 3. BOTTOM SHEET RINCIAN TRANSAKSI PER KATEGORI */}
+        {/* 3. FLOATING MODAL RINCIAN TRANSAKSI PER KATEGORI */}
         {selectedCategoryDetail && (() => {
           const catTxs = (selectedCategoryDetail.type === 'expense' ? expenseTxs : incomeTxs)
             .filter(t => t.category === selectedCategoryDetail.name)
@@ -1855,11 +1855,10 @@ export default function ReportsTab({
           const totalAmount = catTxs.reduce((sum, t) => sum + t.amount, 0);
 
           return (
-            <div className="fixed inset-0 z-[150] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedCategoryDetail(null)}>
-              <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
-                <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
+            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedCategoryDetail(null)}>
+              <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[30px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[80vh] border border-slate-200 dark:border-slate-800" onClick={e => e.stopPropagation()}>
                 
-                <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start shrink-0">
+                <div className="px-6 pb-5 pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start shrink-0">
                   <div className="pr-4">
                     <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg leading-tight mb-1">{selectedCategoryDetail.name?.trim() ? selectedCategoryDetail.name : "Sistem / Lainnya"}</h3>
                     <div className="flex items-center gap-2">
