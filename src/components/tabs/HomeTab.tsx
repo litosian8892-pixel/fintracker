@@ -1505,16 +1505,29 @@ export default function HomeTab({
                         <button type="button" onClick={() => setEditTSplits([])} className="text-[10px] font-black underline hover:opacity-80 cursor-pointer">Batalkan Pecahan</button>
                       </div>
                     ) : (
-                      <div onClick={() => { triggerHaptic(); setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="w-full p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between truncate hover:bg-slate-100 dark:hover:bg-slate-800">
-                        <span className={`truncate ${!editTCategory ? "text-slate-400 font-medium" : ""}`}>
-                          {editTCategory ? (
-                            <>
-                              <span className="mr-2">{activeCategoryObject?.icon || getCategoryIcon(editTCategory)}</span>
-                              {editTCategory}
-                            </>
-                          ) : "Pilih Kategori..."}
-                        </span>
-                        <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                      <div className="flex gap-2 items-center">
+                        <div onClick={() => { triggerHaptic(); setShowCatModal(true); setSearchQuery(""); setActiveKeypad(null); }} className="flex-1 p-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center justify-between truncate hover:bg-slate-100 dark:hover:bg-slate-800">
+                          <span className={`truncate ${!editTCategory || editTCategory === "Split Transaksi" ? "text-slate-400 font-medium" : ""}`}>
+                            {editTCategory && editTCategory !== "Split Transaksi" ? (
+                              <>
+                                <span className="mr-2">{activeCategoryObject?.icon || getCategoryIcon(editTCategory)}</span>
+                                {editTCategory}
+                              </>
+                            ) : "Pilih Kategori..."}
+                          </span>
+                          <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                        </div>
+                        {safeEvaluate(editTAmount) > 0 && (
+                          <button type="button" onClick={() => {
+                            triggerHaptic();
+                            const initAmt = safeEvaluate(editTAmount);
+                            setEditTSplits([{ category: (editTCategory && editTCategory !== "Split Transaksi") ? editTCategory : "", amount: initAmt, note: "" }]);
+                            setEditTCategory("Split Transaksi");
+                            if(isMobile) setActiveKeypad(null);
+                          }} className={`px-3.5 py-3.5 rounded-2xl text-xs font-black border shrink-0 flex items-center gap-1 cursor-pointer transition-colors ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>
+                            ✂️ Pecah
+                          </button>
+                        )}
                       </div>
                     )
                   ) : (
