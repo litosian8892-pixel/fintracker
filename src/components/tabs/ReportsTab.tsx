@@ -909,9 +909,9 @@ export default function ReportsTab({
             <h2 className={`font-black text-2xl tracking-tight ${currentTheme.text}`}>Ringkasan</h2>
             
             <div className="flex gap-2">
-              {/* FILTER TRIP (Custom Premium Button) */}
+              {/* FILTER MOMEN / EVENT (Custom Premium Button) */}
               <button onClick={() => { triggerHaptic(); setShowTripFilter(true); }} className="px-3 py-2 border border-indigo-200 dark:border-indigo-500/30 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 font-bold text-xs flex items-center gap-2 shadow-sm cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/40 active:scale-95 transition-all">
-                <span>✈️</span> 
+                <span>{selectedTripFilter !== "Non-Travel" && selectedTripFilter !== "All" && selectedTripFilter.match(/^[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/) ? "" : "✨"}</span> 
                 <span className="max-w-[80px] truncate block text-left">
                   {selectedTripFilter === "Non-Travel" ? "Rutin" : selectedTripFilter === "All" ? "Gabungan" : selectedTripFilter}
                 </span> 
@@ -1800,8 +1800,8 @@ export default function ReportsTab({
               <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div></div>
               <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0 bg-indigo-50/50 dark:bg-indigo-900/10">
                 <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                  <span className="text-xl">✈️</span>
-                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Filter Data Laporan</h3>
+                  <span className="text-xl">✨</span>
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">Mode Momen Spesial</h3>
                 </div>
                 <button onClick={() => setShowTripFilter(false)} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors"><X size={16}/></button>
               </div>
@@ -1812,7 +1812,7 @@ export default function ReportsTab({
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === "Non-Travel" ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>📊</div>
                     <div>
                       <span className="font-black text-sm text-slate-800 dark:text-slate-200 block">Rutin Bulanan</span>
-                      <span className="text-[10px] font-bold text-slate-400">Sembunyikan semua pengeluaran liburan</span>
+                      <span className="text-[10px] font-bold text-slate-400">Sembunyikan pengeluaran event & liburan</span>
                     </div>
                   </div>
                   {selectedTripFilter === "Non-Travel" && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
@@ -1823,23 +1823,29 @@ export default function ReportsTab({
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === "All" ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>🔄</div>
                     <div>
                       <span className="font-black text-sm text-slate-800 dark:text-slate-200 block">Gabung Semua Data</span>
-                      <span className="text-[10px] font-bold text-slate-400">Tampilkan rutin & liburan (Total Keseluruhan)</span>
+                      <span className="text-[10px] font-bold text-slate-400">Tampilkan rutin & momen (Total Keseluruhan)</span>
                     </div>
                   </div>
                   {selectedTripFilter === "All" && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
                 </div>
 
-                {uniqueTrips.length > 0 && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2 pt-2 pb-1">Daftar Trip Anda</p>}
+                {uniqueTrips.length > 0 && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2 pt-2 pb-1">Daftar Momen Anda</p>}
 
-                {uniqueTrips.map(trip => (
-                  <div key={trip} onClick={() => { triggerHaptic(); setSelectedTripFilter(trip); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === trip ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === trip ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>🏖️</div>
-                      <span className="font-black text-sm text-slate-800 dark:text-slate-200">{trip}</span>
+                {uniqueTrips.map(trip => {
+                  const hasEmoji = /^[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/.test(trip);
+                  const displayIcon = hasEmoji ? trip.charAt(0) : "✨";
+                  const displayName = hasEmoji ? trip.substring(1).trim() : trip;
+
+                  return (
+                    <div key={trip} onClick={() => { triggerHaptic(); setSelectedTripFilter(trip); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === trip ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTripFilter === trip ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>{displayIcon}</div>
+                        <span className="font-black text-sm text-slate-800 dark:text-slate-200 truncate">{displayName}</span>
+                      </div>
+                      {selectedTripFilter === trip && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
                     </div>
-                    {selectedTripFilter === trip && <Check size={20} className="text-indigo-600 dark:text-indigo-400" />}
-                  </div>
-                ))}
+                  );
+                })}
 
               </div>
             </div>

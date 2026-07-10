@@ -909,11 +909,11 @@ export default function HomeTab({
           {!isSearchExpanded ? ( 
             <div className="flex items-center gap-3 w-full">
               <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight shrink-0">Transaksi</h2>
-              {/* BADGE TRAVEL MODE SILUMAN */}
+              {/* BADGE EVENT MODE SILUMAN */}
               {isTravelMode && (
                 <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-500/30 rounded-full shrink-0 min-w-0 animate-in zoom-in-95 duration-300">
-                  <span className="text-xs">✈️</span>
-                  <span className="text-[9px] font-black text-indigo-700 dark:text-indigo-400 truncate max-w-[100px]">{activeTripName || "Travel Mode"}</span>
+                  <span className="text-xs">{activeTripName?.match(/^[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/) ? "" : "✨"}</span>
+                  <span className="text-[9px] font-black text-indigo-700 dark:text-indigo-400 truncate max-w-[100px]">{activeTripName || "Momen Spesial"}</span>
                 </div>
               )}
             </div>
@@ -1495,7 +1495,7 @@ export default function HomeTab({
                       onClick={() => { triggerHaptic(); toggleTravelMode && toggleTravelMode(!isTravelMode); }} 
                       className={`text-[9px] font-black px-2 py-0.5 rounded border transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${isTravelMode ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700/50 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                     >
-                      ✈️ Travel: {isTravelMode ? 'ON' : 'OFF'}
+                      ✨ Momen: {isTravelMode ? 'ON' : 'OFF'}
                     </button>
                   </div>
                   {editingTransaction ? (
@@ -1563,17 +1563,40 @@ export default function HomeTab({
                     )
                   )}
                   
-                  {/* INLINE TRIP NAME INPUT (TRAVEL MODE) */}
+                  {/* INLINE EVENT NAME INPUT (MOMEN SPESIAL) */}
                   {isTravelMode && (
-                    <div className="pt-1 animate-in slide-in-from-top-1 duration-200">
+                    <div className="pt-1 animate-in slide-in-from-top-1 duration-200 space-y-2">
                       <input 
                         type="text" 
                         value={activeTripName || ""} 
                         onChange={(e) => updateTripName && updateTripName(e.target.value)} 
-                        placeholder="Nama Trip (misal: Trip Bali 2026)"
+                        placeholder="Nama Momen (misal: 🎉 Ultah, ✈️ Bali)"
                         autoComplete="off"
                         className="w-full bg-indigo-50/70 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-500/30 rounded-xl px-3.5 py-3 text-xs font-bold text-indigo-800 dark:text-indigo-200 focus:outline-none focus:border-indigo-500 transition-all placeholder:text-indigo-400/70 dark:placeholder:text-indigo-500/50 shadow-sm"
                       />
+                      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                        {[
+                          { icon: "✈️", label: "Liburan" },
+                          { icon: "🎉", label: "Perayaan" },
+                          { icon: "🏥", label: "Darurat" },
+                          { icon: "💍", label: "Sosial" }
+                        ].map((chip) => (
+                          <button
+                            key={chip.label}
+                            type="button"
+                            onClick={() => {
+                              triggerHaptic();
+                              if (updateTripName) {
+                                const currentBase = activeTripName ? activeTripName.replace(/^([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])\s*/, '') : "";
+                                updateTripName(`${chip.icon} ${currentBase || chip.label}`);
+                              }
+                            }}
+                            className="shrink-0 px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-800/50 rounded-lg text-[9px] font-bold text-indigo-600 dark:text-indigo-400 shadow-sm transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-900/30 cursor-pointer active:scale-95"
+                          >
+                            {chip.icon} {chip.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
