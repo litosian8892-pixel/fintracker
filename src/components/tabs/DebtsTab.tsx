@@ -945,24 +945,24 @@ export default function DebtsTab({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1 min-w-0">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1 px-1 truncate">📅 Tgl Pinjam</label>
                       <input 
                         type="date" 
                         disabled={editingDebtId !== null} // Tgl pinjam tidak bisa diubah di mode edit (sesuai arsitektur lama)
                         onClick={(e) => !editingDebtId && e.currentTarget.showPicker && e.currentTarget.showPicker()}
-                        className={`w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-white ${editingDebtId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer focus:border-blue-500'}`} 
+                        className={`w-full px-2.5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none text-slate-800 dark:text-white min-w-0 appearance-none ${editingDebtId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer focus:border-blue-500'}`} 
                         value={startDate} 
                         onChange={e => setStartDate(e.target.value)} 
                       />
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 min-w-0">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1 px-1 truncate">📅 Jatuh Tempo</label>
                       <input 
                         type="date" 
                         onClick={(e) => e.currentTarget.showPicker && e.currentTarget.showPicker()}
-                        className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white focus:border-blue-500" 
+                        className="w-full px-2.5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white min-w-0 appearance-none focus:border-blue-500" 
                         value={editingDebtId ? editDueDate : dueDate} 
                         onChange={e => editingDebtId ? setEditDueDate(e.target.value) : setDueDate(e.target.value)} 
                       />
@@ -1030,25 +1030,25 @@ export default function DebtsTab({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1 relative">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1 min-w-0 relative">
                       <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1 truncate">Siklus</label>
                       <select 
-                        className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer focus:border-blue-500 appearance-none" 
+                        className="w-full px-2.5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs outline-none font-bold text-slate-800 dark:text-white cursor-pointer focus:border-blue-500 appearance-none min-w-0" 
                         value={editingSubId ? editSubCycle : subCycle} 
                         onChange={e => editingSubId ? setEditSubCycle(e.target.value as any) : setSubCycle(e.target.value as any)}
                       >
                         <option value="monthly">Bulanan</option>
                         <option value="yearly">Tahunan</option>
                       </select>
-                      <ChevronDown className="absolute right-3 top-8 text-slate-400 pointer-events-none" size={14} />
+                      <ChevronDown className="absolute right-3 top-[34px] text-slate-400 pointer-events-none" size={14} />
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 min-w-0">
                       <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1 truncate">Jatuh Tempo Awal</label>
                       <input 
                         type="date" 
                         onClick={(e) => e.currentTarget.showPicker && e.currentTarget.showPicker()}
-                        className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white focus:border-blue-500" 
+                        className="w-full px-2.5 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none cursor-pointer text-slate-800 dark:text-white min-w-0 appearance-none focus:border-blue-500" 
                         value={editingSubId ? editSubDueDate : subDueDate} 
                         onChange={e => editingSubId ? setEditSubDueDate(e.target.value) : setSubDueDate(e.target.value)} 
                       />
