@@ -436,6 +436,9 @@ export default function HomeTab({
   }, []);
   const [isDark, setIsDark] = useState(false);
   
+  // 🤖 STATE BARU: Fintracker Assistant Modal
+  const [showAssistantModal, setShowAssistantModal] = useState(false);
+  
   // UX Premium: State untuk menahan item mana yang sedang digeser agar tidak berantakan
   const [openSwipeId, setOpenSwipeId] = useState<string | null>(null);
   
@@ -728,8 +731,8 @@ export default function HomeTab({
     const isGalak = assistantMode === "galak";
     
     // UX Premium: Hindari teks kosong fiktif saat cold start
-    if (isReportLoading) return { text: isGalak ? "Sabar woy, lagi ngitung dosa-dosa keuangan lu nih..." : "Fintracker Assistant sedang menganalisis kesehatan keuanganmu...", icon: "🧠", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50/50 dark:bg-indigo-950/20", border: "border-indigo-100/30 dark:border-indigo-900/30" };
-    if (monthlyTransactions.length === 0) return { text: isGalak ? "Duit lu kemana? Kok kosong melompong gini catetannya? Males amat idup!" : "Belum ada catatan bulan ini. Yuk, mulai mencatat transaksi pertamamu!", icon: isGalak ? "🤡" : "✨", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
+    if (isReportLoading) return { title: "Sedang Menganalisis...", actionText: "Tunggu Sebentar", type: "info", text: isGalak ? "Sabar woy, lagi ngitung dosa-dosa keuangan lu nih..." : "Fintracker Assistant sedang menganalisis kesehatan keuanganmu...", icon: "🧠", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50/50 dark:bg-indigo-950/20", border: "border-indigo-100/30 dark:border-indigo-900/30" };
+    if (monthlyTransactions.length === 0) return { title: "Catatan Kosong", actionText: "Catat Sekarang", type: "info", text: isGalak ? "Duit lu kemana? Kok kosong melompong gini catetannya? Males amat idup!" : "Belum ada catatan bulan ini. Yuk, mulai mencatat transaksi pertamamu!", icon: isGalak ? "🤡" : "✨", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
     
     let budgetWarning = null; 
     const expenseByCategory: Record<string, number> = {};
@@ -756,39 +759,39 @@ export default function HomeTab({
       const sortedCats = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1]);
       if (sortedCats.length > 0) { 
         const [topCat, topAmount] = sortedCats[0]; 
-        return { text: isGalak ? `Nih hasil ketikan lu. Paling boros di '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}). Sadar diri dong! 🔍` : `Dari hasil pencarian ini, pengeluaran terbesar ada di kategori '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}).`, icon: "🔍", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30", border: "border-indigo-100 dark:border-indigo-900/30" }; 
+        return { title: "Hasil Pencarian", actionText: "Tutup Pencarian", type: "search", text: isGalak ? `Nih hasil ketikan lu. Paling boros di '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}). Sadar diri dong! 🔍` : `Dari hasil pencarian ini, pengeluaran terbesar ada di kategori '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}).`, icon: "🔍", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30", border: "border-indigo-100 dark:border-indigo-900/30" }; 
       }
-      return { text: isGalak ? `Nyari '${searchQueryInput}'? Mending lu cari cara nambah penghasilan deh. 🤡` : `Menampilkan hasil pencarian untuk '${searchQueryInput}'.`, icon: "🔍", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
+      return { title: "Hasil Pencarian", actionText: "Tutup Pencarian", type: "search", text: isGalak ? `Nyari '${searchQueryInput}'? Mending lu cari cara nambah penghasilan deh. 🤡` : `Menampilkan hasil pencarian untuk '${searchQueryInput}'.`, icon: "🔍", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
     }
 
     for (const cat of categories) {
       if (cat.type === 'expense' && cat.budgetLimit && cat.budgetLimit > 0) {
         const spent = expenseByCategory[cat.name] || 0; const percentage = (spent / cat.budgetLimit) * 100;
         if (percentage > 100) { 
-          budgetWarning = { text: isGalak ? `LU WARAS?! Budget '${cat.name}' udah jebol sampai ${percentage.toFixed(0)}%! Mau makan batu lu akhir bulan?! 💀` : `Gawat! Pengeluaran '${cat.name}' sudah melebihi batas budget bulan ini.`, icon: "🚨", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30", border: "border-rose-100 dark:border-rose-900/30" }; 
+          budgetWarning = { title: "Anggaran Jebol!", actionText: "Cek Pengeluaran", type: "danger", text: isGalak ? `LU WARAS?! Budget '${cat.name}' udah jebol sampai ${percentage.toFixed(0)}%! Mau makan batu lu akhir bulan?! 💀` : `Gawat! Pengeluaran '${cat.name}' sudah melebihi batas budget bulan ini.`, icon: "🚨", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30", border: "border-rose-100 dark:border-rose-900/30" }; 
           break; 
         } else if (percentage === 100) {
-          budgetWarning = { text: isGalak ? `Budget '${cat.name}' lu udah abis tak bersisa 100%! Jangan coba-coba jajan ini lagi kalau nggak mau ngutang temen! 🛑` : `Perhatian! Anggaran untuk '${cat.name}' sudah pas habis tak bersisa (100%).`, icon: "🛑", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" }; 
+          budgetWarning = { title: "Anggaran Habis!", actionText: "Stop Jajan", type: "warning", text: isGalak ? `Budget '${cat.name}' lu udah abis tak bersisa 100%! Jangan coba-coba jajan ini lagi kalau nggak mau ngutang temen! 🛑` : `Perhatian! Anggaran untuk '${cat.name}' sudah pas habis tak bersisa (100%).`, icon: "🛑", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" }; 
           break; 
         } else if (percentage >= 80) { 
-          budgetWarning = { text: isGalak ? `Rem blong!! Budget '${cat.name}' udah kepake ${percentage.toFixed(0)}%. Ngerem dikit napa, gaya elit ekonomi sulit! ⚠️` : `Hati-hati, pengeluaran '${cat.name}' sudah mencapai ${percentage.toFixed(0)}% dari batas budgetmu!`, icon: "⚠️", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-100 dark:border-amber-900/30" }; 
+          budgetWarning = { title: "Awas Kebablasan!", actionText: "Ngerem Dikit", type: "warning", text: isGalak ? `Rem blong!! Budget '${cat.name}' udah kepake ${percentage.toFixed(0)}%. Ngerem dikit napa, gaya elit ekonomi sulit! ⚠️` : `Hati-hati, pengeluaran '${cat.name}' sudah mencapai ${percentage.toFixed(0)}% dari batas budgetmu!`, icon: "⚠️", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-100 dark:border-amber-900/30" }; 
         }
       }
     }
     if (budgetWarning) return budgetWarning;
     
     if (monthlySummary.income > 0 && monthlySummary.expense > monthlySummary.income) { 
-      return { text: isGalak ? "Lebih besar pasak daripada tiang! Pengeluaran lu udah ngalahin pemasukan. Ngutang siapa lagi lu abis ini? 📉💸" : "Pengeluaranmu sudah melebihi total pemasukan bulan ini. Waktunya mengerem jajan variabel!", icon: "📉", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" }; 
+      return { title: "Besar Pasak Dari Tiang!", actionText: "Evaluasi Arus Kas", type: "warning", text: isGalak ? "Lebih besar pasak daripada tiang! Pengeluaran lu udah ngalahin pemasukan. Ngutang siapa lagi lu abis ini? 📉💸" : "Pengeluaranmu sudah melebihi total pemasukan bulan ini. Waktunya mengerem jajan variabel!", icon: "📉", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" }; 
     }
     
     if (monthlySummary.expense > 0) {
       const sortedCats = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1]);
       if (sortedCats.length > 0) { 
         const [topCat, topAmount] = sortedCats[0]; 
-        return { text: isGalak ? `Duit lu paling banyak abis buat '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}). Tiap hari foya-foya, pas ditagih utang pura-pura mati. 🗿` : `Sejauh ini, uangmu paling banyak tersedot untuk kategori '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}).`, icon: "💡", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30", border: "border-indigo-100 dark:border-indigo-900/30" }; 
+        return { title: "Top Pengeluaran", actionText: "Cek Rincian", type: "info", text: isGalak ? `Duit lu paling banyak abis buat '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}). Tiap hari foya-foya, pas ditagih utang pura-pura mati. 🗿` : `Sejauh ini, uangmu paling banyak tersedot untuk kategori '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}).`, icon: "💡", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30", border: "border-indigo-100 dark:border-indigo-900/30" }; 
       }
     }
-    return { text: isGalak ? "Tumben duit lu aman bulan ini. Biasana juga ngenes. Pertahanin dah, biar ngga nyusahin orang tua! 🌟" : "Arus kas bulan ini terlihat sangat sehat and aman. Terus pertahankan kebiasaan baik ini!", icon: "🌟", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-100 dark:border-emerald-900/30" };
+    return { title: "Arus Kas Sehat", actionText: "Lanjutkan 🚀", type: "success", text: isGalak ? "Tumben duit lu aman bulan ini. Biasana juga ngenes. Pertahanin dah, biar ngga nyusahin orang tua! 🌟" : "Arus kas bulan ini terlihat sangat sehat and aman. Terus pertahankan kebiasaan baik ini!", icon: "🌟", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-100 dark:border-emerald-900/30" };
   }, [monthlyTransactions, monthlySummary, categories, searchQueryInput, isReportLoading, assistantMode]);
 
   const groupedTransactionsByDay = useMemo(() => {
@@ -1056,30 +1059,27 @@ export default function HomeTab({
       </div>
 
       {/* WIDGET SMART FINANCIAL INSIGHTS & SAKLAR MODE GALAK 🌶️ */}
-      <div className={`p-4 rounded-[20px] border ${smartInsight.bg} ${smartInsight.border} flex items-start gap-3 shadow-lg backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-700 relative overflow-hidden`}>
+      <div 
+        onClick={() => { triggerHaptic(); setShowAssistantModal(true); }}
+        className={`p-4 rounded-[20px] border ${smartInsight.bg} ${smartInsight.border} flex items-center gap-3 shadow-lg backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-700 relative overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform group`}
+      >
         <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 blur-2xl rounded-full pointer-events-none"></div>
-        <div className="text-xl shrink-0 leading-none pt-0.5 relative z-10">{smartInsight.icon}</div>
-        <div className="min-w-0 pr-6 relative z-10">
-          <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${smartInsight.color}`}>
-            {assistantMode === "galak" ? "Fintracker Roaster 🔥" : "Fintracker Assistant"}
-          </p>
-          <p className="text-xs font-bold text-slate-700 dark:text-slate-300 leading-relaxed pr-2">{smartInsight.text}</p>
+        <div className={`text-2xl shrink-0 leading-none relative z-10 ${smartInsight.type === 'danger' || smartInsight.type === 'warning' ? 'animate-pulse' : ''}`}>
+          {smartInsight.icon}
+        </div>
+        <div className="min-w-0 flex-1 relative z-10">
+          <div className="flex items-center gap-2 mb-1">
+            <p className={`text-[9px] font-black uppercase tracking-widest ${smartInsight.color}`}>
+              {assistantMode === "galak" ? "Fintracker Roaster 🔥" : "Fintracker Assistant"}
+            </p>
+          </div>
+          <p className="text-xs font-bold text-slate-700 dark:text-slate-300 leading-relaxed pr-8 line-clamp-2">{smartInsight.text}</p>
         </div>
         
-        {/* Tombol Rahasia Ganti Kepribadian AI */}
-        <button 
-          type="button"
-          onClick={() => {
-            triggerHaptic();
-            const newMode = assistantMode === "sopan" ? "galak" : "sopan";
-            setAssistantMode(newMode);
-            localStorage.setItem("fintracker_assistant_mode", newMode);
-          }}
-          title={assistantMode === "sopan" ? "Aktifkan Mode Galak" : "Kembali ke Mode Sopan"}
-          className={`absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full transition-all active:scale-90 cursor-pointer ${assistantMode === "galak" ? "bg-red-100 dark:bg-red-900/40 text-red-500 shadow-sm" : "bg-slate-100 dark:bg-slate-800/60 text-slate-400 hover:text-slate-600"}`}
-        >
-          {assistantMode === "galak" ? "🌶️" : "👼"}
-        </button>
+        {/* Tombol Interaktif (Tap-to-View) */}
+        <div className={`absolute right-4 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-white/40 dark:bg-black/20 text-slate-500 dark:text-slate-400 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors`}>
+          <ArrowUpRight size={14} strokeWidth={3} />
+        </div>
       </div>
 
       {/* DAILY GROUPED TRANSACTION HISTORY LIST */}
@@ -2322,6 +2322,73 @@ export default function HomeTab({
           style={{ backgroundImage: `url(${viewingReceiptUrl})` }}
           onClick={(e) => e.stopPropagation()}
         />
+      </div>
+    </div>
+  )}
+
+  {/* 🤖 FLOATING CENTERED MODAL: FINTRACKER ASSISTANT (Glassmorphism) */}
+  {showAssistantModal && (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="absolute inset-0 z-0" onClick={() => setShowAssistantModal(false)}></div>
+      <div className={`relative z-10 w-full max-w-sm rounded-[32px] p-6 shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 overflow-hidden`}>
+        
+        {/* Glow Effect di Background */}
+        <div className={`absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl opacity-30 pointer-events-none ${smartInsight.type === 'danger' ? 'bg-rose-500' : smartInsight.type === 'warning' ? 'bg-orange-500' : smartInsight.type === 'success' ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
+        
+        <div className="flex justify-between items-start mb-6 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-sm ${smartInsight.bg} ${smartInsight.border} border`}>
+              {smartInsight.icon}
+            </div>
+            <div>
+              <p className={`text-[10px] font-black uppercase tracking-widest leading-none mb-1 ${smartInsight.color}`}>AI Assistant</p>
+              <h3 className="text-base font-black text-slate-800 dark:text-white leading-none">{smartInsight.title || "Insight Keuangan"}</h3>
+            </div>
+          </div>
+          <button type="button" onClick={() => setShowAssistantModal(false)} className="p-1.5 bg-slate-100/50 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-full transition-colors cursor-pointer"><X size={16} /></button>
+        </div>
+
+        <div className="relative z-10 mb-6 bg-slate-50/50 dark:bg-slate-950/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/50 shadow-inner">
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300 leading-relaxed text-left">
+            "{smartInsight.text}"
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 relative z-10 border-t border-slate-200/50 dark:border-slate-800/50 pt-5 mt-2">
+          {/* SAKLAR KEPRIBADIAN PINDAH KE DALAM MODAL AGAR LEBIH RAPI */}
+          <button 
+            type="button"
+            onClick={() => {
+              triggerHaptic();
+              const newMode = assistantMode === "sopan" ? "galak" : "sopan";
+              setAssistantMode(newMode);
+              localStorage.setItem("fintracker_assistant_mode", newMode);
+            }}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all cursor-pointer border text-xs font-bold ${assistantMode === "galak" ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50" : "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/50"}`}
+          >
+            <span>{assistantMode === "galak" ? "🌶️ Galak" : "👼 Sopan"}</span>
+            <ArrowRightLeft size={12} strokeWidth={2.5} className="opacity-50" />
+          </button>
+          
+          <button 
+            type="button" 
+            onClick={() => {
+              triggerHaptic();
+              setShowAssistantModal(false);
+              // Smart Action Router (Router Aksi Pintar)
+              if (smartInsight.type === 'search') {
+                setSearchQueryInput(""); setIsSearchExpanded(false); setSearchAllMonths(false);
+              } else if (smartInsight.type === 'danger' || smartInsight.type === 'warning' || smartInsight.type === 'info') {
+                if (!monthlyTransactions.length) {
+                  flushSync(() => setIsDrawerOpen(true));
+                }
+              }
+            }} 
+            className={`px-5 py-2.5 rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer active:scale-95 text-white ${smartInsight.type === 'danger' ? 'bg-rose-500 hover:bg-rose-600' : smartInsight.type === 'warning' ? 'bg-orange-500 hover:bg-orange-600' : smartInsight.type === 'success' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+          >
+            {smartInsight.actionText || "Tutup"}
+          </button>
+        </div>
       </div>
     </div>
   )}
