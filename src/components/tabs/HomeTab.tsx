@@ -730,15 +730,21 @@ export default function HomeTab({
   const smartInsight = useMemo(() => {
     const isGalak = assistantMode === "galak";
     
-    // UX Premium: Hindari teks kosong fiktif saat cold start
+    // 🧠 LOGIKA PINTAR: Pilih kalimat secara deterministik berdasarkan jumlah transaksi.
+    // Teks HANYA akan berganti ketika ada input/hapus transaksi (Anti-kedip).
+    const pick = (arr: string[]) => arr[monthlyTransactions.length % arr.length];
+    
     if (isReportLoading) return { title: "Sedang Menganalisis...", actionText: "Tunggu Sebentar", type: "info", text: isGalak ? "Sabar woy, lagi ngitung dosa-dosa keuangan lu nih..." : "Fintracker Assistant sedang menganalisis kesehatan keuanganmu...", icon: "🧠", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50/50 dark:bg-indigo-950/20", border: "border-indigo-100/30 dark:border-indigo-900/30" };
-    if (monthlyTransactions.length === 0) return { title: "Catatan Kosong", actionText: "Catat Sekarang", type: "info", text: isGalak ? "Duit lu kemana? Kok kosong melompong gini catetannya? Males amat idup!" : "Belum ada catatan bulan ini. Yuk, mulai mencatat transaksi pertamamu!", icon: isGalak ? "🤡" : "✨", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
+    if (monthlyTransactions.length === 0) return { title: "Catatan Kosong", actionText: "Catat Sekarang", type: "info", text: pick([
+      isGalak ? "Duit lu kemana? Kok kosong melompong gini catetannya? Males amat idup!" : "Belum ada catatan bulan ini. Yuk, mulai mencatat transaksi pertamamu!",
+      isGalak ? "Cieee dompet baru, belum ada riwayat dosa pengeluaran nih yee. Buruan catet!" : "Bulan baru, semangat baru! Jangan lupa catat setiap pengeluaran ya.",
+      isGalak ? "Nungguin apa lu? Nunggu duit jatuh dari langit? Cepet catet transaksi lu!" : "Halaman ini masih sepi. Mari kita isi dengan kebiasaan finansial yang baik."
+    ]), icon: isGalak ? "🤡" : "✨", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30", border: "border-blue-100 dark:border-blue-900/30" };
     
     let budgetWarning = null; 
     const expenseByCategory: Record<string, number> = {};
     const q = searchQueryInput.trim().toLowerCase();
     
-    // BUG FIX: Smart Insight memahami Unroll Splits & Filter Pencarian agar akurat 100%
     monthlyTransactions.filter(t => t.type === 'expense').forEach(t => { 
       if (t.splits && t.splits.length > 0) {
         const isParentMatch = q ? ((t.note && t.note.toLowerCase().includes(q)) || (t.accountName && t.accountName.toLowerCase().includes(q)) || (t.toAccountName && t.toAccountName.toLowerCase().includes(q))) : false;
@@ -754,7 +760,6 @@ export default function HomeTab({
       }
     });
 
-    // UX PREMIUM: Mode Detektif
     if (q) {
       const sortedCats = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1]);
       if (sortedCats.length > 0) { 
@@ -768,30 +773,54 @@ export default function HomeTab({
       if (cat.type === 'expense' && cat.budgetLimit && cat.budgetLimit > 0) {
         const spent = expenseByCategory[cat.name] || 0; const percentage = (spent / cat.budgetLimit) * 100;
         if (percentage > 100) { 
-          budgetWarning = { title: "Anggaran Jebol!", actionText: "Cek Pengeluaran", type: "danger", text: isGalak ? `LU WARAS?! Budget '${cat.name}' udah jebol sampai ${percentage.toFixed(0)}%! Mau makan batu lu akhir bulan?! 💀` : `Gawat! Pengeluaran '${cat.name}' sudah melebihi batas budget bulan ini.`, icon: "🚨", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30", border: "border-rose-100 dark:border-rose-900/30" }; 
+          budgetWarning = { title: "Anggaran Jebol!", actionText: "Cek Pengeluaran", type: "danger", text: pick([
+            isGalak ? `LU WARAS?! Budget '${cat.name}' udah jebol sampai ${percentage.toFixed(0)}%! Mau makan batu lu akhir bulan?! 💀` : `Gawat! Pengeluaran '${cat.name}' sudah melebihi batas budget bulan ini.`,
+            isGalak ? `MINUS BOS! Budget '${cat.name}' bocor ${percentage.toFixed(0)}%. Gaya elit, bayar tagihan sulit! 🤬` : `Mohon perhatian, anggaran '${cat.name}' telah bocor hingga ${percentage.toFixed(0)}%. Harap segera evaluasi.`,
+            isGalak ? `Anggaran '${cat.name}' meledak ke ${percentage.toFixed(0)}%. Pantesan lu kere mulu, ngerem aja nggak bisa! 📉` : `Ups, batas '${cat.name}' terlewati (${percentage.toFixed(0)}%). Yuk, kurangi pengeluaran agar keuangan kembali sehat.`
+          ]), icon: "🚨", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30", border: "border-rose-100 dark:border-rose-900/30" }; 
           break; 
         } else if (percentage === 100) {
-          budgetWarning = { title: "Anggaran Habis!", actionText: "Stop Jajan", type: "warning", text: isGalak ? `Budget '${cat.name}' lu udah abis tak bersisa 100%! Jangan coba-coba jajan ini lagi kalau nggak mau ngutang temen! 🛑` : `Perhatian! Anggaran untuk '${cat.name}' sudah pas habis tak bersisa (100%).`, icon: "🛑", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" }; 
+          budgetWarning = { title: "Anggaran Habis!", actionText: "Stop Jajan", type: "warning", text: pick([
+            isGalak ? `Budget '${cat.name}' lu udah abis tak bersisa 100%! Jangan coba-coba jajan ini lagi kalau nggak mau ngutang temen! 🛑` : `Perhatian! Anggaran untuk '${cat.name}' sudah pas habis tak bersisa (100%).`,
+            isGalak ? `Selamat! Duit buat '${cat.name}' resmi GHOIB. Puasa aja lu mendingan! 💀` : `Batas anggaran '${cat.name}' sudah tersentuh 100%. Tolong hindari pengeluaran ini lagi ya. 🛑`,
+            isGalak ? `Jatah '${cat.name}' udah ludes 100%! Lu makan angin aja sana sampai gajian! 🌪️` : `Anggaran '${cat.name}' sudah habis. Mari lebih bijak mengatur sisa dana di kategori lain. 😇`
+          ]), icon: "🛑", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" }; 
           break; 
         } else if (percentage >= 80) { 
-          budgetWarning = { title: "Awas Kebablasan!", actionText: "Ngerem Dikit", type: "warning", text: isGalak ? `Rem blong!! Budget '${cat.name}' udah kepake ${percentage.toFixed(0)}%. Ngerem dikit napa, gaya elit ekonomi sulit! ⚠️` : `Hati-hati, pengeluaran '${cat.name}' sudah mencapai ${percentage.toFixed(0)}% dari batas budgetmu!`, icon: "⚠️", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-100 dark:border-amber-900/30" }; 
+          budgetWarning = { title: "Awas Kebablasan!", actionText: "Ngerem Dikit", type: "warning", text: pick([
+            isGalak ? `Rem blong!! Budget '${cat.name}' udah kepake ${percentage.toFixed(0)}%. Ngerem dikit napa, gaya elit ekonomi sulit! ⚠️` : `Hati-hati, pengeluaran '${cat.name}' sudah mencapai ${percentage.toFixed(0)}% dari batas budgetmu!`,
+            isGalak ? `Awas! Jatah '${cat.name}' lu sisa dikit lagi (${percentage.toFixed(0)}%). Jangan foya-foya terus lu! 🛑` : `Anggaran '${cat.name}' sudah menipis di angka ${percentage.toFixed(0)}%. Mari mulai berhemat.`,
+            isGalak ? `Woi, anggaran '${cat.name}' udah nyentuh ${percentage.toFixed(0)}%. Udahan jajannya, lu bukan sultan! 🗿` : `Pengingat: Jatah '${cat.name}' tersisa sedikit lagi (${percentage.toFixed(0)}%). Kendalikan pengeluaranmu ya.`
+          ]), icon: "⚠️", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-100 dark:border-amber-900/30" }; 
         }
       }
     }
     if (budgetWarning) return budgetWarning;
     
     if (monthlySummary.income > 0 && monthlySummary.expense > monthlySummary.income) { 
-      return { title: "Besar Pasak Dari Tiang!", actionText: "Evaluasi Arus Kas", type: "warning", text: isGalak ? "Lebih besar pasak daripada tiang! Pengeluaran lu udah ngalahin pemasukan. Ngutang siapa lagi lu abis ini? 📉💸" : "Pengeluaranmu sudah melebihi total pemasukan bulan ini. Waktunya mengerem jajan variabel!", icon: "📉", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" }; 
+      return { title: "Besar Pasak Dari Tiang!", actionText: "Evaluasi Arus Kas", type: "warning", text: pick([
+        isGalak ? "Lebih besar pasak daripada tiang! Pengeluaran lu udah ngalahin pemasukan. Ngutang siapa lagi lu abis ini? 📉💸" : "Pengeluaranmu sudah melebihi total pemasukan bulan ini. Waktunya mengerem jajan variabel!",
+        isGalak ? "Cieee minus bulanan! Pendapatan seupil, gaya hidup segunung. Siap-siap gali lobang tutup lobang! 🕳️" : "Peringatan Arus Kas: Pengeluaran lebih besar dari pendapatan. Segera tinjau kembali prioritasmu.",
+        isGalak ? "WARNING! Dompet lu teriak minta ampun. Udah minus woi, tobat jajan konyol! 💀" : "Tampaknya bulan ini cukup berat. Pengeluaran sudah melampaui pemasukanmu."
+      ]), icon: "📉", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" }; 
     }
     
     if (monthlySummary.expense > 0) {
       const sortedCats = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1]);
       if (sortedCats.length > 0) { 
         const [topCat, topAmount] = sortedCats[0]; 
-        return { title: "Top Pengeluaran", actionText: "Cek Rincian", type: "info", text: isGalak ? `Duit lu paling banyak abis buat '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}). Tiap hari foya-foya, pas ditagih utang pura-pura mati. 🗿` : `Sejauh ini, uangmu paling banyak tersedot untuk kategori '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}).`, icon: "💡", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30", border: "border-indigo-100 dark:border-indigo-900/30" }; 
+        return { title: "Top Pengeluaran", actionText: "Cek Rincian", type: "info", text: pick([
+          isGalak ? `Duit lu paling banyak abis buat '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}). Tiap hari foya-foya, pas ditagih utang pura-pura mati. 🗿` : `Sejauh ini, uangmu paling banyak tersedot untuk kategori '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}).`,
+          isGalak ? `Kategori '${topCat}' nyedot Rp ${topAmount.toLocaleString('id-ID')}. Lu kira duit lu ga berseri?! Kurang-kurangin! 🤬` : `Porsi pengeluaran terbesar bulan ini jatuh pada kategori '${topCat}'. Pertahankan batas wajarnya ya.`,
+          isGalak ? `Fakta Menyakitkan: Rp ${topAmount.toLocaleString('id-ID')} melayang cuma buat '${topCat}'. Nyesel gak lu? Nyesel lah masa engga! 👎` : `Fokus analitik: '${topCat}' adalah penyumbang beban terbesar bulan ini (Rp ${topAmount.toLocaleString('id-ID')}).`
+        ]), icon: "💡", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30", border: "border-indigo-100 dark:border-indigo-900/30" }; 
       }
     }
-    return { title: "Arus Kas Sehat", actionText: "Lanjutkan 🚀", type: "success", text: isGalak ? "Tumben duit lu aman bulan ini. Biasana juga ngenes. Pertahanin dah, biar ngga nyusahin orang tua! 🌟" : "Arus kas bulan ini terlihat sangat sehat and aman. Terus pertahankan kebiasaan baik ini!", icon: "🌟", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-100 dark:border-emerald-900/30" };
+    return { title: "Arus Kas Sehat", actionText: "Lanjutkan 🚀", type: "success", text: pick([
+      isGalak ? "Tumben duit lu aman bulan ini. Biasana juga ngenes. Pertahanin dah, biar ngga nyusahin orang tua! 🌟" : "Arus kas bulan ini terlihat sangat sehat dan aman. Terus pertahankan kebiasaan baik ini!",
+      isGalak ? "Wah tumben nggak minus? Jangan-jangan lu lagi puasa atau nggak ada temen nongkrong ya? Bagoes! 👏" : "Sempurna! Semua pengeluaran terkendali dengan baik di bawah batas pendapatanmu.",
+      isGalak ? "Lanjutkan performa hemat lu ini! Biar cepet kaya dan nggak jadi beban keluarga lagi! 🤑" : "Kamu hebat! Kondisi finansial bulan ini sangat stabil. Masa depan cerah menanti!"
+    ]), icon: "🌟", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-100 dark:border-emerald-900/30" };
   }, [monthlyTransactions, monthlySummary, categories, searchQueryInput, isReportLoading, assistantMode]);
 
   const groupedTransactionsByDay = useMemo(() => {
