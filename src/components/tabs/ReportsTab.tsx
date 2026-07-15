@@ -1832,9 +1832,11 @@ export default function ReportsTab({
                 {uniqueTrips.length > 0 && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2 pt-2 pb-1">Daftar Momen Anda</p>}
 
                 {uniqueTrips.map(trip => {
-                  const hasEmoji = /^[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/.test(trip);
-                  const displayIcon = hasEmoji ? trip.charAt(0) : "✨";
-                  const displayName = hasEmoji ? trip.substring(1).trim() : trip;
+                  // FIX: Gunakan Unicode Property Escapes (/u) & ambil panjang karakter asli (match[0].length) 
+                  // agar Surrogate Pairs (Emoji Modern) tidak terpotong menjadi 
+                  const match = trip.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic}|\p{Emoji}\uFE0F)/u);
+                  const displayIcon = match ? match[0] : "✨";
+                  const displayName = match ? trip.substring(match[0].length).trim() : trip;
 
                   return (
                     <div key={trip} onClick={() => { triggerHaptic(); setSelectedTripFilter(trip); setShowTripFilter(false); }} className={`flex justify-between items-center p-4 rounded-2xl cursor-pointer transition-colors border ${selectedTripFilter === trip ? `bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-500/30 shadow-sm` : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
