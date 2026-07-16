@@ -1025,7 +1025,34 @@ export default function AssetsTab({
                       }
                       setIsManageOpen(false); setEditingAccId(null); 
                     }} className={`flex-1 py-3 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95 ${editingAccId ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-blue-600 hover:bg-blue-700'}`}>Simpan</button>
-                    {editingAccId && <button onClick={() => { setEditingAccId(null); }} className="py-3 px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer active:scale-95">Batal</button>}
+                    
+                    {editingAccId && (
+                      <>
+                        <button 
+                          onClick={() => { 
+                            triggerHaptic();
+                            deleteAccount(editingAccId, editAccName);
+                            setIsManageOpen(false);
+                            setEditingAccId(null);
+                            setDetailAccId(null); // Tutup laci modal detail jika ada
+                          }} 
+                          className="py-3 px-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/50 rounded-xl text-xs font-bold cursor-pointer active:scale-95 flex items-center justify-center transition-colors"
+                          title="Hapus Dompet"
+                        >
+                          <Trash2 size={16}/>
+                        </button>
+                        <button 
+                          onClick={() => { 
+                            triggerHaptic();
+                            setIsManageOpen(false); 
+                            setEditingAccId(null); 
+                          }} 
+                          className="py-3 px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer active:scale-95 transition-colors"
+                        >
+                          Batal
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 
