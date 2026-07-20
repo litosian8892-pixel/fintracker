@@ -480,6 +480,9 @@ export default function HomeTab({
   // STATE BARU: Buffer Ekspresi untuk Kalkulator Koreksi Pecahan
   const [activeEditSplitKeypadIndex, setActiveEditSplitKeypadIndex] = useState<number | null>(null);
   const [activeEditSplitExpression, setActiveEditSplitExpression] = useState<string>("");
+  
+  // UX BARU: Toggle Tampilan Kolom Metrik
+  const [showMetricInput, setShowMetricInput] = useState(false);
 
   // STATE BARU: DIGITAL RECEIPT (FASE 21)
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
@@ -1308,17 +1311,30 @@ export default function HomeTab({
                   currentMetric = currentFullNote.substring(lastBracketIndex + 1, closeBracketIndex).trim();
                 }
 
+                const isMetricVisible = showMetricInput || currentMetric.length > 0;
+
                 return (
                   <div className="relative z-[60] mb-2 animate-in slide-in-from-top-2 duration-300">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 transition-all duration-300">
                       {/* KOLOM CATATAN UTAMA */}
-                      <div className="space-y-1 flex-1 min-w-0">
-                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan (Beli Apa?)</label>
+                      <div className="space-y-1 flex-1 min-w-0 transition-all duration-300">
+                        <div className="flex justify-between items-center pr-1 h-4">
+                          <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">Catatan (Beli Apa?)</label>
+                          {!isMetricVisible && (
+                            <button 
+                              type="button" 
+                              onClick={() => { triggerHaptic(); setShowMetricInput(true); }} 
+                              className="text-[9px] font-black text-blue-500 hover:text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded cursor-pointer transition-all active:scale-95 flex items-center gap-1 border border-blue-200/50 dark:border-blue-800/50"
+                            >
+                              <span>+</span> Metrik/Tag
+                            </button>
+                          )}
+                        </div>
                         <div className="relative z-[70]">
                           <input 
                             ref={noteInputRef}
                             type="text" 
-                            className="w-full pl-3.5 pr-8 py-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white" 
+                            className="w-full pl-3.5 pr-8 py-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white transition-all" 
                             placeholder="Ketik 2 huruf..." 
                             value={currentMainNote} 
                             onChange={(e) => {
@@ -1349,23 +1365,41 @@ export default function HomeTab({
                       </div>
 
                       {/* KOLOM METRIK (TAG SMART BADGE) */}
-                      <div className="space-y-1 w-[38%] shrink-0 relative z-[70]">
-                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1 truncate">Metrik / Tag</label>
-                        <input 
-                          type="text" 
-                          className="w-full px-3 py-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white" 
-                          placeholder="Cth: 150 KM" 
-                          value={currentMetric} 
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/[\[\]]/g, '');
-                            const newFull = val ? `${currentMainNote} [${val}]` : currentMainNote;
-                            if (editingTransaction) setEditTNote(newFull);
-                            else setTNote(newFull);
-                          }}
-                          onFocus={() => { if(isMobile) setActiveKeypad(null); }}
-                          autoComplete="off"
-                        />
-                      </div>
+                      {isMetricVisible && (
+                        <div className="space-y-1 w-[38%] shrink-0 relative z-[70] animate-in slide-in-from-right-4 fade-in duration-200">
+                          <div className="flex justify-between items-center pr-1 h-4">
+                            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1 truncate">Metrik / Tag</label>
+                            <button 
+                              type="button" 
+                              onClick={() => { 
+                                triggerHaptic(); 
+                                setShowMetricInput(false); 
+                                // Pintar: Jika ditutup, bersihkan langsung tag dari database
+                                if (currentMetric) {
+                                  handleNoteChange(currentMainNote);
+                                }
+                              }} 
+                              className="text-slate-400 hover:text-rose-500 cursor-pointer p-0.5"
+                            >
+                              <X size={12} strokeWidth={3}/>
+                            </button>
+                          </div>
+                          <input 
+                            type="text" 
+                            className="w-full px-3 py-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white transition-all" 
+                            placeholder="Cth: 150 KM" 
+                            value={currentMetric} 
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[\[\]]/g, '');
+                              const newFull = val ? `${currentMainNote} [${val}]` : currentMainNote;
+                              if (editingTransaction) setEditTNote(newFull);
+                              else setTNote(newFull);
+                            }}
+                            onFocus={() => { if(isMobile) setActiveKeypad(null); }}
+                            autoComplete="off"
+                          />
+                        </div>
+                      )}
                     </div>
                     
                     {/* AUTOCOMPLETE DROPDOWN */}
