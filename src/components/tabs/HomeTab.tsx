@@ -300,15 +300,37 @@ const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, g
             <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-lg shrink-0">{getRowIcon(t)}</div>
             <div className="min-w-0 text-left">
               <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate flex items-center gap-1">{t.category} {t.splits && t.splits.length > 0 && <span className={`text-[8px] px-1 rounded font-bold ${currentTheme.bgLight} ${currentTheme.text}`}>✂️ {t.splits.length} Pecahan</span>}</p>
-              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate mt-0.5">{t.note || (isTransfer ? "Transfer Dana" : "-")}</p>
-              <div className="flex flex-wrap gap-1.5 mt-1">
-                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border flex items-center gap-0.5 uppercase ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}><Wallet size={8} /> {isTransfer ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName}</span>
-                {(() => {
-                  const formattedTime = (t.tTime || formatTime(t.createdAt)).replace(':', '.');
-                  if (!formattedTime) return null;
-                  return (<span className="text-[9px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-950/40 px-1.5 py-0.5 rounded-md border border-slate-200/30 dark:border-slate-700/30 flex items-center gap-0.5">🕒 {formattedTime}</span>);
-                })()}
-              </div>
+              {(() => {
+                const rawNote = t.note || (isTransfer ? "Transfer Dana" : "-");
+                const lastBracketIndex = rawNote.lastIndexOf('[');
+                const closeBracketIndex = rawNote.lastIndexOf(']');
+                let mainNote = rawNote;
+                let badgeText = "";
+                
+                if (lastBracketIndex !== -1 && closeBracketIndex > lastBracketIndex && closeBracketIndex === rawNote.length - 1) {
+                  mainNote = rawNote.substring(0, lastBracketIndex).trim();
+                  badgeText = rawNote.substring(lastBracketIndex + 1, closeBracketIndex).trim();
+                }
+                
+                return (
+                  <>
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate mt-0.5">{mainNote || "-"}</p>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {badgeText && (
+                        <span className="text-[9px] font-black text-white bg-gradient-to-br from-indigo-500 to-purple-600 px-1.5 py-0.5 rounded-md shadow-sm border border-indigo-400/30 flex items-center gap-0.5 animate-in zoom-in-95 duration-300">
+                          📌 {badgeText}
+                        </span>
+                      )}
+                      <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border flex items-center gap-0.5 uppercase ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}><Wallet size={8} /> {isTransfer ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName}</span>
+                      {(() => {
+                        const formattedTime = (t.tTime || formatTime(t.createdAt)).replace(':', '.');
+                        if (!formattedTime) return null;
+                        return (<span className="text-[9px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-950/40 px-1.5 py-0.5 rounded-md border border-slate-200/30 dark:border-slate-700/30 flex items-center gap-0.5">🕒 {formattedTime}</span>);
+                      })()}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
           <div className="flex items-center gap-4 shrink-0 text-right pointer-events-none">
@@ -1273,69 +1295,113 @@ export default function HomeTab({
                 </div>
               )}
 
-              {/* INPUT CATATAN DENGAN AUTOCOMPLETE & QUICK CLEAR */}
-              <div className="space-y-1 relative z-[60] mb-2 animate-in slide-in-from-top-2 duration-300">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan (Beli Apa?)</label>
-                <div className="relative z-[70]">
-                  <input 
-                    ref={noteInputRef}
-                    type="text" 
-                    className="w-full pl-3.5 pr-11 py-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white" 
-                    placeholder="Ketik 2 huruf untuk saran otomatis..." 
-                    value={editingTransaction ? editTNote : tNote} 
-                    onChange={(e) => handleNoteChange(e.target.value)}
-                    onFocus={() => { if(isMobile) setActiveKeypad(null); }}
-                    autoComplete="off"
-                  />
-                  {/* TOMBOL SAPU BERSIH (Hanya muncul jika ada teks) */}
-                  {(editingTransaction ? editTNote : tNote) && (
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        triggerHaptic();
-                        handleNoteChange(""); // Kosongkan teks & tutup saran
-                        if (noteInputRef.current) noteInputRef.current.focus(); // Tahan keyboard tetap terbuka
-                      }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-slate-200/60 dark:bg-slate-800/80 rounded-full transition-all active:scale-90 cursor-pointer shadow-sm"
-                      title="Bersihkan catatan"
-                    >
-                      <X size={12} strokeWidth={3} />
-                    </button>
-                  )}
-                </div>
+              {/* 🟢 INPUT CATATAN & METRIK (SMART BADGE) DENGAN AUTOCOMPLETE */}
+              {(() => {
+                const currentFullNote = editingTransaction ? editTNote : tNote;
+                const lastBracketIndex = currentFullNote.lastIndexOf('[');
+                const closeBracketIndex = currentFullNote.lastIndexOf(']');
+                let currentMainNote = currentFullNote;
+                let currentMetric = "";
                 
-                {/* AUTOCOMPLETE DROPDOWN */}
-                {noteSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-[80] overflow-hidden animate-in fade-in slide-in-from-top-2">
-                    <div className="px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                      <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Saran Riwayat Transaksi</span>
-                      <button type="button" onClick={() => setNoteSuggestions([])} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 bg-slate-100 dark:bg-slate-800 rounded-full cursor-pointer"><X size={10}/></button>
-                    </div>
-                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {noteSuggestions.map((sug, idx) => (
-                        <div 
-                          key={idx} 
-                          onClick={() => handleSelectSuggestion(sug)}
-                          className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors flex justify-between items-center group"
-                        >
-                          <div className="flex flex-col text-left">
-                            <span className="text-xs font-bold text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{sug.note}</span>
-                            <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1.5 mt-0.5">
-                              <span className="bg-slate-100 dark:bg-slate-800 px-1 rounded text-xs">{sug.icon || getCategoryIcon(sug.category)}</span> {sug.category}
-                            </span>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-[8px] font-bold text-slate-400 mb-0.5">Harga Terakhir</span>
-                            <span className={`text-xs font-black ${currentTheme.text} bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-800`}>
-                              {formatCurrencyTerbaca(sug.amount.toString(), selectedSourceAcc?.currency)}
-                            </span>
-                          </div>
+                if (lastBracketIndex !== -1 && closeBracketIndex > lastBracketIndex && closeBracketIndex === currentFullNote.length - 1) {
+                  currentMainNote = currentFullNote.substring(0, lastBracketIndex).trim();
+                  currentMetric = currentFullNote.substring(lastBracketIndex + 1, closeBracketIndex).trim();
+                }
+
+                return (
+                  <div className="relative z-[60] mb-2 animate-in slide-in-from-top-2 duration-300">
+                    <div className="flex gap-2">
+                      {/* KOLOM CATATAN UTAMA */}
+                      <div className="space-y-1 flex-1 min-w-0">
+                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1">Catatan (Beli Apa?)</label>
+                        <div className="relative z-[70]">
+                          <input 
+                            ref={noteInputRef}
+                            type="text" 
+                            className="w-full pl-3.5 pr-8 py-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white" 
+                            placeholder="Ketik 2 huruf..." 
+                            value={currentMainNote} 
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const newFull = currentMetric ? `${val} [${currentMetric}]` : val;
+                              handleNoteChange(newFull);
+                            }}
+                            onFocus={() => { if(isMobile) setActiveKeypad(null); }}
+                            autoComplete="off"
+                          />
+                          {/* TOMBOL SAPU BERSIH */}
+                          {currentMainNote && (
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                triggerHaptic();
+                                const newFull = currentMetric ? ` [${currentMetric}]` : "";
+                                handleNoteChange(newFull);
+                                if (noteInputRef.current) noteInputRef.current.focus();
+                              }}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-slate-200/60 dark:bg-slate-800/80 rounded-full transition-all active:scale-90 cursor-pointer shadow-sm"
+                              title="Bersihkan catatan"
+                            >
+                              <X size={10} strokeWidth={3} />
+                            </button>
+                          )}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* KOLOM METRIK (TAG SMART BADGE) */}
+                      <div className="space-y-1 w-[38%] shrink-0 relative z-[70]">
+                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block pl-1 truncate">Metrik / Tag</label>
+                        <input 
+                          type="text" 
+                          className="w-full px-3 py-3.5 bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white" 
+                          placeholder="Cth: 150 KM" 
+                          value={currentMetric} 
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[\[\]]/g, '');
+                            const newFull = val ? `${currentMainNote} [${val}]` : currentMainNote;
+                            if (editingTransaction) setEditTNote(newFull);
+                            else setTNote(newFull);
+                          }}
+                          onFocus={() => { if(isMobile) setActiveKeypad(null); }}
+                          autoComplete="off"
+                        />
+                      </div>
                     </div>
+                    
+                    {/* AUTOCOMPLETE DROPDOWN */}
+                    {noteSuggestions.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-[80] overflow-hidden animate-in fade-in slide-in-from-top-2">
+                        <div className="px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                          <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Saran Riwayat Transaksi</span>
+                          <button type="button" onClick={() => setNoteSuggestions([])} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 bg-slate-100 dark:bg-slate-800 rounded-full cursor-pointer"><X size={10}/></button>
+                        </div>
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                          {noteSuggestions.map((sug, idx) => (
+                            <div 
+                              key={idx} 
+                              onClick={() => handleSelectSuggestion(sug)}
+                              className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors flex justify-between items-center group"
+                            >
+                              <div className="flex flex-col text-left">
+                                <span className="text-xs font-bold text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{sug.note}</span>
+                                <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                  <span className="bg-slate-100 dark:bg-slate-800 px-1 rounded text-xs">{sug.icon || getCategoryIcon(sug.category)}</span> {sug.category}
+                                </span>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className="text-[8px] font-bold text-slate-400 mb-0.5">Harga Terakhir</span>
+                                <span className={`text-xs font-black ${currentTheme.text} bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-800`}>
+                                  {formatCurrencyTerbaca(sug.amount.toString(), selectedSourceAcc?.currency)}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })()}
 
               {editingTransaction ? (
                 editTSplits.length === 0 && (
