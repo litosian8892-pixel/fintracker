@@ -798,21 +798,21 @@ export default function HomeTab({
       if (cat.type === 'expense' && cat.budgetLimit && cat.budgetLimit > 0) {
         const spent = expenseByCategory[cat.name] || 0; const percentage = (spent / cat.budgetLimit) * 100;
         if (percentage > 100) { 
-          budgetWarning = { title: "Anggaran Jebol!", actionText: "Cek Pengeluaran", type: "danger", text: pick([
+          budgetWarning = { meta: cat.name, title: "Anggaran Jebol!", actionText: "Cek Pengeluaran", type: "danger", text: pick([
             isGalak ? `LU WARAS?! Budget '${cat.name}' udah jebol sampai ${percentage.toFixed(0)}%! Mau makan batu lu akhir bulan?! 💀` : `Gawat! Pengeluaran '${cat.name}' sudah melebihi batas budget bulan ini.`,
             isGalak ? `MINUS BOS! Budget '${cat.name}' bocor ${percentage.toFixed(0)}%. Gaya elit, bayar tagihan sulit! 🤬` : `Mohon perhatian, anggaran '${cat.name}' telah bocor hingga ${percentage.toFixed(0)}%. Harap segera evaluasi.`,
             isGalak ? `Anggaran '${cat.name}' meledak ke ${percentage.toFixed(0)}%. Pantesan lu kere mulu, ngerem aja nggak bisa! 📉` : `Ups, batas '${cat.name}' terlewati (${percentage.toFixed(0)}%). Yuk, kurangi pengeluaran agar keuangan kembali sehat.`
           ]), icon: "🚨", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30", border: "border-rose-100 dark:border-rose-900/30" }; 
           break; 
         } else if (percentage === 100) {
-          budgetWarning = { title: "Anggaran Habis!", actionText: "Stop Jajan", type: "warning", text: pick([
+          budgetWarning = { meta: cat.name, title: "Anggaran Habis!", actionText: "Cek Riwayat", type: "warning", text: pick([
             isGalak ? `Budget '${cat.name}' lu udah abis tak bersisa 100%! Jangan coba-coba jajan ini lagi kalau nggak mau ngutang temen! 🛑` : `Perhatian! Anggaran untuk '${cat.name}' sudah pas habis tak bersisa (100%).`,
             isGalak ? `Selamat! Duit buat '${cat.name}' resmi GHOIB. Puasa aja lu mendingan! 💀` : `Batas anggaran '${cat.name}' sudah tersentuh 100%. Tolong hindari pengeluaran ini lagi ya. 🛑`,
             isGalak ? `Jatah '${cat.name}' udah ludes 100%! Lu makan angin aja sana sampai gajian! 🌪️` : `Anggaran '${cat.name}' sudah habis. Mari lebih bijak mengatur sisa dana di kategori lain. 😇`
           ]), icon: "🛑", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-100 dark:border-orange-900/30" }; 
           break; 
         } else if (percentage >= 80) { 
-          budgetWarning = { title: "Awas Kebablasan!", actionText: "Ngerem Dikit", type: "warning", text: pick([
+          budgetWarning = { meta: cat.name, title: "Awas Kebablasan!", actionText: "Cek Riwayat", type: "warning", text: pick([
             isGalak ? `Rem blong!! Budget '${cat.name}' udah kepake ${percentage.toFixed(0)}%. Ngerem dikit napa, gaya elit ekonomi sulit! ⚠️` : `Hati-hati, pengeluaran '${cat.name}' sudah mencapai ${percentage.toFixed(0)}% dari batas budgetmu!`,
             isGalak ? `Awas! Jatah '${cat.name}' lu sisa dikit lagi (${percentage.toFixed(0)}%). Jangan foya-foya terus lu! 🛑` : `Anggaran '${cat.name}' sudah menipis di angka ${percentage.toFixed(0)}%. Mari mulai berhemat.`,
             isGalak ? `Woi, anggaran '${cat.name}' udah nyentuh ${percentage.toFixed(0)}%. Udahan jajannya, lu bukan sultan! 🗿` : `Pengingat: Jatah '${cat.name}' tersisa sedikit lagi (${percentage.toFixed(0)}%). Kendalikan pengeluaranmu ya.`
@@ -823,7 +823,7 @@ export default function HomeTab({
     if (budgetWarning) return budgetWarning;
     
     if (monthlySummary.income > 0 && monthlySummary.expense > monthlySummary.income) { 
-      return { title: "Besar Pasak Dari Tiang!", actionText: "Evaluasi Arus Kas", type: "warning", text: pick([
+      return { title: "Besar Pasak Dari Tiang!", actionText: "Scroll Ke Atas 🔼", type: "warning", text: pick([
         isGalak ? "Lebih besar pasak daripada tiang! Pengeluaran lu udah ngalahin pemasukan. Ngutang siapa lagi lu abis ini? 📉💸" : "Pengeluaranmu sudah melebihi total pemasukan bulan ini. Waktunya mengerem jajan variabel!",
         isGalak ? "Cieee minus bulanan! Pendapatan seupil, gaya hidup segunung. Siap-siap gali lobang tutup lobang! 🕳️" : "Peringatan Arus Kas: Pengeluaran lebih besar dari pendapatan. Segera tinjau kembali prioritasmu.",
         isGalak ? "WARNING! Dompet lu teriak minta ampun. Udah minus woi, tobat jajan konyol! 💀" : "Tampaknya bulan ini cukup berat. Pengeluaran sudah melampaui pemasukanmu."
@@ -834,7 +834,7 @@ export default function HomeTab({
       const sortedCats = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1]);
       if (sortedCats.length > 0) { 
         const [topCat, topAmount] = sortedCats[0]; 
-        return { title: "Top Pengeluaran", actionText: "Cek Rincian", type: "info", text: pick([
+        return { meta: topCat, title: "Top Pengeluaran", actionText: "Cek Rincian", type: "info", text: pick([
           isGalak ? `Duit lu paling banyak abis buat '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}). Tiap hari foya-foya, pas ditagih utang pura-pura mati. 🗿` : `Sejauh ini, uangmu paling banyak tersedot untuk kategori '${topCat}' (Rp ${topAmount.toLocaleString('id-ID')}).`,
           isGalak ? `Kategori '${topCat}' nyedot Rp ${topAmount.toLocaleString('id-ID')}. Lu kira duit lu ga berseri?! Kurang-kurangin! 🤬` : `Porsi pengeluaran terbesar bulan ini jatuh pada kategori '${topCat}'. Pertahankan batas wajarnya ya.`,
           isGalak ? `Fakta Menyakitkan: Rp ${topAmount.toLocaleString('id-ID')} melayang cuma buat '${topCat}'. Nyesel gak lu? Nyesel lah masa engga! 👎` : `Fokus analitik: '${topCat}' adalah penyumbang beban terbesar bulan ini (Rp ${topAmount.toLocaleString('id-ID')}).`
@@ -2504,13 +2504,26 @@ export default function HomeTab({
             onClick={() => {
               triggerHaptic();
               setShowAssistantModal(false);
-              // Smart Action Router (Router Aksi Pintar)
+              
+              // 🚀 SMART ACTION ROUTER: Navigasi Aksi Pintar Berdasarkan Konteks
               if (smartInsight.type === 'search') {
-                setSearchQueryInput(""); setIsSearchExpanded(false); setSearchAllMonths(false);
-              } else if (smartInsight.type === 'danger' || smartInsight.type === 'warning' || smartInsight.type === 'info') {
-                if (!monthlyTransactions.length) {
-                  flushSync(() => setIsDrawerOpen(true));
-                }
+                // Hapus Pencarian
+                setSearchQueryInput(""); 
+                setIsSearchExpanded(false); 
+                setSearchAllMonths(false);
+              } else if ((smartInsight as any).meta) {
+                // JURUS RAHASIA: Jika AI punya target meta (Kategori), langsung buka Search Bar dan cari kategori itu!
+                setSearchQueryInput((smartInsight as any).meta);
+                setIsSearchExpanded(true);
+                setSearchAllMonths(false);
+                // Gulung layar ke atas biar transaksinya langsung kelihatan
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } else if (smartInsight.type === 'info' && !monthlyTransactions.length) {
+                // Jika kosong, suruh catat transaksi baru
+                flushSync(() => setIsDrawerOpen(true));
+              } else if (smartInsight.title === "Besar Pasak Dari Tiang!") {
+                // Redirect pandangan (Scroll ke atas melihat saldo merah)
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }} 
             className={`px-5 py-2.5 rounded-xl text-xs font-black shadow-lg transition-all cursor-pointer active:scale-95 text-white ${smartInsight.type === 'danger' ? 'bg-rose-500 hover:bg-rose-600' : smartInsight.type === 'warning' ? 'bg-orange-500 hover:bg-orange-600' : smartInsight.type === 'success' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-blue-600 hover:bg-blue-700'}`}
