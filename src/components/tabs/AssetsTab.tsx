@@ -13,7 +13,7 @@ const themeMap = {
     bgLight: "bg-blue-50 dark:bg-blue-900/30",
     border: "border-blue-100 dark:border-blue-900/40",
     activePill: "bg-blue-600 border-blue-600 text-white shadow-blue-500/10",
-    fab: "bg-blue-900 text-white shadow-[0_10px_25px_rgba(30,58,138,0.5)] border-blue-800/30",
+    fab: "bg-blue-600 hover:bg-blue-700 border-blue-500",
     progressActive: "bg-blue-900 dark:bg-blue-500",
     payAccSelected: "border-blue-600 bg-blue-50/50 dark:bg-blue-900/20 shadow-blue-500/5",
     auditBox: "bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30"
@@ -24,7 +24,7 @@ const themeMap = {
     bgLight: "bg-emerald-50 dark:bg-emerald-900/30",
     border: "border-emerald-100 dark:border-emerald-900/40",
     activePill: "bg-emerald-600 border-emerald-600 text-white shadow-emerald-500/10",
-    fab: "bg-emerald-600 text-white shadow-[0_10px_25px_rgba(16,185,129,0.5)] border-emerald-500/30",
+    fab: "bg-emerald-600 hover:bg-emerald-700 border-emerald-500",
     progressActive: "bg-emerald-600 dark:bg-emerald-500",
     payAccSelected: "border-emerald-600 bg-emerald-50/50 dark:bg-emerald-900/20 shadow-emerald-500/5",
     auditBox: "bg-emerald-50/50 dark:bg-emerald-900/20 p-3 rounded-xl border border-emerald-100 dark:border-emerald-900/30"
@@ -35,7 +35,7 @@ const themeMap = {
     bgLight: "bg-purple-50 dark:bg-purple-900/30",
     border: "border-purple-100 dark:border-purple-900/40",
     activePill: "bg-purple-600 border-purple-600 text-white shadow-purple-500/10",
-    fab: "bg-purple-600 text-white shadow-[0_10px_25px_rgba(168,85,247,0.5)] border-purple-500/30",
+    fab: "bg-purple-600 hover:bg-purple-700 border-purple-500",
     progressActive: "bg-purple-600 dark:bg-purple-500",
     payAccSelected: "border-purple-600 bg-purple-50/50 dark:bg-purple-900/20 shadow-purple-500/5",
     auditBox: "bg-purple-50/50 dark:bg-purple-900/20 p-3 rounded-xl border border-purple-100 dark:border-purple-900/30"
@@ -46,7 +46,7 @@ const themeMap = {
     bgLight: "bg-amber-50 dark:bg-amber-900/30",
     border: "border-amber-100 dark:border-amber-900/40",
     activePill: "bg-amber-600 border-amber-600 text-white shadow-amber-500/10",
-    fab: "bg-amber-600 text-white shadow-[0_10px_25px_rgba(217,119,6,0.5)] border-amber-500/30",
+    fab: "bg-amber-600 hover:bg-amber-700 border-amber-500",
     progressActive: "bg-amber-600 dark:bg-amber-500",
     payAccSelected: "border-amber-600 bg-amber-50/50 dark:bg-amber-900/20 shadow-amber-500/5",
     auditBox: "bg-amber-50/50 dark:bg-amber-900/20 p-3 rounded-xl border border-amber-100 dark:border-amber-900/30"
@@ -57,7 +57,7 @@ const themeMap = {
     bgLight: "bg-rose-50 dark:bg-rose-900/30",
     border: "border-rose-100 dark:border-rose-900/40",
     activePill: "bg-rose-600 border-rose-600 text-white shadow-rose-500/10",
-    fab: "bg-rose-600 text-white shadow-[0_10px_25px_rgba(244,63,94,0.5)] border-rose-500/30",
+    fab: "bg-rose-600 hover:bg-rose-700 border-rose-500",
     progressActive: "bg-rose-600 dark:bg-rose-500",
     payAccSelected: "border-rose-600 bg-rose-50/50 dark:bg-rose-900/20 shadow-rose-500/5",
     auditBox: "bg-rose-50/50 dark:bg-rose-900/20 p-3 rounded-xl border border-rose-100 dark:border-rose-900/30"
@@ -876,7 +876,7 @@ export default function AssetsTab({
             </div>
           )}
 
-          <button onClick={() => { triggerHaptic(); setIsManageOpen(true); }} className={`fixed bottom-24 md:bottom-10 right-6 w-14 h-14 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40 cursor-pointer ${currentTheme.fab}`}>
+          <button onClick={() => { triggerHaptic(); setIsManageOpen(true); }} className={`fixed bottom-28 md:bottom-10 right-6 md:right-8 z-40 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-lg transition-all cursor-pointer active:scale-95 border ${currentTheme.fab} animate-in zoom-in-90`}>
             <Plus size={28} strokeWidth={2.5} />
           </button>
         </>
