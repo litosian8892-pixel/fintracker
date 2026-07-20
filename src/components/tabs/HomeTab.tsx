@@ -823,61 +823,6 @@ export default function HomeTab({
     ]), icon: "🌟", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-100 dark:border-emerald-900/30" };
   }, [monthlyTransactions, monthlySummary, categories, searchQueryInput, isReportLoading, assistantMode]);
 
-  // 🟢 LOGIKA FITUR PREMIUM: Guilt-Free Daily Spend (Batas Jajan Harian)
-  const guiltFreeData = useMemo(() => {
-    const now = new Date();
-    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const isCurrentMonth = reportMonth === currentMonthStr;
-
-    // Ambil daftar kategori variabel yang punya budget
-    const varCats = categories.filter(c => c.type === 'expense' && c.expenseType !== 'fixed' && c.budgetLimit && c.budgetLimit > 0);
-    
-    // Hanya tampilkan jika ini bulan berjalan dan user sudah set budget variabel
-    if (!isCurrentMonth || varCats.length === 0) return { isVisible: false };
-
-    const totalVarBudget = varCats.reduce((sum, c) => sum + (c.budgetLimit || 0), 0);
-    const varCatNames = new Set(varCats.map(c => c.name));
-    
-    let totalVarSpent = 0;
-    let todayVarSpent = 0;
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
-    // Ekstrak pengeluaran riil dari kategori variabel (Termasuk pecah struk / splits)
-    monthlyTransactions.filter(t => t.type === 'expense').forEach(t => {
-      if (t.splits && t.splits.length > 0) {
-        t.splits.forEach(s => {
-          if (varCatNames.has(s.category)) {
-            totalVarSpent += s.amount;
-            if (t.tDate === todayStr) todayVarSpent += s.amount;
-          }
-        });
-      } else {
-        if (varCatNames.has(t.category)) {
-          totalVarSpent += t.amount;
-          if (t.tDate === todayStr) todayVarSpent += t.amount;
-        }
-      }
-    });
-
-    const remainingBudget = totalVarBudget - totalVarSpent;
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const remainingDays = daysInMonth - now.getDate() + 1; // Termasuk hari ini
-
-    // Kalkulasi matematika Jatah Hari Ini + Sisa Tabungan Hari Sebelumnya
-    const budgetLeftForTodayAndFuture = remainingBudget + todayVarSpent;
-    const dailyLimitForToday = budgetLeftForTodayAndFuture > 0 ? budgetLeftForTodayAndFuture / remainingDays : 0;
-    const leftForToday = dailyLimitForToday - todayVarSpent;
-
-    return {
-      isVisible: true,
-      dailyLimit: dailyLimitForToday,
-      spentToday: todayVarSpent,
-      leftForToday: leftForToday,
-      remainingDays,
-      status: leftForToday > 0 ? "aman" : leftForToday === 0 ? "pas" : "bahaya"
-    };
-  }, [monthlyTransactions, categories, reportMonth]);
-
   const groupedTransactionsByDay = useMemo(() => {
     const groups: Record<string, TransactionData[]> = {};
     monthlyTransactions.forEach(t => { if (!groups[t.tDate]) groups[t.tDate] = []; groups[t.tDate].push(t); });
@@ -1165,43 +1110,6 @@ export default function HomeTab({
           <ArrowUpRight size={14} strokeWidth={3} />
         </div>
       </div>
-
-      {/* 🟢 WIDGET PREMIUM: GUILT-FREE DAILY SPEND (Batas Jajan Harian) */}
-      {guiltFreeData.isVisible && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-[20px] p-4 shadow-sm relative overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-700 flex flex-col gap-3">
-          <div className="flex justify-between items-center">
-             <div className="flex items-center gap-1.5">
-                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xs shadow-inner">☕</div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">Jatah Jajan Hari Ini</p>
-             </div>
-             <span className="text-[9px] font-black bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-sm">{guiltFreeData.remainingDays} Hari Lagi</span>
-          </div>
-          
-          <div className="flex justify-between items-end mt-1">
-            <div>
-               <h3 className={`text-2xl font-black tracking-tight ${guiltFreeData.status === 'aman' ? 'text-emerald-500 dark:text-emerald-400' : guiltFreeData.status === 'pas' ? 'text-amber-500' : 'text-rose-500'}`}>
-                 {isPrivacyMode ? 'Rp •••••••' : `Rp ${Math.abs(Math.round(guiltFreeData.leftForToday || 0)).toLocaleString('id-ID')}`}
-               </h3>
-               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
-                 {guiltFreeData.status === 'bahaya' ? 'Overbudget harian! 🛑' : `Dari batas aman Rp ${Math.round(guiltFreeData.dailyLimit || 0).toLocaleString('id-ID')}/hari`}
-               </p>
-            </div>
-            
-            <div className="text-right">
-               <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5">Terpakai</p>
-               <p className="text-xs font-black text-slate-700 dark:text-slate-300">Rp {Math.round(guiltFreeData.spentToday || 0).toLocaleString('id-ID')}</p>
-            </div>
-          </div>
-
-          {/* Progress Bar Pintar */}
-          <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2 shadow-inner relative">
-             <div 
-               className={`h-full rounded-full transition-all duration-1000 ${guiltFreeData.status === 'aman' ? 'bg-emerald-500' : guiltFreeData.status === 'pas' ? 'bg-amber-500' : 'bg-rose-500'}`} 
-               style={{ width: `${Math.min(((guiltFreeData.spentToday || 0) / (guiltFreeData.dailyLimit || 1)) * 100, 100)}%` }} 
-             />
-          </div>
-        </div>
-      )}
 
       {/* DAILY GROUPED TRANSACTION HISTORY LIST */}
       <div className="space-y-4">
