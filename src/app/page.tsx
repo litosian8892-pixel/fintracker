@@ -117,17 +117,42 @@ export default function LandingPage() {
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-8 text-center px-4">Mendukung Pencatatan Aset Dari Berbagai Platform</p>
           
           {/* Trik Masking Gradient untuk Efek Fade Out di Kiri-Kanan */}
-          <div className="w-full max-w-5xl mx-auto overflow-hidden relative flex pointer-events-none [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
-            <div className="flex whitespace-nowrap animate-marquee items-center gap-12 md:gap-20 w-max">
+          <div className="w-full max-w-5xl mx-auto overflow-hidden relative flex [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
+            <div className="flex whitespace-nowrap animate-marquee items-center gap-6 md:gap-8 w-max">
                {/* Render 2x untuk ilusi pergerakan tiada henti */}
                {[...Array(2)].map((_, i) => (
-                  <div key={i} className="flex gap-12 md:gap-20 items-center shrink-0">
-                    <span className="text-slate-400 font-black text-base md:text-xl flex items-center gap-3 opacity-70"><div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shadow-inner">💳</div> BCA</span>
-                    <span className="text-slate-400 font-black text-base md:text-xl flex items-center gap-3 opacity-70"><div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-inner">📱</div> GoPay</span>
-                    <span className="text-slate-400 font-black text-base md:text-xl flex items-center gap-3 opacity-70"><div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shadow-inner">📱</div> OVO</span>
-                    <span className="text-slate-400 font-black text-base md:text-xl flex items-center gap-3 opacity-70"><div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shadow-inner">💳</div> Mandiri</span>
-                    <span className="text-slate-400 font-black text-base md:text-xl flex items-center gap-3 opacity-70"><div className="w-10 h-10 rounded-2xl bg-blue-400/10 border border-blue-400/20 text-blue-300 flex items-center justify-center shadow-inner">📱</div> DANA</span>
-                    <span className="text-slate-400 font-black text-base md:text-xl flex items-center gap-3 opacity-70"><div className="w-10 h-10 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center shadow-inner">📈</div> Crypto</span>
+                  <div key={i} className="flex gap-6 md:gap-8 items-center shrink-0">
+                    
+                    {/* BCA */}
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" />
+                    </div>
+                    
+                    {/* Mandiri */}
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/a/a8/Logo_Bank_Mandiri.svg" alt="Mandiri" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" />
+                    </div>
+                    
+                    {/* GoPay */}
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg" alt="GoPay" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" />
+                    </div>
+                    
+                    {/* OVO */}
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/e/e9/OVO_logo.svg" alt="OVO" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" />
+                    </div>
+                    
+                    {/* DANA */}
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" />
+                    </div>
+                    
+                    {/* Crypto (Binance) */}
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Binance_logo.svg" alt="Crypto" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" />
+                    </div>
+
                   </div>
                ))}
             </div>
