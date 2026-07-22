@@ -1300,23 +1300,77 @@ export default function FintrackerApp() {
   if (isPremium === false) {
     const waLink = `https://wa.me/6282271312559?text=${encodeURIComponent(`Halo Admin Fintracker! 🚀\nSaya ingin mengaktifkan Lisensi Premium (Lifetime).\n\n📧 Email akun saya: ${user.email}`)}`;
     return (
-      <main className="min-h-screen bg-[#070a13] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-200">
-        <div className="absolute w-[500px] h-[500px] bg-blue-600/10 blur-[150px] rounded-full -top-40 -left-40 pointer-events-none"></div><div className="absolute w-[500px] h-[500px] bg-indigo-500/10 blur-[150px] rounded-full -bottom-40 -right-40 pointer-events-none"></div>
-        <div className="bg-[#0b101d]/60 backdrop-blur-2xl border border-white/[0.06] p-8 md:p-10 rounded-[35px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-full max-w-sm flex flex-col items-center relative overflow-hidden animate-in zoom-in-95 duration-300">
-          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
-          <div className="w-16 h-16 bg-[#0f1524] rounded-full flex items-center justify-center mb-5 shadow-xl border border-white/[0.08] relative"><div className="absolute w-8 h-8 bg-amber-500/20 rounded-full blur-[10px] pointer-events-none"></div><Crown size={26} className="text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.4)] z-10" strokeWidth={1.5}/></div>
-          <h2 className="text-2xl font-black mb-1.5 tracking-tight text-white leading-none text-center">AKSES <span className="bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500 bg-clip-text text-transparent">PREMIUM</span> TERKUNCI</h2>
-          <p className="text-xs text-slate-400 mb-6 text-center leading-relaxed">Aktifkan lisensi seumur hidup untuk membuka kunci akses selamanya.</p>
-          <div className="w-full bg-[#151c30]/50 border border-amber-500/20 rounded-2xl p-5 mb-6 relative overflow-hidden shadow-inner text-left flex flex-col justify-between">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 blur-[30px] rounded-full pointer-events-none"></div>
-            <div className="pb-4 space-y-1.5"><div className="flex justify-between items-center"><span className="text-[8px] font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 uppercase tracking-widest leading-none">LIFETIME ACCESS PASS</span><Crown size={16} className="text-amber-400 drop-shadow-[0_0_6px_rgba(245,158,11,0.4)]" /></div><h3 className="text-xs font-black text-white uppercase tracking-tight">PREMIUM LIFETIME PASS</h3><p className="text-[10px] font-semibold text-slate-400 leading-normal">Membuka penuh proteksi PIN & sidik jari, pemisahan dompet usaha, otomatisasi tagihan berulang, alokasi pecahan transaksi, s/d mutasi multi-valas asing selamanya.</p></div>
-            <div className="border-t border-dashed border-amber-500/25 my-1 pointer-events-none"></div><div className="pt-2 flex justify-between items-center text-[8px] text-slate-500 font-mono leading-none"><span className="truncate max-w-[130px]">MEMBER: {user.email?.split("@")[0].toUpperCase()}</span><span>NO: FT-{user.uid.slice(0, 6).toUpperCase()}</span></div>
+      <main className="min-h-screen bg-[#030712] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        {/* Glow Effects Latar Belakang */}
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/10 blur-[150px] rounded-full pointer-events-none"></div>
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-amber-500/10 blur-[150px] rounded-full pointer-events-none"></div>
+
+        {/* Top Navbar / Header Sederhana */}
+        <div className="absolute top-8 left-6 md:left-10 flex items-center gap-2 z-20">
+          <img src="/apple-touch-icon.png" alt="Logo" className="w-8 h-8 rounded-xl shadow-lg shadow-blue-500/20" />
+          <span className="font-black text-xl tracking-tight text-white hidden sm:block">Fintracker<span className="text-blue-500">.</span></span>
+        </div>
+        <button onClick={() => signOut(auth)} className="absolute top-8 right-6 md:right-10 z-20 text-xs font-bold text-slate-400 hover:text-white px-5 py-2.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer backdrop-blur-md">
+          Keluar Akun
+        </button>
+
+        {/* Konten Utama (2 Kolom Lebar di Desktop) */}
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700 mt-20 lg:mt-0">
+          
+          {/* Sisi Kiri: Teks Sapaan & Penjelasan */}
+          <div className="text-left space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-widest">
+              <Crown size={12} strokeWidth={2.5}/> Akun Menunggu Aktivasi
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.1] tracking-tighter">
+              Langkah Terakhir Menuju <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500">Kebebasan Finansial.</span>
+            </h1>
+            
+            <p className="text-slate-400 text-sm md:text-base leading-relaxed max-w-lg">
+              Halo <b className="text-white">{user.displayName || user.email?.split('@')[0]}</b>! Akun Fintracker Anda berhasil terhubung. Amankan lisensi seumur hidup sekarang untuk membuka kunci seluruh fitur kelas <i>Enterprise</i>.
+            </p>
+            
+            {/* Kartu Info Member */}
+            <div className="flex flex-wrap items-center gap-6 pt-6 border-t border-white/5 max-w-lg">
+              <div>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Email Terdaftar</p>
+                <p className="text-sm font-black text-white">{user.email}</p>
+              </div>
+              <div className="hidden sm:block w-[1px] h-8 bg-white/10"></div>
+              <div>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">ID Pengguna</p>
+                <p className="text-sm font-mono font-bold text-slate-300">FT-{user.uid.slice(0, 8).toUpperCase()}</p>
+              </div>
+            </div>
           </div>
-          <div className="text-center w-full space-y-4">
-            <div className="flex items-baseline justify-center gap-2"><span className="text-xs font-bold text-slate-500 line-through">Rp 150.000</span><span className="text-4xl font-black text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]">Rp 49.000</span><span className="text-[8px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md uppercase tracking-wider ml-1">SAVE 67%</span></div>
-            <p className="text-[9px] font-extrabold text-blue-400 uppercase tracking-widest leading-none">Sekali Bayar Selamanya</p>
-            <a href={waLink} target="_blank" rel="noreferrer" className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 shadow-[0_4px_20px_rgba(16,185,129,0.25)] text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] duration-100 cursor-pointer"><MessageCircle size={16} /> Aktivasi via WhatsApp</a>
-            <button onClick={() => signOut(auth)} className="text-[9px] font-bold text-slate-500 hover:text-slate-300 transition-colors cursor-pointer block mx-auto pt-1">Bukan {user.email}? Logout</button>
+
+          {/* Sisi Kanan: Tiket Lifetime Pass & Tombol CTA */}
+          <div className="bg-[#0b101d]/80 backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative overflow-hidden group w-full max-w-md mx-auto lg:mx-0">
+            {/* Glow di dalam box */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-amber-500/20 transition-colors duration-500"></div>
+            
+            <div className="flex justify-between items-center mb-8 relative z-10">
+              <h3 className="text-lg font-black text-white flex items-center gap-2"><Crown size={20} className="text-amber-400"/> Lifetime Pass</h3>
+              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-black tracking-widest uppercase">Save 67%</span>
+            </div>
+
+            <div className="flex items-baseline gap-3 mb-2 relative z-10">
+              <span className="text-5xl font-black text-white tracking-tight">Rp 49.000</span>
+            </div>
+            <p className="text-sm font-bold text-slate-500 line-through mb-8 relative z-10">Rp 150.000</p>
+
+            <ul className="space-y-4 text-sm font-bold text-slate-300 mb-10 relative z-10">
+              <li className="flex items-center gap-3"><span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-[10px] shrink-0">✓</span> Proteksi Sandi Lokal & Biometrik</li>
+              <li className="flex items-center gap-3"><span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-[10px] shrink-0">✓</span> Pencatatan Offline Tanpa Batas</li>
+              <li className="flex items-center gap-3"><span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-[10px] shrink-0">✓</span> Portofolio Aset & Valas (Multi-Currency)</li>
+              <li className="flex items-center gap-3"><span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-[10px] shrink-0">✓</span> Gratis Update Fitur Selamanya</li>
+            </ul>
+
+            <a href={waLink} target="_blank" rel="noreferrer" className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-2xl text-sm font-black flex items-center justify-center gap-2 transition-all shadow-[0_10px_30px_-10px_rgba(16,185,129,0.4)] hover:shadow-[0_10px_40px_-10px_rgba(16,185,129,0.6)] hover:scale-[1.02] active:scale-[0.98] relative z-10">
+              <MessageCircle size={18} /> Aktivasi via WhatsApp
+            </a>
+            <p className="text-[10px] text-center text-slate-500 font-bold mt-4 relative z-10">Pesan otomatis akan terbuka dengan format akun Anda.</p>
           </div>
         </div>
       </main>
