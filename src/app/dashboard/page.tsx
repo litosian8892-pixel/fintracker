@@ -1237,9 +1237,9 @@ export default function FintrackerApp() {
     );
   }
 
-  // ⚡ SEAMLESS RENDER: Tahan UI utama sampai Auth selesai DAN Data Esensial siap.
-  // Ini mencegah "Flicker/Data Hilang Bentar" saat komponen HomeTab memaksa render sebelum data Firebase masuk.
-  const isReadyToRender = !loading && pinChecked && (user ? !isReportLoading : true);
+  // ⚡ TURBO RENDER 0-DETIK: Hapus bloker isReportLoading! Biarkan UI Beranda (HomeTab) langsung muncul
+  // agar form input & saldo bisa langsung ditekan, sementara list transaksi loading di background.
+  const isReadyToRender = !loading && pinChecked;
 
   if (!isReadyToRender) {
     const isBypassingAuth = typeof window !== 'undefined' && localStorage.getItem("fintracker_has_logged_in") === "true";

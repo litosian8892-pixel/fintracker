@@ -40,6 +40,9 @@ export default function LandingPage() {
           100% { transform: translateX(-50%); }
         }
         .animate-marquee { animation: marquee 20s linear infinite; }
+        @keyframes shine {
+          100% { left: 200%; }
+        }
       `}} />
       
       {/* 🔮 Background Depth: Glow & Mesh Grid Pattern */}
@@ -165,146 +168,275 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* 📱 BENTO GRID FEATURES SECTION */}
+        {/* 📱 BENTO GRID FEATURES SECTION (ULTRA PREMIUM EDITION) */}
         <section className="py-24 px-6 max-w-6xl mx-auto relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">Fitur Kelas <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Enterprise</span></h2>
-            <p className="text-slate-400 text-sm md:text-base font-medium">Semua yang kamu butuhkan untuk mencapai kebebasan finansial tanpa kompromi.</p>
+          <div className="text-center mb-16 relative">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[100px] bg-blue-500/20 blur-[60px] rounded-full pointer-events-none"></div>
+            <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight relative z-10">Fitur Kelas <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">Enterprise</span></h2>
+            <p className="text-slate-400 text-sm md:text-base font-medium relative z-10">Semua yang kamu butuhkan untuk mencapai kebebasan finansial tanpa kompromi.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 auto-rows-[minmax(320px,auto)]">
             
-            {/* Feature 1 (Large) */}
-            <div className="md:col-span-2 bg-[#0b101d]/80 backdrop-blur-xl p-8 md:p-10 rounded-[32px] border border-white/5 border-t-white/10 shadow-2xl relative overflow-hidden group hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-1">
-              <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 blur-[80px] rounded-full pointer-events-none group-hover:bg-blue-500/10 transition-colors duration-500"></div>
-              <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6 shadow-inner">
-                <Brain size={28} className="text-blue-400" />
-              </div>
-              <h3 className="text-2xl font-black mb-3 tracking-tight text-white">Asisten AI Kepribadian Ganda</h3>
-              <p className="text-slate-400 text-sm leading-relaxed max-w-md font-medium">Bosan diingetin robot yang kaku? Fintracker punya mode "Roaster" yang siap me-roasting pengeluaran impulsifmu agar kamu kapok jajan sembarangan.</p>
-            </div>
-
-            {/* Feature 2 (Square) */}
-            <div className="bg-[#0b101d]/80 backdrop-blur-xl p-8 md:p-10 rounded-[32px] border border-white/5 border-t-white/10 shadow-2xl relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-500 hover:-translate-y-1">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-6 shadow-inner">
-                <WifiOff size={28} className="text-emerald-400" />
-              </div>
-              <h3 className="text-xl font-black mb-3 tracking-tight text-white">100% Offline-First</h3>
-              <p className="text-slate-400 text-sm leading-relaxed font-medium">Nggak ada sinyal? Gak masalah. Catat transaksi kapan saja, sinkronisasi ke cloud otomatis saat sinyal kembali.</p>
-            </div>
-
-            {/* Feature 3 (Square) */}
-            <div className="bg-[#0b101d]/80 backdrop-blur-xl p-8 md:p-10 rounded-[32px] border border-white/5 border-t-white/10 shadow-2xl relative overflow-hidden group hover:border-purple-500/30 transition-all duration-500 hover:-translate-y-1">
-              <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-6 shadow-inner">
-                <Smartphone size={28} className="text-purple-400" />
-              </div>
-              <h3 className="text-xl font-black mb-3 tracking-tight text-white">Sihir Drag & Drop</h3>
-              <p className="text-slate-400 text-sm leading-relaxed font-medium">Pindahkan saldo antar dompet semudah menahan dan menggeser ikon dompet di layar HP-mu.</p>
-            </div>
-
-            {/* Feature 4 (Large) */}
-            <div className="md:col-span-2 bg-[#0b101d]/80 backdrop-blur-xl p-8 md:p-10 rounded-[32px] border border-white/5 border-t-white/10 shadow-2xl relative overflow-hidden group hover:border-orange-500/30 transition-all duration-500 hover:-translate-y-1">
-              <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-orange-500/5 blur-[80px] rounded-full pointer-events-none group-hover:bg-orange-500/10 transition-colors duration-500"></div>
-              <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-6 shadow-inner">
-                <Target size={28} className="text-orange-400" />
-              </div>
-              <h3 className="text-2xl font-black mb-3 tracking-tight text-white">Gamifikasi Runtutan (Streak)</h3>
-              <p className="text-slate-400 text-sm leading-relaxed max-w-md font-medium">Bangun kebiasaan baik dengan sistem Streak dan Financial Health Score. Dapatkan pujian setiap kali berhasil melewati hari tanpa pengeluaran!</p>
-            </div>
-
-          </div>
-        </section>
-
-        {/* 💎 PRICING SECTION (LIFETIME DEAL) */}
-        <section className="py-24 px-6 max-w-5xl mx-auto border-t border-white/5 mt-10 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">Investasi <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-orange-500">Sekali</span>, Pakai Selamanya.</h2>
-            <p className="text-slate-400 text-sm md:text-base font-medium">Tinggalkan aplikasi keuangan kuno yang memeras Anda dengan biaya langganan bulanan.</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-[#151c2c] to-[#080b12] border border-amber-500/20 border-t-amber-500/40 rounded-[40px] p-10 md:p-14 shadow-[0_30px_100px_-15px_rgba(245,158,11,0.15)] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12 group hover:shadow-[0_30px_100px_-15px_rgba(245,158,11,0.25)] transition-shadow duration-700">
-            {/* Glossy Sheen Overlay */}
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-            <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-amber-500/10 blur-[100px] rounded-full pointer-events-none"></div>
-            
-            <div className="flex-1 text-center md:text-left relative z-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-widest mb-6 shadow-inner">
-                <span>👑</span> LIFETIME ACCESS PASS
-              </div>
-              <h3 className="text-5xl md:text-6xl font-black mb-4 tracking-tighter text-white">Rp 49.000 <span className="text-xl text-slate-500 font-bold line-through ml-2 tracking-normal">Rp 150.000</span></h3>
+            {/* Feature 1 (Large - Col Span 2) */}
+            <div className="md:col-span-2 flex flex-col justify-between bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-slate-800/40 via-[#0b101d] to-[#05080f] backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-blue-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(59,130,246,0.2)]">
               
-              {/* 🔥 SOCIAL PROOF AVATARS */}
-              <div className="flex items-center justify-center md:justify-start gap-4 mb-8">
-                <div className="flex -space-x-3">
-                  <div className="w-9 h-9 rounded-full border-2 border-[#151c2c] bg-blue-100 flex items-center justify-center text-sm shadow-sm">👱🏻‍♂️</div>
-                  <div className="w-9 h-9 rounded-full border-2 border-[#151c2c] bg-emerald-100 flex items-center justify-center text-sm shadow-sm">👩🏻</div>
-                  <div className="w-9 h-9 rounded-full border-2 border-[#151c2c] bg-rose-100 flex items-center justify-center text-sm shadow-sm">🧔🏻‍♂️</div>
-                  <div className="w-9 h-9 rounded-full border-2 border-[#151c2c] bg-amber-100 flex items-center justify-center text-sm shadow-sm">🧕🏼</div>
-                  <div className="w-9 h-9 rounded-full border-2 border-[#151c2c] bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">+1.2K</div>
+              {/* Giant Watermark & Glows */}
+              <Brain className="absolute -bottom-10 -right-10 w-72 h-72 text-blue-500 opacity-[0.03] rotate-12 group-hover:scale-110 group-hover:opacity-[0.06] transition-all duration-700 pointer-events-none" />
+              <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none group-hover:bg-blue-500/25 transition-colors duration-700"></div>
+              
+              {/* Animated Inner Shine */}
+              <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent skew-x-[-20deg] group-hover:animate-[shine_1.5s_ease-in-out]"></div>
+              
+              <div className="relative z-10 mb-8">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-6 shadow-inner">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span> AI-Powered
                 </div>
-                <div className="text-left">
-                  <div className="flex text-amber-400"><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/></div>
-                  <p className="text-[11px] text-slate-400 font-bold mt-1">Dipercaya Milenial & Gen-Z</p>
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-600/5 border border-blue-500/30 flex items-center justify-center shadow-[inset_0_2px_10px_rgba(59,130,246,0.2)] group-hover:scale-110 group-hover:border-blue-400/50 transition-all duration-500">
+                  <Brain size={28} className="text-blue-400 drop-shadow-[0_0_12px_rgba(59,130,246,0.8)]" />
                 </div>
               </div>
 
-              <p className="text-slate-400 text-sm md:text-base leading-relaxed mb-8 max-w-sm mx-auto md:mx-0 font-medium">
-                Akses seluruh fitur premium Fintracker tanpa batas waktu. Bayar hari ini, nikmati <i>update</i> dan fitur baru selamanya tanpa biaya tambahan.
-              </p>
-              <ul className="space-y-4 text-sm font-bold text-slate-300 text-left w-max mx-auto md:mx-0">
-                <li className="flex items-center gap-3"><span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px]">✓</span> Proteksi PIN & Biometrik Native</li>
-                <li className="flex items-center gap-3"><span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px]">✓</span> Multi-Currency & Portofolio Investasi</li>
-                <li className="flex items-center gap-3"><span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px]">✓</span> Manajemen Utang & Langganan</li>
-                <li className="flex items-center gap-3"><span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px]">✓</span> Ekspor Laporan Excel Multi-Sheet</li>
-              </ul>
+              <div className="relative z-10">
+                <h3 className="text-3xl font-black mb-3 tracking-tight text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-blue-200 transition-all duration-500">Asisten AI Kepribadian Ganda</h3>
+                <p className="text-slate-400 text-sm leading-relaxed max-w-md font-medium group-hover:text-slate-300 transition-colors">Bosan diingetin robot yang kaku? Fintracker punya mode "Roaster" yang siap me-roasting pengeluaran impulsifmu agar kapok jajan sembarangan.</p>
+              </div>
             </div>
+
+            {/* Feature 2 (Square - Col Span 1) */}
+            <div className="flex flex-col justify-between bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-800/40 via-[#0b101d] to-[#05080f] backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-emerald-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(16,185,129,0.2)]">
+              
+              <WifiOff className="absolute -bottom-8 -right-8 w-56 h-56 text-emerald-500 opacity-[0.03] -rotate-12 group-hover:scale-110 group-hover:opacity-[0.06] transition-all duration-700 pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-emerald-500/25 transition-colors duration-700"></div>
+              <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent skew-x-[-20deg] group-hover:animate-[shine_1.5s_ease-in-out]"></div>
+              
+              <div className="relative z-10 mb-8">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-widest mb-6 shadow-inner">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Core System
+                </div>
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 border border-emerald-500/30 flex items-center justify-center shadow-[inset_0_2px_10px_rgba(16,185,129,0.2)] group-hover:scale-110 group-hover:border-emerald-400/50 transition-all duration-500">
+                  <WifiOff size={28} className="text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]" />
+                </div>
+              </div>
+
+              <div className="relative z-10">
+                <h3 className="text-2xl font-black mb-3 tracking-tight text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-emerald-200 transition-all duration-500">100% Offline-First</h3>
+                <p className="text-slate-400 text-sm leading-relaxed font-medium group-hover:text-slate-300 transition-colors">Catat transaksi di mana saja tanpa sinyal, tersinkronisasi otomatis saat terhubung kembali.</p>
+              </div>
+            </div>
+
+            {/* Feature 3 (Square - Col Span 1) */}
+            <div className="flex flex-col justify-between bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-slate-800/40 via-[#0b101d] to-[#05080f] backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-purple-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(168,85,247,0.2)]">
+               
+              <Smartphone className="absolute -bottom-8 -right-8 w-56 h-56 text-purple-500 opacity-[0.03] rotate-12 group-hover:scale-110 group-hover:opacity-[0.06] transition-all duration-700 pointer-events-none" />
+              <div className="absolute top-0 left-0 w-[300px] h-[300px] bg-purple-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-purple-500/25 transition-colors duration-700"></div>
+              <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent skew-x-[-20deg] group-hover:animate-[shine_1.5s_ease-in-out]"></div>
+
+              <div className="relative z-10 mb-8">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-6 shadow-inner">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span> Seamless UX
+                </div>
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-600/5 border border-purple-500/30 flex items-center justify-center shadow-[inset_0_2px_10px_rgba(168,85,247,0.2)] group-hover:scale-110 group-hover:border-purple-400/50 transition-all duration-500">
+                  <Smartphone size={28} className="text-purple-400 drop-shadow-[0_0_12px_rgba(168,85,247,0.8)]" />
+                </div>
+              </div>
+
+              <div className="relative z-10">
+                <h3 className="text-2xl font-black mb-3 tracking-tight text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-purple-200 transition-all duration-500">Sihir Drag & Drop</h3>
+                <p className="text-slate-400 text-sm leading-relaxed font-medium group-hover:text-slate-300 transition-colors">Pindahkan saldo antar dompet semudah menahan dan menggeser ikon dompet di layar HP-mu.</p>
+              </div>
+            </div>
+
+            {/* Feature 4 (Large - Col Span 2) */}
+            <div className="md:col-span-2 flex flex-col justify-between bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-slate-800/40 via-[#0b101d] to-[#05080f] backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-amber-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(245,158,11,0.2)]">
+               
+              <Target className="absolute -bottom-10 -right-10 w-72 h-72 text-amber-500 opacity-[0.03] -rotate-12 group-hover:scale-110 group-hover:opacity-[0.06] transition-all duration-700 pointer-events-none" />
+              <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-amber-500/10 blur-[100px] rounded-full pointer-events-none group-hover:bg-amber-500/25 transition-colors duration-700"></div>
+              <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent skew-x-[-20deg] group-hover:animate-[shine_1.5s_ease-in-out]"></div>
+
+              <div className="relative z-10 mb-8">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold uppercase tracking-widest mb-6 shadow-inner">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Gamification
+                </div>
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/5 border border-amber-500/30 flex items-center justify-center shadow-[inset_0_2px_10px_rgba(245,158,11,0.2)] group-hover:scale-110 group-hover:border-amber-400/50 transition-all duration-500">
+                  <Target size={28} className="text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]" />
+                </div>
+              </div>
+
+              <div className="relative z-10">
+                <h3 className="text-3xl font-black mb-3 tracking-tight text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-amber-200 transition-all duration-500">Gamifikasi Runtutan (Streak)</h3>
+                <p className="text-slate-400 text-sm leading-relaxed max-w-md font-medium group-hover:text-slate-300 transition-colors">Bangun kebiasaan baik dengan sistem Streak dan Financial Health Score. Dapatkan pujian setiap kali berhasil melewati hari tanpa pengeluaran!</p>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* 💎 PRICING SECTION (ULTRA PREMIUM TITANIUM PASS) */}
+        <section className="py-24 px-6 max-w-5xl mx-auto mt-10 relative z-10">
+          {/* Subtle Top Divider */}
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent"></div>
+          
+          <div className="text-center mb-16 relative">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[100px] bg-amber-500/10 blur-[80px] rounded-full pointer-events-none"></div>
+            <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight relative z-10">Investasi <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500">Sekali</span>, Pakai Selamanya.</h2>
+            <p className="text-slate-400 text-sm md:text-base font-medium relative z-10">Tinggalkan aplikasi keuangan kuno yang memeras Anda dengan biaya langganan bulanan.</p>
+          </div>
+
+          <div className="relative group mx-auto">
+            {/* Glowing Aura Behind Card */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/20 via-orange-500/10 to-amber-500/20 rounded-[42px] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
             
-            <div className="w-full md:w-auto relative z-10 shrink-0 mt-6 md:mt-0">
-              <Link href="/dashboard" className="w-full md:w-auto px-10 py-5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black text-sm transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.3),_0_15px_40px_-10px_rgba(245,158,11,0.6)] flex items-center justify-center gap-2 hover:scale-105 active:scale-95 border border-orange-500">
-                Amankan Lisensi Sekarang <ArrowRight size={18} />
-              </Link>
-              <p className="text-[10px] text-slate-400 font-bold text-center mt-4">Pembayaran 1x via WhatsApp Admin</p>
+            <div className="relative bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#1a140a] via-[#0a0c10] to-[#030712] border border-amber-500/20 border-t-amber-500/40 rounded-[40px] p-2 shadow-2xl overflow-hidden flex flex-col md:flex-row">
+              
+              {/* Inner Shine Effect */}
+              <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/[0.04] to-transparent skew-x-[-20deg] animate-[shine_4s_ease-in-out_infinite]"></div>
+              
+              {/* Left Column: Value Prop */}
+              <div className="flex-1 p-8 md:p-12 relative z-10 flex flex-col justify-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-widest mb-6 shadow-inner w-max">
+                  <span className="animate-pulse">👑</span> VIP LIFETIME PASS
+                </div>
+                
+                <h3 className="text-4xl md:text-5xl font-black mb-6 tracking-tighter text-white">
+                  Akses Tanpa <br className="hidden md:block"/>Batas Waktu.
+                </h3>
+                
+                <p className="text-slate-400 text-sm leading-relaxed mb-8 max-w-md font-medium">
+                  Bayar hari ini, nikmati semua fitur premium, proteksi enkripsi tingkat bank, dan <i>update</i> sistem selamanya tanpa biaya tambahan sepeser pun.
+                </p>
+                
+                {/* Features Grid Layout */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div>
+                    <span className="text-sm font-bold text-slate-300">Biometrik Native & PIN</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div>
+                    <span className="text-sm font-bold text-slate-300">Portofolio Multi-Aset</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div>
+                    <span className="text-sm font-bold text-slate-300">Laporan Excel Multi-Sheet</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div>
+                    <span className="text-sm font-bold text-slate-300">Asisten AI "Roaster"</span>
+                  </div>
+                </div>
+
+                {/* Social Proof */}
+                <div className="flex items-center gap-4 mt-auto">
+                  <div className="flex -space-x-3">
+                    <div className="w-8 h-8 rounded-full border-2 border-[#0a0c10] bg-blue-100 flex items-center justify-center text-xs shadow-sm">👱🏻‍♂️</div>
+                    <div className="w-8 h-8 rounded-full border-2 border-[#0a0c10] bg-emerald-100 flex items-center justify-center text-xs shadow-sm">👩🏻</div>
+                    <div className="w-8 h-8 rounded-full border-2 border-[#0a0c10] bg-rose-100 flex items-center justify-center text-xs shadow-sm">🧔🏻‍♂️</div>
+                    <div className="w-8 h-8 rounded-full border-2 border-[#0a0c10] bg-slate-800 text-white flex items-center justify-center text-[9px] font-bold shadow-sm">+1.2K</div>
+                  </div>
+                  <div className="flex text-amber-400"><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/></div>
+                </div>
+              </div>
+              
+              {/* Right Column: Checkout Ticket Cutout */}
+              <div className="w-full md:w-[380px] shrink-0 bg-gradient-to-b from-[#0b0f19] to-[#030712] border-l border-white/5 border-dashed md:border-solid p-8 md:p-10 relative flex flex-col justify-center items-center text-center rounded-[32px] md:rounded-l-none md:rounded-r-[38px] mt-2 md:mt-0">
+                {/* Decorative Ticket Cutouts (Only visible on desktop) */}
+                <div className="hidden md:block absolute top-1/2 -left-4 -translate-y-1/2 w-8 h-8 bg-[#030712] rounded-full border-r border-white/5 shadow-inner"></div>
+                
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Harga Spesial Hari Ini</p>
+                <div className="flex items-start justify-center gap-1 mb-2">
+                  <span className="text-xl font-bold text-amber-400 mt-2">Rp</span>
+                  <span className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-300 tracking-tighter">49</span>
+                  <span className="text-xl font-bold text-slate-400 mt-2">.000</span>
+                </div>
+                <p className="text-sm font-bold text-slate-500 line-through decoration-rose-500/50 decoration-2 mb-8">Harga Normal Rp 150.000</p>
+                
+                <Link href="/dashboard" className="w-full relative group/btn block">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl blur opacity-50 group-hover/btn:opacity-100 transition duration-300"></div>
+                  <div className="relative w-full px-8 py-5 rounded-2xl bg-gradient-to-b from-amber-400 to-orange-600 text-white font-black text-sm flex items-center justify-center gap-2 border border-amber-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all">
+                    Amankan Lisensi <ArrowRight size={18} />
+                  </div>
+                </Link>
+                
+                <p className="text-[10px] text-slate-500 font-bold mt-5 flex items-center justify-center gap-1.5"><ShieldCheck size={14} className="text-emerald-500"/> Pembayaran 1x via WhatsApp Admin</p>
+              </div>
+              
             </div>
           </div>
         </section>
 
-        {/* 🔒 SECURITY SECTION */}
-        <section className="py-24 px-6 max-w-4xl mx-auto text-center border-t border-white/5 mt-10">
-          <ShieldCheck size={48} className="text-emerald-500 mx-auto mb-6" />
-          <h2 className="text-3xl font-black mb-4">Privasi Tingkat Bank</h2>
-          <p className="text-slate-400 text-sm leading-relaxed mb-8">Data keuanganmu dikunci menggunakan enkripsi Firebase Firestore. Hanya kamu yang bisa mengakses data milikmu sendiri, bahkan kami pun tidak bisa melihatnya.</p>
-          <div className="flex items-center justify-center gap-2">
-            <span className="px-3 py-1 bg-slate-800 rounded-full text-[10px] font-bold text-slate-300">Face ID Supported</span>
-            <span className="px-3 py-1 bg-slate-800 rounded-full text-[10px] font-bold text-slate-300">Biometric Native</span>
+        {/* 🔒 SECURITY SECTION (ULTRA PREMIUM BANNER) */}
+        <section className="py-10 px-6 max-w-5xl mx-auto relative z-10">
+          <div className="w-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/20 via-[#0b101d] to-[#05080f] border border-emerald-500/20 rounded-[32px] p-8 md:p-10 shadow-[0_10px_40px_rgba(16,185,129,0.05)] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group hover:border-emerald-500/30 transition-all duration-500 hover:-translate-y-1">
+            {/* Ambient Animated Glow */}
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-emerald-500/20 transition-colors duration-700"></div>
+            
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 relative z-10 w-full md:w-auto text-center md:text-left">
+              {/* Glowing Icon Container */}
+              <div className="relative shrink-0">
+                <div className="absolute inset-0 bg-emerald-500 rounded-full blur-md opacity-30 animate-pulse"></div>
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-b from-emerald-500/20 to-emerald-600/5 border border-emerald-500/40 flex items-center justify-center relative shadow-[inset_0_1px_0_rgba(16,185,129,0.4)] backdrop-blur-xl group-hover:scale-110 transition-transform duration-500">
+                  <ShieldCheck size={32} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                </div>
+              </div>
+              
+              <div>
+                <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-2">Privasi Tingkat <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-emerald-500">Bank.</span></h2>
+                <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-md">Data keuanganmu dienkripsi via Firebase Firestore. Kami tidak bisa melihat, membaca, atau membagikan datamu.</p>
+              </div>
+            </div>
+
+            {/* Hardware Tags */}
+            <div className="flex flex-wrap md:flex-col justify-center gap-3 relative z-10 w-full md:w-auto shrink-0">
+              <div className="px-4 py-2.5 bg-[#030712]/50 border border-white/10 rounded-xl flex items-center justify-center md:justify-start gap-2.5 shadow-inner backdrop-blur-md">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+                <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Face ID Enabled</span>
+              </div>
+              <div className="px-4 py-2.5 bg-[#030712]/50 border border-white/10 rounded-xl flex items-center justify-center md:justify-start gap-2.5 shadow-inner backdrop-blur-md">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
+                <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Biometric</span>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* ❓ FAQ SECTION (Pertanyaan Sering Diajukan) */}
-        <section className="py-20 px-6 max-w-3xl mx-auto border-t border-white/5">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-black mb-4">Pertanyaan yang Sering Diajukan</h2>
-            <p className="text-slate-400 text-sm">Masih ragu? Berikut adalah jawaban untuk membantu Anda.</p>
+        {/* ❓ FAQ SECTION (MINIMALIST ENTERPRISE) */}
+        <section className="py-24 px-6 max-w-3xl mx-auto relative z-10">
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+          
+          <div className="text-center mb-16 mt-8">
+            <h2 className="text-3xl font-black mb-4 tracking-tight">Masih Punya Pertanyaan?</h2>
+            <p className="text-slate-400 text-sm font-medium">Semua jawaban yang Anda butuhkan sebelum memulai perjalanan finansial baru.</p>
           </div>
-          <div className="space-y-4">
+          
+          <div className="space-y-1">
             {faqs.map((faq, idx) => {
               const isOpen = openFaq === idx;
               return (
                 <div 
                   key={idx} 
-                  className={`border transition-all duration-300 rounded-[20px] overflow-hidden ${isOpen ? 'border-blue-500/30 bg-blue-900/10' : 'border-white/5 bg-slate-900/40 hover:bg-slate-900/60'}`}
+                  className={`transition-all duration-300 border-b ${isOpen ? 'border-blue-500/30' : 'border-white/5'} overflow-hidden relative group`}
                 >
+                  {/* Subtle Background for active state */}
+                  <div className={`absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent transition-opacity duration-300 pointer-events-none ${isOpen ? 'opacity-100' : 'opacity-0'}`}></div>
+                  
                   <button 
                     onClick={() => setOpenFaq(isOpen ? null : idx)} 
-                    className="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none cursor-pointer active:scale-[0.99] transition-transform"
+                    className="w-full py-6 pr-6 pl-4 flex items-center justify-between text-left focus:outline-none cursor-pointer relative z-10"
                   >
-                    <span className={`font-bold text-sm ${isOpen ? 'text-blue-400' : 'text-slate-200'}`}>{faq.q}</span>
-                    <ChevronDown size={18} className={`shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-blue-400' : 'text-slate-500'}`} />
+                    <div className="flex items-center gap-4">
+                      {/* Animated Indicator */}
+                      <div className={`w-1 transition-all duration-300 rounded-r-full ${isOpen ? 'h-6 bg-blue-500' : 'h-0 bg-transparent'} absolute left-0`}></div>
+                      <span className={`font-bold text-base md:text-lg transition-colors duration-300 ${isOpen ? 'text-white' : 'text-slate-300 group-hover:text-white'}`}>{faq.q}</span>
+                    </div>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${isOpen ? 'bg-blue-500/10 text-blue-400 rotate-180 shadow-inner' : 'bg-white/5 text-slate-500 group-hover:bg-white/10 group-hover:text-slate-300'}`}>
+                      <ChevronDown size={16} />
+                    </div>
                   </button>
                   
-                  {/* Animasi Buka/Tutup Menggunakan CSS Grid Hack (Super Mulus) */}
-                  <div className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                  <div className={`grid transition-all duration-300 ease-in-out relative z-10 ${isOpen ? 'grid-rows-[1fr] opacity-100 pb-6' : 'grid-rows-[0fr] opacity-0 pb-0'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-6 pb-5 text-sm text-slate-400 leading-relaxed border-t border-white/5 pt-4 mt-1">
+                      <p className="pl-4 pr-12 text-sm text-slate-400 leading-relaxed font-medium">
                         {faq.a}
                       </p>
                     </div>
