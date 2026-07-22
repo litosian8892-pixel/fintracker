@@ -131,8 +131,7 @@ export default function LandingPage() {
                     {/* Mandiri */}
                     <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
                       <img 
-                        src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Bank_Mandiri_logo_2016.svg" 
-                        onError={(e) => { e.currentTarget.src = "https://logodownload.org/wp-content/uploads/2021/11/bank-mandiri-logo-0.png"; e.currentTarget.onerror = null; }} 
+                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Logo_Bank_Mandiri.svg/512px-Logo_Bank_Mandiri.svg.png" 
                         alt="Mandiri" 
                         className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" 
                       />
@@ -150,8 +149,7 @@ export default function LandingPage() {
                     {/* OVO */}
                     <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
                       <img 
-                        src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_OVO.svg" 
-                        onError={(e) => { e.currentTarget.src = "https://logodownload.org/wp-content/uploads/2021/11/ovo-logo-0.png"; e.currentTarget.onerror = null; }} 
+                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/OVO_logo.svg/512px-OVO_logo.svg.png" 
                         alt="OVO" 
                         className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" 
                       />
