@@ -2,7 +2,8 @@
 
 import { auth, googleProvider } from "../../lib/firebase"; 
 import { signInWithPopup } from "firebase/auth";
-import { Crown, ShieldCheck, Zap, Sparkles, Receipt, BarChart3 } from "lucide-react";
+import { Crown, ShieldCheck, Zap, Sparkles, Receipt, BarChart3, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function AuthScreen() {
   
@@ -24,6 +25,15 @@ export default function AuthScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#070a13] text-white p-6 relative overflow-hidden transition-colors duration-200">
       
+      {/* 🔙 TOMBOL KEMBALI KE BERANDA (LANDING PAGE) */}
+      <Link 
+        href="/" 
+        className="absolute top-6 md:top-8 left-6 md:left-8 z-50 flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer group bg-white/5 hover:bg-white/10 px-4 py-2.5 rounded-full border border-white/5 backdrop-blur-md animate-in fade-in slide-in-from-left-4 duration-500"
+      >
+        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+        <span>Kembali</span>
+      </Link>
+
       {/* Efek Gradasi Bias Cahaya Ambient di Latar Belakang */}
       <div className="absolute w-[500px] h-[500px] bg-blue-600/10 blur-[150px] rounded-full -top-40 -left-40 pointer-events-none"></div>
       <div className="absolute w-[500px] h-[500px] bg-indigo-500/10 blur-[150px] rounded-full -bottom-40 -right-40 pointer-events-none"></div>
