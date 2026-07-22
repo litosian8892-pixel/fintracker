@@ -1300,7 +1300,7 @@ export default function FintrackerApp() {
   if (isPremium === false) {
     const waLink = `https://wa.me/6282271312559?text=${encodeURIComponent(`Halo Admin Fintracker! 🚀\nSaya ingin mengaktifkan Lisensi Premium (Lifetime).\n\n📧 Email akun saya: ${user.email}`)}`;
     return (
-      <main className="min-h-screen bg-[#030712] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      <main className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
         {/* Glow Effects Latar Belakang */}
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/10 blur-[150px] rounded-full pointer-events-none"></div>
         <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-amber-500/10 blur-[150px] rounded-full pointer-events-none"></div>
@@ -1346,7 +1346,7 @@ export default function FintrackerApp() {
           </div>
 
           {/* Sisi Kanan: Tiket Lifetime Pass & Tombol CTA */}
-          <div className="bg-[#0b101d]/80 backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative overflow-hidden group w-full max-w-md mx-auto lg:mx-0">
+          <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/10 p-8 md:p-10 rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative overflow-hidden group w-full max-w-md mx-auto lg:mx-0">
             {/* Glow di dalam box */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-amber-500/20 transition-colors duration-500"></div>
             

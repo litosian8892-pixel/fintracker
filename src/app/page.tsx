@@ -16,55 +16,71 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false); // ⚡ STATE ANTI-FREEZE
+
+  // ⚡ AUTO-BYPASS (HARD REDIRECT)
+  useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("fintracker_has_logged_in") === "true") {
+      setIsNavigating(true);
+      window.location.replace("/dashboard"); // Paksa browser lompat instan!
+    }
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
-      setShowSticky(window.scrollY > 400); // Trigger Sticky CTA
+      setShowSticky(window.scrollY > 400); 
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // ⚡ FUNGSI LOMPAT INSTAN BEBAS LAG
+  const handleEnterApp = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setIsNavigating(true);
+    window.location.href = "/dashboard";
+  };
+
+  // 🚀 TAMPILAN LOADING SKELETON AGAR HP TIDAK NGE-FREEZE
+  if (isNavigating) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-950 to-slate-950"></div>
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-slate-800 border-t-blue-500 rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+          <p className="text-slate-300 font-bold animate-pulse tracking-widest uppercase text-xs">Memuat Ruang Kerja...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#030712] text-white selection:bg-blue-500/30 overflow-x-hidden relative">
-      {/* CSS ENGINE: Animasi Float & Marquee Khusus Landing Page */}
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-blue-500/30 overflow-x-hidden relative">
+      {/* CSS ENGINE */}
       <style dangerouslySetInnerHTML={{__html: `
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-15px); }
-        }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
         .animate-float { animation: float 6s ease-in-out infinite; }
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .animate-marquee { animation: marquee 20s linear infinite; }
-        @keyframes shine {
-          100% { left: 200%; }
-        }
+        @keyframes shine { 100% { left: 200%; } }
       `}} />
       
-      {/* 🔮 Background Depth: Glow & Mesh Grid Pattern */}
+      {/* 🔮 Background Depth */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0"></div>
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-blue-600/15 blur-[120px] rounded-full pointer-events-none z-0"></div>
       <div className="fixed bottom-0 right-0 w-[600px] h-[600px] bg-indigo-600/10 blur-[150px] rounded-full pointer-events-none z-0"></div>
 
       {/* 🛸 Navigation Bar */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#030712]/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-slate-950/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
         <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
           <div className="flex items-center gap-2.5">
-            {/* 💎 LOGO CUSTOM */}
-            <img 
-              src="/apple-touch-icon.png" 
-              alt="Fintracker Logo" 
-              className="w-8 h-8 rounded-xl object-cover shadow-lg shadow-blue-500/20 ring-1 ring-white/10"
-            />
+            <img src="/apple-touch-icon.png" alt="Fintracker Logo" className="w-8 h-8 rounded-xl object-cover shadow-lg shadow-blue-500/20 ring-1 ring-white/10" />
             <span className="font-black text-xl tracking-tight text-white">Fintracker<span className="text-blue-500">.</span></span>
           </div>
-          <Link href="/dashboard" className="px-5 py-2.5 rounded-full text-xs font-bold bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white transition-all border border-white/10 border-b-white/5 shadow-inner backdrop-blur-md">
+          <button onClick={handleEnterApp} className="cursor-pointer px-5 py-2.5 rounded-full text-xs font-bold bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white transition-all border border-white/10 border-b-white/5 shadow-inner backdrop-blur-md">
             Masuk App
-          </Link>
+          </button>
         </div>
       </nav>
 
@@ -85,17 +101,16 @@ export default function LandingPage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
-            <Link href="/dashboard" className="px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.2),_0_0_40px_-10px_rgba(59,130,246,0.6)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),_0_0_60px_-10px_rgba(59,130,246,0.8)] flex items-center justify-center gap-2 hover:scale-105 active:scale-95 border border-blue-500">
+            <button onClick={handleEnterApp} className="cursor-pointer px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.2),_0_0_40px_-10px_rgba(59,130,246,0.6)] flex items-center justify-center gap-2 hover:scale-105 active:scale-95 border border-blue-500">
               Dapatkan Akses Sekarang <ArrowRight size={18} />
-            </Link>
+            </button>
           </div>
 
-          {/* 📱 FLOATING GLASS MOCKUP (HYPER-REALISTIC) */}
+          {/* 📱 FLOATING GLASS MOCKUP */}
           <div className="mt-20 relative w-full max-w-lg mx-auto animate-float hidden md:block group">
             <div className="absolute inset-0 bg-blue-500/20 blur-[60px] rounded-[40px] pointer-events-none group-hover:bg-blue-500/30 transition-all duration-700"></div>
-            <div className="relative bg-gradient-to-b from-slate-900/80 to-[#030712]/90 backdrop-blur-2xl border border-white/5 border-t-white/20 rounded-[35px] p-6 text-left shadow-[0_30px_60px_rgba(0,0,0,0.6)]">
+            <div className="relative bg-gradient-to-b from-slate-900/80 to-slate-950/90 backdrop-blur-2xl border border-white/5 border-t-white/20 rounded-[35px] p-6 text-left shadow-[0_30px_60px_rgba(0,0,0,0.6)]">
               <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-              
               <div className="flex justify-between items-center mb-6">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><span>🛡️</span> Total Saldo Pribadi</span>
                 <span className="p-1.5 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20 shadow-inner"><Eye size={14}/></span>
@@ -115,60 +130,25 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 🏃🏻‍♂️ INFINITE MARQUEE (INTEGRATION BANNER) */}
+        {/* 🏃🏻‍♂️ INFINITE MARQUEE */}
         <div className="w-full pt-20 pb-10 flex flex-col items-center justify-center relative z-10 mt-10 md:mt-0">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-8 text-center px-4">Mendukung Pencatatan Aset Dari Berbagai Platform</p>
-          
-          {/* Trik Masking Gradient untuk Efek Fade Out di Kiri-Kanan */}
           <div className="w-full max-w-5xl mx-auto overflow-hidden relative flex [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
             <div className="flex whitespace-nowrap animate-marquee items-center gap-6 md:gap-8 w-max">
-               {/* Render 2x untuk ilusi pergerakan tiada henti */}
                {[...Array(2)].map((_, i) => (
                   <div key={i} className="flex gap-6 md:gap-8 items-center shrink-0">
-                    
-                    {/* BCA */}
-                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-                      <span className="hidden font-black text-xl italic tracking-tighter text-slate-400 group-hover:text-[#0066AE] transition-colors duration-500">BCA</span>
-                    </div>
-                    
-                    {/* Mandiri */}
-                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
-                      <img src="https://upload.wikimedia.org/wikipedia/id/f/fa/Bank_Mandiri_logo_2016.svg" alt="Mandiri" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-                      <span className="hidden font-black text-lg italic tracking-tighter text-slate-400 group-hover:text-[#003d79] transition-colors duration-500">mandiri</span>
-                    </div>
-                    
-                    {/* GoPay */}
-                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg" alt="GoPay" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-                      <span className="hidden font-black text-lg tracking-tighter text-slate-400 group-hover:text-[#00A5CF] transition-colors duration-500">gopay</span>
-                    </div>
-                    
-                    {/* OVO */}
-                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
-                      <img src="https://www.ovo.id/assets/images/header/ovo-logo-new.svg" alt="OVO" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-                      <span className="hidden font-black text-xl tracking-tighter text-slate-400 group-hover:text-[#4C3494] transition-colors duration-500">OVO</span>
-                    </div>
-                    
-                    {/* DANA */}
-                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-                      <span className="hidden font-black text-xl tracking-tighter text-slate-400 group-hover:text-[#118EE9] transition-colors duration-500">DANA</span>
-                    </div>
-                    
-                    {/* Crypto (Binance) */}
-                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Binance_logo.svg" alt="Crypto" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
-                      <span className="hidden font-black text-lg tracking-tighter text-slate-400 group-hover:text-[#F3BA2F] transition-colors duration-500">BINANCE</span>
-                    </div>
-
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" /></div>
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group"><img src="https://upload.wikimedia.org/wikipedia/id/f/fa/Bank_Mandiri_logo_2016.svg" alt="Mandiri" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" /></div>
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group"><img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg" alt="GoPay" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" /></div>
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group"><img src="https://www.ovo.id/assets/images/header/ovo-logo-new.svg" alt="OVO" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" /></div>
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group"><img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" /></div>
                   </div>
                ))}
             </div>
           </div>
         </div>
 
-        {/* 📱 BENTO GRID FEATURES SECTION (ULTRA PREMIUM EDITION) */}
+        {/* 📱 BENTO GRID FEATURES */}
         <section className="py-24 px-6 max-w-6xl mx-auto relative z-10">
           <div className="text-center mb-16 relative">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[100px] bg-blue-500/20 blur-[60px] rounded-full pointer-events-none"></div>
@@ -178,14 +158,9 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 auto-rows-[minmax(320px,auto)]">
             
-            {/* Feature 1 (Large - Col Span 2) */}
-            <div className="md:col-span-2 flex flex-col justify-between bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-slate-800/40 via-[#0b101d] to-[#05080f] backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-blue-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(59,130,246,0.2)]">
-              
-              {/* Giant Watermark & Glows */}
+            <div className="md:col-span-2 flex flex-col justify-between bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-slate-800/40 via-slate-900 to-slate-950 backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-blue-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(59,130,246,0.2)]">
               <Brain className="absolute -bottom-10 -right-10 w-72 h-72 text-blue-500 opacity-[0.03] rotate-12 group-hover:scale-110 group-hover:opacity-[0.06] transition-all duration-700 pointer-events-none" />
               <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none group-hover:bg-blue-500/25 transition-colors duration-700"></div>
-              
-              {/* Animated Inner Shine */}
               <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent skew-x-[-20deg] group-hover:animate-[shine_1.5s_ease-in-out]"></div>
               
               <div className="relative z-10 mb-8">
@@ -203,12 +178,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Feature 2 (Square - Col Span 1) */}
-            <div className="flex flex-col justify-between bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-800/40 via-[#0b101d] to-[#05080f] backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-emerald-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(16,185,129,0.2)]">
-              
+            <div className="flex flex-col justify-between bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-800/40 via-slate-900 to-slate-950 backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-emerald-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(16,185,129,0.2)]">
               <WifiOff className="absolute -bottom-8 -right-8 w-56 h-56 text-emerald-500 opacity-[0.03] -rotate-12 group-hover:scale-110 group-hover:opacity-[0.06] transition-all duration-700 pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-emerald-500/25 transition-colors duration-700"></div>
-              <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent skew-x-[-20deg] group-hover:animate-[shine_1.5s_ease-in-out]"></div>
               
               <div className="relative z-10 mb-8">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-widest mb-6 shadow-inner">
@@ -225,12 +197,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Feature 3 (Square - Col Span 1) */}
-            <div className="flex flex-col justify-between bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-slate-800/40 via-[#0b101d] to-[#05080f] backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-purple-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(168,85,247,0.2)]">
-               
+            <div className="flex flex-col justify-between bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-slate-800/40 via-slate-900 to-slate-950 backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-purple-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(168,85,247,0.2)]">
               <Smartphone className="absolute -bottom-8 -right-8 w-56 h-56 text-purple-500 opacity-[0.03] rotate-12 group-hover:scale-110 group-hover:opacity-[0.06] transition-all duration-700 pointer-events-none" />
               <div className="absolute top-0 left-0 w-[300px] h-[300px] bg-purple-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-purple-500/25 transition-colors duration-700"></div>
-              <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent skew-x-[-20deg] group-hover:animate-[shine_1.5s_ease-in-out]"></div>
 
               <div className="relative z-10 mb-8">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-6 shadow-inner">
@@ -247,12 +216,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Feature 4 (Large - Col Span 2) */}
-            <div className="md:col-span-2 flex flex-col justify-between bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-slate-800/40 via-[#0b101d] to-[#05080f] backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-amber-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(245,158,11,0.2)]">
-               
+            <div className="md:col-span-2 flex flex-col justify-between bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-slate-800/40 via-slate-900 to-slate-950 backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-amber-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(245,158,11,0.2)]">
               <Target className="absolute -bottom-10 -right-10 w-72 h-72 text-amber-500 opacity-[0.03] -rotate-12 group-hover:scale-110 group-hover:opacity-[0.06] transition-all duration-700 pointer-events-none" />
               <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-amber-500/10 blur-[100px] rounded-full pointer-events-none group-hover:bg-amber-500/25 transition-colors duration-700"></div>
-              <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent skew-x-[-20deg] group-hover:animate-[shine_1.5s_ease-in-out]"></div>
 
               <div className="relative z-10 mb-8">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold uppercase tracking-widest mb-6 shadow-inner">
@@ -272,9 +238,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 💎 PRICING SECTION (ULTRA PREMIUM TITANIUM PASS) */}
+        {/* 💎 PRICING SECTION (TITANIUM PASS) */}
         <section className="py-24 px-6 max-w-5xl mx-auto mt-10 relative z-10">
-          {/* Subtle Top Divider */}
           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent"></div>
           
           <div className="text-center mb-16 relative">
@@ -284,49 +249,24 @@ export default function LandingPage() {
           </div>
 
           <div className="relative group mx-auto">
-            {/* Glowing Aura Behind Card */}
             <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/20 via-orange-500/10 to-amber-500/20 rounded-[42px] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
             
-            <div className="relative bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#1a140a] via-[#0a0c10] to-[#030712] border border-amber-500/20 border-t-amber-500/40 rounded-[40px] p-2 shadow-2xl overflow-hidden flex flex-col md:flex-row">
-              
-              {/* Inner Shine Effect */}
-              <div className="absolute top-0 left-[-100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/[0.04] to-transparent skew-x-[-20deg] animate-[shine_4s_ease-in-out_infinite]"></div>
-              
-              {/* Left Column: Value Prop */}
+            <div className="relative bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-slate-950 border border-amber-500/20 border-t-amber-500/40 rounded-[40px] p-2 shadow-2xl overflow-hidden flex flex-col md:flex-row">
               <div className="flex-1 p-8 md:p-12 relative z-10 flex flex-col justify-center">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-widest mb-6 shadow-inner w-max">
                   <span className="animate-pulse">👑</span> VIP LIFETIME PASS
                 </div>
                 
-                <h3 className="text-4xl md:text-5xl font-black mb-6 tracking-tighter text-white">
-                  Akses Tanpa <br className="hidden md:block"/>Batas Waktu.
-                </h3>
+                <h3 className="text-4xl md:text-5xl font-black mb-6 tracking-tighter text-white">Akses Tanpa <br className="hidden md:block"/>Batas Waktu.</h3>
+                <p className="text-slate-400 text-sm leading-relaxed mb-8 max-w-md font-medium">Bayar hari ini, nikmati semua fitur premium, proteksi enkripsi tingkat bank, dan <i>update</i> sistem selamanya tanpa biaya tambahan sepeser pun.</p>
                 
-                <p className="text-slate-400 text-sm leading-relaxed mb-8 max-w-md font-medium">
-                  Bayar hari ini, nikmati semua fitur premium, proteksi enkripsi tingkat bank, dan <i>update</i> sistem selamanya tanpa biaya tambahan sepeser pun.
-                </p>
-                
-                {/* Features Grid Layout */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                  <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div>
-                    <span className="text-sm font-bold text-slate-300">Biometrik Native & PIN</span>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div>
-                    <span className="text-sm font-bold text-slate-300">Portofolio Multi-Aset</span>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div>
-                    <span className="text-sm font-bold text-slate-300">Laporan Excel Multi-Sheet</span>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div>
-                    <span className="text-sm font-bold text-slate-300">Asisten AI "Roaster"</span>
-                  </div>
+                  <div className="flex items-start gap-3"><div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div><span className="text-sm font-bold text-slate-300">Biometrik Native & PIN</span></div>
+                  <div className="flex items-start gap-3"><div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div><span className="text-sm font-bold text-slate-300">Portofolio Multi-Aset</span></div>
+                  <div className="flex items-start gap-3"><div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div><span className="text-sm font-bold text-slate-300">Laporan Excel Multi-Sheet</span></div>
+                  <div className="flex items-start gap-3"><div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div><span className="text-sm font-bold text-slate-300">Asisten AI "Roaster"</span></div>
                 </div>
 
-                {/* Social Proof */}
                 <div className="flex items-center gap-4 mt-auto">
                   <div className="flex -space-x-3">
                     <div className="w-8 h-8 rounded-full border-2 border-[#0a0c10] bg-blue-100 flex items-center justify-center text-xs shadow-sm">👱🏻‍♂️</div>
@@ -338,41 +278,32 @@ export default function LandingPage() {
                 </div>
               </div>
               
-              {/* Right Column: Checkout Ticket Cutout */}
-              <div className="w-full md:w-[380px] shrink-0 bg-gradient-to-b from-[#0b0f19] to-[#030712] border-l border-white/5 border-dashed md:border-solid p-8 md:p-10 relative flex flex-col justify-center items-center text-center rounded-[32px] md:rounded-l-none md:rounded-r-[38px] mt-2 md:mt-0">
-                {/* Decorative Ticket Cutouts (Only visible on desktop) */}
-                <div className="hidden md:block absolute top-1/2 -left-4 -translate-y-1/2 w-8 h-8 bg-[#030712] rounded-full border-r border-white/5 shadow-inner"></div>
-                
+              <div className="w-full md:w-[380px] shrink-0 bg-gradient-to-b from-slate-900 to-slate-950 border-l border-white/5 border-dashed md:border-solid p-8 md:p-10 relative flex flex-col justify-center items-center text-center rounded-[32px] md:rounded-l-none md:rounded-r-[38px] mt-2 md:mt-0">
+                <div className="hidden md:block absolute top-1/2 -left-4 -translate-y-1/2 w-8 h-8 bg-slate-950 rounded-full border-r border-white/5 shadow-inner"></div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Harga Spesial Hari Ini</p>
                 <div className="flex items-start justify-center gap-1 mb-2">
-                  <span className="text-xl font-bold text-amber-400 mt-2">Rp</span>
-                  <span className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-300 tracking-tighter">49</span>
-                  <span className="text-xl font-bold text-slate-400 mt-2">.000</span>
+                  <span className="text-xl font-bold text-amber-400 mt-2">Rp</span><span className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-300 tracking-tighter">49</span><span className="text-xl font-bold text-slate-400 mt-2">.000</span>
                 </div>
                 <p className="text-sm font-bold text-slate-500 line-through decoration-rose-500/50 decoration-2 mb-8">Harga Normal Rp 150.000</p>
                 
-                <Link href="/dashboard" className="w-full relative group/btn block">
+                <button onClick={handleEnterApp} className="w-full relative group/btn block cursor-pointer">
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl blur opacity-50 group-hover/btn:opacity-100 transition duration-300"></div>
                   <div className="relative w-full px-8 py-5 rounded-2xl bg-gradient-to-b from-amber-400 to-orange-600 text-white font-black text-sm flex items-center justify-center gap-2 border border-amber-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all">
                     Amankan Lisensi <ArrowRight size={18} />
                   </div>
-                </Link>
-                
+                </button>
                 <p className="text-[10px] text-slate-500 font-bold mt-5 flex items-center justify-center gap-1.5"><ShieldCheck size={14} className="text-emerald-500"/> Pembayaran 1x via WhatsApp Admin</p>
               </div>
-              
             </div>
           </div>
         </section>
 
-        {/* 🔒 SECURITY SECTION (ULTRA PREMIUM BANNER) */}
+        {/* 🔒 SECURITY SECTION */}
         <section className="py-10 px-6 max-w-5xl mx-auto relative z-10">
-          <div className="w-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/20 via-[#0b101d] to-[#05080f] border border-emerald-500/20 rounded-[32px] p-8 md:p-10 shadow-[0_10px_40px_rgba(16,185,129,0.05)] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group hover:border-emerald-500/30 transition-all duration-500 hover:-translate-y-1">
-            {/* Ambient Animated Glow */}
+          <div className="w-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/20 via-slate-900 to-slate-950 border border-emerald-500/20 rounded-[32px] p-8 md:p-10 shadow-[0_10px_40px_rgba(16,185,129,0.05)] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group hover:border-emerald-500/30 transition-all duration-500 hover:-translate-y-1">
             <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-emerald-500/20 transition-colors duration-700"></div>
             
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6 relative z-10 w-full md:w-auto text-center md:text-left">
-              {/* Glowing Icon Container */}
               <div className="relative shrink-0">
                 <div className="absolute inset-0 bg-emerald-500 rounded-full blur-md opacity-30 animate-pulse"></div>
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-b from-emerald-500/20 to-emerald-600/5 border border-emerald-500/40 flex items-center justify-center relative shadow-[inset_0_1px_0_rgba(16,185,129,0.4)] backdrop-blur-xl group-hover:scale-110 transition-transform duration-500">
@@ -386,60 +317,41 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Hardware Tags */}
             <div className="flex flex-wrap md:flex-col justify-center gap-3 relative z-10 w-full md:w-auto shrink-0">
-              <div className="px-4 py-2.5 bg-[#030712]/50 border border-white/10 rounded-xl flex items-center justify-center md:justify-start gap-2.5 shadow-inner backdrop-blur-md">
+              <div className="px-4 py-2.5 bg-slate-950/50 border border-white/10 rounded-xl flex items-center justify-center md:justify-start gap-2.5 shadow-inner backdrop-blur-md">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
                 <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Face ID Enabled</span>
               </div>
-              <div className="px-4 py-2.5 bg-[#030712]/50 border border-white/10 rounded-xl flex items-center justify-center md:justify-start gap-2.5 shadow-inner backdrop-blur-md">
+              <div className="px-4 py-2.5 bg-slate-950/50 border border-white/10 rounded-xl flex items-center justify-center md:justify-start gap-2.5 shadow-inner backdrop-blur-md">
                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
-                <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Biometric</span>
+                <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">WebAuthn Biometric</span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ❓ FAQ SECTION (MINIMALIST ENTERPRISE) */}
+        {/* ❓ FAQ SECTION */}
         <section className="py-24 px-6 max-w-3xl mx-auto relative z-10">
           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-          
           <div className="text-center mb-16 mt-8">
             <h2 className="text-3xl font-black mb-4 tracking-tight">Masih Punya Pertanyaan?</h2>
             <p className="text-slate-400 text-sm font-medium">Semua jawaban yang Anda butuhkan sebelum memulai perjalanan finansial baru.</p>
           </div>
-          
           <div className="space-y-1">
             {faqs.map((faq, idx) => {
               const isOpen = openFaq === idx;
               return (
-                <div 
-                  key={idx} 
-                  className={`transition-all duration-300 border-b ${isOpen ? 'border-blue-500/30' : 'border-white/5'} overflow-hidden relative group`}
-                >
-                  {/* Subtle Background for active state */}
+                <div key={idx} className={`transition-all duration-300 border-b ${isOpen ? 'border-blue-500/30' : 'border-white/5'} overflow-hidden relative group`}>
                   <div className={`absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent transition-opacity duration-300 pointer-events-none ${isOpen ? 'opacity-100' : 'opacity-0'}`}></div>
-                  
-                  <button 
-                    onClick={() => setOpenFaq(isOpen ? null : idx)} 
-                    className="w-full py-6 pr-6 pl-4 flex items-center justify-between text-left focus:outline-none cursor-pointer relative z-10"
-                  >
+                  <button onClick={() => setOpenFaq(isOpen ? null : idx)} className="w-full py-6 pr-6 pl-4 flex items-center justify-between text-left focus:outline-none cursor-pointer relative z-10">
                     <div className="flex items-center gap-4">
-                      {/* Animated Indicator */}
                       <div className={`w-1 transition-all duration-300 rounded-r-full ${isOpen ? 'h-6 bg-blue-500' : 'h-0 bg-transparent'} absolute left-0`}></div>
                       <span className={`font-bold text-base md:text-lg transition-colors duration-300 ${isOpen ? 'text-white' : 'text-slate-300 group-hover:text-white'}`}>{faq.q}</span>
                     </div>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${isOpen ? 'bg-blue-500/10 text-blue-400 rotate-180 shadow-inner' : 'bg-white/5 text-slate-500 group-hover:bg-white/10 group-hover:text-slate-300'}`}>
-                      <ChevronDown size={16} />
-                    </div>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${isOpen ? 'bg-blue-500/10 text-blue-400 rotate-180 shadow-inner' : 'bg-white/5 text-slate-500 group-hover:bg-white/10 group-hover:text-slate-300'}`}><ChevronDown size={16} /></div>
                   </button>
-                  
                   <div className={`grid transition-all duration-300 ease-in-out relative z-10 ${isOpen ? 'grid-rows-[1fr] opacity-100 pb-6' : 'grid-rows-[0fr] opacity-0 pb-0'}`}>
-                    <div className="overflow-hidden">
-                      <p className="pl-4 pr-12 text-sm text-slate-400 leading-relaxed font-medium">
-                        {faq.a}
-                      </p>
-                    </div>
+                    <div className="overflow-hidden"><p className="pl-4 pr-12 text-sm text-slate-400 leading-relaxed font-medium">{faq.a}</p></div>
                   </div>
                 </div>
               );
@@ -451,19 +363,16 @@ export default function LandingPage() {
       <footer className="border-t border-white/5 py-8 mt-20 relative z-10">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 pb-20 md:pb-0">
           <p className="text-slate-500 text-xs font-bold">© {new Date().getFullYear()} Fintracker App. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="text-slate-400 hover:text-white text-xs font-bold transition-colors">Masuk Aplikasi</Link>
-          </div>
+          <div className="flex items-center gap-6"><button onClick={handleEnterApp} className="cursor-pointer text-slate-400 hover:text-white text-xs font-bold transition-colors">Masuk Aplikasi</button></div>
         </div>
       </footer>
 
-      {/* 📌 STICKY MOBILE CTA (Anti-Lolos) */}
-      <div className={`fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#030712] via-[#030712]/90 to-transparent z-[100] transition-transform duration-500 sm:hidden ${showSticky ? 'translate-y-0' : 'translate-y-full'}`}>
-        <Link href="/dashboard" className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black text-sm transition-all shadow-[0_0_30px_-5px_rgba(245,158,11,0.5)] flex items-center justify-center gap-2 active:scale-95">
+      {/* 📌 STICKY MOBILE CTA */}
+      <div className={`fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent z-[100] transition-transform duration-500 sm:hidden ${showSticky ? 'translate-y-0' : 'translate-y-full'}`}>
+        <button onClick={handleEnterApp} className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black text-sm transition-all shadow-[0_0_30px_-5px_rgba(245,158,11,0.5)] flex items-center justify-center gap-2 active:scale-95 cursor-pointer">
           Amankan Lisensi 49rb <ArrowRight size={16} />
-        </Link>
+        </button>
       </div>
-
     </div>
   );
 }
