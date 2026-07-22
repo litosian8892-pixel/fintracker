@@ -2,3 +2,7 @@
 
 /* Baris Wajib: Agar Tailwind v4 mengizinkan kelas .dark menimpa setelan bawaan HP/Sistem */
 @variant dark (&:where(.dark, .dark *));
+
+html, body {
+  background-color: #020617 !important; /* Memaksa warna slate-950 secara absolut */
+}

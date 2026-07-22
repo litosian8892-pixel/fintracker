@@ -21,11 +21,12 @@ export default function LandingPage() {
 
   const router = useRouter();
 
-  // ⚡ AUTO-BYPASS (SOFT REDIRECT - ANTI BLINK/PUTIH)
+  // ⚡ AUTO-BYPASS (HARD CLEAR MEMORY) - ANTI CPU OVERLOAD
   useEffect(() => {
     if (typeof window !== "undefined" && localStorage.getItem("fintracker_has_logged_in") === "true") {
       setIsNavigating(true);
-      router.push("/dashboard");
+      // Jeda 50ms membiarkan UI Loading muncul, lalu HANCURKAN memori Landing Page agar RAM HP lega!
+      setTimeout(() => { window.location.replace("/dashboard"); }, 50);
     }
   }, [router]);
 
@@ -38,11 +39,11 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // ⚡ FUNGSI LOMPAT INSTAN BEBAS LAG
+  // ⚡ FUNGSI LOMPAT INSTAN (MENCEGAH HP NGE-FREEZE)
   const handleEnterApp = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     setIsNavigating(true);
-    router.push("/dashboard");
+    setTimeout(() => { window.location.replace("/dashboard"); }, 50);
   };
 
   // 🚀 TAMPILAN LOADING ABSOLUTE (MENCEGAH KEBOCORAN WARNA SAFARI)
