@@ -22,10 +22,13 @@ export default function LandingPage() {
       {/* 🛸 Navigation Bar */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#030712]/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
         <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <Zap size={18} className="text-white" strokeWidth={3} />
-            </div>
+          <div className="flex items-center gap-2.5">
+            {/* 💎 LOGO CUSTOM */}
+            <img 
+              src="/apple-touch-icon.png" 
+              alt="Fintracker Logo" 
+              className="w-8 h-8 rounded-xl object-cover shadow-lg shadow-blue-500/20"
+            />
             <span className="font-black text-xl tracking-tight text-white">Fintracker<span className="text-blue-500">.</span></span>
           </div>
           <Link href="/dashboard" className="px-5 py-2.5 rounded-full text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10 backdrop-blur-md">
