@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Brain, Zap, ShieldCheck, Target, WifiOff, Smartphone, ChevronRight, ChevronDown, Eye, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -18,13 +19,15 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isNavigating, setIsNavigating] = useState(false); // ⚡ STATE ANTI-FREEZE
 
-  // ⚡ AUTO-BYPASS (HARD REDIRECT)
+  const router = useRouter();
+
+  // ⚡ AUTO-BYPASS (SOFT REDIRECT - ANTI BLINK/PUTIH)
   useEffect(() => {
     if (typeof window !== "undefined" && localStorage.getItem("fintracker_has_logged_in") === "true") {
       setIsNavigating(true);
-      window.location.replace("/dashboard"); // Paksa browser lompat instan!
+      router.push("/dashboard");
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,13 +42,13 @@ export default function LandingPage() {
   const handleEnterApp = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     setIsNavigating(true);
-    window.location.href = "/dashboard";
+    router.push("/dashboard");
   };
 
-  // 🚀 TAMPILAN LOADING SKELETON AGAR HP TIDAK NGE-FREEZE
+  // 🚀 TAMPILAN LOADING ABSOLUTE (MENCEGAH KEBOCORAN WARNA SAFARI)
   if (isNavigating) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden">
+      <div className="fixed inset-0 z-[99999] h-[100dvh] w-full bg-slate-950 flex flex-col items-center justify-center text-white overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-950 to-slate-950"></div>
         <div className="relative z-10 flex flex-col items-center">
           <div className="w-16 h-16 border-4 border-slate-800 border-t-blue-500 rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>

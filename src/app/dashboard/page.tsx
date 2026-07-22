@@ -1237,42 +1237,12 @@ export default function FintrackerApp() {
     );
   }
 
-  // ⚡ TURBO RENDER 0-DETIK: Hapus bloker isReportLoading! Biarkan UI Beranda (HomeTab) langsung muncul
-  // agar form input & saldo bisa langsung ditekan, sementara list transaksi loading di background.
-  const isReadyToRender = !loading && pinChecked;
-
-  if (!isReadyToRender) {
-    const isBypassingAuth = typeof window !== 'undefined' && localStorage.getItem("fintracker_has_logged_in") === "true";
-    const needsPin = typeof window !== 'undefined' && !!localStorage.getItem("fintracker_pin");
-    
-    // Tampilkan App Shell sampai data database (isReportLoading) benar-benar terisi (isReadyToRender = true)
-    if (isBypassingAuth && !needsPin) {
-      return (
-        <main className="min-h-screen bg-slate-50 dark:bg-slate-950 md:flex transition-colors duration-200">
-          <Sidebar user={null} activeTab={"home" as any} setActiveTab={() => {}} onLogout={() => {}} isPrivacyMode={false} togglePrivacyMode={() => {}} />
-          <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
-            <MobileHeader user={null} onLogout={() => {}} isPrivacyMode={false} togglePrivacyMode={() => {}} />
-            {/* ⚡ NATIVE SKELETON UI: Rangka desain tanpa tulisan aneh */}
-            <div className="max-w-5xl w-full mx-auto p-4 md:p-8 w-full animate-pulse mt-2 md:mt-0">
-               {/* Rangka Kartu Total Saldo */}
-               <div className="h-44 w-full bg-slate-200/70 dark:bg-slate-800/50 rounded-[30px] mb-6"></div>
-               {/* Rangka Laci Numpad & Menu */}
-               <div className="h-20 w-full bg-slate-200/70 dark:bg-slate-800/50 rounded-[24px] mb-8"></div>
-               {/* Rangka Daftar Transaksi */}
-               <div className="space-y-4">
-                 <div className="h-24 w-full bg-slate-200/70 dark:bg-slate-800/50 rounded-3xl"></div>
-                 <div className="h-24 w-full bg-slate-200/70 dark:bg-slate-800/50 rounded-3xl"></div>
-                 <div className="h-24 w-full bg-slate-200/70 dark:bg-slate-800/50 rounded-3xl"></div>
-               </div>
-            </div>
-          </div>
-          <BottomNav activeTab={"home" as any} setActiveTab={() => {}} />
-        </main>
-      );
-    }
-    
+  // ⚡ ANTI-DEADLOCK: Gunakan LoadingScreen standar (Logo Muter). 
+  // Ini 100x lebih stabil daripada Skeleton UI yang rentan nge-hang di Safari iOS.
+  if (loading || !pinChecked) {
     return <LoadingScreen />;
   }
+
   if (!user) return <AuthScreen />;
 
   if (appPin && !isUnlocked) {
