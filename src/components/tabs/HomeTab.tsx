@@ -865,7 +865,7 @@ export default function HomeTab({
   }, [monthlyTransactions]);
 
   const formatDayHeader = (dateStr: string) => { const d = new Date(dateStr); const dayNum = d.getDate(); const dayName = d.toLocaleDateString("id-ID", { weekday: "short" }); const monthYear = d.toLocaleDateString("id-ID", { month: "2-digit", year: "numeric" }).replace(/\//g, "/"); return { dayNum, dayName, monthYear }; };
-  const closeMainDrawer = () => { setIsDrawerOpen(false); setEditingTransaction(null); setActiveKeypad(null); setNoteSuggestions([]); };
+  const closeMainDrawer = () => { setIsDrawerOpen(false); setEditingTransaction(null); setActiveKeypad(null); setNoteSuggestions([]); setShowMetricInput(false); }; // FIX: Reset state note tambahan agar otomatis tertutup untuk transaksi berikutnya
 
   // 🔥 FITUR BARU: TOMBOL DUPLIKAT (QUICK COPY)
   const handleDuplicateClick = () => {
@@ -1326,7 +1326,7 @@ export default function HomeTab({
                               onClick={() => { triggerHaptic(); setShowMetricInput(true); }} 
                               className="text-[9px] font-black text-blue-500 hover:text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded cursor-pointer transition-all active:scale-95 flex items-center gap-1 border border-blue-200/50 dark:border-blue-800/50"
                             >
-                              <span>+</span> Metrik/Tag
+                              <span>+</span> Note
                             </button>
                           )}
                         </div>
@@ -1368,7 +1368,7 @@ export default function HomeTab({
                       {isMetricVisible && (
                         <div className="space-y-1 w-[38%] shrink-0 relative z-[70] animate-in slide-in-from-right-4 fade-in duration-200">
                           <div className="flex justify-between items-center pr-1 h-4">
-                            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1 truncate">Metrik / Tag</label>
+                            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1 truncate">Note</label>
                             <button 
                               type="button" 
                               onClick={() => { 
