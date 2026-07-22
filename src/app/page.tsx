@@ -112,23 +112,25 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 🏃🏻‍♂️ INFINITE MARQUEE (PITA BERJALAN) */}
-        <div className="w-full overflow-hidden border-y border-white/5 bg-white/[0.02] py-4 md:mt-10 relative flex pointer-events-none">
-          <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#030712] to-transparent z-10"></div>
-          <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-[#030712] to-transparent z-10"></div>
+        {/* 🏃🏻‍♂️ INFINITE MARQUEE (INTEGRATION BANNER) */}
+        <div className="w-full pt-20 pb-10 flex flex-col items-center justify-center relative z-10 mt-10 md:mt-0">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-8 text-center px-4">Mendukung Pencatatan Aset Dari Berbagai Platform</p>
           
-          <div className="flex whitespace-nowrap animate-marquee items-center gap-8 w-[200%]">
-             {/* Render 2x untuk ilusi pergerakan tiada henti */}
-             {[...Array(2)].map((_, i) => (
-                <div key={i} className="flex gap-8 items-center shrink-0">
-                  <span className="text-slate-400 font-bold text-xs md:text-sm flex items-center gap-2">💳 BCA</span><span className="text-slate-700">•</span>
-                  <span className="text-slate-400 font-bold text-xs md:text-sm flex items-center gap-2">📱 GoPay</span><span className="text-slate-700">•</span>
-                  <span className="text-slate-400 font-bold text-xs md:text-sm flex items-center gap-2">📱 OVO</span><span className="text-slate-700">•</span>
-                  <span className="text-slate-400 font-bold text-xs md:text-sm flex items-center gap-2">💳 Mandiri</span><span className="text-slate-700">•</span>
-                  <span className="text-slate-400 font-bold text-xs md:text-sm flex items-center gap-2">📱 Dana</span><span className="text-slate-700">•</span>
-                  <span className="text-slate-400 font-bold text-xs md:text-sm flex items-center gap-2">📈 Saham & Crypto</span><span className="text-slate-700">•</span>
-                </div>
-             ))}
+          {/* Trik Masking Gradient untuk Efek Fade Out di Kiri-Kanan */}
+          <div className="w-full max-w-5xl mx-auto overflow-hidden relative flex pointer-events-none [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
+            <div className="flex whitespace-nowrap animate-marquee items-center gap-12 md:gap-20 w-max">
+               {/* Render 2x untuk ilusi pergerakan tiada henti */}
+               {[...Array(2)].map((_, i) => (
+                  <div key={i} className="flex gap-12 md:gap-20 items-center shrink-0">
+                    <span className="text-slate-400 font-black text-base md:text-xl flex items-center gap-3 opacity-70"><div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shadow-inner">💳</div> BCA</span>
+                    <span className="text-slate-400 font-black text-base md:text-xl flex items-center gap-3 opacity-70"><div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-inner">📱</div> GoPay</span>
+                    <span className="text-slate-400 font-black text-base md:text-xl flex items-center gap-3 opacity-70"><div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shadow-inner">📱</div> OVO</span>
+                    <span className="text-slate-400 font-black text-base md:text-xl flex items-center gap-3 opacity-70"><div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shadow-inner">💳</div> Mandiri</span>
+                    <span className="text-slate-400 font-black text-base md:text-xl flex items-center gap-3 opacity-70"><div className="w-10 h-10 rounded-2xl bg-blue-400/10 border border-blue-400/20 text-blue-300 flex items-center justify-center shadow-inner">📱</div> DANA</span>
+                    <span className="text-slate-400 font-black text-base md:text-xl flex items-center gap-3 opacity-70"><div className="w-10 h-10 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center shadow-inner">📈</div> Crypto</span>
+                  </div>
+               ))}
+            </div>
           </div>
         </div>
 
