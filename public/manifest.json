@@ -2,7 +2,7 @@
   "name": "Fintracker - Personal Finance",
   "short_name": "Fintracker",
   "description": "Aplikasi pencatatan keuangan pribadi terbaik",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#2563eb",
