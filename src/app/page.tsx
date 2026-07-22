@@ -125,44 +125,38 @@ export default function LandingPage() {
                     
                     {/* BCA */}
                     <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                      <span className="hidden font-black text-xl italic tracking-tighter text-slate-400 group-hover:text-[#0066AE] transition-colors duration-500">BCA</span>
                     </div>
                     
                     {/* Mandiri */}
                     <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
-                      <img 
-                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Logo_Bank_Mandiri.svg/512px-Logo_Bank_Mandiri.svg.png" 
-                        alt="Mandiri" 
-                        className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" 
-                      />
+                      <img src="https://upload.wikimedia.org/wikipedia/id/f/fa/Bank_Mandiri_logo_2016.svg" alt="Mandiri" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                      <span className="hidden font-black text-lg italic tracking-tighter text-slate-400 group-hover:text-[#003d79] transition-colors duration-500">mandiri</span>
                     </div>
                     
                     {/* GoPay */}
                     <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
-                      <img 
-                        src="https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg" 
-                        alt="GoPay" 
-                        className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" 
-                      />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg" alt="GoPay" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                      <span className="hidden font-black text-lg tracking-tighter text-slate-400 group-hover:text-[#00A5CF] transition-colors duration-500">gopay</span>
                     </div>
                     
                     {/* OVO */}
                     <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
-                      <img 
-                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/OVO_logo.svg/512px-OVO_logo.svg.png" 
-                        alt="OVO" 
-                        className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" 
-                      />
+                      <img src="https://www.ovo.id/assets/images/header/ovo-logo-new.svg" alt="OVO" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                      <span className="hidden font-black text-xl tracking-tighter text-slate-400 group-hover:text-[#4C3494] transition-colors duration-500">OVO</span>
                     </div>
                     
                     {/* DANA */}
                     <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                      <span className="hidden font-black text-xl tracking-tighter text-slate-400 group-hover:text-[#118EE9] transition-colors duration-500">DANA</span>
                     </div>
                     
                     {/* Crypto (Binance) */}
                     <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Binance_logo.svg" alt="Crypto" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Binance_logo.svg" alt="Crypto" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                      <span className="hidden font-black text-lg tracking-tighter text-slate-400 group-hover:text-[#F3BA2F] transition-colors duration-500">BINANCE</span>
                     </div>
 
                   </div>
