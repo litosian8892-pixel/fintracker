@@ -77,6 +77,16 @@ export default function FintrackerApp() {
     return () => { window.alert = originalAlert; }; // Kembalikan ke normal jika komponen hancur
   }, []);
 
+  // ⏱️ TIMER OTOMATIS: Hancurkan pop-up toast setelah 3 detik
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 3000);
+    // Bersihkan timer jika ada alert baru bertumpuk sebelum 3 detik
+    return () => clearTimeout(timer); 
+  }, [toast]);
+
   const [isOldDomain, setIsOldDomain] = useState(false);
   const NEW_DOMAIN_URL = "https://fintracker-id.vercel.app"; 
 
