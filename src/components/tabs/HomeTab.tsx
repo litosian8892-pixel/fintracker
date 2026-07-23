@@ -984,31 +984,36 @@ export default function HomeTab({
         </div>
         <div className="flex items-center gap-1.5 shrink-0 ml-2">
           
-          {/* 🗓️ TOMBOL FILTER TANGGAL (INVISIBLE NATIVE PICKER) */}
-          <div className="relative flex items-center">
-            <input 
-              type="date" 
-              value={selectedDateFilter}
-              onChange={(e) => { 
-                triggerHaptic(); 
-                const d = e.target.value;
-                setSelectedDateFilter(d); 
-                // Otomatis sinkronisasi pindah bulan (Pintar!)
-                if (d) setReportMonth(d.slice(0, 7)); 
-              }}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            />
-            <button type="button" className={`p-2 rounded-xl transition-colors cursor-pointer flex items-center justify-center ${selectedDateFilter ? 'text-blue-600 bg-blue-50 dark:bg-blue-950/30' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-              <CalendarDays size={18} />
-            </button>
+          {/* 🗓️ TOMBOL FILTER TANGGAL (FIXED HITBOX) */}
+          <div className="relative flex items-center shrink-0">
+            {/* Wrapper ketat dengan overflow-hidden agar hitbox kalender TIDAK BOCOR ke tombol Search! */}
+            <div className={`relative w-8 h-8 md:w-9 md:h-9 rounded-xl overflow-hidden flex items-center justify-center transition-colors ${selectedDateFilter ? 'text-blue-600 bg-blue-50 dark:bg-blue-950/30' : 'text-slate-400 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+              <input 
+                type="date" 
+                value={selectedDateFilter}
+                onChange={(e) => { 
+                  triggerHaptic(); 
+                  const d = e.target.value;
+                  setSelectedDateFilter(d); 
+                  if (d) setReportMonth(d.slice(0, 7)); 
+                }}
+                className="absolute inset-0 w-[150%] h-[150%] opacity-0 cursor-pointer z-10"
+              />
+              <div className="pointer-events-none relative z-0 flex items-center justify-center w-full h-full">
+                <CalendarDays size={18} />
+              </div>
+            </div>
             
-            {/* Tombol X (Hapus Filter) */}
+            {/* Tombol X (Hapus Filter) - Di luar overflow-hidden agar tidak terpotong */}
             {selectedDateFilter && (
-              <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); triggerHaptic(); setSelectedDateFilter(""); }} className="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 z-20 shadow-sm active:scale-90"><X size={10} strokeWidth={3} /></button>
+              <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); triggerHaptic(); setSelectedDateFilter(""); }} className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full p-0.5 z-30 shadow-sm active:scale-90 cursor-pointer"><X size={10} strokeWidth={3} /></button>
             )}
           </div>
 
-          <button type="button" onClick={() => { triggerHaptic(); setIsSearchExpanded(!isSearchExpanded); }} className={`p-2 rounded-xl transition-colors cursor-pointer ${isSearchExpanded ? 'text-blue-600 bg-blue-50 dark:bg-blue-950/30' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}><Search size={18} /></button>
+          {/* TOMBOL PENCARIAN DENGAN Z-INDEX TERTINGGI (KEBAL BOCORAN KALENDER) */}
+          <button type="button" onClick={() => { triggerHaptic(); setIsSearchExpanded(!isSearchExpanded); }} className={`relative z-20 rounded-xl transition-colors cursor-pointer shrink-0 flex items-center justify-center w-8 h-8 md:w-9 md:h-9 ${isSearchExpanded ? 'text-blue-600 bg-blue-50 dark:bg-blue-950/30' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+            <Search size={18} />
+          </button>
           
           <div className="relative ml-1">
             <button type="button" onClick={() => setShowAccountFilterDropdown(!showAccountFilterDropdown)} className={`text-[10px] font-black px-2.5 py-1.5 rounded-lg border flex items-center gap-1 cursor-pointer select-none ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>{selectedAccountIdFilter === "all" ? "All" : accounts.find(a => a.id === selectedAccountIdFilter)?.name || "All"}<ChevronDown size={10} /></button>
