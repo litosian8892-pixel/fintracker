@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, Wallet, Briefcase, Plus, ChevronLeft, TrendingDown, TrendingUp, ChevronRight, Activity, LayoutGrid, List, BarChart3, ArrowRightLeft } from "lucide-react";
+import { Upload, Check, X, ArrowUp, ArrowDown, Edit2, Trash2, CreditCard, Smartphone, Banknote, Wallet, Briefcase, Plus, ChevronLeft, TrendingDown, TrendingUp, ChevronRight, Activity, LayoutGrid, List, BarChart3, ArrowRightLeft, Copy } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart as RePieChart, Pie, Cell } from "recharts";
 import { AccountData, WalletTypeData, TransactionData } from "../../types";
 
@@ -153,6 +153,7 @@ interface AssetsTabProps {
   accAverageBuyPrice?: string; setAccAverageBuyPrice?: (val: string) => void; editAccAverageBuyPrice?: string; setEditAccAverageBuyPrice?: (val: string) => void;
   accLastExchangeRate?: string; setAccLastExchangeRate?: (val: string) => void; editAccLastExchangeRate?: string; setEditAccLastExchangeRate?: (val: string) => void;
   handleUpdateInvestmentRate?: (id: string, newRate: number) => void;
+  accAccountNumber?: string; setAccAccountNumber?: (val: string) => void; editAccAccountNumber?: string; setEditAccAccountNumber?: (val: string) => void;
 }
 
 export default function AssetsTab({
@@ -164,7 +165,8 @@ export default function AssetsTab({
   editAccSavingsGoalTitle, setEditAccSavingsGoalTitle, isPrivacyMode = false, accCurrency, setAccCurrency, editAccCurrency, setEditAccCurrency,
   exchangeRates, handleUpdateGlobalRates, reportTransactions = [], reportMonth, setReportMonth,
   accIsInvestment, setAccIsInvestment, editAccIsInvestment, setEditAccIsInvestment, accAverageBuyPrice, setAccAverageBuyPrice, editAccAverageBuyPrice, setEditAccAverageBuyPrice,
-  accLastExchangeRate, setAccLastExchangeRate, editAccLastExchangeRate, setEditAccLastExchangeRate, handleUpdateInvestmentRate
+  accLastExchangeRate, setAccLastExchangeRate, editAccLastExchangeRate, setEditAccLastExchangeRate, handleUpdateInvestmentRate,
+  accAccountNumber, setAccAccountNumber, editAccAccountNumber, setEditAccAccountNumber
 }: AssetsTabProps) {
   
   const [activeSubTab, setActiveSubTab] = useState<"net_worth" | "akun" | "investasi" | "aset">("akun"); 
@@ -183,6 +185,8 @@ export default function AssetsTab({
   const [localEditAccLastRate, setLocalEditAccLastRate] = useState("");
   const [updatingRateAcc, setUpdatingRateAcc] = useState<AccountData | null>(null);
   const [newRateInput, setNewRateInput] = useState("");
+  const [localAccAccountNumber, setLocalAccAccountNumber] = useState("");
+  const [localEditAccAccountNumber, setLocalEditAccAccountNumber] = useState("");
 
   const [localBalanceOverride, setLocalBalanceOverride] = useState<Record<string, number>>({});
   const [localNameOverride, setLocalNameOverride] = useState<Record<string, string>>({});
@@ -349,6 +353,8 @@ export default function AssetsTab({
   const editAvgPrice = editAccAverageBuyPrice !== undefined ? editAccAverageBuyPrice : localEditAccAvgPrice; const setEditAvgPrice = setEditAccAverageBuyPrice !== undefined ? setEditAccAverageBuyPrice : setLocalEditAccAvgPrice;
   const lastRate = accLastExchangeRate !== undefined ? accLastExchangeRate : localAccLastRate; const setLastRate = setAccLastExchangeRate !== undefined ? setAccLastExchangeRate : setLocalAccLastRate;
   const editLastRate = editAccLastExchangeRate !== undefined ? editAccLastExchangeRate : localEditAccLastRate; const setEditLastRate = setEditAccLastExchangeRate !== undefined ? setEditAccLastExchangeRate : setLocalEditAccLastRate;
+  const accountNumber = accAccountNumber !== undefined ? accAccountNumber : localAccAccountNumber; const setAccountNumber = setAccAccountNumber !== undefined ? setAccAccountNumber : setLocalAccAccountNumber;
+  const editAccountNumber = editAccAccountNumber !== undefined ? editAccAccountNumber : localEditAccAccountNumber; const setEditAccountNumber = setEditAccAccountNumber !== undefined ? setEditAccAccountNumber : setLocalEditAccAccountNumber;
 
   useEffect(() => { if (editingAccId) setIsManageOpen(true); }, [editingAccId]);
   const getRate = (curCode?: string, historicalRate?: number, accountId?: string) => { if (accountId && localInvRatesOverride[accountId] !== undefined) return localInvRatesOverride[accountId]; if (historicalRate) return historicalRate; if (!curCode || curCode === "IDR") return 1; if (exchangeRates && exchangeRates[curCode] !== undefined) return exchangeRates[curCode]; return 1; };
@@ -465,6 +471,7 @@ export default function AssetsTab({
               setEditAccIsSavings(!!detailAcc.isSavings); setEditAccIsBusiness(!!detailAcc.isBusiness); setEditAccTargetBalance(cleanNum(detailAcc.targetBalance));
               setEditAccExcludeFromTotal(!!detailAcc.excludeFromTotal); setEditAccSavingsGoalTitle(detailAcc.savingsGoalTitle || "");
               setEditCurrency(detailAcc.currency || "IDR"); setEditIsInv(!!detailAcc.isInvestment); setEditAvgPrice(cleanNum(detailAcc.averageBuyPrice)); setEditLastRate(cleanNum(detailAcc.lastExchangeRate));
+              setEditAccountNumber(detailAcc.accountNumber || "");
               setIsManageOpen(true);
             }} className={`p-2.5 rounded-full cursor-pointer transition-colors active:scale-95 flex items-center justify-center ${currentTheme.bgLight} ${currentTheme.text}`}>
               <Edit2 size={16}/>
@@ -489,6 +496,23 @@ export default function AssetsTab({
             <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest mb-1">{detailAcc.isInvestment ? "Total Unit Kepemilikan" : "Total Saldo Dompet"}</p>
             <h2 className="text-3xl font-black mb-1">{isPrivacyMode ? `${getCurrencySymbol(detailAcc.currency)} ••••••` : formatCurrencyTerbaca(detailAcc.balance, detailAcc.currency)}</h2>
             {detailAcc.isInvestment && <p className="text-sm font-bold text-blue-200 mb-6">~ Rp {(detailAcc.balance * getRate(detailAcc.currency, detailAcc.lastExchangeRate, detailAcc.id)).toLocaleString('id-ID')}</p>}
+            
+            {/* FITUR BARU: TOMBOL SALIN REKENING */}
+            {detailAcc.accountNumber && (
+              <div className="flex items-center justify-center gap-2 mb-6">
+                 <div className="bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 shadow-inner">
+                    <span className="text-[11px] font-mono font-black text-blue-100 tracking-wider">
+                       {isPrivacyMode && detailAcc.accountNumber.length > 4 ? `•••• ${detailAcc.accountNumber.slice(-4)}` : detailAcc.accountNumber}
+                    </span>
+                    <button onClick={(e) => {
+                        e.stopPropagation();
+                        triggerHaptic();
+                        navigator.clipboard.writeText(detailAcc.accountNumber || "");
+                        alert("Nomor Rekening berhasil disalin ke Clipboard! 📋");
+                    }} className="text-white/60 hover:text-white p-1 rounded-md hover:bg-white/10 transition-colors active:scale-90 cursor-pointer" title="Copy Rekening"><Copy size={12}/></button>
+                 </div>
+              </div>
+            )}
             
             <div className="flex gap-4 mt-6">
               <div className="flex-1 bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10">
@@ -629,6 +653,16 @@ export default function AssetsTab({
                             </div>
                             <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-3 truncate">{acc.name}</p>
                             <p className="text-[9px] font-bold text-slate-400 uppercase leading-none mt-0.5">{acc.currency || "IDR"} • {acc.type}</p>
+                            
+                            {/* TOMBOL COPY MINI */}
+                            {acc.accountNumber && (
+                              <div className="mt-1.5 w-max" onClick={(e) => { e.stopPropagation(); triggerHaptic(); navigator.clipboard.writeText(acc.accountNumber || ""); alert("Tersalin: " + acc.accountNumber); }}>
+                                <span className="text-[9px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded cursor-copy hover:text-blue-500 transition-colors flex items-center gap-1">
+                                  {isPrivacyMode && acc.accountNumber.length > 4 ? `•••• ${acc.accountNumber.slice(-4)}` : acc.accountNumber} <Copy size={8}/>
+                                </span>
+                              </div>
+                            )}
+                            
                             <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none mt-1.5">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
                           </div>
                           {isHovered && <div className="absolute inset-0 bg-blue-500/10 rounded-3xl animate-pulse pointer-events-none"></div>}
@@ -659,7 +693,17 @@ export default function AssetsTab({
                         >
                           <div className="flex items-center gap-3">
                             {acc.logo ? ( <img src={acc.logo} className="w-10 h-10 rounded-xl object-cover" alt="logo" /> ) : ( <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${design.iconBg}`}>{design.icon}</div> )}
-                            <div className="text-left"><p className="text-sm font-bold text-slate-800 dark:text-slate-100">{acc.name}</p><p className="text-[9px] font-bold text-slate-400 uppercase">{acc.currency || "IDR"} • {acc.type}</p></div>
+                            <div className="text-left">
+                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{acc.name}</p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase">{acc.currency || "IDR"} • {acc.type}</p>
+                                {acc.accountNumber && (
+                                  <span onClick={(e) => { e.stopPropagation(); triggerHaptic(); navigator.clipboard.writeText(acc.accountNumber || ""); alert("Tersalin: " + acc.accountNumber); }} className="text-[8px] font-mono font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded cursor-copy hover:text-blue-500 transition-colors flex items-center gap-0.5">
+                                    {isPrivacyMode && acc.accountNumber.length > 4 ? `•••• ${acc.accountNumber.slice(-4)}` : acc.accountNumber} <Copy size={8}/>
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
                           <p className="text-sm font-black text-slate-800 dark:text-slate-100">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
                         </div>
@@ -902,6 +946,14 @@ export default function AssetsTab({
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Nama { (editingAccId ? editIsInv : isInv) ? 'Aset / Koin / Saham' : 'Dompet' }</label>
                     <input type="text" placeholder={(editingAccId ? editIsInv : isInv) ? 'Contoh: Bitcoin, Saham BBCA' : 'Contoh: BCA, Gopay'} className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccName : accName} onChange={(e) => editingAccId ? setEditAccName(e.target.value) : setAccName(e.target.value)} />
                   </div>
+
+                  {/* FORM INPUT NOMOR REKENING */}
+                  {!(editingAccId ? editIsInv : isInv) && !(editingAccId ? editAccIsSavings : accIsSavings) && (
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Nomor Rekening / Tag (Opsional)</label>
+                      <input type="text" placeholder="Contoh: BCA 1234567890" className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 font-mono" value={editingAccId ? editAccountNumber : accountNumber} onChange={(e) => editingAccId ? setEditAccountNumber(e.target.value) : setAccountNumber(e.target.value)} />
+                    </div>
+                  )}
                   
                   <div className="space-y-1 text-left">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Satuan Mata Uang / Unit</label>
@@ -1072,7 +1124,7 @@ export default function AssetsTab({
                         <div className="flex items-center gap-1">
                           <button disabled={index===0} onClick={()=>moveAccountOrder(index, "up")} className="p-1.5 bg-slate-200/50 dark:bg-slate-800 rounded text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-30"><ArrowUp size={12}/></button>
                           <button disabled={index===accounts.length-1} onClick={()=>moveAccountOrder(index, "down")} className="p-1.5 bg-slate-200/50 dark:bg-slate-800 rounded text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-30"><ArrowDown size={12}/></button>
-                          <button onClick={() => { const cleanNum = (num: number | undefined | null) => num ? Number(num.toFixed(4)).toString() : ""; setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(cleanNum(acc.balance) || "0"); setEditAccIsSavings(!!acc.isSavings); setEditAccIsBusiness(!!acc.isBusiness); setEditAccTargetBalance(cleanNum(acc.targetBalance)); setEditAccExcludeFromTotal(!!acc.excludeFromTotal); setEditAccSavingsGoalTitle(acc.savingsGoalTitle||""); setEditIsInv(!!acc.isInvestment); setEditAvgPrice(cleanNum(acc.averageBuyPrice)); setEditLastRate(cleanNum(acc.lastExchangeRate)); if(setEditAccCurrency)setEditAccCurrency(acc.currency||"IDR"); else setLocalEditAccCurrency(acc.currency||"IDR"); }} className="p-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 rounded ml-1 cursor-pointer"><Edit2 size={12}/></button>
+                          <button onClick={() => { const cleanNum = (num: number | undefined | null) => num ? Number(num.toFixed(4)).toString() : ""; setEditingAccId(acc.id); setEditAccName(acc.name); setEditAccBalance(cleanNum(acc.balance) || "0"); setEditAccIsSavings(!!acc.isSavings); setEditAccIsBusiness(!!acc.isBusiness); setEditAccTargetBalance(cleanNum(acc.targetBalance)); setEditAccExcludeFromTotal(!!acc.excludeFromTotal); setEditAccSavingsGoalTitle(acc.savingsGoalTitle||""); setEditIsInv(!!acc.isInvestment); setEditAvgPrice(cleanNum(acc.averageBuyPrice)); setEditLastRate(cleanNum(acc.lastExchangeRate)); setEditAccountNumber(acc.accountNumber || ""); if(setEditAccCurrency)setEditAccCurrency(acc.currency||"IDR"); else setLocalEditAccCurrency(acc.currency||"IDR"); }} className="p-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 rounded ml-1 cursor-pointer"><Edit2 size={12}/></button>
                           <button onClick={() => deleteAccount(acc.id, acc.name)} className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 rounded cursor-pointer"><Trash2 size={12}/></button>
                         </div>
                       </div>

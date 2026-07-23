@@ -14,6 +14,7 @@ export interface AccountData {
   lastExchangeRate?: number;  
   isInvestment?: boolean;     
   averageBuyPrice?: number;   
+  accountNumber?: string;     // FITUR BARU: Smart Account Number
 }
 
 export interface SplitItemData {
