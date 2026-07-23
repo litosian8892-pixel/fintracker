@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Brain, Zap, ShieldCheck, Target, WifiOff, Smartphone, ChevronRight, ChevronDown, Eye, Star } from "lucide-react";
+import { ArrowRight, Brain, Zap, ShieldCheck, Target, WifiOff, Smartphone, ChevronRight, ChevronDown, Eye, Star, CheckCircle2, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const faqs = [
@@ -13,22 +13,27 @@ const faqs = [
   { q: "Bagaimana proses aktivasinya?", a: "Saat ini aktivasi akun dilakukan secara eksklusif manual untuk menjaga keamanan. Anda cukup menekan tombol 'Amankan Lisensi Sekarang' yang akan mengarahkan Anda ke WhatsApp Admin. Setelah transfer terverifikasi, email Anda akan langsung diaktifkan dalam hitungan menit." }
 ];
 
+// 💬 DATA TESTIMONI (WALL OF LOVE)
+const testimonials = [
+  { name: "Bima Santoso", role: "Karyawan Gen-Z", text: "AI Roaster-nya gila! Gue jadi mikir 2x sebelum check-out keranjang oren. Dompet jadi aman banget bulan ini 😂", avatar: "👨‍💻" },
+  { name: "Siska Amelia", role: "Freelancer", text: "Akhirnya ada aplikasi yang offline-first! Sering nyatet pengeluaran di KRL pas sinyal mati, tetep lancar banget parah.", avatar: "👩‍🎨" },
+  { name: "Rendi", role: "Mahasiswa", text: "Sistem streak (runtutan) bikin gue ketagihan buat gak jajan. Sekarang skor finansial gue udah 900+! 🔥", avatar: "🎓" },
+  { name: "Putri Rahma", role: "Ibu Rumah Tangga", text: "Fitur Split Bill ngebantu banget pas patungan arisan. Langsung auto-hitung dan presisi sampai ke perak-peraknya.", avatar: "💁‍♀️" },
+  { name: "Dimas", role: "Crypto Investor", text: "Bayar 49rb sekali seumur hidup tapi dapet fitur level enterprise. Multi-currency nya kepake banget buat catet aset.", avatar: "💼" },
+];
+
 export default function LandingPage() {
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false); // ⚡ STATE ANTI-FREEZE
+  const [isNavigating, setIsNavigating] = useState(false);
+  
+  // ⚡ STATE FITUR BARU: BEFORE vs AFTER TOGGLE
+  const [isFintrackerWay, setIsFintrackerWay] = useState(true);
 
-  const router = useRouter();
-
-  // ⚡ AUTO-BYPASS (HARD CLEAR MEMORY) - ANTI CPU OVERLOAD
-  useEffect(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("fintracker_has_logged_in") === "true") {
-      setIsNavigating(true);
-      // Jeda 50ms membiarkan UI Loading muncul, lalu HANCURKAN memori Landing Page agar RAM HP lega!
-      setTimeout(() => { window.location.replace("/dashboard"); }, 50);
-    }
-  }, [router]);
+  // 🖱️ STATE FITUR BARU: INTERACTIVE CURSOR SPOTLIGHT
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,14 +44,21 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // ⚡ FUNGSI LOMPAT INSTAN (MENCEGAH HP NGE-FREEZE)
+  // 🖱️ LISTENER KURSOR SPOTLIGHT
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
   const handleEnterApp = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     setIsNavigating(true);
     setTimeout(() => { window.location.replace("/dashboard"); }, 50);
   };
 
-  // 🚀 TAMPILAN LOADING ABSOLUTE (MENCEGAH KEBOCORAN WARNA SAFARI)
   if (isNavigating) {
     return (
       <div className="fixed inset-0 z-[99999] h-[100dvh] w-full bg-slate-950 flex flex-col items-center justify-center text-white overflow-hidden">
@@ -61,17 +73,28 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-blue-500/30 overflow-x-hidden relative">
-      {/* CSS ENGINE */}
+      {/* CSS ENGINE: Ditambah Marquee Reverse untuk Wall of Love */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
         .animate-float { animation: float 6s ease-in-out infinite; }
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .animate-marquee { animation: marquee 20s linear infinite; }
+        .animate-marquee { animation: marquee 25s linear infinite; }
+        @keyframes marquee-reverse { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
+        .animate-marquee-reverse { animation: marquee-reverse 30s linear infinite; }
         @keyframes shine { 100% { left: 200%; } }
       `}} />
       
-      {/* 🔮 Background Depth */}
+      {/* 🔮 BACKGROUND DEPTH & ✨ CURSOR SPOTLIGHT */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0"></div>
+      
+      {/* Spotlight Kursor Mengikuti Mouse (Hanya aktif jika mouse digerakkan) */}
+      <div 
+        className="pointer-events-none fixed inset-0 z-30 transition-opacity duration-300 hidden md:block"
+        style={{
+          background: `radial-gradient(600px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(59, 130, 246, 0.08), transparent 40%)`
+        }}
+      />
+
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-blue-600/15 blur-[120px] rounded-full pointer-events-none z-0"></div>
       <div className="fixed bottom-0 right-0 w-[600px] h-[600px] bg-indigo-600/10 blur-[150px] rounded-full pointer-events-none z-0"></div>
 
@@ -93,7 +116,7 @@ export default function LandingPage() {
         <section className="pt-40 pb-20 px-6 max-w-6xl mx-auto flex flex-col items-center text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-[10px] font-bold uppercase tracking-widest mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 shadow-sm backdrop-blur-md">
             <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span></span>
-            Fintracker Fase 27 Dirilis
+            Fintracker Fase 28 Dirilis
           </div>
           
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-[1.05] mb-6 max-w-4xl animate-in fade-in slide-in-from-bottom-6 duration-1000">
@@ -104,7 +127,7 @@ export default function LandingPage() {
             Tinggalkan cara lama mencatat manual yang membosankan. Fintracker adalah PWA canggih dengan Asisten AI yang siap mengingatkan batas anggaranmu.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300 relative z-40">
             <button onClick={handleEnterApp} className="cursor-pointer px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.2),_0_0_40px_-10px_rgba(59,130,246,0.6)] flex items-center justify-center gap-2 hover:scale-105 active:scale-95 border border-blue-500">
               Dapatkan Akses Sekarang <ArrowRight size={18} />
             </button>
@@ -134,23 +157,118 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 🏃🏻‍♂️ INFINITE MARQUEE */}
+        {/* 🏃🏻‍♂️ INFINITE MARQUEE (ANTI-BROKEN TYPOGRAPHY) */}
         <div className="w-full pt-20 pb-10 flex flex-col items-center justify-center relative z-10 mt-10 md:mt-0">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-8 text-center px-4">Mendukung Pencatatan Aset Dari Berbagai Platform</p>
+          
           <div className="w-full max-w-5xl mx-auto overflow-hidden relative flex [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
             <div className="flex whitespace-nowrap animate-marquee items-center gap-6 md:gap-8 w-max">
+               {/* Render 2x untuk ilusi pergerakan tiada henti */}
                {[...Array(2)].map((_, i) => (
                   <div key={i} className="flex gap-6 md:gap-8 items-center shrink-0">
-                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" /></div>
-                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group"><img src="https://upload.wikimedia.org/wikipedia/id/f/fa/Bank_Mandiri_logo_2016.svg" alt="Mandiri" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" /></div>
-                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group"><img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg" alt="GoPay" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" /></div>
-                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group"><img src="https://www.ovo.id/assets/images/header/ovo-logo-new.svg" alt="OVO" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" /></div>
-                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 transition-all duration-500 group"><img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" /></div>
+                    
+                    {/* BCA */}
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                      <span className="hidden font-black text-xl italic tracking-tighter text-slate-400 group-hover:text-[#0066AE] transition-colors duration-500">BCA</span>
+                    </div>
+                    
+                    {/* Mandiri */}
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
+                      <img src="https://upload.wikimedia.org/wikipedia/id/f/fa/Bank_Mandiri_logo_2016.svg" alt="Mandiri" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                      <span className="hidden font-black text-lg italic tracking-tighter text-slate-400 group-hover:text-[#003d79] transition-colors duration-500">mandiri</span>
+                    </div>
+                    
+                    {/* GoPay */}
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg" alt="GoPay" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                      <span className="hidden font-black text-lg tracking-tighter text-slate-400 group-hover:text-[#00A5CF] transition-colors duration-500">gopay</span>
+                    </div>
+                    
+                    {/* OVO */}
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
+                      <img src="https://www.ovo.id/assets/images/header/ovo-logo-new.svg" alt="OVO" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                      <span className="hidden font-black text-xl tracking-tighter text-slate-400 group-hover:text-[#4C3494] transition-colors duration-500">OVO</span>
+                    </div>
+                    
+                    {/* DANA */}
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA" className="h-3 md:h-4 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                      <span className="hidden font-black text-xl tracking-tighter text-slate-400 group-hover:text-[#118EE9] transition-colors duration-500">DANA</span>
+                    </div>
+                    
+                    {/* Crypto (Binance) */}
+                    <div className="flex items-center justify-center w-32 h-14 rounded-2xl bg-white/5 border border-white/10 hover:bg-white transition-all duration-500 group cursor-pointer">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Binance_logo.svg" alt="Crypto" className="h-4 md:h-5 object-contain brightness-0 invert opacity-40 group-hover:invert-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-500" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                      <span className="hidden font-black text-lg tracking-tighter text-slate-400 group-hover:text-[#F3BA2F] transition-colors duration-500">BINANCE</span>
+                    </div>
+
                   </div>
                ))}
             </div>
           </div>
         </div>
+
+        {/* ⚖️ FITUR BARU: BEFORE vs AFTER TOGGLE SECTION */}
+        <section className="py-24 px-6 max-w-4xl mx-auto relative z-10">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">Kenapa Harus Pindah?</h2>
+            <p className="text-slate-400 text-sm md:text-base font-medium">Bandingkan cara lama dengan teknologi otomatis Fintracker.</p>
+          </div>
+
+          <div className="flex justify-center mb-10">
+            <div className="bg-slate-900 border border-white/10 rounded-full p-1.5 flex items-center shadow-inner relative">
+              <div 
+                className={`absolute inset-y-1.5 bg-blue-600 rounded-full transition-all duration-500 ease-out shadow-md`}
+                style={{
+                  width: 'calc(50% - 6px)',
+                  left: isFintrackerWay ? 'calc(50% + 3px)' : '6px'
+                }}
+              />
+              <button 
+                onClick={() => setIsFintrackerWay(false)}
+                className={`relative z-10 w-36 py-2.5 text-xs font-bold transition-colors duration-300 rounded-full cursor-pointer ${!isFintrackerWay ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+              >
+                Cara Lama
+              </button>
+              <button 
+                onClick={() => setIsFintrackerWay(true)}
+                className={`relative z-10 w-36 py-2.5 text-xs font-bold transition-colors duration-300 rounded-full cursor-pointer ${isFintrackerWay ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+              >
+                Fintracker Way
+              </button>
+            </div>
+          </div>
+
+          {/* Canvas Before/After */}
+          <div className="relative w-full aspect-[4/3] md:aspect-[21/9] rounded-[32px] overflow-hidden border border-white/10 shadow-2xl transition-all duration-700 bg-slate-900">
+            
+            {/* CARA LAMA */}
+            <div className={`absolute inset-0 bg-slate-950 flex flex-col items-center justify-center p-8 transition-opacity duration-700 ${!isFintrackerWay ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
+              <div className="w-20 h-20 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mb-6 border border-rose-500/20"><XCircle size={40} /></div>
+              <h3 className="text-2xl font-black text-slate-300 mb-4">Mencatat Itu Beban</h3>
+              <ul className="space-y-3 text-sm text-slate-500 font-medium text-center">
+                <li>🧾 Struk kertas hilang, pengeluaran gak terlacak.</li>
+                <li>📝 Lupa catet karena aplikasi loadingnya lemot.</li>
+                <li>🥵 Bingung akhir bulan duit habis kemana.</li>
+                <li>🚫 Aplikasi numpuk notif langganan bulanan mahal.</li>
+              </ul>
+            </div>
+
+            {/* FINTRACKER WAY */}
+            <div className={`absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/40 via-slate-900 to-slate-950 flex flex-col items-center justify-center p-8 transition-opacity duration-700 ${isFintrackerWay ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none"></div>
+              <div className="w-20 h-20 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center mb-6 border border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.3)]"><CheckCircle2 size={40} /></div>
+              <h3 className="text-2xl font-black text-white mb-4">Semuanya Otomatis</h3>
+              <ul className="space-y-3 text-sm text-slate-300 font-bold text-center">
+                <li>✨ Asisten AI siap mengingatkan overbudget.</li>
+                <li>⚡ Turbo render 0-detik, PWA Offline-First.</li>
+                <li>📸 Foto struk jadi teks base64 anti hilang.</li>
+                <li>👑 Sekali bayar 49rb untuk akses SELAMANYA.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
 
         {/* 📱 BENTO GRID FEATURES */}
         <section className="py-24 px-6 max-w-6xl mx-auto relative z-10">
@@ -161,7 +279,6 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 auto-rows-[minmax(320px,auto)]">
-            
             <div className="md:col-span-2 flex flex-col justify-between bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-slate-800/40 via-slate-900 to-slate-950 backdrop-blur-2xl p-8 md:p-10 rounded-[32px] border border-white/10 border-t-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative overflow-hidden group hover:border-blue-500/40 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(59,130,246,0.2)]">
               <Brain className="absolute -bottom-10 -right-10 w-72 h-72 text-blue-500 opacity-[0.03] rotate-12 group-hover:scale-110 group-hover:opacity-[0.06] transition-all duration-700 pointer-events-none" />
               <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none group-hover:bg-blue-500/25 transition-colors duration-700"></div>
@@ -242,10 +359,33 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* 💬 FITUR BARU: WALL OF LOVE (TESTIMONIAL MARQUEE) */}
+        <div className="w-full pt-10 pb-20 flex flex-col items-center justify-center relative z-10">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-8 text-center px-4">Dicintai Ratusan Pengguna Harian</p>
+          <div className="w-full max-w-6xl mx-auto overflow-hidden relative flex [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+            <div className="flex whitespace-nowrap animate-marquee-reverse items-center gap-6 w-max">
+               {/* Render array 2x agar scroll mulus tiada henti */}
+               {[...testimonials, ...testimonials].map((testi, i) => (
+                  <div key={i} className="flex-shrink-0 w-[320px] md:w-[400px] p-6 rounded-3xl bg-slate-900/50 backdrop-blur-md border border-white/5 shadow-xl hover:border-blue-500/30 transition-colors duration-300 cursor-default">
+                    <div className="flex text-amber-400 mb-4"><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/><Star size={14} fill="currentColor"/></div>
+                    {/* Perbaikan: Ganti h-[60px] jadi min-h-[72px] agar baris ketiga tidak tertebas! */}
+                    <p className="text-slate-300 text-sm font-medium leading-relaxed mb-6 whitespace-normal min-h-[72px] line-clamp-3">"{testi.text}"</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-lg">{testi.avatar}</div>
+                      <div>
+                        <p className="text-xs font-black text-white">{testi.name}</p>
+                        <p className="text-[10px] font-bold text-slate-500">{testi.role}</p>
+                      </div>
+                    </div>
+                  </div>
+               ))}
+            </div>
+          </div>
+        </div>
+
         {/* 💎 PRICING SECTION (TITANIUM PASS) */}
-        <section className="py-24 px-6 max-w-5xl mx-auto mt-10 relative z-10">
+        <section className="py-24 px-6 max-w-5xl mx-auto relative z-10">
           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent"></div>
-          
           <div className="text-center mb-16 relative">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[100px] bg-amber-500/10 blur-[80px] rounded-full pointer-events-none"></div>
             <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight relative z-10">Investasi <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500">Sekali</span>, Pakai Selamanya.</h2>
@@ -260,17 +400,14 @@ export default function LandingPage() {
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-widest mb-6 shadow-inner w-max">
                   <span className="animate-pulse">👑</span> VIP LIFETIME PASS
                 </div>
-                
                 <h3 className="text-4xl md:text-5xl font-black mb-6 tracking-tighter text-white">Akses Tanpa <br className="hidden md:block"/>Batas Waktu.</h3>
                 <p className="text-slate-400 text-sm leading-relaxed mb-8 max-w-md font-medium">Bayar hari ini, nikmati semua fitur premium, proteksi enkripsi tingkat bank, dan <i>update</i> sistem selamanya tanpa biaya tambahan sepeser pun.</p>
-                
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                   <div className="flex items-start gap-3"><div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div><span className="text-sm font-bold text-slate-300">Biometrik Native & PIN</span></div>
                   <div className="flex items-start gap-3"><div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div><span className="text-sm font-bold text-slate-300">Portofolio Multi-Aset</span></div>
                   <div className="flex items-start gap-3"><div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div><span className="text-sm font-bold text-slate-300">Laporan Excel Multi-Sheet</span></div>
                   <div className="flex items-start gap-3"><div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5"><span className="text-amber-400 text-[10px]">✓</span></div><span className="text-sm font-bold text-slate-300">Asisten AI "Roaster"</span></div>
                 </div>
-
                 <div className="flex items-center gap-4 mt-auto">
                   <div className="flex -space-x-3">
                     <div className="w-8 h-8 rounded-full border-2 border-[#0a0c10] bg-blue-100 flex items-center justify-center text-xs shadow-sm">👱🏻‍♂️</div>
@@ -281,7 +418,6 @@ export default function LandingPage() {
                   <div className="flex text-amber-400"><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/></div>
                 </div>
               </div>
-              
               <div className="w-full md:w-[380px] shrink-0 bg-gradient-to-b from-slate-900 to-slate-950 border-l border-white/5 border-dashed md:border-solid p-8 md:p-10 relative flex flex-col justify-center items-center text-center rounded-[32px] md:rounded-l-none md:rounded-r-[38px] mt-2 md:mt-0">
                 <div className="hidden md:block absolute top-1/2 -left-4 -translate-y-1/2 w-8 h-8 bg-slate-950 rounded-full border-r border-white/5 shadow-inner"></div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Harga Spesial Hari Ini</p>
@@ -306,7 +442,6 @@ export default function LandingPage() {
         <section className="py-10 px-6 max-w-5xl mx-auto relative z-10">
           <div className="w-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/20 via-slate-900 to-slate-950 border border-emerald-500/20 rounded-[32px] p-8 md:p-10 shadow-[0_10px_40px_rgba(16,185,129,0.05)] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group hover:border-emerald-500/30 transition-all duration-500 hover:-translate-y-1">
             <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-emerald-500/20 transition-colors duration-700"></div>
-            
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6 relative z-10 w-full md:w-auto text-center md:text-left">
               <div className="relative shrink-0">
                 <div className="absolute inset-0 bg-emerald-500 rounded-full blur-md opacity-30 animate-pulse"></div>
@@ -314,13 +449,11 @@ export default function LandingPage() {
                   <ShieldCheck size={32} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                 </div>
               </div>
-              
               <div>
                 <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-2">Privasi Tingkat <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-emerald-500">Bank.</span></h2>
                 <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-md">Data keuanganmu dienkripsi via Firebase Firestore. Kami tidak bisa melihat, membaca, atau membagikan datamu.</p>
               </div>
             </div>
-
             <div className="flex flex-wrap md:flex-col justify-center gap-3 relative z-10 w-full md:w-auto shrink-0">
               <div className="px-4 py-2.5 bg-slate-950/50 border border-white/10 rounded-xl flex items-center justify-center md:justify-start gap-2.5 shadow-inner backdrop-blur-md">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
@@ -364,10 +497,48 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-white/5 py-8 mt-20 relative z-10">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 pb-20 md:pb-0">
+      {/* 🚀 FITUR BARU: MEGA FOOTER & SYSTEM STATUS */}
+      <footer className="border-t border-white/5 bg-slate-950 pt-16 pb-8 mt-20 relative z-10">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-6 mb-16">
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-2.5 mb-6">
+              <img src="/apple-touch-icon.png" alt="Fintracker Logo" className="w-8 h-8 rounded-xl object-cover shadow-lg shadow-blue-500/20 ring-1 ring-white/10" />
+              <span className="font-black text-xl tracking-tight text-white">Fintracker<span className="text-blue-500">.</span></span>
+            </div>
+            <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-sm mb-8">
+              Aplikasi pencatatan keuangan PWA #1 di Indonesia dengan teknologi Offline-First dan Asisten AI "Roaster". Bebas langganan bulanan selamanya.
+            </p>
+            {/* LENCANA STATUS SISTEM */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 shadow-inner cursor-pointer hover:bg-emerald-500/20 transition-colors">
+              <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
+              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">All Systems Operational</span>
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="text-white font-black mb-4 tracking-tight">Produk</h4>
+            <ul className="space-y-3 text-sm font-medium text-slate-400">
+              <li><button onClick={handleEnterApp} className="hover:text-blue-400 transition-colors cursor-pointer">Fitur Premium</button></li>
+              <li><button onClick={handleEnterApp} className="hover:text-blue-400 transition-colors cursor-pointer">Harga Lifetime</button></li>
+              <li><button onClick={handleEnterApp} className="hover:text-blue-400 transition-colors cursor-pointer">Changelog V2.7</button></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="text-white font-black mb-4 tracking-tight">Legal & Dukungan</h4>
+            <ul className="space-y-3 text-sm font-medium text-slate-400">
+              <li><button onClick={handleEnterApp} className="hover:text-blue-400 transition-colors cursor-pointer">Kebijakan Privasi</button></li>
+              <li><button onClick={handleEnterApp} className="hover:text-blue-400 transition-colors cursor-pointer">Syarat & Ketentuan</button></li>
+              <li><button onClick={handleEnterApp} className="hover:text-blue-400 transition-colors cursor-pointer">Hubungi Developer</button></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="max-w-6xl mx-auto px-6 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 pb-20 md:pb-0">
           <p className="text-slate-500 text-xs font-bold">© {new Date().getFullYear()} Fintracker App. All rights reserved.</p>
-          <div className="flex items-center gap-6"><button onClick={handleEnterApp} className="cursor-pointer text-slate-400 hover:text-white text-xs font-bold transition-colors">Masuk Aplikasi</button></div>
+          <div className="flex items-center gap-6">
+            <button onClick={handleEnterApp} className="text-slate-400 hover:text-white text-xs font-bold transition-colors cursor-pointer">Masuk Aplikasi</button>
+          </div>
         </div>
       </footer>
 
