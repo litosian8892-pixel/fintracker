@@ -1247,10 +1247,35 @@ export default function FintrackerApp() {
     );
   }
 
-  // ⚡ ANTI-DEADLOCK: Gunakan LoadingScreen standar (Logo Muter). 
-  // Ini 100x lebih stabil daripada Skeleton UI yang rentan nge-hang di Safari iOS.
-  if (loading || !pinChecked) {
-    return <LoadingScreen />;
+  // ⚡ MENGEMBALIKAN FITUR CORE #14: Turbo Cold-Start & App Shell (Skeleton UI)
+  // Diperbarui dengan Safe-Render logic agar tidak memicu Hydration Deadlock di Safari
+  const isReadyToRender = !loading && pinChecked && (user ? !isReportLoading : true);
+  
+  if (!isReadyToRender) {
+    // Render kerangka aplikasi (App Shell) yang langsung sesuai dengan ukuran asli
+    // Mencegah layar berkedip putih dan memberikan ilusi loading 0-detik
+    return (
+      <main className="min-h-screen bg-slate-950 md:flex transition-colors duration-200">
+        <Sidebar user={null} activeTab={"home" as any} setActiveTab={() => {}} onLogout={() => {}} isPrivacyMode={false} togglePrivacyMode={() => {}} />
+        <div className="flex-1 md:ml-64 min-h-screen flex flex-col pb-24 md:pb-8">
+          <MobileHeader user={null} onLogout={() => {}} isPrivacyMode={false} togglePrivacyMode={() => {}} />
+          
+          <div className="max-w-5xl w-full mx-auto p-4 md:p-8 animate-pulse mt-2 md:mt-0">
+             {/* Rangka Kartu Total Saldo */}
+             <div className="h-44 w-full bg-slate-800/40 rounded-[30px] mb-6 border border-slate-800"></div>
+             {/* Rangka Laci Numpad & Menu */}
+             <div className="h-20 w-full bg-slate-800/40 rounded-[24px] mb-8 border border-slate-800"></div>
+             {/* Rangka Daftar Transaksi */}
+             <div className="space-y-4">
+               <div className="h-24 w-full bg-slate-800/40 rounded-3xl border border-slate-800"></div>
+               <div className="h-24 w-full bg-slate-800/40 rounded-3xl border border-slate-800"></div>
+               <div className="h-24 w-full bg-slate-800/40 rounded-3xl border border-slate-800"></div>
+             </div>
+          </div>
+        </div>
+        <BottomNav activeTab={"home" as any} setActiveTab={() => {}} />
+      </main>
+    );
   }
 
   if (!user) return <AuthScreen />;
