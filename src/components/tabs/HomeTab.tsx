@@ -546,7 +546,29 @@ export default function HomeTab({
   const selectedSourceAcc = accounts.find(a => a.id === tAccountId);
   const currentSymbol = getCurrencySymbol(selectedSourceAcc?.currency);
 
-  const formatCurrencyTerbaca = (val: string, currencyCode?: string) => { if (!val) return `${getCurrencySymbol(currencyCode)} 0`; const parsed = safeEvaluate(val); const code = currencyCode || "IDR"; return new Intl.NumberFormat("id-ID", { style: "currency", currency: code.toUpperCase() === "IDR" ? "IDR" : code.toUpperCase(), minimumFractionDigits: 0, maximumFractionDigits: code.toUpperCase() === "IDR" ? 0 : 2 }).format(parsed); };
+  const formatCurrencyTerbaca = (val: string, currencyCode?: string) => {
+    if (!val) return `${getCurrencySymbol(currencyCode)} 0`;
+    const parsed = safeEvaluate(val);
+    const code = currencyCode || "IDR";
+    const upperCode = code.toUpperCase();
+    
+    if (["BTC", "ETH", "GRAM", "LOT"].includes(upperCode)) {
+      return `${getCurrencySymbol(code)} ${parsed.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 6 })}`;
+    }
+    
+    try {
+      // Coba format menggunakan native Intl (Hanya menerima kode standar ISO 4217)
+      return new Intl.NumberFormat("id-ID", { 
+        style: "currency", 
+        currency: upperCode === "IDR" ? "IDR" : upperCode, 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: upperCode === "IDR" ? 0 : 2 
+      }).format(parsed);
+    } catch (error) {
+      // FALLBACK ANTI-CRASH: Jika user memakai custom currency string
+      return `${getCurrencySymbol(code)} ${parsed.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    }
+  };
 
   const handleTypeChange = (newType: "income" | "expense" | "transfer") => { 
     flushSync(() => { setTType(newType); setTAccountId(""); setTToAccountId(""); setSplits([]); if (newType !== "transfer") setTCategory(""); });
