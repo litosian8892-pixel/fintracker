@@ -96,10 +96,24 @@ const formatCurrencyTerbaca = (val: string | number, currencyCode?: string) => {
   const parsed = typeof val === 'string' ? parseFloat(val) : val;
   if (isNaN(parsed)) return `${getCurrencySymbol(currencyCode)} 0`;
   const code = currencyCode || "IDR";
-  if (["BTC", "ETH", "GRAM", "LOT"].includes(code.toUpperCase())) {
+  const upperCode = code.toUpperCase();
+  
+  if (["BTC", "ETH", "GRAM", "LOT"].includes(upperCode)) {
     return `${getCurrencySymbol(code)} ${parsed.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 6 })}`;
   }
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: code.toUpperCase() === "IDR" ? "IDR" : code.toUpperCase(), minimumFractionDigits: 0, maximumFractionDigits: code.toUpperCase() === "IDR" ? 0 : 2 }).format(parsed);
+  
+  try {
+    // Coba format menggunakan native Intl (Hanya menerima kode standar ISO 4217 seperti IDR, USD, THB)
+    return new Intl.NumberFormat("id-ID", { 
+      style: "currency", 
+      currency: upperCode === "IDR" ? "IDR" : upperCode, 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: upperCode === "IDR" ? 0 : 2 
+    }).format(parsed);
+  } catch (error) {
+    // FALLBACK ANTI-CRASH: Jika user memakai custom currency string (misal: "BATH" bukannya "THB")
+    return `${getCurrencySymbol(code)} ${parsed.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  }
 };
 
 const safeEvaluate = (expr: string): number => {
