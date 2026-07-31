@@ -1251,7 +1251,8 @@ export default function FintrackerApp() {
 
   // ⚡ MENGEMBALIKAN FITUR CORE #14: Turbo Cold-Start & App Shell (Skeleton UI)
   // Diperbarui dengan Safe-Render logic agar tidak memicu Hydration Deadlock di Safari
-  const isReadyToRender = !loading && pinChecked && (user ? !isReportLoading : true);
+  // FIX UX: Hanya gunakan Skeleton Utama saat Cold Start, agar ganti bulan tidak me-reset state UI!
+  const isReadyToRender = !loading && pinChecked && (user ? (!isColdStartRef.current || !isReportLoading) : true);
   
   if (!isReadyToRender) {
     // Render kerangka aplikasi (App Shell) yang langsung sesuai dengan ukuran asli

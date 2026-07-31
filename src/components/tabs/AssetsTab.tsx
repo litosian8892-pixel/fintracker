@@ -494,7 +494,7 @@ export default function AssetsTab({
 
           <div ref={detailMonthScrollRef} className="flex overflow-x-auto gap-2 px-2 pb-2 -mx-2 snap-x scrollbar-thin scrollbar-track-transparent dark:scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark] scroll-smooth">
             {[11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map(i => {
-              const d = new Date(); d.setMonth(d.getMonth() - i);
+              const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
               const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
               const isActive = mStr === reportMonth;
               return (
@@ -794,7 +794,7 @@ export default function AssetsTab({
           {activeSubTab === "aset" && setReportMonth && (
             <div ref={monthScrollRef} className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-track-transparent dark:scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 dark:[color-scheme:dark] scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 animate-in fade-in duration-200">
               {[11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map((i) => {
-                const d = new Date(); d.setMonth(d.getMonth() - i);
+                const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
                 const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
                 const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" });
                 return (
