@@ -941,10 +941,9 @@ export default function AssetsTab({
       )}
 
       {isManageOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => { setIsManageOpen(false); setEditingAccId(null); }}>
-          <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[30px] sm:rounded-[30px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800" onClick={e => e.stopPropagation()}>
-            <div className="w-full flex justify-center pt-3 pb-1 sm:hidden"><div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full"></div></div>
-            <div className="px-6 pb-4 pt-2 sm:pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => { setIsManageOpen(false); setEditingAccId(null); }}>
+          <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-[30px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800" onClick={e => e.stopPropagation()}>
+            <div className="px-6 pb-4 pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{editingAccId ? "Edit Dompet" : "Buat Dompet Baru"}</h3>
               <button onClick={() => { setIsManageOpen(false); setEditingAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full cursor-pointer transition-colors"><X size={16}/></button>
             </div>
