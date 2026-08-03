@@ -935,13 +935,19 @@ export default function DebtsTab({
                     <input 
                       type="text" 
                       inputMode={isMobile ? "none" : undefined} 
-                      onFocus={() => { if(isMobile) { setActiveKeypad(editingDebtId ? "edit" : "add"); } }} 
-                      className="w-full p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400 focus:border-blue-500" 
+                      disabled={editingDebtId !== null}
+                      onFocus={() => { if(isMobile && !editingDebtId) { setActiveKeypad("add"); } }} 
+                      className={`w-full p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs outline-none font-bold text-slate-800 dark:text-white placeholder-slate-400 ${editingDebtId ? 'opacity-50 cursor-not-allowed' : 'focus:border-blue-500'}`} 
                       value={editingDebtId ? editAmount : amount} 
                       onChange={e => editingDebtId ? setEditAmount(e.target.value) : setAmount(e.target.value)} 
                     />
-                    {(editingDebtId ? editAmount : amount) && (
-                      <p className="text-[10px] font-bold text-slate-500 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatRupiahTerbaca(editingDebtId ? editAmount : amount)}</span></p>
+                    {editingDebtId && (
+                      <p className="text-[9px] font-bold text-amber-500 dark:text-amber-400 pl-1 mt-1.5 flex items-center gap-1">
+                        ⚠️ Nominal dikunci untuk menjaga akurasi saldo dompet. Jika ada pinjaman baru, buat entri baru.
+                      </p>
+                    )}
+                    {(!editingDebtId && amount) && (
+                      <p className="text-[10px] font-bold text-slate-500 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatRupiahTerbaca(amount)}</span></p>
                     )}
                   </div>
 
