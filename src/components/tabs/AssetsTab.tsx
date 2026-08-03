@@ -453,7 +453,29 @@ export default function AssetsTab({
   
   return (
     <div className="space-y-6 animate-in fade-in pb-20 select-none">
-      
+      <style dangerouslySetInnerHTML={{__html: `
+        .btn-neumorphic {
+          background: #f1f5f9;
+          box-shadow: 4px 4px 8px rgba(148, 163, 184, 0.4), -4px -4px 8px rgba(255, 255, 255, 1);
+          border: 1px solid rgba(255, 255, 255, 0.6);
+          transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-neumorphic:active {
+          box-shadow: inset 4px 4px 8px rgba(148, 163, 184, 0.4), inset -4px -4px 8px rgba(255, 255, 255, 1);
+          border: 1px solid transparent;
+          transform: scale(0.97);
+        }
+        .dark .btn-neumorphic {
+          background: #0f172a;
+          box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.8), -4px -4px 10px rgba(30, 41, 59, 0.5);
+          border: 1px solid rgba(30, 41, 59, 0.4);
+        }
+        .dark .btn-neumorphic:active {
+          box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.8), inset -4px -4px 8px rgba(30, 41, 59, 0.5);
+          border: 1px solid transparent;
+        }
+      `}} />
+
       {/* 👻 GHOST CARD OVERLAY (MUNCUL SAAT DI-DRAG) */}
       {dragState.isDragging && dragState.acc && (
         <div 
@@ -948,7 +970,7 @@ export default function AssetsTab({
               <button onClick={() => { setIsManageOpen(false); setEditingAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full cursor-pointer transition-colors"><X size={16}/></button>
             </div>
             
-            <div className="p-6 overflow-y-auto space-y-6">
+            <div className={`p-6 overflow-y-auto space-y-6 ${activeKeypad ? 'pb-72' : ''}`}>
                 <div className="space-y-3 bg-slate-50 dark:bg-slate-900 p-5 rounded-[24px] border border-slate-100 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
                   <div className="flex gap-2 mb-2 p-1 bg-slate-200/50 dark:bg-slate-950 rounded-xl">
                      <button onClick={() => { if(editingAccId) setEditIsInv(false); else setIsInv(false); }} className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${!(editingAccId ? editIsInv : isInv) ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm' : 'text-slate-400'}`}>Dompet Biasa</button>
@@ -1185,7 +1207,7 @@ export default function AssetsTab({
       {isMobile && activeKeypad && (
         <>
           <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
-          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-white dark:bg-slate-950 border-t border-slate-200/50 dark:border-slate-800/80 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[30px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-slate-100 dark:bg-slate-900 border-t border-slate-200/50 dark:border-slate-800/80 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[32px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
             <div className="flex justify-between items-center mb-3 px-1 text-left">
               <span className={`text-[10px] font-black uppercase tracking-widest ${currentTheme.text}`}>
                 {activeKeypad === "balance" ? "Kalkulator Saldo" : activeKeypad === "target" ? "Kalkulator Target" : "Kalkulator"}
@@ -1195,28 +1217,28 @@ export default function AssetsTab({
                  const curVal = activeKeypad === "balance" ? (editingAccId ? editAccBalance : accBalance) : activeKeypad === "target" ? (editingAccId ? editAccTargetBalance : accTargetBalance) : "";
                  if(setVal) { const evaluated = safeEvaluate(curVal as string); if(curVal) setVal(evaluated >= 0 ? evaluated.toString() : ""); }
                  setActiveKeypad(null);
-              }} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 text-xs font-bold flex items-center gap-1.5 cursor-pointer">Selesai <X size={14} /></button>
+              }} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer">Selesai <X size={14} /></button>
             </div>
-            <div className="grid grid-cols-4 gap-2 text-slate-800 dark:text-slate-100 font-black text-sm">
+            <div className="grid grid-cols-4 gap-2.5 text-slate-700 dark:text-slate-300 font-black text-base">
               {["+", "-", "*", "/"].map((op) => (
-                <button key={op} type="button" onClick={() => handleKeypadPress(op)} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/20">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>
+                <button key={op} type="button" onClick={() => handleKeypadPress(op)} className="py-2.5 btn-neumorphic rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">{op === "*" ? "×" : op === "/" ? "÷" : op}</button>
               ))}
               {["7", "8", "9"].map((num) => (
-                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
+                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-2.5 btn-neumorphic rounded-xl flex items-center justify-center">{num}</button>
               ))}
-              <button type="button" onClick={() => handleKeypadPress("C")} className="py-3.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30 active:bg-red-100/80 dark:active:bg-red-900/40 rounded-xl transition-all select-none font-bold">C</button>
+              <button type="button" onClick={() => handleKeypadPress("C")} className="py-2.5 btn-neumorphic rounded-xl flex items-center justify-center text-red-600 dark:text-red-500">C</button>
               {["4", "5", "6"].map((num) => (
-                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/40 dark:border-slate-800/10">{num}</button>
+                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-2.5 btn-neumorphic rounded-xl flex items-center justify-center">{num}</button>
               ))}
-              <button type="button" onClick={() => handleKeypadPress("⌫")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 flex items-center justify-center transition-all select-none">⌫</button>
+              <button type="button" onClick={() => handleKeypadPress("⌫")} className="py-2.5 btn-neumorphic rounded-xl flex items-center justify-center text-rose-500">⌫</button>
               {["1", "2", "3"].map((num) => (
-                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-3.5 bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800 rounded-xl transition-all select-none border border-slate-200/45 dark:border-slate-800/10">{num}</button>
+                <button key={num} type="button" onClick={() => handleKeypadPress(num)} className="py-2.5 btn-neumorphic rounded-xl flex items-center justify-center">{num}</button>
               ))}
-              <button type="button" onClick={() => handleKeypadPress(".")} className="py-3.5 bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800 rounded-xl transition-all select-none">.</button>
-              {["(", "0", ")"].map((char) => (
-                <button key={char} type="button" onClick={() => handleKeypadPress(char)} className={`${char === "0" ? "bg-slate-50/90 dark:bg-slate-900/40 active:bg-slate-100 dark:active:bg-slate-800" : "bg-slate-100 dark:bg-slate-900 active:bg-slate-200 dark:active:bg-slate-800"} py-3.5 rounded-xl transition-all select-none border border-slate-200/30 dark:border-slate-800/10`}>{char}</button>
+              <button type="button" onClick={() => handleKeypadPress(".")} className="py-2.5 btn-neumorphic rounded-xl flex items-center justify-center">.</button>
+              {["00", "0", "000"].map((char) => (
+                <button key={char} type="button" onClick={() => handleKeypadPress(char)} className="py-2.5 btn-neumorphic rounded-xl flex items-center justify-center text-sm">{char}</button>
               ))}
-              <button type="button" onClick={() => handleKeypadPress("Ya")} className={`py-3.5 text-white font-black shadow-md transition-all select-none cursor-pointer rounded-xl border ${currentTheme.fab}`}>Ya</button>
+              <button type="button" onClick={() => handleKeypadPress("Ya")} className={`py-2.5 text-white rounded-xl shadow-[0_4px_10px_rgba(0,0,0,0.15)] active:shadow-inner active:scale-95 transition-all flex items-center justify-center border ${currentTheme.fab}`}>Ya</button>
             </div>
           </div>
         </>
