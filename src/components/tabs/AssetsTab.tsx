@@ -970,7 +970,7 @@ export default function AssetsTab({
               <button onClick={() => { setIsManageOpen(false); setEditingAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full cursor-pointer transition-colors"><X size={16}/></button>
             </div>
             
-            <div className={`p-6 overflow-y-auto space-y-6 overscroll-contain ${activeKeypad ? 'pb-[450px]' : ''}`}>
+            <div className="p-6 overflow-y-auto space-y-6 overscroll-contain flex-1 min-h-0 scroll-smooth">
                 <div className="space-y-3 bg-slate-50 dark:bg-slate-900 p-5 rounded-[24px] border border-slate-100 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
                   <div className="flex gap-2 mb-2 p-1 bg-slate-200/50 dark:bg-slate-950 rounded-xl">
                      <button onClick={() => { if(editingAccId) setEditIsInv(false); else setIsInv(false); }} className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${!(editingAccId ? editIsInv : isInv) ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm' : 'text-slate-400'}`}>Dompet Biasa</button>
@@ -1166,6 +1166,9 @@ export default function AssetsTab({
                     ))}
                   </div>
                 )}
+                
+                {/* 🛡️ INVISIBLE SPACER: Penahan Scroll Saat Numpad Aktif agar form tidak tertutup */}
+                <div style={{ height: activeKeypad ? '380px' : '0px' }} className="w-full shrink-0 transition-all duration-300 pointer-events-none" />
             </div>
           </div>
         </div>
