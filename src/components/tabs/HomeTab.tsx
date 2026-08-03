@@ -98,6 +98,9 @@ interface HomeTabProps {
   activeTripName?: string;
   updateTripName?: (val: string) => void;
   isReportLoading?: boolean; // Props baru
+  globalSearch?: string;
+  setGlobalSearch?: (val: string) => void;
+  searchResult?: TransactionData[];
 }
 
 const themeMap = {
@@ -399,7 +402,8 @@ export default function HomeTab({
   onProcessSmartSplit,
   healthScore = 800, currentStreak = 0, longestStreak = 0, lastLogDate = "", handleDailyCheckIn,
   reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory, isTravelMode, toggleTravelMode, activeTripName, updateTripName, isReportLoading,
-  tReceiptUrl, setTReceiptUrl, editTReceiptUrl, setEditTReceiptUrl
+  tReceiptUrl, setTReceiptUrl, editTReceiptUrl, setEditTReceiptUrl,
+  globalSearch, setGlobalSearch, searchResult = []
 }: HomeTabProps) {
   const parseTime12 = (timeStr: string) => {
     if (!timeStr) return { hour12: "12", minute: "00", period: "PM" };
@@ -444,6 +448,17 @@ export default function HomeTab({
   const [showAccountFilterDropdown, setShowAccountFilterDropdown] = useState(false);
   const [searchAllMonths, setSearchAllMonths] = useState(false);
   
+  // SINKRONISASI PENCARIAN GLOBAL FIREBASE
+  useEffect(() => {
+    if (setGlobalSearch) {
+      if (searchAllMonths && isSearchExpanded && searchQueryInput.trim().length > 1) {
+        setGlobalSearch(searchQueryInput);
+      } else {
+        setGlobalSearch("");
+      }
+    }
+  }, [searchQueryInput, searchAllMonths, isSearchExpanded, setGlobalSearch]);
+
   // 🔥 STATE BARU: Filter Tanggal Presisi
   const [selectedDateFilter, setSelectedDateFilter] = useState("");
 
@@ -726,7 +741,9 @@ export default function HomeTab({
   const totalBalanceCalculated = useMemo(() => { return accounts.filter(acc => !acc.isSavings && !acc.excludeFromTotal).reduce((sum, acc) => sum + (acc.balance * (acc.lastExchangeRate || 1)), 0); }, [accounts]);
 
   const monthlyTransactions = useMemo(() => {
-    let filtered = transactions;
+    // Jika Mode Semua Bulan aktif dan ada hasil pencarian global dari server, gabungkan datanya!
+    let filtered = (searchAllMonths && searchQueryInput.trim() && searchResult.length > 0) ? searchResult : transactions;
+
     if (!searchQueryInput.trim() || !searchAllMonths) { filtered = filtered.filter(t => t.tDate && t.tDate.startsWith(reportMonth)); }
     if (selectedAccountIdFilter !== "all") { filtered = filtered.filter(t => t.accountId === selectedAccountIdFilter || t.toAccountId === selectedAccountIdFilter); }
     
@@ -746,8 +763,8 @@ export default function HomeTab({
       ); 
     }
     return filtered;
-  // 🔥 BUG FIXED: Tambahkan selectedDateFilter ke dalam array dependencies agar React nge-render ulang
-  }, [transactions, reportMonth, selectedAccountIdFilter, searchQueryInput, searchAllMonths, selectedDateFilter]);
+  // 🔥 BUG FIXED: Tambahkan selectedDateFilter & searchResult ke dalam array dependencies agar React nge-render ulang
+  }, [transactions, reportMonth, selectedAccountIdFilter, searchQueryInput, searchAllMonths, selectedDateFilter, searchResult]);
 
   const monthlySummary = useMemo(() => { 
     let income = 0; let expense = 0; 

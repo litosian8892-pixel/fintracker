@@ -623,13 +623,21 @@ export default function FintrackerApp() {
     if (!user || !globalSearch) { setSearchResult([]); return; }
     
     const searchTimer = setTimeout(async () => {
-      try {
-        const qGlobal = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(500));
-        const sn = await getDocs(qGlobal);
-        const allTxs = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
-        const filtered = allTxs.filter(t => (t.note && t.note.toLowerCase().includes(globalSearch.toLowerCase())) || t.category.toLowerCase().includes(globalSearch.toLowerCase()));
-        setSearchResult(filtered);
-      } catch (e) {
+        try {
+          const qGlobal = query(collection(db, `users/${user.uid}/transactions`), orderBy("tDate", "desc"), limit(500));
+          const sn = await getDocs(qGlobal);
+          const allTxs = sn.docs.map(d => ({ id: d.id, ...d.data() } as TransactionData));
+          
+          const q = globalSearch.toLowerCase();
+          const filtered = allTxs.filter(t => 
+            (t.note && t.note.toLowerCase().includes(q)) || 
+            (t.category && t.category.toLowerCase().includes(q)) ||
+            (t.accountName && t.accountName.toLowerCase().includes(q)) ||
+            (t.toAccountName && t.toAccountName.toLowerCase().includes(q)) ||
+            (t.splits && t.splits.some(s => (s.category && s.category.toLowerCase().includes(q)) || (s.note && s.note.toLowerCase().includes(q))))
+          );
+          setSearchResult(filtered);
+        } catch (e) {
         console.error("Search error:", e);
       }
     }, 400); // Tunggu jari user diam 400ms baru jalankan query pencarian
@@ -1445,6 +1453,7 @@ export default function FintrackerApp() {
                 isReportLoading={isReportLoading} // UX: Teruskan status loading agar beranda tahu kapan harus nampilin skeleton
                 tReceiptUrl={tReceiptUrl} setTReceiptUrl={setTReceiptUrl}
                 editTReceiptUrl={editTReceiptUrl} setEditTReceiptUrl={setEditTReceiptUrl}
+                globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult}
               />
             )}
             {activeTab === "reports" && (
