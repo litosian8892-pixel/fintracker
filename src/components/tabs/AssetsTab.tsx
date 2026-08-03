@@ -1209,8 +1209,8 @@ export default function AssetsTab({
 
       {isMobile && activeKeypad && (
         <>
-          <div className="fixed inset-0 z-[140] bg-transparent" onClick={() => setActiveKeypad(null)}></div>
-          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-slate-100 dark:bg-slate-900 border-t border-slate-200/50 dark:border-slate-800/80 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[32px] md:shadow-2xl translate-y-0 text-slate-800 dark:text-white">
+          {/* 🛡️ TAMENG KACA TRANSPARAN DIHAPUS: Agar form di belakangnya bebas di-scroll! */}
+          <div className="fixed bottom-0 left-0 right-0 z-[150] bg-slate-100 dark:bg-slate-900 border-t border-slate-200/50 dark:border-slate-800/80 p-4 pb-6 transition-all duration-300 md:max-w-md md:mx-auto md:rounded-t-[32px] shadow-[0_-20px_40px_rgba(0,0,0,0.25)] translate-y-0 text-slate-800 dark:text-white">
             <div className="flex justify-between items-center mb-3 px-1 text-left">
               <span className={`text-[10px] font-black uppercase tracking-widest ${currentTheme.text}`}>
                 {activeKeypad === "balance" ? "Kalkulator Saldo" : activeKeypad === "target" ? "Kalkulator Target" : "Kalkulator"}
