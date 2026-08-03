@@ -963,11 +963,11 @@ export default function AssetsTab({
       )}
 
       {isManageOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => { setIsManageOpen(false); setEditingAccId(null); }}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => { setIsManageOpen(false); setEditingAccId(null); setActiveKeypad(null); }}>
           <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-[30px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800" onClick={e => e.stopPropagation()}>
             <div className="px-6 pb-4 pt-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
               <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg">{editingAccId ? "Edit Dompet" : "Buat Dompet Baru"}</h3>
-              <button onClick={() => { setIsManageOpen(false); setEditingAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full cursor-pointer transition-colors"><X size={16}/></button>
+              <button onClick={() => { setIsManageOpen(false); setEditingAccId(null); setActiveKeypad(null); }} className="p-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full cursor-pointer transition-colors"><X size={16}/></button>
             </div>
             
             <div className="p-6 overflow-y-auto space-y-6 overscroll-contain flex-1 min-h-0 scroll-smooth">
@@ -1110,7 +1110,7 @@ export default function AssetsTab({
                       } else {
                         await handleCreateAccount();
                       }
-                      setIsManageOpen(false); setEditingAccId(null); 
+                      setIsManageOpen(false); setEditingAccId(null); setActiveKeypad(null); 
                     }} className={`flex-1 py-3 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-95 ${editingAccId ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-blue-600 hover:bg-blue-700'}`}>Simpan</button>
                     
                     {editingAccId && (
@@ -1122,6 +1122,7 @@ export default function AssetsTab({
                             setIsManageOpen(false);
                             setEditingAccId(null);
                             setDetailAccId(null); // Tutup laci modal detail jika ada
+                            setActiveKeypad(null);
                           }} 
                           className="py-3 px-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800/50 rounded-xl text-xs font-bold cursor-pointer active:scale-95 flex items-center justify-center transition-colors"
                           title="Hapus Dompet"
@@ -1133,6 +1134,7 @@ export default function AssetsTab({
                             triggerHaptic();
                             setIsManageOpen(false); 
                             setEditingAccId(null); 
+                            setActiveKeypad(null);
                           }} 
                           className="py-3 px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer active:scale-95 transition-colors"
                         >
