@@ -643,20 +643,47 @@ export default function HomeTab({
   
   const handleNoteChange = (val: string) => {
     if (editingTransaction) setEditTNote(val); else setTNote(val);
-    if (val.trim().length >= 2) {
+    
+    // 🧹 BUG FIX ROOT CAUSE: Pisahkan tag metrik dari kata kunci pencarian!
+    // Jika tidak dipisah, pencarian "Nasi [150KM]" tidak akan pernah menemukan "Nasi" dari bulan lalu.
+    let searchKeyword = val;
+    const valLastBracket = searchKeyword.lastIndexOf('[');
+    const valCloseBracket = searchKeyword.lastIndexOf(']');
+    if (valLastBracket !== -1 && valCloseBracket > valLastBracket && valCloseBracket === searchKeyword.length - 1) {
+      searchKeyword = searchKeyword.substring(0, valLastBracket).trim();
+    }
+
+    if (searchKeyword.trim().length >= 2) {
       const currentType = editingTransaction ? editTType : tType;
       const matches: Record<string, {note: string, category: string, amount: number, icon?: string}> = {};
-      const sortedTx = [...transactions].sort((a,b) => new Date(b.tDate).getTime() - new Date(a.tDate).getTime());
+      
+      // FIX SORTING: Gunakan localeCompare untuk Tanggal & Waktu (Kebal bug Timezone & Presisi hingga detik)
+      const sortedTx = [...transactions].sort((a,b) => {
+        const dateCompare = b.tDate.localeCompare(a.tDate);
+        if (dateCompare !== 0) return dateCompare;
+        const timeA = a.tTime || formatTime(a.createdAt);
+        const timeB = b.tTime || formatTime(b.createdAt);
+        return timeB.localeCompare(timeA);
+      });
       
       for (const tx of sortedTx) { 
-        if (tx.type === currentType && tx.note && tx.note.toLowerCase().includes(val.toLowerCase())) { 
-          const key = tx.note.toLowerCase(); 
+        if (tx.type === currentType && tx.note && tx.note.toLowerCase().includes(searchKeyword.toLowerCase())) { 
+          // 🧹 DEDUPLIKASI PINTAR: Bersihkan Note dari Smart Metric Badge [xxx] masa lalu
+          // Mencegah munculnya riwayat ganda seperti "Bensin [Juli]" dan "Bensin [Agustus]".
+          let baseNote = tx.note;
+          const lastBracket = baseNote.lastIndexOf('[');
+          const closeBracket = baseNote.lastIndexOf(']');
+          if (lastBracket !== -1 && closeBracket > lastBracket && closeBracket === baseNote.length - 1) {
+            baseNote = baseNote.substring(0, lastBracket).trim();
+          }
+          
+          const key = baseNote.toLowerCase().trim(); 
           if (!matches[key]) { 
             // SINKRONISASI CERDAS: Translasi kategori lama ke nama & emoji terbaru
             const cleanCat = cleanCategoryName(tx.category);
             const currentCat = categories.find(c => cleanCategoryName(c.name) === cleanCat);
             matches[key] = { 
-              note: tx.note, 
+              note: baseNote, // Sugesti menggunakan baseNote bersih tanpa numpang tag lama
               category: currentCat ? currentCat.name : tx.category, 
               amount: tx.amount,
               icon: currentCat?.icon || getCategoryIcon(tx.category)
@@ -664,7 +691,8 @@ export default function HomeTab({
           } 
         } 
       }
-      setNoteSuggestions(Object.values(matches).slice(0, 4));
+      // UX Premium: Batasi maksimal 2 sugesti terbaik (Paling Terakhir) agar tidak berderet ke bawah
+      setNoteSuggestions(Object.values(matches).slice(0, 2));
     } else { setNoteSuggestions([]); }
   };
 
