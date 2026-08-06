@@ -132,7 +132,7 @@ export default function FintrackerApp() {
   const [isReportLoading, setIsReportLoading] = useState(true); // UX: State loading khusus laporan bulanan
   const isColdStartRef = useRef(true); // UX: Pengunci agar tunda 1.5 detik HANYA berjalan pada Cold Start pertama
   
-  const [txLimit, setTxLimit] = useState(10);
+  const [txLimit, setTxLimit] = useState(300); // 🚀 KAMUS AUTOCOMPLETE: Load 300 riwayat terakhir lintas bulan
   const [reportMonth, setReportMonth] = useState(() => getLocalDateString().slice(0, 7)); 
   const [maxReportRange, setMaxReportRange] = useState(0);
 
@@ -1223,6 +1223,15 @@ export default function FintrackerApp() {
     }
   };
 
+  // 🚀 JURUS KAMUS AUTOCOMPLETE (ANTI-LAG):
+  // Gabungkan transaksi bulan ini dengan 300 riwayat masa lalu (Dictionary)
+  // HomeTab akan menggunakannya untuk sugesti, tapi HANYA merender bulan aktif!
+  const mergedHomeTransactions = [...reportTransactions];
+  const reportTxIds = new Set(reportTransactions.map(t => t.id));
+  transactions.forEach(t => {
+    if (!reportTxIds.has(t.id)) mergedHomeTransactions.push(t);
+  });
+
   // TRAVEL MODE: Karantina Pengeluaran Liburan agar tidak merusak analitik bulanan
   const allMonthlyTransactions = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
   const monthlyTransactions = allMonthlyTransactions.filter(t => !(t as any).tripId); 
@@ -1437,7 +1446,7 @@ export default function FintrackerApp() {
                 tCategory={tCategory} setTCategory={setTCategory} tAccountId={tAccountId} setTAccountId={setTAccountId}
                 tToAccountId={tToAccountId} setTToAccountId={setTToAccountId} tAmount={tAmount} setTAmount={setTAmount}
                 tAdminFee={tAdminFee} setTAdminFee={setTAdminFee} tNote={tNote} setTNote={setTNote} categories={categories} accounts={accounts} handleTransaction={handleTransaction}
-                transactions={reportTransactions} onDeleteTransaction={handleDeleteTransaction} onEditTransaction={openEditModal} 
+                transactions={mergedHomeTransactions} onDeleteTransaction={handleDeleteTransaction} onEditTransaction={openEditModal} 
                 isPrivacyMode={isPrivacyMode} togglePrivacyMode={togglePrivacyMode}
                 editingTransaction={editingTransaction} setEditingTransaction={setEditingTransaction} handleUpdateTransaction={handleUpdateTransaction}
                 editTAmount={editTAmount} setEditTAmount={setEditTAmount} editTType={editTType} setEditTType={setEditTType}
