@@ -496,8 +496,14 @@ export default function AssetsTab({
         <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
           <div className="flex justify-between items-center px-2 animate-in fade-in duration-200">
             <div className="flex items-center gap-3">
-              <button onClick={() => { triggerHaptic(); setDetailAccId(null); }} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 transition-colors flex items-center justify-center cursor-pointer"><ChevronLeft size={20} className="text-slate-800 dark:text-slate-200"/></button>
-              <h2 className="font-black text-xl text-slate-800 dark:text-white">{detailAcc.name}</h2>
+              {/* BUG FIX: Perbaikan warna tombol Back agar terlihat di Dark Mode menggunakan dynamic theme */}
+              <button 
+                onClick={() => { triggerHaptic(); setDetailAccId(null); }} 
+                className={`p-2 rounded-full cursor-pointer transition-colors active:scale-95 flex items-center justify-center border shadow-sm ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}
+              >
+                <ChevronLeft size={20} strokeWidth={2.5}/>
+              </button>
+              <h2 className="font-black text-xl text-slate-800 dark:text-white truncate max-w-[200px] sm:max-w-xs">{detailAcc.name}</h2>
             </div>
             
             <button onClick={() => {
