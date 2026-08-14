@@ -132,7 +132,7 @@ export default function FintrackerApp() {
   const [isReportLoading, setIsReportLoading] = useState(true); // UX: State loading khusus laporan bulanan
   const isColdStartRef = useRef(true); // UX: Pengunci agar tunda 1.5 detik HANYA berjalan pada Cold Start pertama
   
-  const [txLimit, setTxLimit] = useState(300); // 🚀 KAMUS AUTOCOMPLETE: Load 300 riwayat terakhir lintas bulan
+  const [txLimit, setTxLimit] = useState(1000); // 🚀 KAMUS AUTOCOMPLETE: Load 1000 riwayat! (Mencegah histori lama hilang bagi user yang rajin mencatat)
   const [reportMonth, setReportMonth] = useState(() => getLocalDateString().slice(0, 7)); 
   const [maxReportRange, setMaxReportRange] = useState(0);
 
