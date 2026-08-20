@@ -559,11 +559,21 @@ export default function DebtsTab({
                 {/* Form Content */}
                 <div className="p-6 space-y-5 overflow-y-auto no-scrollbar bg-white dark:bg-slate-950 max-h-[65vh]">
                   <div className="space-y-1 relative z-10">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Nominal Pembayaran (Rp)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Nominal Pembayaran</label>
                     <input type="text" placeholder="Contoh: 15000" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("pay"); }} className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold outline-none text-slate-800 dark:text-white focus:border-blue-500" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
                     <div className="flex justify-between items-start mt-1">
-                      {payAmount ? <p className="text-[10px] font-bold text-slate-500 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{formatRupiahTerbaca(payAmount)}</span></p> : <div/>}
-                      <button type="button" onClick={() => { triggerHaptic(); setPayAmount((selectedDebt.amount - selectedDebt.paidAmount).toString()); }} className={`px-2.5 py-1.5 text-[9px] font-black rounded-lg border cursor-pointer transition-all active:scale-95 mt-0.5 ${currentTheme.payBtnInactive}`}>Lunasi (Rp {(selectedDebt.amount - selectedDebt.paidAmount).toLocaleString('id-ID')})</button>
+                      {payAmount ? <p className="text-[10px] font-bold text-slate-500 pl-1 mt-1">Terbaca: <span className={`${currentTheme.text} font-black`}>{payAccountId ? (accounts.find(a => a.id === payAccountId)?.currency || "IDR") : "IDR"} {Number(payAmount).toLocaleString("id-ID")}</span></p> : <div/>}
+                      <button type="button" onClick={() => { 
+                        triggerHaptic(); 
+                        const remIdr = selectedDebt.amount - selectedDebt.paidAmount;
+                        const selAcc = accounts.find(a => a.id === payAccountId);
+                        let finalPay = remIdr;
+                        if (selAcc && selAcc.currency && selAcc.currency !== "IDR") {
+                           const rate = selAcc.lastExchangeRate || 1;
+                           finalPay = remIdr / rate;
+                        }
+                        setPayAmount(finalPay.toString()); 
+                      }} className={`px-2.5 py-1.5 text-[9px] font-black rounded-lg border cursor-pointer transition-all active:scale-95 mt-0.5 ${currentTheme.payBtnInactive}`}>Auto Lunasi</button>
                     </div>
                   </div>
                   
@@ -711,6 +721,9 @@ export default function DebtsTab({
                           </div>
                           <div className="mt-3 pl-1.5 space-y-0.5">
                             <h3 className="text-sm font-black text-slate-800 dark:text-white leading-none truncate">{isPrivacyMode ? 'Rp •••••' : `Rp ${(debt.amount - debt.paidAmount).toLocaleString('id-ID')}`}</h3>
+                            {(debt as any).originalCurrency && (debt as any).originalCurrency !== "IDR" && (
+                              <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 truncate">Asli: <span className={currentTheme.text}>{(debt as any).originalCurrency} {Math.max(0, (debt as any).originalAmount - (debt.paidAmount / ((debt as any).exchangeRate || 1))) .toLocaleString('id-ID', {maximumFractionDigits:2})}</span></p>
+                            )}
                             <p className="text-[8px] text-slate-500 dark:text-slate-400 font-bold truncate">{debt.dueDate ? `Tempo: ${new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}` : "No Tempo"}{overdue && " ⚠️"}</p>
                           </div>
                         </div>
@@ -733,8 +746,11 @@ export default function DebtsTab({
                               <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mt-1 leading-none">{debt.dueDate ? `Tempo: ${new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}` : "Tidak Ada Jatuh Tempo"}</p>
                             </div>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right flex flex-col items-end">
                             <span className="text-xs font-black text-slate-800 dark:text-white">{isPrivacyMode ? 'Rp •••••' : `Rp ${(debt.amount - debt.paidAmount).toLocaleString('id-ID')}`}</span>
+                            {(debt as any).originalCurrency && (debt as any).originalCurrency !== "IDR" && (
+                              <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">{(debt as any).originalCurrency} {Math.max(0, (debt as any).originalAmount - (debt.paidAmount / ((debt as any).exchangeRate || 1))) .toLocaleString('id-ID', {maximumFractionDigits:2})}</span>
+                            )}
                             <p className={`text-[9px] font-black mt-0.5 ${isPaid ? "text-emerald-500 dark:text-emerald-400" : "text-blue-500 dark:text-blue-400"}`}>{Math.round(percentage)}% lunas</p>
                           </div>
                         </div>

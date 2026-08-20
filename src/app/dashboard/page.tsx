@@ -722,6 +722,11 @@ export default function FintrackerApp() {
       const actualStartDate = startDate || getLocalDateString();
       const exactTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
 
+      // EKSTRAK MULTI-CURRENCY JIKA ADA!
+      let txIdrAmount = amount;
+      let cur = "IDR";
+      let rate = 1;
+
       if (type === "receivable" && accountId) {
         const accRef = doc(db, `users/${user.uid}/accounts/${accountId}`);
         const acc = accounts.find(a => a.id === accountId);
@@ -730,24 +735,30 @@ export default function FintrackerApp() {
           return alert("Dompet pengirim tidak ditemukan!");
         }
         
-        batch.update(accRef, { balance: increment(-amount) });
+        cur = acc.currency || "IDR";
+        rate = exchangeRates[cur] || acc.lastExchangeRate || 1;
+        txIdrAmount = amount * rate;
+        
+        batch.update(accRef, { balance: increment(-amount) }); // Tetap potong native
         
         const cleanNote = note ? `${person} - ${note.trim()}` : person;
         const txRef = doc(collection(db, `users/${user.uid}/transactions`));
         batch.set(txRef, { 
-          amount, type: "expense", accountId, accountName: acc.name, category: "Piutang", 
-          note: cleanNote, tDate: actualStartDate, tTime: exactTime, createdAt: serverTimestamp() 
+          amount: txIdrAmount, type: "expense", accountId, accountName: acc.name, category: "Piutang", 
+          note: cleanNote, tDate: actualStartDate, tTime: exactTime, 
+          originalAmount: amount, originalCurrency: cur, exchangeRate: rate, // INJEKSI METADATA
+          createdAt: serverTimestamp() 
         });
       }
       
-      // FIX: Format manual anti-error di browser Safari/iOS
       const [yStr, mStr, dStr] = actualStartDate.split('-');
       const debtCreatedAt = new Date(parseInt(yStr), parseInt(mStr) - 1, parseInt(dStr), 12, 0, 0).toISOString();
       
       const debtRef = doc(collection(db, `users/${user.uid}/debts`));
       batch.set(debtRef, { 
-        type, personName: person, amount, paidAmount: 0, status: "active", 
-        note, dueDate, createdAt: debtCreatedAt 
+        type, personName: person, amount: txIdrAmount, paidAmount: 0, status: "active", 
+        note, dueDate, createdAt: debtCreatedAt,
+        originalAmount: amount, originalCurrency: cur, exchangeRate: rate // INJEKSI METADATA UNTUK UI
       });
       
       await batch.commit();
@@ -772,7 +783,13 @@ export default function FintrackerApp() {
     if (isSubmittingRef.current) return; if (!user) return;
     const debt = debts.find(d => d.id === debtId); const acc = accounts.find(a => a.id === accountId);
     if (!debt || !acc) return alert("Data tidak ditemukan!");
-    const newPaidAmount = debt.paidAmount + payAmount; const newStatus = newPaidAmount >= debt.amount ? "paid" : "active";
+    
+    // KALKULASI KURS UNTUK BAYAR UTANG (MULTI-CURRENCY)
+    const rate = exchangeRates[acc.currency || "IDR"] || acc.lastExchangeRate || 1;
+    const idrPayAmount = payAmount * rate;
+
+    const newPaidAmount = debt.paidAmount + idrPayAmount; 
+    const newStatus = newPaidAmount >= debt.amount ? "paid" : "active";
     isSubmittingRef.current = true; setIsSubmitting(true);
     try {
       await updateDoc(doc(db, `users/${user.uid}/debts/${debtId}`), { paidAmount: newPaidAmount, status: newStatus });
@@ -780,13 +797,15 @@ export default function FintrackerApp() {
       const exactTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
       const localDate = getLocalDateString();
       
-      if (debt.type === "debt") {
-        await updateDoc(doc(db, `users/${user.uid}/accounts/${accountId}`), { balance: acc.balance - payAmount });
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount: payAmount, type: "expense", accountId, accountName: acc.name, category: categoryName, note: transactionNote, tDate: localDate, tTime: exactTime, createdAt: serverTimestamp(), debtId: debtId });
-      } else {
-        await updateDoc(doc(db, `users/${user.uid}/accounts/${accountId}`), { balance: acc.balance + payAmount });
-        await addDoc(collection(db, `users/${user.uid}/transactions`), { amount: payAmount, type: "income", accountId, accountName: acc.name, category: categoryName, note: transactionNote, tDate: localDate, tTime: exactTime, createdAt: serverTimestamp(), debtId: debtId });
-      }
+      const modifier = debt.type === "debt" ? -payAmount : payAmount;
+      const txType = debt.type === "debt" ? "expense" : "income";
+
+      await updateDoc(doc(db, `users/${user.uid}/accounts/${accountId}`), { balance: increment(modifier) });
+      await addDoc(collection(db, `users/${user.uid}/transactions`), { 
+        amount: idrPayAmount, type: txType, accountId, accountName: acc.name, category: categoryName, note: transactionNote, 
+        originalAmount: payAmount, originalCurrency: acc.currency || "IDR", exchangeRate: rate,
+        tDate: localDate, tTime: exactTime, createdAt: serverTimestamp(), debtId: debtId 
+      });
       alert("Pembayaran berhasil dicatat & saldo otomatis diperbarui!");
     } catch (e) { alert("Gagal memproses pembayaran"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
   };
