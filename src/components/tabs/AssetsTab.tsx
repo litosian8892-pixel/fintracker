@@ -706,6 +706,13 @@ export default function AssetsTab({
                             )}
                             
                             <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none mt-1.5">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
+                            
+                            {/* 💱 INDIKATOR KURS IDR UNTUK MULTI-CURRENCY */}
+                            {acc.currency && acc.currency !== "IDR" && (
+                              <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-500 mt-1 leading-none">
+                                ~ Rp {isPrivacyMode ? '••••••' : accIdrBalance.toLocaleString('id-ID')}
+                              </p>
+                            )}
                           </div>
                           {isHovered && <div className="absolute inset-0 bg-blue-500/10 rounded-3xl animate-pulse pointer-events-none"></div>}
                         </div>
@@ -747,7 +754,16 @@ export default function AssetsTab({
                               </div>
                             </div>
                           </div>
-                          <p className="text-sm font-black text-slate-800 dark:text-slate-100">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
+                          <div className="text-right">
+                            <p className="text-sm font-black text-slate-800 dark:text-slate-100">{isPrivacyMode ? `${symbol} •••••••` : `${symbol} ${acc.balance.toLocaleString('id-ID')}`}</p>
+                            
+                            {/* 💱 INDIKATOR KURS IDR UNTUK MULTI-CURRENCY */}
+                            {acc.currency && acc.currency !== "IDR" && (
+                              <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-500 mt-0.5">
+                                ~ Rp {isPrivacyMode ? '••••••' : (acc.balance * getRate(acc.currency, acc.lastExchangeRate, acc.id)).toLocaleString('id-ID')}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
