@@ -184,6 +184,8 @@ export default function ReportsTab({
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [showAllVarList, setShowAllVarList] = useState(false);
 
+  const [showAllHashtags, setShowAllHashtags] = useState(false); // STATE BARU UNTUK WIDGET HASHTAG
+
   const [selectedBudgetCat, setSelectedBudgetCat] = useState<CategoryData | null>(null);
   const [budgetInput, setBudgetInput] = useState("");
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
@@ -287,6 +289,25 @@ export default function ReportsTab({
 
   const incGrouped = incomeTxs.reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + t.amount; return acc; }, {} as Record<string, number>);
   const localIncomePieData = Object.keys(incGrouped).map(k => ({ name: k, value: incGrouped[k] })).sort((a,b) => b.value - a.value);
+
+  // 🔥 ENGINE PENGHITUNGAN HASHTAG
+  const hashtagStats = useMemo(() => {
+    const stats: Record<string, { totalAmount: number; count: number }> = {};
+    expenseTxs.forEach(t => {
+      if (t.tags && t.tags.length > 0) {
+        t.tags.forEach(tag => {
+          const key = tag.toLowerCase(); // Normalisasi (contoh: #SamaDoi disatukan dgn #samadoi)
+          if (!stats[key]) stats[key] = { totalAmount: 0, count: 0 };
+          stats[key].totalAmount += t.amount;
+          stats[key].count += 1;
+        });
+      }
+    });
+    // Jadikan array dan urutkan dari yang paling menyedot biaya
+    return Object.keys(stats)
+      .map(k => ({ name: k, amount: stats[k].totalAmount, count: stats[k].count }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [expenseTxs]);
 
   const getCatType = (catName: string) => categories.find(c => c.name === catName)?.expenseType === "fixed" ? "fixed" : "variable";
   
@@ -1099,6 +1120,42 @@ export default function ReportsTab({
 
             <RenderDonutList data={localPieData} colors={COLORS} total={localTotalExpense} title="Pengeluaran" type="expense" showAll={showAllExpCategories} setShowAll={setShowAllExpCategories} />
             <RenderDonutList data={localIncomePieData} colors={INCOME_COLORS} total={localTotalIncome} title="Pemasukan" type="income" showAll={showAllIncCategories} setShowAll={setShowAllIncCategories} />
+
+            {/* 🔥 WIDGET: TRENDING HASHTAG (Fase 30) */}
+            {hashtagStats.length > 0 && (
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[30px] border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-200 text-left animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2">
+                    <span className="text-xl">#️⃣</span> Trending Topik
+                  </h3>
+                  <span className="font-bold text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full uppercase tracking-widest">{hashtagStats.length} Tags</span>
+                </div>
+
+                <div className="space-y-3">
+                  {(showAllHashtags ? hashtagStats : hashtagStats.slice(0, 5)).map((tag, i) => (
+                    <div key={i} onClick={() => { triggerHaptic(); setGlobalSearch(`#${tag.name}`); window.scrollTo({top:0, behavior:'smooth'}); }} className="flex justify-between items-center p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-100 dark:hover:border-indigo-800/30 transition-all cursor-pointer group active:scale-[0.98]">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-black flex items-center justify-center text-lg group-hover:scale-110 transition-transform">#</div>
+                        <div>
+                          <p className="font-black text-slate-800 dark:text-slate-100 text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{tag.name}</p>
+                          <p className="text-[10px] font-bold text-slate-500 mt-0.5">{tag.count}x Transaksi</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-black text-slate-800 dark:text-white text-sm">Rp {tag.amount.toLocaleString('id-ID')}</p>
+                        <p className="text-[9px] font-bold text-slate-400 mt-0.5 group-hover:text-indigo-500 transition-colors flex items-center justify-end gap-0.5">Lihat <ChevronRight size={10}/></p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {hashtagStats.length > 5 && (
+                  <button onClick={() => { triggerHaptic(); setShowAllHashtags(!showAllHashtags); }} className="w-full mt-4 py-2.5 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-colors border border-dashed border-indigo-200 dark:border-indigo-800/50 cursor-pointer active:scale-95">
+                    {showAllHashtags ? "↑ Sembunyikan" : `Tampilkan ${hashtagStats.length - 5} Hashtag Lainnya ↓`}
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* RINCIAN PENGELUARAN (LIST EXPANDABLE) */}
             <div className="space-y-4 pt-2 animate-in fade-in duration-300 text-left">
