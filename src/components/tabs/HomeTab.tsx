@@ -434,6 +434,7 @@ export default function HomeTab({
 
   const monthScrollRef = useRef<HTMLDivElement>(null);
   const noteInputRef = useRef<HTMLInputElement>(null); // UX: Radar Auto-Focus Keyboard
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null); // 🚀 ENGINE PEREDAM KEJUT ANTI-LAG
   const [accent, setAccent] = useState<keyof typeof themeMap>("blue");
   const [noteSuggestions, setNoteSuggestions] = useState<{note: string, category: string, amount: number, icon?: string}[]>([]);
 
@@ -656,63 +657,63 @@ export default function HomeTab({
   };
   
   const handleNoteChange = (val: string) => {
+    // 1. UPDATE STATE UI SECARA INSTAN (0 Delay agar ngetik tetap sangat mulus)
     if (editingTransaction) setEditTNote(val); else setTNote(val);
     
-    // 🧹 BUG FIX ROOT CAUSE: Pisahkan tag metrik dari kata kunci pencarian!
-    // Jika tidak dipisah, pencarian "Nasi [150KM]" tidak akan pernah menemukan "Nasi" dari bulan lalu.
-    let searchKeyword = val;
+    // 2. HANCURKAN TIMER LAMA JIKA USER MASIH NGETIK CEPAT
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
-    // 🔥 TRUE HASHTAG ENGINE: Hapus semua hashtag (#kata) dari pencarian Autocomplete 
-    // agar kalau ngetik "Makan #Bali", yang dicari cuma kata "Makan" nya saja.
-    searchKeyword = searchKeyword.replace(/#[^\s]+/g, '').trim();
+    // 3. JALANKAN PENCARIAN BERAT (1000 DATA) HANYA SETELAH JARI BERHENTI 300ms
+    debounceTimerRef.current = setTimeout(() => {
+      let searchKeyword = val;
 
-    const valLastBracket = searchKeyword.lastIndexOf('[');
-    const valCloseBracket = searchKeyword.lastIndexOf(']');
-    if (valLastBracket !== -1 && valCloseBracket > valLastBracket && valCloseBracket === searchKeyword.length - 1) {
-      searchKeyword = searchKeyword.substring(0, valLastBracket).trim();
-    }
+      searchKeyword = searchKeyword.replace(/#[^\s]+/g, '').trim();
 
-    if (searchKeyword.trim().length >= 2) {
-      const currentType = editingTransaction ? editTType : tType;
-      const matches: Record<string, {note: string, category: string, amount: number, icon?: string}> = {};
-      
-      // FIX SORTING: Gunakan localeCompare untuk Tanggal & Waktu (Kebal bug Timezone & Presisi hingga detik)
-      const sortedTx = [...transactions].sort((a,b) => {
-        const dateCompare = b.tDate.localeCompare(a.tDate);
-        if (dateCompare !== 0) return dateCompare;
-        const timeA = a.tTime || formatTime(a.createdAt);
-        const timeB = b.tTime || formatTime(b.createdAt);
-        return timeB.localeCompare(timeA);
-      });
-      
-      for (const tx of sortedTx) { 
-        if (tx.type === currentType && tx.note && tx.note.toLowerCase().includes(searchKeyword.toLowerCase())) { 
-          // 🧹 DEDUPLIKASI PINTAR: Bersihkan Note dari Smart Metric Badge [xxx] masa lalu
-          // Mencegah munculnya riwayat ganda seperti "Bensin [Juli]" dan "Bensin [Agustus]".
-          let baseNote = tx.note;
-          const lastBracket = baseNote.lastIndexOf('[');
-          const closeBracket = baseNote.lastIndexOf(']');
-          if (lastBracket !== -1 && closeBracket > lastBracket && closeBracket === baseNote.length - 1) {
-            baseNote = baseNote.substring(0, lastBracket).trim();
-          }
-          
-          const key = baseNote.toLowerCase().trim(); 
-          if (!matches[key]) { 
-            // SINKRONISASI CERDAS: Translasi kategori lama ke nama & emoji terbaru
-            const cleanCat = cleanCategoryName(tx.category);
-            const currentCat = categories.find(c => cleanCategoryName(c.name) === cleanCat);
-            matches[key] = { 
-              note: baseNote, // Sugesti menggunakan baseNote bersih tanpa numpang tag lama
-              category: currentCat ? currentCat.name : tx.category, 
-              amount: tx.amount,
-              icon: currentCat?.icon || getCategoryIcon(tx.category)
-            }; 
-          } 
-        } 
+      const valLastBracket = searchKeyword.lastIndexOf('[');
+      const valCloseBracket = searchKeyword.lastIndexOf(']');
+      if (valLastBracket !== -1 && valCloseBracket > valLastBracket && valCloseBracket === searchKeyword.length - 1) {
+        searchKeyword = searchKeyword.substring(0, valLastBracket).trim();
       }
-      // UX Premium: Batasi maksimal 2 sugesti terbaik (Paling Terakhir) agar tidak berderet ke bawah
-      setNoteSuggestions(Object.values(matches).slice(0, 2));
-    } else { setNoteSuggestions([]); }
+
+      if (searchKeyword.trim().length >= 2) {
+        const currentType = editingTransaction ? editTType : tType;
+        const matches: Record<string, {note: string, category: string, amount: number, icon?: string}> = {};
+        
+        const sortedTx = [...transactions].sort((a,b) => {
+          const dateCompare = b.tDate.localeCompare(a.tDate);
+          if (dateCompare !== 0) return dateCompare;
+          const timeA = a.tTime || formatTime(a.createdAt);
+          const timeB = b.tTime || formatTime(b.createdAt);
+          return timeB.localeCompare(timeA);
+        });
+        
+        for (const tx of sortedTx) { 
+          if (tx.type === currentType && tx.note && tx.note.toLowerCase().includes(searchKeyword.toLowerCase())) { 
+            let baseNote = tx.note;
+            const lastBracket = baseNote.lastIndexOf('[');
+            const closeBracket = baseNote.lastIndexOf(']');
+            if (lastBracket !== -1 && closeBracket > lastBracket && closeBracket === baseNote.length - 1) {
+              baseNote = baseNote.substring(0, lastBracket).trim();
+            }
+            
+            const key = baseNote.toLowerCase().trim(); 
+            if (!matches[key]) { 
+              const cleanCat = cleanCategoryName(tx.category);
+              const currentCat = categories.find(c => cleanCategoryName(c.name) === cleanCat);
+              matches[key] = { 
+                note: baseNote, 
+                category: currentCat ? currentCat.name : tx.category, 
+                amount: tx.amount,
+                icon: currentCat?.icon || getCategoryIcon(tx.category)
+              }; 
+            } 
+          } 
+        }
+        setNoteSuggestions(Object.values(matches).slice(0, 2));
+      } else { 
+        setNoteSuggestions([]); 
+      }
+    }, 300); // <- Waktu Tunda 300 milidetik (Peredam Kejut)
   };
 
   const handleSelectSuggestion = (sug: {note: string, category: string, amount: number, icon?: string}) => {
