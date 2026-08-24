@@ -1163,6 +1163,46 @@ export default function FintrackerApp() {
     }
   };
 
+  // 🔥 FITUR BARU: GLOBAL TAG MANAGER (Label Studio)
+  const handleManageTag = async (oldTag: string, newTag: string | null, action: "rename" | "delete") => {
+    if (isSubmittingRef.current) return; 
+    if (!user) return;
+    
+    isSubmittingRef.current = true; setIsSubmitting(true);
+    try {
+      const batch = writeBatch(db);
+      // Cari SETIAP transaksi yang pernah pakai hashtag lama ini
+      const q = query(collection(db, `users/${user.uid}/transactions`), where("tags", "array-contains", oldTag));
+      const snap = await getDocs(q);
+      
+      let count = 0;
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        let updatedTags = (data.tags || []).filter((t: string) => t !== oldTag);
+        
+        if (action === "rename" && newTag) {
+          // Cegah duplikat kalau tag barunya ternyata udah ada di array
+          if (!updatedTags.includes(newTag)) updatedTags.push(newTag);
+        }
+        
+        batch.update(docSnap.ref, { tags: updatedTags });
+        count++;
+      });
+      
+      if (count > 0) {
+        await batch.commit();
+        alert(action === "rename" ? `Sistem: ${count} transaksi berhasil di-update dari #${oldTag} menjadi #${newTag}!` : `Sistem: Label #${oldTag} berhasil dihapus permanen dari ${count} transaksi!`);
+      } else {
+        alert("Label tidak ditemukan di riwayat transaksi manapun.");
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(`Gagal memproses Label: ${e.message}`);
+    } finally {
+      isSubmittingRef.current = false; setIsSubmitting(false);
+    }
+  };
+
   const handleUpdateTransaction = async () => {
     if (isSubmittingRef.current) return; if (!user || !editingTransaction) return;
     const oldT = editingTransaction;
@@ -1503,6 +1543,7 @@ export default function FintrackerApp() {
                 tReceiptUrl={tReceiptUrl} setTReceiptUrl={setTReceiptUrl}
                 editTReceiptUrl={editTReceiptUrl} setEditTReceiptUrl={setEditTReceiptUrl}
                 globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult}
+                handleManageTag={handleManageTag} // INJEKSI FUNGSI LABEL STUDIO
               />
             )}
             {activeTab === "reports" && (

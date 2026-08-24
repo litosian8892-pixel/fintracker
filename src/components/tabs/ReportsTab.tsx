@@ -184,7 +184,8 @@ export default function ReportsTab({
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [showAllVarList, setShowAllVarList] = useState(false);
 
-  const [showAllHashtags, setShowAllHashtags] = useState(false); // STATE BARU UNTUK WIDGET HASHTAG
+  const [showAllHashtags, setShowAllHashtags] = useState(false); 
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string>("All"); // 🔥 FILTER HASHTAG GLOBAL
 
   const [selectedBudgetCat, setSelectedBudgetCat] = useState<CategoryData | null>(null);
   const [budgetInput, setBudgetInput] = useState("");
@@ -252,16 +253,28 @@ export default function ReportsTab({
     return Array.from(accs).sort();
   }, [reportTransactions, accounts]);
 
-  // LOGIKA MULTI-FILTER (Account + Travel Mode)
+  // 🔥 Ekstrak semua hashtag yang ada di bulan ini untuk dijadikan filter
+  const availableReportTags = useMemo(() => {
+    const tags = new Set<string>();
+    reportTransactions.forEach(t => {
+      if (t.tags) t.tags.forEach(tag => tags.add(tag));
+    });
+    return Array.from(tags).sort();
+  }, [reportTransactions]);
+
+  // LOGIKA MULTI-FILTER (Account + Travel Mode + HASHTAG)
   const filteredGlobalTxs = useMemo(() => {
     return reportTransactions.filter(t => {
       const accountMatch = selectedAccount === "All" || t.accountName === selectedAccount || t.toAccountName === selectedAccount;
       const tripMatch = selectedTripFilter === "All" ? true : 
                         selectedTripFilter === "Non-Travel" ? !(t as any).tripId : 
                         (t as any).tripId === selectedTripFilter;
-      return accountMatch && tripMatch;
+      // Filter silang jika tag dipilih!
+      const tagMatch = selectedTagFilter === "All" ? true : (t.tags && t.tags.some(tag => tag.toLowerCase() === selectedTagFilter.toLowerCase()));
+      
+      return accountMatch && tripMatch && tagMatch;
     });
-  }, [reportTransactions, selectedAccount, selectedTripFilter]);
+  }, [reportTransactions, selectedAccount, selectedTripFilter, selectedTagFilter]);
 
   const currentMonthTxs = useMemo(() => {
     if (isCustomDateRange) {
@@ -998,6 +1011,30 @@ export default function ReportsTab({
                 </div>
               </div>
             )}
+
+            {/* 🔥 QUICK HASHTAG FILTER (Fitur Pencet Langsung Filter Laporan) */}
+            {availableReportTags.length > 0 && (
+              <div className="pt-2 animate-in fade-in">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                  <button 
+                    onClick={() => { triggerHaptic(); setSelectedTagFilter("All"); }}
+                    className={`shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer border ${selectedTagFilter === "All" ? currentTheme.activePill : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50'}`}
+                  >
+                    Semua Transaksi
+                  </button>
+                  {availableReportTags.map(tag => (
+                    <button 
+                      key={tag}
+                      onClick={() => { triggerHaptic(); setSelectedTagFilter(selectedTagFilter === tag ? "All" : tag); }}
+                      className={`shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer border flex items-center gap-1 ${selectedTagFilter === tag ? currentTheme.activePill : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50'}`}
+                    >
+                      <span className="opacity-50">#</span> {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
 
           <div className="flex justify-center mb-2">

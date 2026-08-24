@@ -20,7 +20,8 @@ import {
   Trash2, 
   Wallet,
   CalendarDays,
-  Copy
+  Copy,
+  Check
 } from "lucide-react";
 
 interface HomeTabProps {
@@ -101,6 +102,7 @@ interface HomeTabProps {
   globalSearch?: string;
   setGlobalSearch?: (val: string) => void;
   searchResult?: TransactionData[];
+  handleManageTag?: (oldTag: string, newTag: string | null, action: "rename" | "delete") => Promise<void>;
 }
 
 const themeMap = {
@@ -409,7 +411,8 @@ export default function HomeTab({
   healthScore = 800, currentStreak = 0, longestStreak = 0, lastLogDate = "", handleDailyCheckIn,
   reportMonth, setReportMonth, tType, setTType, tDate, setTDate, tTime, setTTime, tCategory, setTCategory, tAccountId, setTAccountId, tToAccountId, setTToAccountId, tAmount, setTAmount, tAdminFee, setTAdminFee, tNote, setTNote, categories, accounts, handleTransaction, transactions, onDeleteTransaction, onEditTransaction, isPrivacyMode, togglePrivacyMode, editingTransaction, setEditingTransaction, handleUpdateTransaction, editTAmount, setEditTAmount, editTType, setEditTType, editTAccountId, setEditTAccountId, editTToAccountId, setEditTToAccountId, editTNote, setEditTNote, editTCategory, setEditTCategory, editTDate, setEditTDate, editTTime, setEditTTime, editTAdminFee, setEditTAdminFee, editTSplits, setEditTSplits, updateCategory, isTravelMode, toggleTravelMode, activeTripName, updateTripName, isReportLoading,
   tReceiptUrl, setTReceiptUrl, editTReceiptUrl, setEditTReceiptUrl,
-  globalSearch, setGlobalSearch, searchResult = []
+  globalSearch, setGlobalSearch, searchResult = [],
+  handleManageTag
 }: HomeTabProps) {
   const parseTime12 = (timeStr: string) => {
     if (!timeStr) return { hour12: "12", minute: "00", period: "PM" };
@@ -504,6 +507,11 @@ export default function HomeTab({
   
   // UX BARU: Toggle Tampilan Kolom Metrik
   const [showMetricInput, setShowMetricInput] = useState(false);
+  
+  // STATE BARU: Label Studio (Manajemen Hashtag)
+  const [showTagManager, setShowTagManager] = useState(false);
+  const [editingTag, setEditingTag] = useState<string | null>(null);
+  const [newTagInput, setNewTagInput] = useState("");
 
   // STATE BARU: DIGITAL RECEIPT (FASE 21)
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
@@ -1449,19 +1457,70 @@ export default function HomeTab({
 
                         {/* 🔥 RENDER HASHTAG PILLS SECARA LIVE DI BAWAH INPUT */}
                         {(() => {
-                          const matches = currentMainNote.match(/#[^\s]+/g);
-                          if (matches && matches.length > 0) {
-                            return (
-                              <div className="flex flex-wrap gap-1.5 mt-2 px-1 animate-in fade-in duration-200">
-                                {matches.map((tag, idx) => (
-                                  <span key={idx} className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-0.5 shadow-sm transition-all ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-                            );
-                          }
-                          return null;
+                          const matches = currentMainNote.match(/#[^\s]+/g) || [];
+                          
+                          // Ekstrak semua hashtag yang pernah dipakai user dari history
+                          const availableTags = Array.from(new Set(transactions.flatMap(t => t.tags || []))).sort();
+                          
+                          return (
+                            <div className="mt-2 space-y-2 animate-in fade-in duration-200">
+                              {/* Tampilan hashtag yang sedang diketik */}
+                              {matches.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 px-1">
+                                  {matches.map((tag, idx) => (
+                                    <span key={idx} className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 shadow-sm transition-all ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>
+                                      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60"></span>
+                                      {tag.replace('#', '')}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Kumpulan Hashtag Siap Klik (Smart Labels) */}
+                              {availableTags.length > 0 && (
+                                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 px-1 mt-1">
+                                  {availableTags.map(tag => {
+                                    const isSelected = matches.some(m => m.toLowerCase() === `#${tag.toLowerCase()}`);
+                                    return (
+                                      <button 
+                                        key={tag} 
+                                        type="button"
+                                        onClick={() => {
+                                          triggerHaptic();
+                                          let newNote = currentMainNote;
+                                          if (isSelected) {
+                                            const regex = new RegExp(`#${tag}\\b`, 'gi');
+                                            newNote = newNote.replace(regex, '').replace(/\s+/g, ' ').trim();
+                                          } else {
+                                            newNote = `${newNote} #${tag}`.trim();
+                                          }
+                                          const newFull = currentMetric ? `${newNote} [${currentMetric}]` : newNote;
+                                          handleNoteChange(newFull);
+                                          if (noteInputRef.current) noteInputRef.current.focus();
+                                        }}
+                                        className={`shrink-0 px-2.5 py-1 rounded-lg text-[9px] font-black border transition-colors cursor-pointer active:scale-95 flex items-center gap-1 ${
+                                          isSelected 
+                                            ? currentTheme.activePill 
+                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
+                                        }`}
+                                      >
+                                        {isSelected ? <Check size={10} strokeWidth={4} /> : <span className="text-slate-400 font-normal">#</span>}
+                                        {tag}
+                                      </button>
+                                    )
+                                  })}
+                                  {/* TOMBOL PENGATURAN LABEL STUDIO */}
+                                  <button 
+                                    type="button"
+                                    onClick={() => { triggerHaptic(); setShowTagManager(true); }}
+                                    className="shrink-0 ml-1 px-2.5 py-1 rounded-lg text-[9px] font-black bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors flex items-center gap-1 cursor-pointer"
+                                  >
+                                    Atur ⚙️
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
                         })()}
                       </div>
 
@@ -2631,6 +2690,97 @@ export default function HomeTab({
           >
             {smartInsight.actionText || "Tutup"}
           </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* 🏷️ MODAL LABEL STUDIO (MANAJEMEN HASHTAG GLOBAL) */}
+  {showTagManager && (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => { setShowTagManager(false); setEditingTag(null); }}>
+      <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+          <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
+            <span>🏷️</span> Studio Label (Konteks)
+          </h3>
+          <button type="button" onClick={() => { setShowTagManager(false); setEditingTag(null); }} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"><X size={14}/></button>
+        </div>
+        
+        <div className="p-6 overflow-y-auto no-scrollbar bg-white dark:bg-slate-900 space-y-3">
+          <p className="text-[10px] font-bold text-slate-500 mb-4 leading-relaxed">
+            Kelola semua <b className="text-slate-800 dark:text-slate-200">#hashtag</b> yang pernah Anda gunakan. Mengubah nama atau menghapus label di sini akan <b className="text-blue-500">otomatis mengubah seluruh riwayat transaksi Anda di masa lalu</b>.
+          </p>
+          
+          {(() => {
+            const availableTags = Array.from(new Set(transactions.flatMap(t => t.tags || []))).sort();
+            if (availableTags.length === 0) return <p className="text-center text-xs font-bold text-slate-400 py-4">Belum ada label/hashtag yang pernah digunakan.</p>;
+            
+            return availableTags.map(tag => (
+              <div key={tag} className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-all bg-slate-50 dark:bg-slate-800/30">
+                {editingTag === tag ? (
+                  <div className="p-4 space-y-3 animate-in slide-in-from-top-2">
+                    <input 
+                      type="text" 
+                      autoFocus
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-blue-300 dark:border-blue-800/50 rounded-xl text-xs font-black text-blue-700 dark:text-blue-400 outline-none focus:ring-2 focus:ring-blue-500/20"
+                      value={newTagInput}
+                      onChange={e => setNewTagInput(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
+                      placeholder="Nama label baru tanpa spasi..."
+                    />
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={async () => {
+                          triggerHaptic();
+                          if (!newTagInput.trim()) return alert("Nama label tidak boleh kosong!");
+                          if (handleManageTag) {
+                            await handleManageTag(tag, newTagInput.trim(), "rename");
+                            setEditingTag(null);
+                          }
+                        }}
+                        className={`flex-1 py-2 rounded-lg text-[10px] font-black text-white shadow-sm cursor-pointer active:scale-95 ${currentTheme.fab}`}
+                      >
+                        Simpan Ubahan
+                      </button>
+                      <button 
+                        onClick={() => setEditingTag(null)}
+                        className="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black cursor-pointer hover:bg-slate-300 transition-colors"
+                      >
+                        Batal
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3.5 flex justify-between items-center group">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black text-xs">#</span>
+                      <span className="font-black text-slate-700 dark:text-slate-200 text-xs">{tag}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => { triggerHaptic(); setEditingTag(tag); setNewTagInput(tag); }}
+                        className="p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-500 rounded-lg transition-colors cursor-pointer"
+                        title="Ubah Nama Label"
+                      >
+                        <Edit3 size={12} />
+                      </button>
+                      <button 
+                        onClick={async () => { 
+                          triggerHaptic(); 
+                          if(confirm(`Hapus permanen label #${tag} dari SELURUH riwayat transaksi? (Transaksi tetap aman, hanya labelnya yang hilang)`)) {
+                            if (handleManageTag) await handleManageTag(tag, null, "delete");
+                          }
+                        }}
+                        className="p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-red-500 rounded-lg transition-colors cursor-pointer"
+                        title="Hapus Label Global"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ));
+          })()}
         </div>
       </div>
     </div>
