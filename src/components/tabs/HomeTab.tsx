@@ -1459,8 +1459,28 @@ export default function HomeTab({
                         {(() => {
                           const matches = currentMainNote.match(/#[^\s]+/g) || [];
                           
-                          // Ekstrak semua hashtag yang pernah dipakai user dari history
-                          const availableTags = Array.from(new Set(transactions.flatMap(t => t.tags || []))).sort();
+                          // 1. SMART SORTING: Hitung frekuensi hashtag (Yang paling sering dipakai ada di paling kiri)
+                          const tagFrequency: Record<string, number> = {};
+                          transactions.forEach(t => {
+                            if (t.tags) {
+                              t.tags.forEach(tag => {
+                                tagFrequency[tag] = (tagFrequency[tag] || 0) + 1;
+                              });
+                            }
+                          });
+                          
+                          let availableTags = Object.keys(tagFrequency).sort((a, b) => tagFrequency[b] - tagFrequency[a]);
+                          
+                          // 2. LIVE AUTO-FILTER: Cek apakah user sedang mengetik hashtag nanggung (kata terakhir berawalan #)
+                          const words = currentMainNote.split(' ');
+                          const lastWord = words[words.length - 1];
+                          const isTypingTag = lastWord.startsWith('#');
+                          const activeTagSearch = isTypingTag ? lastWord.slice(1).toLowerCase() : "";
+
+                          if (isTypingTag && activeTagSearch) {
+                            // Saring tag yang cuma cocok dengan ketikan user secara live
+                            availableTags = availableTags.filter(tag => tag.toLowerCase().includes(activeTagSearch));
+                          }
                           
                           return (
                             <div className="mt-2 space-y-2 animate-in fade-in duration-200">
@@ -1489,12 +1509,21 @@ export default function HomeTab({
                                           triggerHaptic();
                                           let newNote = currentMainNote;
                                           if (isSelected) {
+                                            // Hapus tag jika sudah terpilih (Toggle Off)
                                             const regex = new RegExp(`#${tag}\\b`, 'gi');
                                             newNote = newNote.replace(regex, '').replace(/\s+/g, ' ').trim();
                                           } else {
-                                            newNote = `${newNote} #${tag}`.trim();
+                                            // Jika sedang ngetik tag nanggung (misal: #ma), timpa kata terakhirnya jadi utuh!
+                                            if (isTypingTag) {
+                                              const newWords = [...words];
+                                              newWords.pop(); // buang ketikan '#ma'
+                                              newNote = [...newWords, `#${tag}`].join(' ').trim() + ' '; // Ganti jadi utuh + spasi
+                                            } else {
+                                              // Jika tidak lagi ngetik tag, tambahkan saja ke belakang
+                                              newNote = `${newNote} #${tag} `.trimLeft();
+                                            }
                                           }
-                                          const newFull = currentMetric ? `${newNote} [${currentMetric}]` : newNote;
+                                          const newFull = currentMetric ? `${newNote.trim()} [${currentMetric}]` : newNote;
                                           handleNoteChange(newFull);
                                           if (noteInputRef.current) noteInputRef.current.focus();
                                         }}
