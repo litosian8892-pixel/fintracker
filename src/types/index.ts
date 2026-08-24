@@ -42,6 +42,7 @@ export interface TransactionData {
   originalCurrency?: string;  
   exchangeRate?: number;      
   receiptUrl?: string;        // FITUR BARU: URL STRUK DIGITAL (Fase 21)
+  tags?: string[];            // FITUR BARU: TRUE MULTI-HASHTAG (Fase 30)
 }
 
 export interface CategoryData { 

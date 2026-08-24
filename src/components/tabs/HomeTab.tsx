@@ -324,6 +324,12 @@ const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, g
                           📌 {badgeText}
                         </span>
                       )}
+                      {/* 🔥 RENDER MULTI-HASHTAG (TRUE TAGS) */}
+                      {t.tags && t.tags.map((tag: string, idx: number) => (
+                        <span key={idx} className="text-[9px] font-black text-slate-600 dark:text-slate-300 bg-slate-100/80 dark:bg-slate-800/80 px-1.5 py-0.5 rounded-md shadow-sm border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-0.5 animate-in zoom-in-95 duration-300">
+                          # {tag}
+                        </span>
+                      ))}
                       <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border flex items-center gap-0.5 uppercase ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}><Wallet size={8} /> {isTransfer ? `${t.accountName} ➔ ${t.toAccountName}` : t.accountName}</span>
                       {(() => {
                         const formattedTime = (t.tTime || formatTime(t.createdAt)).replace(':', '.');
@@ -647,6 +653,11 @@ export default function HomeTab({
     // 🧹 BUG FIX ROOT CAUSE: Pisahkan tag metrik dari kata kunci pencarian!
     // Jika tidak dipisah, pencarian "Nasi [150KM]" tidak akan pernah menemukan "Nasi" dari bulan lalu.
     let searchKeyword = val;
+
+    // 🔥 TRUE HASHTAG ENGINE: Hapus semua hashtag (#kata) dari pencarian Autocomplete 
+    // agar kalau ngetik "Makan #Bali", yang dicari cuma kata "Makan" nya saja.
+    searchKeyword = searchKeyword.replace(/#[^\s]+/g, '').trim();
+
     const valLastBracket = searchKeyword.lastIndexOf('[');
     const valCloseBracket = searchKeyword.lastIndexOf(']');
     if (valLastBracket !== -1 && valCloseBracket > valLastBracket && valCloseBracket === searchKeyword.length - 1) {
@@ -781,13 +792,14 @@ export default function HomeTab({
     }
 
     if (searchQueryInput.trim()) { 
-      const q = searchQueryInput.toLowerCase(); 
+      const q = searchQueryInput.toLowerCase().replace('#', ''); // Hapus # saat nyari buat match
       filtered = filtered.filter(t => 
         (t.note && t.note.toLowerCase().includes(q)) || 
         (t.category && t.category.toLowerCase().includes(q)) ||
         (t.accountName && t.accountName.toLowerCase().includes(q)) ||
         (t.toAccountName && t.toAccountName.toLowerCase().includes(q)) ||
-        (t.splits && t.splits.some(s => (s.category && s.category.toLowerCase().includes(q)) || (s.note && s.note.toLowerCase().includes(q))))
+        (t.splits && t.splits.some(s => (s.category && s.category.toLowerCase().includes(q)) || (s.note && s.note.toLowerCase().includes(q)))) ||
+        (t.tags && t.tags.some(tag => tag.toLowerCase().includes(q))) // MASUKKAN HASHTAG KE DALAM RADAR PENCARIAN
       ); 
     }
     return filtered;
@@ -1434,6 +1446,23 @@ export default function HomeTab({
                             </button>
                           )}
                         </div>
+
+                        {/* 🔥 RENDER HASHTAG PILLS SECARA LIVE DI BAWAH INPUT */}
+                        {(() => {
+                          const matches = currentMainNote.match(/#[^\s]+/g);
+                          if (matches && matches.length > 0) {
+                            return (
+                              <div className="flex flex-wrap gap-1.5 mt-2 px-1 animate-in fade-in duration-200">
+                                {matches.map((tag, idx) => (
+                                  <span key={idx} className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-0.5 shadow-sm transition-all ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}>
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
 
                       {/* KOLOM METRIK (TAG SMART BADGE) */}

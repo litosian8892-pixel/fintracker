@@ -973,15 +973,29 @@ export default function FintrackerApp() {
           batch.update(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: increment(-(rawAmount + rawAdminFee)) });
           batch.update(doc(db, `users/${user.uid}/accounts/${tToAccountId}`), { balance: increment(destAmount) });
         
+        // 🔥 EKSTRAK HASHTAG UNTUK DISIMPAN SEBAGAI ARRAY DI DATABASE
+        let cleanNoteStr = tNote || "Transfer Dana";
+        const matchedTags = cleanNoteStr.match(/#[^\s]+/g) || [];
+        const extractedTags = matchedTags.map(tag => tag.replace('#', ''));
+        // Hapus hashtag dari catatan utama agar database bersih
+        cleanNoteStr = cleanNoteStr.replace(/#[^\s]+/g, '').trim();
+
         const newTxRef = doc(collection(db, `users/${user.uid}/transactions`));
         batch.set(newTxRef, { 
-          amount: idrAmount, type: "transfer", accountId: tAccountId, toAccountId: tToAccountId, accountName: sourceAcc.name, toAccountName: destAcc.name, note: tNote || "Transfer Dana", category: "Transfer", tDate, tTime, adminFee: idrAdminFee, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, receiptUrl: tReceiptUrl || null, createdAt: serverTimestamp() 
+          amount: idrAmount, type: "transfer", accountId: tAccountId, toAccountId: tToAccountId, accountName: sourceAcc.name, toAccountName: destAcc.name, note: cleanNoteStr, category: "Transfer", tDate, tTime, adminFee: idrAdminFee, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, receiptUrl: tReceiptUrl || null, tags: extractedTags, createdAt: serverTimestamp() 
         });
       } else {
           const balanceModifier = tType === "income" ? rawAmount : -rawAmount;
           batch.update(doc(db, `users/${user.uid}/accounts/${tAccountId}`), { balance: increment(balanceModifier) });
         
-        const docData: any = { amount: idrAmount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: tNote, category: (customSplits && customSplits.length > 0) ? "Split Transaksi" : tCategory, tDate, tTime, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, receiptUrl: tReceiptUrl || null, createdAt: serverTimestamp() };
+        // 🔥 EKSTRAK HASHTAG UNTUK DISIMPAN SEBAGAI ARRAY DI DATABASE
+        let cleanNoteStr = tNote;
+        const matchedTags = cleanNoteStr.match(/#[^\s]+/g) || [];
+        const extractedTags = matchedTags.map(tag => tag.replace('#', ''));
+        // Hapus hashtag dari catatan utama agar database bersih
+        cleanNoteStr = cleanNoteStr.replace(/#[^\s]+/g, '').trim();
+
+        const docData: any = { amount: idrAmount, type: tType, accountId: tAccountId, accountName: sourceAcc.name, note: cleanNoteStr, category: (customSplits && customSplits.length > 0) ? "Split Transaksi" : tCategory, tDate, tTime, originalAmount: rawAmount, originalCurrency: sourceAcc.currency || "IDR", exchangeRate: rateSource, receiptUrl: tReceiptUrl || null, tags: extractedTags, createdAt: serverTimestamp() };
         if (isTravelMode) docData.tripId = activeTripName || "Liburan"; // Injeksi Tag Liburan
         if (customSplits && customSplits.length > 0) docData.splits = customSplits.map(s => ({ ...s, amount: s.amount * rateSource }));
         
@@ -1220,8 +1234,15 @@ export default function FintrackerApp() {
       }
 
       // 4. UPDATE CATATAN RIWAYAT TRANSAKSI
+      
+      // 🔥 EKSTRAK HASHTAG UNTUK DISIMPAN SEBAGAI ARRAY DI DATABASE (MODE KOREKSI)
+      let cleanEditNoteStr = editTNote;
+      const matchedEditTags = cleanEditNoteStr.match(/#[^\s]+/g) || [];
+      const extractedEditTags = matchedEditTags.map(tag => tag.replace('#', ''));
+      cleanEditNoteStr = cleanEditNoteStr.replace(/#[^\s]+/g, '').trim();
+
       const tRef = doc(db, `users/${user.uid}/transactions/${oldT.id}`);
-      const updateData: any = { amount: newIdrAmount, type: editTType, accountId: editTAccountId, accountName: accounts.find(a => a.id === editTAccountId)?.name || "", note: editTNote, category: editTSplits.length > 0 ? "Split Transaksi" : (editTType === "transfer" ? "Transfer" : editTCategory), tDate: editTDate, tTime: editTTime, originalAmount: newRawAmount, originalCurrency: srcCurrency, exchangeRate: rateSource, receiptUrl: editTReceiptUrl || null };
+      const updateData: any = { amount: newIdrAmount, type: editTType, accountId: editTAccountId, accountName: accounts.find(a => a.id === editTAccountId)?.name || "", note: cleanEditNoteStr, category: editTSplits.length > 0 ? "Split Transaksi" : (editTType === "transfer" ? "Transfer" : editTCategory), tDate: editTDate, tTime: editTTime, originalAmount: newRawAmount, originalCurrency: srcCurrency, exchangeRate: rateSource, receiptUrl: editTReceiptUrl || null, tags: extractedEditTags };
       
       if (isTravelMode) {
         updateData.tripId = activeTripName || "Liburan";
