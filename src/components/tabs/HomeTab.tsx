@@ -1220,7 +1220,6 @@ export default function HomeTab({
             <button type="button" className="p-1 text-white/50 hover:text-white rounded-full transition-colors"><Trophy size={12} className="text-yellow-400" /></button>
             <span className="text-[9px] font-black bg-black/20 px-1.5 py-0.5 rounded border border-white/20 text-white flex items-center gap-0.5"><Receipt size={10} /> {monthlyTransactions.length}</span>
           </div>
-          <button type="button" onClick={togglePrivacyMode} className="p-1.5 bg-white/10 active:bg-white/20 text-white rounded-full transition-all duration-200 cursor-pointer hover:scale-105">{isPrivacyMode ? <EyeOff size={14} /> : <Eye size={14} />}</button>
         </div>
         <div className="text-3xl font-black tracking-tight mb-6 relative z-10">
           <AnimatedNumber value={totalBalanceCalculated} isPrivacyMode={isPrivacyMode} />
