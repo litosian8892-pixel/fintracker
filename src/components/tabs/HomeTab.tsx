@@ -224,7 +224,7 @@ const formatTime = (createdAt: any) => {
 };
 
 // 🪄 UX PREMIUM: Komponen Swipeable khusus untuk Beranda (HomeTab)
-const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, getRowIcon, isOpen, onOpen, onClose, onViewReceipt }: any) => {
+const SwipeableHomeCard = React.memo(({ t, onEdit, onDelete, isPrivacyMode, currentTheme, getRowIcon, isOpen, onOpen, onClose, onViewReceipt }: any) => {
   const [dragOffset, setDragOffset] = useState(0);
   const startX = useRef<number | null>(null);
   const startY = useRef<number | null>(null); // Sensor Scroll Vertikal
@@ -365,10 +365,19 @@ const SwipeableHomeCard = ({ t, onEdit, onDelete, isPrivacyMode, currentTheme, g
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // 🚀 ENGINE ANTI-LAG MOBILE: Abaikan re-render jika fungsi inline (onEdit, dll) berubah referensi!
+  // HANYA render ulang kartu ini jika data transaksi, tema, status swipe, atau privasi benar-benar berubah.
+  return (
+    prevProps.t === nextProps.t &&
+    prevProps.isPrivacyMode === nextProps.isPrivacyMode &&
+    prevProps.isOpen === nextProps.isOpen &&
+    prevProps.currentTheme.cardBg === nextProps.currentTheme.cardBg
+  );
+});
 
 // 🪄 UX PREMIUM: Komponen Animasi Angka (Slot Machine / Odometer Effect)
-const AnimatedNumber = ({ value, isPrivacyMode, prefix = "Rp ", privacyText = "Rp •••••••" }: { value: number, isPrivacyMode?: boolean, prefix?: string, privacyText?: string }) => {
+const AnimatedNumber = React.memo(({ value, isPrivacyMode, prefix = "Rp ", privacyText = "Rp •••••••" }: { value: number, isPrivacyMode?: boolean, prefix?: string, privacyText?: string }) => {
   const [displayValue, setDisplayValue] = useState(value);
   
   useEffect(() => {
@@ -404,7 +413,7 @@ const AnimatedNumber = ({ value, isPrivacyMode, prefix = "Rp ", privacyText = "R
 
   if (isPrivacyMode) return <span>{privacyText}</span>;
   return <span>{prefix}{displayValue.toLocaleString("id-ID")}</span>;
-};
+});
 
 export default function HomeTab({
   onProcessSmartSplit,
