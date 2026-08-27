@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react"; 
+import { useEffect, useState, useRef, useMemo } from "react"; 
 import dynamic from "next/dynamic";
 import { auth, db } from "../../lib/firebase";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
@@ -1304,33 +1304,45 @@ export default function FintrackerApp() {
   };
 
   // 🚀 JURUS KAMUS AUTOCOMPLETE (ANTI-LAG):
-  // Gabungkan transaksi bulan ini dengan 300 riwayat masa lalu (Dictionary)
-  // HomeTab akan menggunakannya untuk sugesti, tapi HANYA merender bulan aktif!
-  const mergedHomeTransactions = [...reportTransactions];
-  const reportTxIds = new Set(reportTransactions.map(t => t.id));
-  transactions.forEach(t => {
-    if (!reportTxIds.has(t.id)) mergedHomeTransactions.push(t);
-  });
+  // Membungkus kalkulasi berat dengan useMemo agar TIDAK DI-RENDER ULANG saat ngetik form!
+  const mergedHomeTransactions = useMemo(() => {
+    const merged = [...reportTransactions];
+    const reportTxIds = new Set(reportTransactions.map(t => t.id));
+    transactions.forEach(t => {
+      if (!reportTxIds.has(t.id)) merged.push(t);
+    });
+    return merged;
+  }, [reportTransactions, transactions]);
 
-  // TRAVEL MODE: Karantina Pengeluaran Liburan agar tidak merusak analitik bulanan
-  const allMonthlyTransactions = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
-  const monthlyTransactions = allMonthlyTransactions.filter(t => !(t as any).tripId); 
-  
-  const adminFeeTxs = monthlyTransactions.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ id: `fee-${t.id}`, amount: t.adminFee!, type: "expense", accountId: t.accountId, accountName: t.accountName, category: "Biaya Admin", note: `Biaya admin transfer ke ${t.toAccountName}`, tDate: t.tDate } as TransactionData));
-  const combinedExpenseTxs = [...monthlyTransactions.filter(t => t.type === 'expense'), ...adminFeeTxs];
-  const totalIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
-  const totalExpense = combinedExpenseTxs.reduce((a, b) => a + b.amount, 0); 
-  const expenseByCategory = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { if (curr.splits && curr.splits.length > 0) { curr.splits.forEach(s => { acc[s.category] = (acc[s.category] || 0) + s.amount; }); } else { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; } return acc; }, {});
-  const pieData = Object.keys(expenseByCategory).map(key => ({ name: key, value: expenseByCategory[key] }));
-  const incomeByCategory = monthlyTransactions.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => { if (curr.splits && curr.splits.length > 0) { curr.splits.forEach(s => { acc[s.category] = (acc[s.category] || 0) + s.amount; }); } else { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; } return acc; }, {});
-  const incomeCategoryList = Object.keys(incomeByCategory).map(key => ({ name: key, value: incomeByCategory[key] }));
-  const expenseByDate = combinedExpenseTxs.reduce((acc: Record<string, number>, curr: TransactionData) => { const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc; }, {});
-  const barData = Object.keys(expenseByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expenseByDate[key] }));
-  
-  const prevAdminFeeTxs = prevMonthTransactions.filter(t => !(t as any).tripId && t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ amount: t.adminFee! }));
-  const prevCombinedExpense = [...prevMonthTransactions.filter(t => !(t as any).tripId && t.type === 'expense'), ...prevAdminFeeTxs];
-  const prevTotalExpense = prevCombinedExpense.reduce((a, b) => a + b.amount, 0);
-  const prevTotalIncome = prevMonthTransactions.filter(t => !(t as any).tripId && t.type === 'income').reduce((a, b) => a + b.amount, 0);
+  // 🛡️ BENTENG ANALITIK BULANAN
+  // Semua filter, map, dan reduce yang menyiksa CPU HP dikarantina di sini.
+  const { totalIncome, totalExpense, pieData, incomeCategoryList, barData, prevTotalIncome, prevTotalExpense } = useMemo(() => {
+    // TRAVEL MODE: Karantina Pengeluaran Liburan agar tidak merusak analitik bulanan
+    const allMonthly = reportTransactions.filter(t => t.tDate && t.tDate.startsWith(reportMonth));
+    const monthly = allMonthly.filter(t => !(t as any).tripId); 
+    
+    const adminFeeTxs = monthly.filter(t => t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ id: `fee-${t.id}`, amount: t.adminFee!, type: "expense", accountId: t.accountId, accountName: t.accountName, category: "Biaya Admin", note: `Biaya admin transfer ke ${t.toAccountName}`, tDate: t.tDate } as TransactionData));
+    const combinedExpense = [...monthly.filter(t => t.type === 'expense'), ...adminFeeTxs];
+    
+    const tIncome = monthly.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
+    const tExpense = combinedExpense.reduce((a, b) => a + b.amount, 0); 
+    
+    const expByCat = combinedExpense.reduce((acc: Record<string, number>, curr: TransactionData) => { if (curr.splits && curr.splits.length > 0) { curr.splits.forEach(s => { acc[s.category] = (acc[s.category] || 0) + s.amount; }); } else { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; } return acc; }, {});
+    const pData = Object.keys(expByCat).map(key => ({ name: key, value: expByCat[key] }));
+    
+    const incByCat = monthly.filter(t => t.type === 'income').reduce((acc: Record<string, number>, curr: TransactionData) => { if (curr.splits && curr.splits.length > 0) { curr.splits.forEach(s => { acc[s.category] = (acc[s.category] || 0) + s.amount; }); } else { acc[curr.category] = (acc[curr.category] || 0) + curr.amount; } return acc; }, {});
+    const incCatList = Object.keys(incByCat).map(key => ({ name: key, value: incByCat[key] }));
+    
+    const expByDate = combinedExpense.reduce((acc: Record<string, number>, curr: TransactionData) => { const day = curr.tDate.split('-')[2]; acc[day] = (acc[day] || 0) + curr.amount; return acc; }, {});
+    const bData = Object.keys(expByDate).sort().map(key => ({ date: `Tgl ${key}`, amount: expByDate[key] }));
+    
+    const prevAdminFees = prevMonthTransactions.filter(t => !(t as any).tripId && t.type === 'transfer' && t.adminFee && t.adminFee > 0).map(t => ({ amount: t.adminFee! }));
+    const prevCombExp = [...prevMonthTransactions.filter(t => !(t as any).tripId && t.type === 'expense'), ...prevAdminFees];
+    const prevTExpense = prevCombExp.reduce((a, b) => a + b.amount, 0);
+    const prevTIncome = prevMonthTransactions.filter(t => !(t as any).tripId && t.type === 'income').reduce((a, b) => a + b.amount, 0);
+
+    return { totalIncome: tIncome, totalExpense: tExpense, pieData: pData, incomeCategoryList: incCatList, barData: bData, prevTotalIncome: prevTIncome, prevTotalExpense: prevTExpense };
+  }, [reportTransactions, reportMonth, prevMonthTransactions]);
 
   if (isOldDomain) {
     return (

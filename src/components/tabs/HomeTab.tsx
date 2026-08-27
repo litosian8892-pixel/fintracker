@@ -415,6 +415,80 @@ const AnimatedNumber = React.memo(({ value, isPrivacyMode, prefix = "Rp ", priva
   return <span>{prefix}{displayValue.toLocaleString("id-ID")}</span>;
 });
 
+// 🪄 UX PREMIUM: Isolasi Daftar Transaksi agar kebal dari re-render saat ngetik di Form
+const MemoizedTransactionList = React.memo(({ 
+  isReportLoading, groupedTransactionsByDay, isPrivacyMode, currentTheme, 
+  getRowIcon, openSwipeId, setOpenSwipeId, onEditTransaction, 
+  onDeleteTransaction, setViewingReceiptUrl, triggerHaptic 
+}: any) => {
+  return (
+    <div className="space-y-4">
+      {isReportLoading ? (
+        <div className="space-y-3 animate-pulse">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="p-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                <div className="space-y-1.5 text-left">
+                  <div className="h-3.5 w-28 bg-slate-100 dark:bg-slate-800 rounded" />
+                  <div className="h-2 w-16 bg-slate-100 dark:bg-slate-800 rounded" />
+                </div>
+              </div>
+              <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded" />
+            </div>
+          ))}
+        </div>
+      ) : groupedTransactionsByDay.length === 0 ? (
+        <div className="p-12 text-center bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-[28px]"><p className="text-slate-400 dark:text-slate-500 text-xs font-bold">Tidak ada transaksi tercatat di bulan ini.</p></div>
+      ) : (
+        groupedTransactionsByDay.map(({ dateStr, list, dailyNet }: any) => {
+          const d = new Date(dateStr); 
+          const dayNum = d.getDate(); 
+          const dayName = d.toLocaleDateString("id-ID", { weekday: "short" }); 
+          const monthYear = d.toLocaleDateString("id-ID", { month: "2-digit", year: "numeric" }).replace(/\//g, "/");
+          
+          return (
+            <div key={dateStr} className="space-y-2">
+              <div className="flex items-center justify-between px-2 pt-2 pb-1 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-lg font-black text-slate-800 dark:text-slate-100">{dayNum}</span>
+                  <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-900/60 px-1.5 py-0.5 rounded uppercase">{dayName}</span>
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-600">{monthYear}</span>
+                </div>
+                <span className={`text-xs font-black ${dailyNet > 0 ? "text-emerald-500" : dailyNet < 0 ? "text-rose-500" : "text-slate-400"}`}>{isPrivacyMode ? "Rp ••" : `${dailyNet > 0 ? "+" : ""}${dailyNet.toLocaleString("id-ID")}`}</span>
+              </div>
+
+              <div className="space-y-2.5 overflow-x-hidden p-1 -mx-1">
+                {list.map((t: any) => (
+                  <SwipeableHomeCard 
+                    key={t.id}
+                    t={t}
+                    isPrivacyMode={isPrivacyMode}
+                    currentTheme={currentTheme}
+                    getRowIcon={getRowIcon}
+                    isOpen={openSwipeId === t.id}
+                    onOpen={() => setOpenSwipeId(t.id)}
+                    onClose={() => setOpenSwipeId(null)}
+                    onEdit={() => { triggerHaptic(); onEditTransaction(t); }}
+                    onDelete={() => { triggerHaptic(); onDeleteTransaction(t); }}
+                    onViewReceipt={(url: string) => { triggerHaptic(); setViewingReceiptUrl(url); }}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}, (prev, next) => (
+  prev.isReportLoading === next.isReportLoading &&
+  prev.groupedTransactionsByDay === next.groupedTransactionsByDay &&
+  prev.isPrivacyMode === next.isPrivacyMode &&
+  prev.currentTheme.cardBg === next.currentTheme.cardBg &&
+  prev.openSwipeId === next.openSwipeId
+));
+
 export default function HomeTab({
   onProcessSmartSplit,
   healthScore = 800, currentStreak = 0, longestStreak = 0, lastLogDate = "", handleDailyCheckIn,
@@ -1239,61 +1313,19 @@ export default function HomeTab({
       </div>
 
       {/* DAILY GROUPED TRANSACTION HISTORY LIST */}
-      <div className="space-y-4">
-        {isReportLoading ? (
-          // SKELETON SHIMMER LOADING (Agar tidak kaget disangka datanya hilang saat cold-start!)
-          <div className="space-y-3 animate-pulse">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="p-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 animate-pulse" />
-                  <div className="space-y-1.5 text-left">
-                    <div className="h-3.5 w-28 bg-slate-100 dark:bg-slate-800 rounded" />
-                    <div className="h-2 w-16 bg-slate-100 dark:bg-slate-800 rounded" />
-                  </div>
-                </div>
-                <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded" />
-              </div>
-            ))}
-          </div>
-        ) : groupedTransactionsByDay.length === 0 ? (
-          <div className="p-12 text-center bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-[28px]"><p className="text-slate-400 dark:text-slate-500 text-xs font-bold">Tidak ada transaksi tercatat di bulan ini.</p></div>
-        ) : (
-          groupedTransactionsByDay.map(({ dateStr, list, dailyNet }) => {
-            const { dayNum, dayName, monthYear } = formatDayHeader(dateStr);
-            return (
-              <div key={dateStr} className="space-y-2">
-                <div className="flex items-center justify-between px-2 pt-2 pb-1 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-black text-slate-800 dark:text-slate-100">{dayNum}</span>
-                    <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-900/60 px-1.5 py-0.5 rounded uppercase">{dayName}</span>
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-600">{monthYear}</span>
-                  </div>
-                  <span className={`text-xs font-black ${dailyNet > 0 ? "text-emerald-500" : dailyNet < 0 ? "text-rose-500" : "text-slate-400"}`}>{isPrivacyMode ? "Rp ••" : `${dailyNet > 0 ? "+" : ""}${dailyNet.toLocaleString("id-ID")}`}</span>
-                </div>
-
-                <div className="space-y-2.5 overflow-x-hidden p-1 -mx-1">
-                  {list.map((t) => (
-                    <SwipeableHomeCard 
-                      key={t.id}
-                      t={t}
-                      isPrivacyMode={isPrivacyMode}
-                      currentTheme={currentTheme}
-                      getRowIcon={getRowIcon}
-                      isOpen={openSwipeId === t.id}
-                      onOpen={() => setOpenSwipeId(t.id)}
-                      onClose={() => setOpenSwipeId(null)}
-                    onEdit={() => { triggerHaptic(); onEditTransaction(t); }}
-                    onDelete={() => { triggerHaptic(); onDeleteTransaction(t); }}
-                    onViewReceipt={(url: string) => { triggerHaptic(); setViewingReceiptUrl(url); }}
-                  />
-                ))}
-              </div>
-            </div>
-          );
-          })
-        )}
-      </div>
+      <MemoizedTransactionList 
+        isReportLoading={isReportLoading}
+        groupedTransactionsByDay={groupedTransactionsByDay}
+        isPrivacyMode={isPrivacyMode}
+        currentTheme={currentTheme}
+        getRowIcon={getRowIcon}
+        openSwipeId={openSwipeId}
+        setOpenSwipeId={setOpenSwipeId}
+        onEditTransaction={onEditTransaction}
+        onDeleteTransaction={onDeleteTransaction}
+        setViewingReceiptUrl={setViewingReceiptUrl}
+        triggerHaptic={triggerHaptic}
+      />
 
       {/* FLOATING ACTION BUTTON (+) */}
           <button type="button" onClick={() => { 
