@@ -53,7 +53,28 @@ const themeMap = {
   rose: { activeBg: "bg-rose-600 text-white", text: "text-rose-600 dark:text-rose-400", bgLight: "bg-rose-50 dark:bg-rose-900/30", border: "border-rose-100 dark:border-rose-900/40", subTabActive: "bg-rose-50/80 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400", subTabHover: "hover:text-rose-600 dark:hover:text-rose-400", subGradient: "from-rose-600 to-pink-800 shadow-rose-500/10", plGradient: "from-pink-700 to-rose-900 shadow-rose-500/10", fab: "bg-rose-600 hover:bg-rose-700 border-rose-500", payAccSelected: "border-rose-600 bg-rose-50/50 dark:bg-rose-900/20 shadow-rose-500/5", payBtnInactive: "bg-rose-50/40 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 border-rose-100/30 dark:border-rose-900/30", activePill: "bg-rose-600 border-rose-600 text-white shadow-rose-500/10" }
 } as const;
 
-const PAYLATER_PLATFORMS = ["SPayLater", "GoPayLater", "Kredivo", "Akulaku", "Kartu Kredit", "Lainnya"];
+const PAYLATER_PLATFORMS = ["SPayLater", "GoPayLater", "Kredivo", "Akulaku", "Kartu Kredit"];
+
+// 🎨 BRAND STYLING ENGINE (Shopee Oranye, GoPay Hijau/Teal, Kredivo Amber, CC Ungu)
+const getPlatformBadge = (name: string) => {
+  const p = (name || "").toLowerCase();
+  if (p.includes("spay") || p.includes("shopee")) {
+    return { bg: "bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-orange-500/20", icon: "🛍️" };
+  }
+  if (p.includes("gopay") || p.includes("gojek") || p.includes("tokped")) {
+    return { bg: "bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-emerald-500/20", icon: "🟢" };
+  }
+  if (p.includes("kredivo")) {
+    return { bg: "bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-orange-500/20", icon: "⚡" };
+  }
+  if (p.includes("akulaku")) {
+    return { bg: "bg-gradient-to-br from-red-600 to-rose-700 text-white shadow-red-500/20", icon: "🔴" };
+  }
+  if (p.includes("kartu kredit") || p.includes("cc") || p.includes("credit card") || p.includes("bank")) {
+    return { bg: "bg-gradient-to-br from-indigo-600 to-purple-700 text-white shadow-indigo-500/20", icon: "💳" };
+  }
+  return { bg: "bg-gradient-to-br from-slate-700 to-slate-800 text-white shadow-slate-500/10", icon: "🏷️" };
+};
 
 const safeEvaluate = (expr: string): number => {
   if (!expr) return 0;
@@ -589,11 +610,21 @@ export default function DebtsTab({
                       <div key={pl.id} className="bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden flex flex-col">
                         <div className="p-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-[10px] bg-slate-800 dark:bg-slate-700 shadow-sm">
-                              {pl.platform.slice(0,2).toUpperCase()}
-                            </div>
+                            {(() => {
+                              const badge = getPlatformBadge(pl.platform);
+                              return (
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black shadow-sm shrink-0 ${badge.bg}`}>
+                                  <span>{badge.icon}</span>
+                                </div>
+                              );
+                            })()}
                             <div>
-                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs leading-none mb-1">{pl.platform}</h4>
+                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs leading-none mb-1 flex items-center gap-1.5">
+                                <span>{pl.platform}</span>
+                                {pl.platform.toLowerCase().includes("spay") && (
+                                  <span className="text-[8px] font-black px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-500 border border-orange-500/20">Shopee</span>
+                                )}
+                              </h4>
                               <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate max-w-[150px]">{pl.itemName}</p>
                             </div>
                           </div>
@@ -627,7 +658,11 @@ export default function DebtsTab({
                               : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
                             }`}>
                               {isOverdue ? <AlertCircle size={10}/> : <CalendarClock size={10}/>}
-                              {isOverdue ? `Telat ${Math.abs(daysLeft)} hr` : isToday ? 'HARI INI' : `Tgl ${new Date(pl.nextDueDate).getDate()}`}
+                              {isOverdue 
+                                ? `Telat ${Math.abs(daysLeft)} hr` 
+                                : isToday 
+                                  ? 'HARI INI' 
+                                  : `Tempo: ${new Date(pl.nextDueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}`}
                             </div>
                             
                             <button 
@@ -900,18 +935,26 @@ export default function DebtsTab({
               {/* === KONDISI 0: FORM PAYLATER === */}
               {showAddPaylaterForm && (
                 <>
-                  <div className="space-y-1.5 mb-2">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Pilih Platform</label>
-                    <div className="flex flex-wrap gap-2 px-1">
+                  <div className="space-y-2 mb-2">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Pilih / Ketik Platform Sendiri</label>
+                    <div className="flex flex-wrap gap-1.5 px-1">
                       {PAYLATER_PLATFORMS.map(p => (
                         <button 
                           key={p} type="button" onClick={() => { triggerHaptic(); setPlPlatform(p); }}
-                          className={`px-3 py-2 rounded-xl text-[10px] font-black tracking-wider transition-all border cursor-pointer active:scale-95 ${plPlatform === p ? currentTheme.activePill : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400"}`}
+                          className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black tracking-wider transition-all border cursor-pointer active:scale-95 ${plPlatform === p ? currentTheme.activePill : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400"}`}
                         >
                           {p}
                         </button>
                       ))}
                     </div>
+                    {/* Kotak Input Bebas: Bos bisa ketik platform apapun sesuka hati! */}
+                    <input 
+                      type="text" 
+                      placeholder="Atau ketik nama platform kustom (cth: BCA Paylater, Indodana)..." 
+                      className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none text-slate-800 dark:text-white focus:border-blue-500" 
+                      value={plPlatform} 
+                      onChange={e => setPlPlatform(e.target.value)} 
+                    />
                   </div>
 
                   <div className="space-y-1">
