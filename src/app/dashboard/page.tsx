@@ -7,6 +7,18 @@ import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, orderBy, deleteDoc, updateDoc, limit, where, getDoc, setDoc, getDocs, writeBatch, increment } from "firebase/firestore";
 
 import { AccountData, TransactionData, CategoryData, WalletTypeData, DebtData, SplitItemData, SubscriptionData } from "../../types";
+
+export interface PaylaterData {
+  id: string;
+  platform: string;
+  itemName: string;
+  totalAmount: number;
+  paidAmount: number;
+  tenor: number;
+  paidMonths: number;
+  nextDueDate: string;
+  status: "active" | "paid";
+}
 import LoadingScreen from "../../components/shared/LoadingScreen";
 import AuthScreen from "../../components/shared/AuthScreen";
 import Sidebar from "../../components/layout/Sidebar";
@@ -124,6 +136,7 @@ export default function FintrackerApp() {
   const [walletTypes, setWalletTypes] = useState<WalletTypeData[]>([]);
   const [debts, setDebts] = useState<DebtData[]>([]);
   const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]);
+  const [paylaters, setPaylaters] = useState<PaylaterData[]>([]);
   
   const [activeTab, setActiveTab] = useState<"home" | "reports" | "assets" | "settings" | "debts">("home");
   
@@ -510,15 +523,16 @@ export default function FintrackerApp() {
 
   useEffect(() => {
     if (!user) return;
-    let unsubTypes: any, unsubDebts: any, unsubSubs: any;
+    let unsubTypes: any, unsubDebts: any, unsubSubs: any, unsubPaylaters: any;
     // ⚡ TURBO LAZY LOAD: Delay 1500ms! 
     // Tab Utang & Langganan tidak dilihat di awal, biarkan thread CPU fokus me-render Beranda!
     const timer = setTimeout(() => {
       unsubTypes = onSnapshot(query(collection(db, `users/${user.uid}/walletTypes`), orderBy("order", "asc")), (sn) => { if (sn.empty) setupDefaultWalletTypes(user.uid); else setWalletTypes(sn.docs.map(d => ({ id: d.id, ...d.data() } as WalletTypeData))); });
       unsubDebts = onSnapshot(query(collection(db, `users/${user.uid}/debts`), orderBy("createdAt", "desc")), (sn) => { setDebts(sn.docs.map(d => ({ id: d.id, ...d.data() } as DebtData))); });
       unsubSubs = onSnapshot(query(collection(db, `users/${user.uid}/subscriptions`), orderBy("createdAt", "desc")), (sn) => { setSubscriptions(sn.docs.map(d => ({ id: d.id, ...d.data() } as SubscriptionData))); });
+      unsubPaylaters = onSnapshot(query(collection(db, `users/${user.uid}/paylaters`), orderBy("createdAt", "desc")), (sn) => { setPaylaters(sn.docs.map(d => ({ id: d.id, ...d.data() } as PaylaterData))); });
     }, 1500);
-    return () => { clearTimeout(timer); if(unsubTypes) unsubTypes(); if(unsubDebts) unsubDebts(); if(unsubSubs) unsubSubs(); };
+    return () => { clearTimeout(timer); if(unsubTypes) unsubTypes(); if(unsubDebts) unsubDebts(); if(unsubSubs) unsubSubs(); if(unsubPaylaters) unsubPaylaters(); };
   }, [user]);
 
   useEffect(() => {
@@ -823,6 +837,87 @@ export default function FintrackerApp() {
     if (isSubmittingRef.current) return; if (!user || !confirm("Hapus langganan tetap ini?")) return;
     isSubmittingRef.current = true; setIsSubmitting(true);
     try { await deleteDoc(doc(db, `users/${user.uid}/subscriptions/${id}`)); } catch(e) { alert("Gagal menghapus langganan"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+  };
+
+  // 🚀 LOGIKA PAYLATER (CRUD & PEMBAYARAN OTOMATIS)
+  const handleAddPaylater = async (data: Omit<PaylaterData, "id"|"paidAmount"|"paidMonths"|"status">) => {
+    if (isSubmittingRef.current) return; if (!user) return;
+    isSubmittingRef.current = true; setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, `users/${user.uid}/paylaters`), {
+        ...data,
+        paidAmount: 0,
+        paidMonths: 0,
+        status: "active",
+        createdAt: serverTimestamp()
+      });
+      alert("Tagihan Paylater berhasil dicatat!");
+    } catch (e) { alert("Gagal mencatat Paylater"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+  };
+
+  const handleDeletePaylater = async (id: string) => {
+    if (isSubmittingRef.current) return; if (!user || !confirm("Hapus catatan Paylater ini?")) return;
+    isSubmittingRef.current = true; setIsSubmitting(true);
+    try { await deleteDoc(doc(db, `users/${user.uid}/paylaters/${id}`)); } catch(e) { alert("Gagal menghapus Paylater"); } finally { isSubmittingRef.current = false; setIsSubmitting(false); }
+  };
+
+  const handlePayPaylater = async (id: string, amount: number, accountId: string, category: string) => {
+    if (isSubmittingRef.current) return; if (!user) return;
+    const pl = paylaters.find(p => p.id === id);
+    const acc = accounts.find(a => a.id === accountId);
+    if (!pl || !acc) return alert("Data tidak ditemukan!");
+    
+    // Validasi Saldo Dompet (Overdraft Protection)
+    if (acc.balance < amount) return alert("Transaksi Ditolak!\nSaldo dompet tidak mencukupi untuk pembayaran ini.");
+
+    isSubmittingRef.current = true; setIsSubmitting(true);
+    try {
+      const batch = writeBatch(db);
+      
+      // 1. Potong saldo dompet
+      batch.update(doc(db, `users/${user.uid}/accounts/${accountId}`), { balance: increment(-amount) });
+      
+      // 2. Catat transaksi pengeluaran (Riwayat)
+      const now = new Date();
+      const exactTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const newTxRef = doc(collection(db, `users/${user.uid}/transactions`));
+      
+      const note = `${pl.platform} - ${pl.itemName} ${pl.tenor > 1 ? `(Bulan ${pl.paidMonths + 1}/${pl.tenor})` : '(Lunas)'}`;
+      batch.set(newTxRef, {
+        amount: amount, type: "expense", accountId, accountName: acc.name,
+        category, note, tDate: getLocalDateString(now), tTime: exactTime, createdAt: serverTimestamp()
+      });
+      
+      // 3. Update status Paylater
+      const newPaidAmount = pl.paidAmount + amount;
+      const newPaidMonths = pl.paidMonths + 1;
+      const isLunas = newPaidMonths >= pl.tenor || newPaidAmount >= pl.totalAmount;
+      
+      // Geser tanggal jatuh tempo 1 bulan ke depan jika belum lunas
+      const parts = pl.nextDueDate.split("-"); 
+      let year = parseInt(parts[0], 10); 
+      let month = parseInt(parts[1], 10) - 1; 
+      let day = parseInt(parts[2], 10);
+      const nextDate = new Date(year, month + 1, day);
+      const y = nextDate.getFullYear(); 
+      const m = String(nextDate.getMonth() + 1).padStart(2, '0'); 
+      const d = String(nextDate.getDate()).padStart(2, '0'); 
+      const newDueDate = `${y}-${m}-${d}`;
+
+      batch.update(doc(db, `users/${user.uid}/paylaters/${id}`), {
+        paidAmount: newPaidAmount,
+        paidMonths: newPaidMonths,
+        status: isLunas ? "paid" : "active",
+        nextDueDate: isLunas ? pl.nextDueDate : newDueDate
+      });
+
+      await batch.commit(); // Eksekusi 3 tindakan sekaligus (Atomik)
+      alert(isLunas ? `Selamat! Tagihan ${pl.platform} telah lunas sepenuhnya! 🎉` : `Pembayaran cicilan ${pl.platform} berhasil! Jatuh tempo bulan depan diperbarui otomatis.`);
+    } catch (e) {
+      alert("Gagal memproses pembayaran cicilan.");
+    } finally {
+      isSubmittingRef.current = false; setIsSubmitting(false);
+    }
   };
   const handlePaySubscription = async (sub: SubscriptionData) => {
     if (isSubmittingRef.current) return; if (!user) return;
@@ -1562,7 +1657,12 @@ export default function FintrackerApp() {
               <ReportsTab reportMonth={reportMonth} setReportMonth={setReportMonth} totalIncome={totalIncome} totalExpense={totalExpense} pieData={pieData} incomeCategoryList={incomeCategoryList} barData={barData} categories={categories} reportTransactions={reportTransactions} globalSearch={globalSearch} setGlobalSearch={setGlobalSearch} searchResult={searchResult} prevTotalIncome={prevTotalIncome} prevTotalExpense={prevTotalExpense} isPrivacyMode={isPrivacyMode} accounts={accounts} updateCategory={handleEditCategory} />
             )}
             {activeTab === "debts" && (
-              <DebtsTab debts={debts} accounts={accounts} categories={categories} handleAddDebt={handleAddDebt} handleEditDebt={handleEditDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} subscriptions={subscriptions} handleAddSubscription={handleAddSubscription} handleEditSubscription={handleEditSubscription} handlePaySubscription={handlePaySubscription} handleDeleteSubscription={handleDeleteSubscription} isPrivacyMode={isPrivacyMode} />
+              <DebtsTab 
+                debts={debts} accounts={accounts} categories={categories} handleAddDebt={handleAddDebt} handleEditDebt={handleEditDebt} handlePayDebt={handlePayDebt} handleDeleteDebt={handleDeleteDebt} 
+                subscriptions={subscriptions} handleAddSubscription={handleAddSubscription} handleEditSubscription={handleEditSubscription} handlePaySubscription={handlePaySubscription} handleDeleteSubscription={handleDeleteSubscription} 
+                paylaters={paylaters} handleAddPaylater={handleAddPaylater} handlePayPaylater={handlePayPaylater} handleDeletePaylater={handleDeletePaylater}
+                isPrivacyMode={isPrivacyMode} 
+              />
             )}
             {activeTab === "assets" && (
               <AssetsTab accounts={accounts} walletTypes={walletTypes} accType={accType} setAccType={setAccType} accName={accName} setAccName={setAccName} accBalance={accBalance} setAccBalance={setAccBalance} accLogo={accLogo} handleLogoUpload={handleLogoUpload} accIsSavings={accIsSavings} setAccIsSavings={setAccIsSavings} accTargetBalance={accTargetBalance} setAccTargetBalance={setAccTargetBalance} accExcludeFromTotal={accExcludeFromTotal} setAccExcludeFromTotal={setAccExcludeFromTotal} editAccExcludeFromTotal={editAccExcludeFromTotal} setEditAccExcludeFromTotal={setEditAccExcludeFromTotal} accIsBusiness={accIsBusiness} setAccIsBusiness={setAccIsBusiness} editAccIsBusiness={editAccIsBusiness} setEditAccIsBusiness={setEditAccIsBusiness} handleCreateAccount={handleCreateAccount} editingAccId={editingAccId} setEditingAccId={setEditingAccId} editAccName={editAccName} setEditAccName={setEditAccName} editAccBalance={editAccBalance} setEditAccBalance={setEditAccBalance} editAccLogo={editAccLogo} setEditAccLogo={setEditAccLogo} editAccIsSavings={editAccIsSavings} setEditAccIsSavings={setEditAccIsSavings} editAccTargetBalance={editAccTargetBalance} setEditAccTargetBalance={setEditAccTargetBalance} handleEditAccount={handleEditAccount} deleteAccount={deleteAccount} moveAccountOrder={moveAccountOrder} accSavingsGoalTitle={accSavingsGoalTitle} setAccSavingsGoalTitle={setAccSavingsGoalTitle} editAccSavingsGoalTitle={editAccSavingsGoalTitle} setEditAccSavingsGoalTitle={setEditAccSavingsGoalTitle} isPrivacyMode={isPrivacyMode} accCurrency={accCurrency} setAccCurrency={setAccCurrency} editAccCurrency={editAccCurrency} setEditAccCurrency={setEditAccCurrency} exchangeRates={exchangeRates} handleUpdateGlobalRates={handleUpdateGlobalRates} reportTransactions={reportTransactions} reportMonth={reportMonth} setReportMonth={setReportMonth} accIsInvestment={accIsInvestment} setAccIsInvestment={setAccIsInvestment} editAccIsInvestment={editAccIsInvestment} setEditAccIsInvestment={setEditAccIsInvestment} accAverageBuyPrice={accAverageBuyPrice} setAccAverageBuyPrice={setAccAverageBuyPrice} editAccAverageBuyPrice={editAccAverageBuyPrice} setEditAccAverageBuyPrice={setEditAccAverageBuyPrice} accLastExchangeRate={accLastExchangeRate} setAccLastExchangeRate={setAccLastExchangeRate} editAccLastExchangeRate={editAccLastExchangeRate} setEditAccLastExchangeRate={setEditAccLastExchangeRate} handleUpdateInvestmentRate={handleUpdateInvestmentRate} accAccountNumber={accAccountNumber} setAccAccountNumber={setAccAccountNumber} editAccAccountNumber={editAccAccountNumber} setEditAccAccountNumber={setEditAccAccountNumber} />
