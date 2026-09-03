@@ -4,6 +4,20 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { flushSync } from "react-dom";
 import { AccountData, CategoryData, SplitItemData, TransactionData } from "../../types";
 import imageCompression from "browser-image-compression";
+import { auth, db } from "../../lib/firebase";
+import { collection, doc, writeBatch, increment, serverTimestamp } from "firebase/firestore";
+
+export interface QuickPresetData {
+  id: string;
+  name: string;
+  amount: number;
+  category: string;
+  accountId: string;
+  icon?: string;
+  note?: string;
+  tags?: string[];
+  quota?: number | null;
+}
 import { 
   ArrowUpRight, 
   ArrowDownRight, 
@@ -596,6 +610,187 @@ export default function HomeTab({
   const [showTagManager, setShowTagManager] = useState(false);
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [newTagInput, setNewTagInput] = useState("");
+
+  // ⚡ STATE FITUR BARU: PINTASAN KILAT (1-TAP QUICK PRESETS + KUOTA)
+  const [presets, setPresets] = useState<QuickPresetData[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("fintracker_quick_presets");
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) {}
+      }
+    }
+    // Preset Bawaan Awal (Langsung siap pakai untuk Katering & Kopi!)
+    return [
+      { id: "preset-1", name: "Katering Siang", amount: 35000, category: "Makanan", accountId: "", icon: "🍱", note: "Katering Siang [Porsi]", tags: ["katering"], quota: 5 },
+      { id: "preset-2", name: "Katering Malam", amount: 35000, category: "Makanan", accountId: "", icon: "🌙", note: "Katering Malam [Porsi]", tags: ["katering"], quota: 5 },
+      { id: "preset-3", name: "Kopi Harian", amount: 20000, category: "Makanan", accountId: "", icon: "☕", note: "Kopi", tags: ["ngopi"], quota: null }
+    ];
+  });
+
+  const [isLoggingPreset, setIsLoggingPreset] = useState<string | null>(null);
+  const [showPresetManager, setShowPresetManager] = useState(false);
+  const [showCreatePresetModal, setShowCreatePresetModal] = useState(false);
+  const [editingPresetItem, setEditingPresetItem] = useState<QuickPresetData | null>(null);
+
+  // Form State untuk Preset
+  const [pFormName, setPFormName] = useState("");
+  const [pFormAmount, setPFormAmount] = useState("");
+  const [pFormIcon, setPFormIcon] = useState("🍱");
+  const [pFormAccountId, setPFormAccountId] = useState("");
+  const [pFormCategory, setPFormCategory] = useState("Makanan");
+  const [pFormNote, setPFormNote] = useState("");
+  const [pFormHasQuota, setPFormHasQuota] = useState(true);
+  const [pFormQuotaCount, setPFormQuotaCount] = useState("5");
+
+  // 🪄 LOGIKA 1-TAP EKSEKUSI TRANSAKSI & PEMOTONGAN KUOTA
+  const handleTriggerPreset = async (preset: QuickPresetData) => {
+    if (isLoggingPreset) return;
+    
+    // Cek jika kuota habis
+    if (preset.quota !== null && preset.quota !== undefined && preset.quota <= 0) {
+      triggerHaptic();
+      const confirmTopUp = confirm(`Kuota "${preset.name}" sudah habis (0x)!\n\nApakah Anda ingin mengisi ulang +5 porsi sekarang?`);
+      if (confirmTopUp) {
+        handleTopUpQuota(preset.id, 5);
+      }
+      return;
+    }
+
+    const currentUser = auth.currentUser;
+    if (!currentUser) return alert("Sesi login tidak aktif.");
+
+    // Tentukan dompet sumber dana
+    let targetAcc = accounts.find(a => a.id === preset.accountId);
+    if (!targetAcc) {
+      targetAcc = accounts.find(a => !a.isSavings) || accounts[0];
+    }
+    if (!targetAcc) return alert("Belum ada dompet aktif untuk memotong saldo!");
+
+    // Overdraft Protection
+    if (targetAcc.balance < preset.amount) {
+      triggerHaptic();
+      return alert(`Transaksi Ditolak!\nSaldo dompet "${targetAcc.name}" tidak mencukupi.\nSisa saldo: ${formatCurrencyTerbaca(targetAcc.balance.toString(), targetAcc.currency)}`);
+    }
+
+    setIsLoggingPreset(preset.id);
+    triggerHaptic();
+
+    try {
+      const batch = writeBatch(db);
+
+      // 1. Potong saldo dompet sumber dana
+      const accRef = doc(db, `users/${currentUser.uid}/accounts/${targetAcc.id}`);
+      batch.update(accRef, { balance: increment(-preset.amount) });
+
+      // 2. Buat transaksi pengeluaran otomatis di Firestore
+      const now = new Date();
+      const exactTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const txRef = doc(collection(db, `users/${currentUser.uid}/transactions`));
+
+      const cleanNote = preset.note || preset.name;
+      const matchedTags = cleanNote.match(/#[^\s]+/g) || [];
+      let extractedTags = matchedTags.map(tag => tag.replace('#', ''));
+      if (preset.tags && preset.tags.length > 0) {
+        extractedTags = Array.from(new Set([...extractedTags, ...preset.tags]));
+      }
+
+      batch.set(txRef, {
+        amount: preset.amount,
+        type: "expense",
+        accountId: targetAcc.id,
+        accountName: targetAcc.name,
+        category: preset.category || "Makanan",
+        note: cleanNote.replace(/#[^\s]+/g, '').trim(),
+        tags: extractedTags,
+        tDate: getTodayDateString(),
+        tTime: exactTime,
+        createdAt: serverTimestamp()
+      });
+
+      await batch.commit();
+
+      // 3. Potong kuota lokal & simpan
+      let quotaInfoText = "";
+      if (preset.quota !== null && preset.quota !== undefined) {
+        const nextQuota = Math.max(0, preset.quota - 1);
+        const updated = presets.map(p => p.id === preset.id ? { ...p, quota: nextQuota } : p);
+        setPresets(updated);
+        localStorage.setItem("fintracker_quick_presets", JSON.stringify(updated));
+        quotaInfoText = ` (Sisa: ${nextQuota} porsi)`;
+      }
+
+      // Notifikasi Apple Toast
+      alert(`✨ ${preset.name} dicatat: Rp ${preset.amount.toLocaleString('id-ID')}${quotaInfoText}`);
+    } catch (e: any) {
+      console.error(e);
+      alert("Gagal mencatat pintasan.");
+    } finally {
+      setIsLoggingPreset(null);
+    }
+  };
+
+  const handleTopUpQuota = (presetId: string, addAmount: number) => {
+    triggerHaptic();
+    const updated = presets.map(p => {
+      if (p.id === presetId) {
+        const currentQ = p.quota || 0;
+        return { ...p, quota: currentQ + addAmount };
+      }
+      return p;
+    });
+    setPresets(updated);
+    localStorage.setItem("fintracker_quick_presets", JSON.stringify(updated));
+    alert(`Berhasil menambah +${addAmount} kuota porsi!`);
+  };
+
+  const handleSavePreset = () => {
+    if (!pFormName || !pFormAmount) return alert("Nama dan Nominal pintasan wajib diisi!");
+    triggerHaptic();
+
+    const parsedAmount = safeEvaluate(pFormAmount);
+    const quotaVal = pFormHasQuota ? Math.max(1, parseInt(pFormQuotaCount, 10) || 5) : null;
+
+    if (editingPresetItem) {
+      const updated = presets.map(p => p.id === editingPresetItem.id ? {
+        ...p,
+        name: pFormName,
+        amount: parsedAmount,
+        icon: pFormIcon || "⚡",
+        accountId: pFormAccountId || accounts[0]?.id || "",
+        category: pFormCategory || "Makanan",
+        note: pFormNote,
+        quota: quotaVal
+      } : p);
+      setPresets(updated);
+      localStorage.setItem("fintracker_quick_presets", JSON.stringify(updated));
+    } else {
+      const newP: QuickPresetData = {
+        id: `preset-${Date.now()}`,
+        name: pFormName,
+        amount: parsedAmount,
+        icon: pFormIcon || "⚡",
+        accountId: pFormAccountId || accounts[0]?.id || "",
+        category: pFormCategory || "Makanan",
+        note: pFormNote,
+        quota: quotaVal
+      };
+      const updated = [...presets, newP];
+      setPresets(updated);
+      localStorage.setItem("fintracker_quick_presets", JSON.stringify(updated));
+    }
+
+    setShowCreatePresetModal(false);
+    setEditingPresetItem(null);
+  };
+
+  const handleDeletePreset = (id: string) => {
+    triggerHaptic();
+    if (confirm("Hapus tombol pintasan ini?")) {
+      const updated = presets.filter(p => p.id !== id);
+      setPresets(updated);
+      localStorage.setItem("fintracker_quick_presets", JSON.stringify(updated));
+    }
+  };
 
   // STATE BARU: DIGITAL RECEIPT (FASE 21)
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
@@ -1308,6 +1503,88 @@ export default function HomeTab({
         {/* Tombol Interaktif (Tap-to-View) */}
         <div className={`absolute right-4 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-white/40 dark:bg-black/20 text-slate-500 dark:text-slate-400 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors`}>
           <ArrowUpRight size={14} strokeWidth={3} />
+        </div>
+      </div>
+
+      {/* ⚡ WIDGET PINTASAN KILAT (1-TAP QUICK PRESETS + KUOTA) */}
+      <div className="space-y-2 animate-in fade-in duration-300">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">⚡ Pintasan Kilat (1-Tap)</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => { triggerHaptic(); setShowPresetManager(true); }}
+            className="text-[9px] font-black text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 flex items-center gap-1 cursor-pointer transition-colors"
+          >
+            <span>Kelola</span> ⚙️
+          </button>
+        </div>
+
+        {/* Horizontal Smooth Tray */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+          {presets.map(p => {
+            const isZero = p.quota !== null && p.quota !== undefined && p.quota <= 0;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                disabled={isLoggingPreset === p.id}
+                onClick={() => handleTriggerPreset(p)}
+                className={`shrink-0 flex items-center gap-2.5 p-2 pr-3.5 rounded-2xl border transition-all duration-200 cursor-pointer active:scale-95 shadow-sm group select-none ${
+                  isZero
+                    ? 'bg-slate-100/50 dark:bg-slate-900/40 border-slate-200/50 dark:border-slate-800 opacity-60'
+                    : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 flex items-center justify-center text-base shrink-0 group-hover:scale-110 transition-transform shadow-xs">
+                  {p.icon || "⚡"}
+                </div>
+                <div className="text-left min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate leading-none">
+                      {p.name}
+                    </p>
+                    {p.quota !== null && p.quota !== undefined && (
+                      <span className={`text-[8px] font-black px-1.5 py-0.2 rounded-md uppercase tracking-wider ${
+                        p.quota > 2
+                          ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/40 dark:border-emerald-800/40'
+                          : p.quota > 0
+                          ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-200/40 dark:border-amber-800/40'
+                          : 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200/40 dark:border-rose-800/40'
+                      }`}>
+                        {p.quota > 0 ? `${p.quota}x` : 'Habis'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 leading-none">
+                    Rp {p.amount.toLocaleString("id-ID")}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic();
+              setEditingPresetItem(null);
+              setPFormName("");
+              setPFormAmount("");
+              setPFormIcon("🍱");
+              setPFormAccountId(accounts[0]?.id || "");
+              setPFormCategory("Makanan");
+              setPFormNote("");
+              setPFormHasQuota(true);
+              setPFormQuotaCount("5");
+              setShowCreatePresetModal(true);
+            }}
+            className="shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:border-slate-400 text-xs font-black transition-all cursor-pointer active:scale-95"
+          >
+            <Plus size={14} strokeWidth={3} />
+            <span>Pintasan</span>
+          </button>
         </div>
       </div>
 
@@ -2851,6 +3128,236 @@ export default function HomeTab({
               </div>
             ));
           })()}
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* ⚡ MODAL KELOLA PINTASAN & ISI ULANG KUOTA */}
+  {showPresetManager && (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowPresetManager(false)}>
+      <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 text-left" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+          <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm">
+            <span>⚡</span> Kelola Pintasan Kilat
+          </h3>
+          <button type="button" onClick={() => setShowPresetManager(false)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full cursor-pointer hover:bg-slate-300 transition-colors"><X size={14}/></button>
+        </div>
+        
+        <div className="p-5 overflow-y-auto no-scrollbar space-y-3 flex-1">
+          {presets.map(p => (
+            <div key={p.id} className="p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-xl shrink-0">
+                  {p.icon || "⚡"}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate">{p.name}</p>
+                  <p className="text-[10px] font-extrabold text-slate-400 mt-0.5">Rp {p.amount.toLocaleString("id-ID")} • {p.category}</p>
+                  {p.quota !== null && p.quota !== undefined && (
+                    <p className={`text-[9px] font-black mt-1 ${p.quota > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      Sisa Kuota: {p.quota} porsi
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                {p.quota !== null && p.quota !== undefined && (
+                  <button
+                    type="button"
+                    onClick={() => handleTopUpQuota(p.id, 5)}
+                    className="px-2.5 py-1.5 rounded-xl text-[9px] font-black bg-emerald-500 hover:bg-emerald-600 text-white transition-colors cursor-pointer shadow-xs active:scale-95"
+                    title="Tambah 5 Porsi"
+                  >
+                    +5 Porsi
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    setEditingPresetItem(p);
+                    setPFormName(p.name);
+                    setPFormAmount(p.amount.toString());
+                    setPFormIcon(p.icon || "🍱");
+                    setPFormAccountId(p.accountId || accounts[0]?.id || "");
+                    setPFormCategory(p.category || "Makanan");
+                    setPFormNote(p.note || "");
+                    setPFormHasQuota(p.quota !== null && p.quota !== undefined);
+                    setPFormQuotaCount(p.quota !== null && p.quota !== undefined ? p.quota.toString() : "5");
+                    setShowPresetManager(false);
+                    setShowCreatePresetModal(true);
+                  }}
+                  className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-500 rounded-xl transition-colors cursor-pointer"
+                >
+                  <Edit3 size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeletePreset(p.id)}
+                  className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-red-500 rounded-xl transition-colors cursor-pointer"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic();
+              setEditingPresetItem(null);
+              setPFormName("");
+              setPFormAmount("");
+              setPFormIcon("🍱");
+              setPFormAccountId(accounts[0]?.id || "");
+              setPFormCategory("Makanan");
+              setPFormNote("");
+              setPFormHasQuota(true);
+              setPFormQuotaCount("5");
+              setShowPresetManager(false);
+              setShowCreatePresetModal(true);
+            }}
+            className={`w-full py-3 rounded-xl text-xs font-black text-white shadow-md transition-all cursor-pointer border ${currentTheme.fab}`}
+          >
+            + Buat Pintasan Baru
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* ⚡ MODAL FORM: BUAT / EDIT PINTASAN BARU */}
+  {showCreatePresetModal && (
+    <div className="fixed inset-0 z-[320] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowCreatePresetModal(false)}>
+      <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 text-left" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+          <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm">
+            {editingPresetItem ? "Edit Pintasan Kilat" : "Buat Pintasan Baru"}
+          </h3>
+          <button type="button" onClick={() => setShowCreatePresetModal(false)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full cursor-pointer hover:bg-slate-300 transition-colors"><X size={14}/></button>
+        </div>
+
+        <div className="p-5 overflow-y-auto no-scrollbar space-y-4 flex-1">
+          <div className="grid grid-cols-4 gap-2.5">
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Emoji</label>
+              <input
+                type="text"
+                maxLength={4}
+                className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-center text-lg font-black outline-none focus:border-blue-500 text-slate-800 dark:text-white"
+                value={pFormIcon}
+                onChange={e => setPFormIcon(e.target.value)}
+              />
+            </div>
+            <div className="col-span-3 space-y-1">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Nama Pintasan</label>
+              <input
+                type="text"
+                placeholder="Cth: Katering Siang"
+                className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white"
+                value={pFormName}
+                onChange={e => setPFormName(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Nominal Sekali Tap (Rp)</label>
+            <input
+              type="text"
+              placeholder="35000"
+              className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white"
+              value={pFormAmount}
+              onChange={e => setPFormAmount(e.target.value.replace(/[^0-9]/g, ''))}
+            />
+            {pFormAmount && (
+              <p className="text-[10px] font-bold text-slate-400 pl-1">
+                Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(pFormAmount)}</span>
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Dompet</label>
+              <select
+                className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white"
+                value={pFormAccountId}
+                onChange={e => setPFormAccountId(e.target.value)}
+              >
+                {accounts.filter(a => !a.isSavings).map(a => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Kategori</label>
+              <select
+                className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white"
+                value={pFormCategory}
+                onChange={e => setPFormCategory(e.target.value)}
+              >
+                {categories.filter(c => c.type === "expense").map(c => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* SAKLAR SISTEM KUOTA PORSI */}
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black text-slate-800 dark:text-slate-200">Gunakan Kuota Porsi?</p>
+                <p className="text-[9px] font-bold text-slate-400">Cocok untuk katering / langganan terbatas</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { triggerHaptic(); setPFormHasQuota(!pFormHasQuota); }}
+                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${pFormHasQuota ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+              >
+                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${pFormHasQuota ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            {pFormHasQuota && (
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+                <label className="text-[10px] font-bold text-slate-500">Jumlah Porsi Awal:</label>
+                <div className="flex items-center gap-1.5 w-28">
+                  <input
+                    type="number"
+                    min="1"
+                    className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-black text-center outline-none text-slate-800 dark:text-white"
+                    value={pFormQuotaCount}
+                    onChange={e => setPFormQuotaCount(e.target.value)}
+                  />
+                  <span className="text-[10px] font-bold text-slate-400">Porsi</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex gap-2">
+          <button
+            type="button"
+            onClick={handleSavePreset}
+            className={`flex-1 py-3 text-white rounded-xl text-xs font-black shadow-md cursor-pointer border ${currentTheme.fab}`}
+          >
+            Simpan Pintasan
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowCreatePresetModal(false)}
+            className="py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+          >
+            Batal
+          </button>
         </div>
       </div>
     </div>
