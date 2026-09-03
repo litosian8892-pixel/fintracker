@@ -642,6 +642,11 @@ export default function HomeTab({
   const [pFormHasQuota, setPFormHasQuota] = useState(true);
   const [pFormQuotaCount, setPFormQuotaCount] = useState("5");
 
+  // State Modal Mewah (Ganti Select Jelek)
+  const [showPresetCatModal, setShowPresetCatModal] = useState(false);
+  const [showPresetAccModal, setShowPresetAccModal] = useState(false);
+  const [presetCatSearchQuery, setPresetCatSearchQuery] = useState("");
+
   // 🪄 LOGIKA 1-TAP EKSEKUSI TRANSAKSI & PEMOTONGAN KUOTA
   const handleTriggerPreset = async (preset: QuickPresetData) => {
     if (isLoggingPreset) return;
@@ -3283,29 +3288,36 @@ export default function HomeTab({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
+            {/* Pemilih Dompet Mewah */}
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Dompet</label>
-              <select
-                className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white"
-                value={pFormAccountId}
-                onChange={e => setPFormAccountId(e.target.value)}
+              <div 
+                onClick={() => { triggerHaptic(); setShowPresetAccModal(true); }}
+                className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
               >
-                {accounts.filter(a => !a.isSavings).map(a => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
-              </select>
+                <div className="flex items-center gap-2 truncate">
+                  <Wallet size={14} className="text-slate-400 shrink-0" />
+                  <span className="truncate">
+                    {accounts.find(a => a.id === pFormAccountId)?.name || accounts.find(a => !a.isSavings)?.name || "Pilih Dompet..."}
+                  </span>
+                </div>
+                <ChevronDown size={14} className="text-slate-400 shrink-0" />
+              </div>
             </div>
+
+            {/* Pemilih Kategori Mewah (Dengan Emoji & Modal) */}
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Kategori</label>
-              <select
-                className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white"
-                value={pFormCategory}
-                onChange={e => setPFormCategory(e.target.value)}
+              <div 
+                onClick={() => { triggerHaptic(); setPresetCatSearchQuery(""); setShowPresetCatModal(true); }}
+                className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
               >
-                {categories.filter(c => c.type === "expense").map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
+                <div className="flex items-center gap-2 truncate">
+                  <span>{categories.find(c => c.name === pFormCategory)?.icon || getCategoryIcon(pFormCategory)}</span>
+                  <span className="truncate">{pFormCategory || "Pilih..."}</span>
+                </div>
+                <ChevronDown size={14} className="text-slate-400 shrink-0" />
+              </div>
             </div>
           </div>
 
@@ -3358,6 +3370,118 @@ export default function HomeTab({
           >
             Batal
           </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* 🏷️ MODAL MEWAH: PILIH KATEGORI PINTASAN DENGAN SEARCH & EMOJI */}
+  {showPresetCatModal && (
+    <div className="fixed inset-0 z-[350] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowPresetCatModal(false)}>
+      <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[75vh] border border-slate-200 dark:border-slate-800 text-left" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
+          <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-xs uppercase tracking-wider">
+            <span>🏷️</span> Pilih Kategori Pintasan
+          </h3>
+          <button type="button" onClick={() => setShowPresetCatModal(false)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full cursor-pointer hover:bg-slate-300 transition-colors"><X size={13}/></button>
+        </div>
+        
+        {/* Kolom Pencarian */}
+        <div className="p-3 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
+            <input 
+              type="text" 
+              placeholder="Cari kategori..." 
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white"
+              value={presetCatSearchQuery} 
+              onChange={e => setPresetCatSearchQuery(e.target.value)} 
+              autoFocus
+            />
+          </div>
+        </div>
+
+        {/* Daftar Kategori */}
+        <div className="p-3 overflow-y-auto no-scrollbar space-y-1.5 flex-1">
+          {categories
+            .filter(c => c.type === "expense" && c.name.toLowerCase().includes(presetCatSearchQuery.toLowerCase()))
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(cat => {
+              const isSelected = pFormCategory === cat.name;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    setPFormCategory(cat.name);
+                    setShowPresetCatModal(false);
+                  }}
+                  className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center justify-between ${
+                    isSelected 
+                      ? currentTheme.activePill 
+                      : "bg-slate-50 text-slate-800 dark:bg-slate-800/60 dark:text-slate-100 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <span className="text-base shrink-0">{cat.icon || getCategoryIcon(cat.name)}</span>
+                    <span className="truncate">{cat.name}</span>
+                  </div>
+                  {isSelected && <span className="text-xs font-black">✓</span>}
+                </button>
+              );
+            })}
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* 💳 MODAL MEWAH: PILIH DOMPET PINTASAN */}
+  {showPresetAccModal && (
+    <div className="fixed inset-0 z-[350] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowPresetAccModal(false)}>
+      <div className="bg-white dark:bg-slate-900 rounded-[30px] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[70vh] border border-slate-200 dark:border-slate-800 text-left" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50 shrink-0">
+          <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 text-xs uppercase tracking-wider">
+            <Wallet size={14} className={currentTheme.text} /> Pilih Dompet Sumber Dana
+          </h3>
+          <button type="button" onClick={() => setShowPresetAccModal(false)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full cursor-pointer hover:bg-slate-300 transition-colors"><X size={13}/></button>
+        </div>
+
+        <div className="p-3 overflow-y-auto no-scrollbar space-y-2 flex-1">
+          {accounts.filter(a => !a.isSavings).map(acc => {
+            const activeId = pFormAccountId || accounts.find(a => !a.isSavings)?.id;
+            const isSelected = activeId === acc.id;
+            return (
+              <div 
+                key={acc.id} 
+                onClick={() => {
+                  triggerHaptic();
+                  setPFormAccountId(acc.id);
+                  setShowPresetAccModal(false);
+                }}
+                className={`p-3 rounded-2xl border text-left flex items-center justify-between cursor-pointer transition-all active:scale-95 ${
+                  isSelected 
+                    ? currentTheme.activeAccCard 
+                    : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800"
+                }`}
+              >
+                <div className="flex items-center gap-3 truncate">
+                  {acc.logo ? (
+                    <img src={acc.logo} alt="" className="w-8 h-8 rounded-lg object-cover bg-white shrink-0" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                      <Wallet size={15} />
+                    </div>
+                  )}
+                  <div className="truncate">
+                    <p className="text-xs font-black text-slate-800 dark:text-white truncate leading-tight">{acc.name}</p>
+                    <p className="text-[10px] font-bold text-slate-400 mt-0.5 leading-none">Rp {acc.balance.toLocaleString("id-ID")}</p>
+                  </div>
+                </div>
+                {isSelected && <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black ${currentTheme.checkCircle}`}>✓</div>}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
