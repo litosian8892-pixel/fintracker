@@ -767,26 +767,74 @@ export default function DebtsTab({
                     const daysLeft = getDaysLeft(sub.nextDueDate);
                     const isOverdue = daysLeft < 0; const isToday = daysLeft === 0;
                     return (
-                      <div key={sub.id} className={`relative overflow-hidden p-5 rounded-[24px] border shadow-sm transition-all duration-200 text-left before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-blue-500 ${isOverdue ? 'bg-red-50/20 border-red-200/60' : isToday ? 'bg-amber-50/20 border-amber-200/60' : 'bg-white dark:bg-slate-900 border-slate-200/80'}`}>
+                      <div 
+                        key={sub.id} 
+                        className={`relative overflow-hidden p-5 rounded-[24px] border shadow-sm transition-all duration-200 text-left before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-blue-500 ${
+                          isOverdue 
+                            ? 'bg-red-50/20 dark:bg-red-900/10 border-red-200/60 dark:border-red-800/30' 
+                            : isToday 
+                              ? 'bg-amber-50/20 dark:bg-amber-900/10 border-amber-200/60 dark:border-amber-800/30' 
+                              : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800/80'
+                        }`}
+                      >
                         <div className="flex justify-between items-start mb-3.5 pl-2">
                           <div className="flex items-center gap-3">
-                            <div className={`p-2.5 rounded-xl flex items-center justify-center ${isOverdue ? 'bg-red-100 text-red-500' : isToday ? 'bg-amber-100 text-amber-500' : 'bg-slate-100 text-slate-500'}`}><Calendar size={18} /></div>
+                            <div className={`p-2.5 rounded-xl flex items-center justify-center ${
+                              isOverdue 
+                                ? 'bg-red-100 dark:bg-red-900/40 text-red-500 dark:text-red-400' 
+                                : isToday 
+                                  ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-500 dark:text-amber-400' 
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                            }`}>
+                              <Calendar size={18} />
+                            </div>
                             <div>
-                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{sub.name}</h4>
-                              <p className="text-[10px] font-black mt-0.5 text-blue-600">{isPrivacyMode ? 'Rp •••••••' : `Rp ${sub.amount.toLocaleString('id-ID')}`} <span className="text-slate-400 font-medium text-[9px] uppercase tracking-wider">/ {sub.cycle === 'monthly' ? 'Bulan' : 'Tahun'}</span></p>
+                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight tracking-tight">{sub.name}</h4>
+                              <p className="text-[10px] font-black mt-0.5 text-blue-600 dark:text-blue-400">
+                                {isPrivacyMode ? 'Rp •••••••' : `Rp ${sub.amount.toLocaleString('id-ID')}`} <span className="text-slate-400 dark:text-slate-500 font-medium text-[9px] uppercase tracking-wider">/ {sub.cycle === 'monthly' ? 'Bulan' : 'Tahun'}</span>
+                              </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200/50">
-                            <button onClick={() => startEditSub(sub)} className="p-1 text-slate-400 hover:text-blue-500"><Pencil size={13}/></button>
-                            <button onClick={() => handleDeleteSubscription(sub.id)} className="p-1 text-slate-400 hover:text-red-500"><Trash2 size={13}/></button>
+                          
+                          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800">
+                            <button onClick={() => startEditSub(sub)} className="p-1 text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer transition-all"><Pencil size={13}/></button>
+                            <button onClick={() => handleDeleteSubscription(sub.id)} className="p-1 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 cursor-pointer transition-all"><Trash2 size={13}/></button>
                           </div>
                         </div>
-                        <div className={`p-2.5 rounded-xl flex items-center justify-between text-[10px] font-bold border mb-3.5 ml-2 ${isOverdue ? 'bg-red-50/50 border-red-200/50 text-red-700' : isToday ? 'bg-amber-50/50 border-amber-200/50 text-amber-700' : 'bg-slate-50 border-slate-200/50 text-slate-500'}`}>
-                          <div className="flex items-center gap-1.5 pl-0.5">{isOverdue ? <AlertCircle size={14}/> : <CalendarClock size={14}/>}<span>Tempo: {new Date(sub.nextDueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span></div>
-                          <span className={`px-2 py-0.5 rounded text-[8.5px] uppercase tracking-widest font-black ${isOverdue ? 'bg-red-100 text-red-700 animate-pulse' : isToday ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'}`}>{isOverdue ? `Lewat ${Math.abs(daysLeft)} Hari` : isToday ? 'HARI INI' : `${daysLeft} Hari`}</span>
+
+                        <div className={`p-2.5 rounded-xl flex items-center justify-between text-[10px] font-bold border mb-3.5 ml-2 ${
+                          isOverdue 
+                            ? 'bg-red-50/50 dark:bg-red-900/15 border-red-200/50 dark:border-red-800/30 text-red-700 dark:text-red-400' 
+                            : isToday 
+                              ? 'bg-amber-50/50 dark:bg-amber-900/15 border-amber-200/50 dark:border-amber-800/30 text-amber-700 dark:text-amber-400' 
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200/50 dark:border-slate-800 text-slate-500 dark:text-slate-400'
+                        }`}>
+                          <div className="flex items-center gap-1.5 pl-0.5">
+                            {isOverdue ? <AlertCircle size={14}/> : <CalendarClock size={14}/>}
+                            <span>Tempo: {new Date(sub.nextDueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded text-[8.5px] uppercase tracking-widest font-black ${
+                            isOverdue 
+                              ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-400 animate-pulse' 
+                              : isToday 
+                                ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-400' 
+                                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                          }`}>
+                            {isOverdue ? `Lewat ${Math.abs(daysLeft)} Hari` : isToday ? 'HARI INI' : `${daysLeft} Hari`}
+                          </span>
                         </div>
+
                         <div className="flex gap-2 pl-2">
-                          <button onClick={() => { if(confirm(`Konfirmasi pembayaran ${sub.name}?`)) handlePaySubscription(sub); }} className={`flex-1 py-3 rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-1.5 ${isOverdue || isToday ? 'bg-blue-600 text-white' : currentTheme.payBtnInactive}`}><CreditCard size={14} /> 1-Click Pay</button>
+                          <button 
+                            onClick={() => { if(confirm(`Konfirmasi pembayaran ${sub.name} (Rp ${sub.amount.toLocaleString('id-ID')})?\nSaldo dompet otomatis terpotong dan jatuh tempo diperpanjang.`)) handlePaySubscription(sub); }} 
+                            className={`flex-1 py-3 rounded-xl text-xs font-bold shadow-sm cursor-pointer flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] ${
+                              isOverdue || isToday 
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                : currentTheme.payBtnInactive
+                            }`}
+                          >
+                            <CreditCard size={14} /> 1-Click Pay
+                          </button>
                         </div>
                       </div>
                     );
