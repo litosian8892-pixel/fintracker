@@ -589,16 +589,16 @@ export default function DebtsTab({
                       <div key={pl.id} className="bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden flex flex-col">
                         <div className="p-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-[10px] bg-slate-800 shadow-sm">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-[10px] bg-slate-800 dark:bg-slate-700 shadow-sm">
                               {pl.platform.slice(0,2).toUpperCase()}
                             </div>
                             <div>
                               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs leading-none mb-1">{pl.platform}</h4>
-                              <p className="text-[10px] font-medium text-slate-500 truncate max-w-[150px]">{pl.itemName}</p>
+                              <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate max-w-[150px]">{pl.itemName}</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Status Tenor</p>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Status Tenor</p>
                             {pl.tenor === 1 ? (
                               <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50">1x Lunas</span>
                             ) : (
@@ -611,11 +611,11 @@ export default function DebtsTab({
 
                         <div className="p-4 bg-slate-50/50 dark:bg-slate-950/30 flex items-end justify-between">
                           <div>
-                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Tagihan Saat Ini</p>
+                            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Tagihan Saat Ini</p>
                             <h3 className="text-xl font-black text-slate-800 dark:text-white leading-none">
                               {isPrivacyMode ? 'Rp •••••' : `Rp ${monthlyBill.toLocaleString('id-ID')}`}
                             </h3>
-                            <p className="text-[10px] font-bold mt-2 text-slate-500">
+                            <p className="text-[10px] font-bold mt-2 text-slate-500 dark:text-slate-400">
                               Sisa Pokok: Rp {(pl.totalAmount - pl.paidAmount).toLocaleString('id-ID')}
                             </p>
                           </div>
@@ -696,20 +696,25 @@ export default function DebtsTab({
                       const isPaid = debt.status === "paid";
                       const overdue = !isPaid && isOverdue(debt.dueDate || "");
                       return (
-                        <div key={debt.id} onClick={() => setSelectedDebtId(debt.id)} className={`relative overflow-hidden bg-white dark:bg-slate-900 p-4 rounded-[20px] border shadow-sm transition-all duration-200 hover:scale-[1.01] cursor-pointer flex flex-col justify-between ${isPaid ? "border-emerald-200 bg-emerald-50/10 before:bg-emerald-500" : "border-slate-100 dark:border-slate-800 before:bg-" + (activeType === "debt" ? "red-500" : "emerald-500")} before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px]`}>
+                        <div key={debt.id} onClick={() => setSelectedDebtId(debt.id)} className={`relative overflow-hidden bg-white dark:bg-slate-900 p-4 rounded-[20px] border shadow-sm transition-all duration-200 hover:scale-[1.01] hover:shadow-md cursor-pointer flex flex-col justify-between ${isPaid ? "border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/10 dark:bg-emerald-900/10 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-emerald-500" : "border-slate-100 dark:border-slate-800 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] " + (activeType === "debt" ? "before:bg-red-500" : "before:bg-emerald-500")}`}>
                           <div className="flex justify-between items-start pl-1.5">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-slate-100 dark:bg-slate-800 text-orange-600 rounded-lg flex items-center justify-center font-black text-xs shrink-0">{debt.personName.charAt(0).toUpperCase()}</div>
+                              <div className="w-8 h-8 bg-slate-100 dark:bg-slate-800 text-orange-600 dark:text-orange-400 rounded-lg flex items-center justify-center font-black text-xs shrink-0">{debt.personName.charAt(0).toUpperCase()}</div>
                               <div className="min-w-0">
                                 <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight truncate">{debt.personName}</h4>
+                                {debt.note && <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold truncate leading-none my-1" title={debt.note}>{debt.note}</p>}
                                 <div className="flex gap-0.5 items-center mt-0.5">
-                                  <span className={`text-[8px] font-black shrink-0 ${activeType === 'debt' ? 'text-orange-500' : 'text-emerald-500'}`}>{Math.round(percentage)}%</span>
+                                  {[1, 2, 3, 4].map((seg) => { const filled = percentage >= seg * 25; return ( <span key={seg} className={`w-1 h-2 rounded-[1px] ${filled ? (activeType === 'debt' ? 'bg-orange-500' : 'bg-emerald-500') : 'bg-slate-200 dark:bg-slate-800'}`} /> ); })}
+                                  <span className={`text-[8px] font-black ml-1 shrink-0 ${activeType === 'debt' ? 'text-orange-500 dark:text-orange-400' : 'text-emerald-500 dark:text-emerald-400'}`}>{Math.round(percentage)}%</span>
                                 </div>
                               </div>
                             </div>
                           </div>
                           <div className="mt-3 pl-1.5 space-y-0.5">
-                            <h3 className="text-sm font-black text-slate-800 dark:text-white truncate">{isPrivacyMode ? 'Rp •••••' : `Rp ${(debt.amount - debt.paidAmount).toLocaleString('id-ID')}`}</h3>
+                            <h3 className="text-sm font-black text-slate-800 dark:text-white leading-none truncate">{isPrivacyMode ? 'Rp •••••' : `Rp ${(debt.amount - debt.paidAmount).toLocaleString('id-ID')}`}</h3>
+                            {(debt as any).originalCurrency && (debt as any).originalCurrency !== "IDR" && (
+                              <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 truncate">Asli: <span className={currentTheme.text}>{(debt as any).originalCurrency} {Math.max(0, (debt as any).originalAmount - (debt.paidAmount / ((debt as any).exchangeRate || 1))) .toLocaleString('id-ID', {maximumFractionDigits:2})}</span></p>
+                            )}
                             <p className="text-[8px] text-slate-500 dark:text-slate-400 font-bold truncate">{debt.dueDate ? `Tempo: ${new Date(debt.dueDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}` : "No Tempo"}{overdue && " ⚠️"}</p>
                           </div>
                         </div>
@@ -721,9 +726,8 @@ export default function DebtsTab({
                     {currentDebtsList.map(debt => {
                       const percentage = Math.min((debt.paidAmount / debt.amount) * 100, 100);
                       const isPaid = debt.status === "paid";
-                      const overdue = !isPaid && isOverdue(debt.dueDate || "");
                       return (
-                        <div key={debt.id} onClick={() => setSelectedDebtId(debt.id)} className="p-4 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all cursor-pointer text-left pl-5 relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-slate-200 dark:before:bg-slate-700">
+                        <div key={debt.id} onClick={() => setSelectedDebtId(debt.id)} className={`p-4 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all cursor-pointer text-left pl-5 relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] ${isPaid ? "before:bg-emerald-500" : activeType === "debt" ? "before:bg-red-500" : "before:bg-emerald-500"}`}>
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 bg-slate-100 dark:bg-slate-800 text-orange-600 dark:text-orange-400 rounded-lg flex items-center justify-center font-black text-xs">{debt.personName.charAt(0).toUpperCase()}</div>
                             <div>
