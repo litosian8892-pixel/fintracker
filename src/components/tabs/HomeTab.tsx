@@ -3435,6 +3435,11 @@ export default function HomeTab({
                   onClick={() => {
                     triggerHaptic();
                     setPFormCategory(cat.name);
+                    // 🪄 SMART AUTO-SYNC: Emoji pintasan otomatis mengikuti icon kategori yang dipilih!
+                    const matchedIcon = cat.icon || getCategoryIcon(cat.name);
+                    if (matchedIcon) {
+                      setPFormIcon(matchedIcon);
+                    }
                     setShowPresetCatModal(false);
                   }}
                   className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center justify-between ${
