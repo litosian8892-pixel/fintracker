@@ -3338,17 +3338,37 @@ export default function HomeTab({
             </div>
 
             {pFormHasQuota && (
-              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
-                <label className="text-[10px] font-bold text-slate-500">Jumlah Porsi Awal:</label>
-                <div className="flex items-center gap-1.5 w-28">
+              <div className="pt-2.5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-3">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Jumlah Porsi Awal:</label>
+                <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 rounded-xl">
+                  <button 
+                    type="button" 
+                    onClick={() => { 
+                      triggerHaptic(); 
+                      setPFormQuotaCount(prev => Math.max(1, (parseInt(prev, 10) || 1) - 1).toString()); 
+                    }} 
+                    className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-black text-xs flex items-center justify-center active:scale-90 transition-transform cursor-pointer shadow-xs"
+                  >
+                    -
+                  </button>
                   <input
-                    type="number"
-                    min="1"
-                    className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-black text-center outline-none text-slate-800 dark:text-white"
+                    type="text"
+                    inputMode="numeric"
+                    className="w-8 bg-transparent text-xs font-black text-center outline-none text-slate-800 dark:text-white"
                     value={pFormQuotaCount}
-                    onChange={e => setPFormQuotaCount(e.target.value)}
+                    onChange={e => setPFormQuotaCount(e.target.value.replace(/[^0-9]/g, ''))}
                   />
-                  <span className="text-[10px] font-bold text-slate-400">Porsi</span>
+                  <button 
+                    type="button" 
+                    onClick={() => { 
+                      triggerHaptic(); 
+                      setPFormQuotaCount(prev => ((parseInt(prev, 10) || 0) + 1).toString()); 
+                    }} 
+                    className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-black text-xs flex items-center justify-center active:scale-90 transition-transform cursor-pointer shadow-xs"
+                  >
+                    +
+                  </button>
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 pr-1.5">Porsi</span>
                 </div>
               </div>
             )}
