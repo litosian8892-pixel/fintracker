@@ -148,10 +148,43 @@ const generateGradientStops = (data: any[], dataKey: string) => {
   return stops;
 };
 
+// 🎨 KATALOG LOGO RESMI BANK & FINTECH INDONESIA (VEKTOR HD & 100% OFFLINE)
+const svgToUri = (svgStr: string) => `data:image/svg+xml;utf8,${encodeURIComponent(svgStr.trim())}`;
+
+const BRAND_PRESETS = [
+  // BANK BUMN & SWASTA
+  { id: "bca", name: "BCA", category: "Bank", keywords: ["bca", "tahapan"], bg: "#003893", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#003893"/><text x="50" y="62" fill="white" font-size="34" font-family="system-ui, sans-serif" font-weight="900" text-anchor="middle" letter-spacing="-1">BCA</text></svg>` },
+  { id: "mandiri", name: "Mandiri", category: "Bank", keywords: ["mandiri", "livin"], bg: "#003d79", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#003d79"/><path d="M22 62c8-18 26-26 40-12 5 5 12 7 16 3-8 18-26 26-40 12-5-5-12-7-16-3z" fill="#ffb800"/><text x="50" y="44" fill="white" font-size="20" font-family="system-ui, sans-serif" font-weight="900" text-anchor="middle">mandiri</text></svg>` },
+  { id: "bri", name: "BRI", category: "Bank", keywords: ["bri", "brimo"], bg: "#00529c", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#00529c"/><text x="50" y="62" fill="white" font-size="34" font-family="system-ui, sans-serif" font-weight="900" text-anchor="middle" letter-spacing="1">BRI</text></svg>` },
+  { id: "bni", name: "BNI", category: "Bank", keywords: ["bni"], bg: "#005e6a", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#005e6a"/><text x="50" y="62" fill="#f15a24" font-size="34" font-family="system-ui, sans-serif" font-weight="900" text-anchor="middle">BNI</text></svg>` },
+  { id: "bsi", name: "BSI", category: "Bank", keywords: ["bsi", "syariah"], bg: "#00a39d", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#00a39d"/><circle cx="50" cy="38" r="14" fill="#78be20"/><text x="50" y="74" fill="white" font-size="24" font-family="system-ui, sans-serif" font-weight="900" text-anchor="middle">BSI</text></svg>` },
+  { id: "cimb", name: "CIMB Niaga", category: "Bank", keywords: ["cimb", "niaga", "octo"], bg: "#ed1c24", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#7a0019"/><polygon points="25,50 65,25 65,75" fill="#ed1c24"/><polygon points="45,50 75,32 75,68" fill="white"/></svg>` },
+  
+  // BANK DIGITAL
+  { id: "jago", name: "Bank Jago", category: "Digital", keywords: ["jago"], bg: "#8528ff", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#8528ff"/><circle cx="42" cy="42" r="18" fill="#ffb800"/><path d="M42 42h26v24c0 10-8 18-18 18s-18-8-18-18" fill="white"/></svg>` },
+  { id: "blu", name: "blu by BCA", category: "Digital", keywords: ["blu"], bg: "#00d2d3", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#0052cc"/><circle cx="50" cy="50" r="30" fill="#00d2d3"/><text x="50" y="58" fill="white" font-size="26" font-family="system-ui, sans-serif" font-weight="900" text-anchor="middle">blu</text></svg>` },
+  { id: "seabank", name: "SeaBank", category: "Digital", keywords: ["seabank", "sea bank"], bg: "#ff5722", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#ff5722"/><circle cx="50" cy="42" r="16" fill="white"/><path d="M26 68c8-12 24-12 32 0 8-12 24-12 32 0" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/></svg>` },
+  { id: "jenius", name: "Jenius", category: "Digital", keywords: ["jenius", "btpn"], bg: "#00a4e4", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#00a4e4"/><text x="50" y="65" fill="white" font-size="52" font-family="system-ui, sans-serif" font-weight="900" text-anchor="middle">$J</text></svg>` },
+
+  // E-WALLET
+  { id: "gopay", name: "GoPay", category: "E-Wallet", keywords: ["gopay", "gojek", "goto"], bg: "#00aed6", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#00aed6"/><circle cx="50" cy="50" r="28" stroke="white" stroke-width="11" fill="none"/><circle cx="50" cy="50" r="11" fill="white"/></svg>` },
+  { id: "ovo", name: "OVO", category: "E-Wallet", keywords: ["ovo"], bg: "#4c3494", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#4c3494"/><text x="50" y="62" fill="white" font-size="30" font-family="system-ui, sans-serif" font-weight="900" text-anchor="middle" letter-spacing="2">OVO</text></svg>` },
+  { id: "dana", name: "DANA", category: "E-Wallet", keywords: ["dana"], bg: "#108ee9", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#108ee9"/><text x="50" y="62" fill="white" font-size="28" font-family="system-ui, sans-serif" font-weight="900" text-anchor="middle" letter-spacing="1">DANA</text></svg>` },
+  { id: "shopeepay", name: "ShopeePay", category: "E-Wallet", keywords: ["shopeepay", "spay", "shopee"], bg: "#ee4d2d", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#ee4d2d"/><path d="M72 38h-8a18 18 0 0 0-36 0h-8c-4 0-8 4-8 8v30c0 4 4 8 8 8h52c4 0 8-4 8-8V46c0-4-4-8-8-8zm-26-10a10 10 0 0 1 10 10H36a10 10 0 0 1 10-10zm11 34c-1 2-3 4-6 5-3 1-6 1-9 0-3-1-5-3-6-5l4-3c1 2 2 3 4 4s4 0 6 0 3-2 4-3c1-2 0-4-1-5l-6-3c-3-1-5-3-7-4-1-2-2-4-1-6 1-3 3-4 5-5s6-1 8 0c3 1 5 3 6 5l-4 3c-1-1-2-2-3-3s-3 0-5 0c-2 1-3 2-3 3s0 3 2 4l6 3c3 1 6 3 8 5s2 4 1 6z" fill="white"/></svg>` },
+  { id: "linkaja", name: "LinkAja", category: "E-Wallet", keywords: ["linkaja", "link aja"], bg: "#e31e24", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#e31e24"/><circle cx="38" cy="50" r="16" fill="white"/><circle cx="62" cy="50" r="16" fill="#ffb800"/></svg>` },
+
+  // INVESTASI, CRYPTO & CASH
+  { id: "bibit", name: "Bibit", category: "Investasi", keywords: ["bibit", "reksadana"], bg: "#18a058", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#18a058"/><circle cx="50" cy="50" r="26" fill="white"/><path d="M50 34v32M40 44c4-6 10-6 10-6s6 0 10 6" stroke="#18a058" stroke-width="5" stroke-linecap="round" fill="none"/></svg>` },
+  { id: "ajaib", name: "Ajaib", category: "Investasi", keywords: ["ajaib", "saham"], bg: "#0066f5", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#0066f5"/><polygon points="50,22 59,42 81,42 63,55 70,76 50,63 30,76 37,55 19,42 41,42" fill="white"/></svg>` },
+  { id: "emas", name: "Emas Antam", category: "Investasi", keywords: ["emas", "antam", "gold"], bg: "#b8860b", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#b8860b"/><polygon points="50,20 80,35 80,65 50,80 20,65 20,35" fill="#ffd700"/><text x="50" y="58" fill="#5c4300" font-size="22" font-family="system-ui, sans-serif" font-weight="900" text-anchor="middle">AU</text></svg>` },
+  { id: "crypto", name: "Bitcoin / Kripto", category: "Investasi", keywords: ["btc", "bitcoin", "crypto", "kripto", "eth"], bg: "#f7931a", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#f7931a"/><text x="50" y="68" fill="white" font-size="52" font-family="system-ui, sans-serif" font-weight="900" text-anchor="middle">₿</text></svg>` },
+  { id: "cash", name: "Uang Tunai / Cash", category: "Cash", keywords: ["cash", "tunai", "dompet", "fisik"], bg: "#10b981", svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#10b981"/><rect x="20" y="30" width="60" height="40" rx="6" fill="white"/><circle cx="50" cy="50" r="10" fill="#10b981"/></svg>` }
+];
+
 interface AssetsTabProps {
   accounts: AccountData[]; walletTypes: WalletTypeData[];
   accType: string; setAccType: (val: string) => void; accName: string; setAccName: (val: string) => void; accBalance: string; setAccBalance: (val: string) => void;
-  accLogo: string; handleLogoUpload: (e: React.ChangeEvent<HTMLInputElement>, isEdit?: boolean) => void;
+  accLogo: string; setAccLogo?: (val: string) => void; handleLogoUpload: (e: React.ChangeEvent<HTMLInputElement>, isEdit?: boolean) => void;
   accIsSavings: boolean; setAccIsSavings: (val: boolean) => void; accTargetBalance: string; setAccTargetBalance: (val: string) => void;
   accExcludeFromTotal: boolean; setAccExcludeFromTotal: (val: boolean) => void; editAccExcludeFromTotal: boolean; setEditAccExcludeFromTotal: (val: boolean) => void;
   accIsBusiness: boolean; setAccIsBusiness: (val: boolean) => void; editAccIsBusiness: boolean; setEditAccIsBusiness: (val: boolean) => void;
@@ -171,7 +204,7 @@ interface AssetsTabProps {
 }
 
 export default function AssetsTab({
-  accounts, walletTypes, accType, setAccType, accName, setAccName, accBalance, setAccBalance, accLogo, handleLogoUpload,
+  accounts, walletTypes, accType, setAccType, accName, setAccName, accBalance, setAccBalance, accLogo, setAccLogo, handleLogoUpload,
   accIsSavings, setAccIsSavings, accTargetBalance, setAccTargetBalance, accExcludeFromTotal, setAccExcludeFromTotal, editAccExcludeFromTotal, setEditAccExcludeFromTotal,
   accIsBusiness, setAccIsBusiness, editAccIsBusiness, setEditAccIsBusiness, handleCreateAccount, editingAccId, setEditingAccId,
   editAccName, setEditAccName, editAccBalance, setEditAccBalance, editAccLogo, setEditAccLogo, editAccIsSavings, setEditAccIsSavings,
@@ -201,6 +234,34 @@ export default function AssetsTab({
   const [newRateInput, setNewRateInput] = useState("");
   const [localAccAccountNumber, setLocalAccAccountNumber] = useState("");
   const [localEditAccAccountNumber, setLocalEditAccAccountNumber] = useState("");
+
+  // 🏛️ STATE KATALOG LOGO RESMI
+  const [showLogoPicker, setShowLogoPicker] = useState(false);
+  const [logoSearchQuery, setLogoSearchQuery] = useState("");
+  const [selectedLogoCategory, setSelectedLogoCategory] = useState<string>("Semua");
+
+  // 🪄 SMART AUTO-DETECT: Pasang Logo Otomatis Saat Mengetik Nama Dompet
+  const handleNameChangeWithAutoDetect = (val: string, isEdit: boolean) => {
+    if (isEdit) {
+      setEditAccName(val);
+    } else {
+      setAccName(val);
+    }
+
+    const lower = val.toLowerCase().trim();
+    if (!lower) return;
+
+    // Cari kecocokan kata kunci (BCA, GoPay, Mandiri, dll)
+    const matched = BRAND_PRESETS.find(b => b.keywords.some(k => lower.includes(k)));
+    if (matched) {
+      const uri = svgToUri(matched.svg);
+      if (isEdit) {
+        setEditAccLogo(uri);
+      } else if (setAccLogo) {
+        setAccLogo(uri);
+      }
+    }
+  };
 
   const [localBalanceOverride, setLocalBalanceOverride] = useState<Record<string, number>>({});
   const [localNameOverride, setLocalNameOverride] = useState<Record<string, string>>({});
@@ -1000,8 +1061,17 @@ export default function AssetsTab({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">Nama { (editingAccId ? editIsInv : isInv) ? 'Aset / Koin / Saham' : 'Dompet' }</label>
-                    <input type="text" placeholder={(editingAccId ? editIsInv : isInv) ? 'Contoh: Bitcoin, Saham BBCA' : 'Contoh: BCA, Gopay'} className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100" value={editingAccId ? editAccName : accName} onChange={(e) => editingAccId ? setEditAccName(e.target.value) : setAccName(e.target.value)} />
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1 flex justify-between">
+                      <span>Nama { (editingAccId ? editIsInv : isInv) ? 'Aset / Koin / Saham' : 'Dompet' }</span>
+                      <span className="text-[8px] text-blue-500 font-bold">✨ Auto-Detect Logo</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      placeholder={(editingAccId ? editIsInv : isInv) ? 'Contoh: Bitcoin, Saham BBCA' : 'Ketik BCA, Mandiri, GoPay, Jago...'} 
+                      className="w-full p-3.5 bg-white dark:bg-slate-950 rounded-xl text-xs border border-slate-200 dark:border-slate-800 outline-none font-bold text-slate-800 dark:text-slate-100 focus:border-blue-500" 
+                      value={editingAccId ? editAccName : accName} 
+                      onChange={(e) => handleNameChangeWithAutoDetect(e.target.value, !!editingAccId)} 
+                    />
                   </div>
 
                   {/* FORM INPUT NOMOR REKENING */}
@@ -1111,14 +1181,45 @@ export default function AssetsTab({
                     </div>
                   )}
 
-                  <div className="flex flex-col gap-1 pt-1 text-left">
-                    <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Logo (Opsional)</label>
-                    <div className="flex items-center gap-3 bg-white dark:bg-slate-950 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                  {/* 🏛️ PILIHAN LOGO MEWAH: KATALOG RESMI + UPLOAD KUSTOM */}
+                  <div className="flex flex-col gap-1.5 pt-1 text-left">
+                    <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Logo Dompet</label>
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { triggerHaptic(); setShowLogoPicker(true); }}
+                        className={`flex-1 p-3 rounded-xl border flex items-center justify-center gap-2 text-xs font-black cursor-pointer transition-all active:scale-95 shadow-sm ${currentTheme.bgLight} ${currentTheme.text} ${currentTheme.border}`}
+                      >
+                        <span>🏛️</span> Pilih Logo Bank Resmi
+                      </button>
+
                       <input type="file" accept="image/*" onChange={(e) => handleLogoUpload(e, !!editingAccId)} className="hidden" id="custom-logo-file" />
-                      <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 p-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"><Upload size={14}/> Pilih</label>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{(editingAccId ? editAccLogo : accLogo) ? "Siap Diunggah ✅" : "Maks 500KB"}</span>
-                      {(editingAccId ? editAccLogo : accLogo) && <button type="button" onClick={() => editingAccId ? setEditAccLogo("") : null} className="text-red-500 hover:text-red-700 text-[10px] font-bold cursor-pointer">Hapus</button>}
+                      <label htmlFor="custom-logo-file" className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 p-3 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shrink-0" title="Upload Logo Kustom">
+                        <Upload size={14}/> Upload
+                      </label>
                     </div>
+
+                    {/* Kotak Preview Logo yang Terpasang */}
+                    {(editingAccId ? editAccLogo : accLogo) && (
+                      <div className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 mt-1">
+                        <div className="flex items-center gap-2.5">
+                          <img src={editingAccId ? editAccLogo : accLogo} alt="Logo" className="w-8 h-8 rounded-lg object-contain bg-white shadow-xs" />
+                          <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">Logo Terpasang Sempurna ✅</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            triggerHaptic();
+                            if (editingAccId) setEditAccLogo("");
+                            else if (setAccLogo) setAccLogo("");
+                          }}
+                          className="text-red-500 hover:text-red-600 text-[10px] font-bold cursor-pointer px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 pt-3">
@@ -1269,6 +1370,90 @@ export default function AssetsTab({
             </div>
           </div>
         </>
+      )}
+
+      {/* 🏛️ MODAL GALERI KATALOG LOGO RESMI BANK & FINTECH */}
+      {showLogoPicker && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowLogoPicker(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh] border border-slate-200 dark:border-slate-800 text-left" onClick={e => e.stopPropagation()}>
+            
+            {/* Header Modal */}
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🏛️</span>
+                <div>
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm leading-none">Katalog Logo Resmi</h3>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1">Pilih bank, e-wallet, atau aset Anda</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setShowLogoPicker(false)} className="p-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full cursor-pointer hover:bg-slate-300 transition-colors"><X size={14}/></button>
+            </div>
+
+            {/* Kolom Pencarian & Kategori */}
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3 shrink-0">
+              <input 
+                type="text" 
+                placeholder="Cari logo (cth: BCA, GoPay, Jago, Emas)..." 
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white"
+                value={logoSearchQuery}
+                onChange={e => setLogoSearchQuery(e.target.value)}
+                autoFocus
+              />
+
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                {["Semua", "Bank", "Digital", "E-Wallet", "Investasi", "Cash"].map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => { triggerHaptic(); setSelectedLogoCategory(cat); }}
+                    className={`px-3 py-1 rounded-lg text-[10px] font-black shrink-0 transition-all cursor-pointer ${
+                      selectedLogoCategory === cat 
+                        ? currentTheme.activePill 
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:text-slate-400"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Grid Kartu Logo Resmi */}
+            <div className="p-4 overflow-y-auto no-scrollbar grid grid-cols-3 sm:grid-cols-4 gap-3 flex-1">
+              {BRAND_PRESETS
+                .filter(b => {
+                  const matchSearch = b.name.toLowerCase().includes(logoSearchQuery.toLowerCase()) || b.keywords.some(k => k.includes(logoSearchQuery.toLowerCase()));
+                  const matchCat = selectedLogoCategory === "Semua" || b.category === selectedLogoCategory;
+                  return matchSearch && matchCat;
+                })
+                .map(brand => {
+                  const dataUri = svgToUri(brand.svg);
+                  return (
+                    <button
+                      key={brand.id}
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic();
+                        if (editingAccId) {
+                          setEditAccLogo(dataUri);
+                        } else if (setAccLogo) {
+                          setAccLogo(dataUri);
+                        }
+                        setShowLogoPicker(false);
+                      }}
+                      className="p-3 bg-slate-50 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs group"
+                    >
+                      <img src={dataUri} alt={brand.name} className="w-11 h-11 rounded-xl object-contain drop-shadow-sm" />
+                      <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 text-center truncate w-full group-hover:text-blue-500">
+                        {brand.name}
+                      </span>
+                    </button>
+                  );
+                })}
+            </div>
+
+          </div>
+        </div>
       )}
 
     </div>
