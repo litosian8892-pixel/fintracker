@@ -647,17 +647,14 @@ export default function HomeTab({
   const [showPresetAccModal, setShowPresetAccModal] = useState(false);
   const [presetCatSearchQuery, setPresetCatSearchQuery] = useState("");
 
-  // ⚡ STATE LEMBAR PREVIEW CEPAT (SEBELUM DICATAT)
-  const [activePresetPreview, setActivePresetPreview] = useState<QuickPresetData | null>(null);
-  const [previewAmount, setPreviewAmount] = useState("");
-  const [previewNote, setPreviewNote] = useState("");
-  const [previewAccountId, setPreviewAccountId] = useState("");
+  // ⚡ SINKRONISASI PINTASAN DENGAN LACI TRANSAKSI UTAMA (GAMBAR 2)
+  const [activePresetSourceId, setActivePresetSourceId] = useState<string | null>(null);
 
-  // Buka Sheet Preview Cepat Saat Tombol Pintasan Ditekan
-  const handleOpenPresetPreview = (preset: QuickPresetData) => {
+  // Saat tombol pintasan diklik, isi otomatis form utama dan buka laci transaksi!
+  const handleTriggerPreset = (preset: QuickPresetData) => {
     triggerHaptic();
-    
-    // Cek jika kuota habis
+
+    // Cek kuota habis
     if (preset.quota !== null && preset.quota !== undefined && preset.quota <= 0) {
       const confirmTopUp = confirm(`Kuota "${preset.name}" sudah habis (0x)!\n\nApakah Anda ingin mengisi ulang +5 porsi sekarang?`);
       if (confirmTopUp) {
@@ -666,89 +663,27 @@ export default function HomeTab({
       return;
     }
 
-    setActivePresetPreview(preset);
-    setPreviewAmount(preset.amount.toString());
-    setPreviewNote(preset.note || preset.name);
-    setPreviewAccountId(preset.accountId || accounts.find(a => !a.isSavings)?.id || accounts[0]?.id || "");
-  };
+    // 1. Simpan ID preset agar kuotanya berkurang saat user klik "Simpan Transaksi"
+    setActivePresetSourceId(preset.id);
 
-  // 🪄 EKSEKUSI SIMPAN SETELAH PREVIEW DIKONFIRMASI
-  const handleExecutePresetConfirm = async () => {
-    if (!activePresetPreview || isLoggingPreset) return;
-
-    const parsedAmount = safeEvaluate(previewAmount);
-    if (parsedAmount <= 0) return alert("Nominal transaksi tidak valid!");
-
-    const currentUser = auth.currentUser;
-    if (!currentUser) return alert("Sesi login tidak aktif.");
-
-    let targetAcc = accounts.find(a => a.id === previewAccountId);
-    if (!targetAcc) {
-      targetAcc = accounts.find(a => !a.isSavings) || accounts[0];
+    // 2. Isi form transaksi utama secara otomatis (Pre-fill persis data pintasan)
+    setTType("expense");
+    setTAmount(preset.amount.toString());
+    setTNote(preset.note || preset.name);
+    if (preset.accountId) {
+      setTAccountId(preset.accountId);
+    } else {
+      const defaultAcc = accounts.find(a => !a.isSavings)?.id || accounts[0]?.id || "";
+      setTAccountId(defaultAcc);
     }
-    if (!targetAcc) return alert("Belum ada dompet aktif untuk memotong saldo!");
+    setTCategory(preset.category || "Makanan");
 
-    // Overdraft Protection
-    if (targetAcc.balance < parsedAmount) {
-      triggerHaptic();
-      return alert(`Transaksi Ditolak!\nSaldo dompet "${targetAcc.name}" tidak mencukupi.\nSisa saldo: ${formatCurrencyTerbaca(targetAcc.balance.toString(), targetAcc.currency)}`);
-    }
-
-    setIsLoggingPreset(activePresetPreview.id);
-    triggerHaptic();
-
-    try {
-      const batch = writeBatch(db);
-
-      // 1. Potong saldo dompet sumber dana
-      const accRef = doc(db, `users/${currentUser.uid}/accounts/${targetAcc.id}`);
-      batch.update(accRef, { balance: increment(-parsedAmount) });
-
-      // 2. Buat transaksi pengeluaran otomatis di Firestore
-      const now = new Date();
-      const exactTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      const txRef = doc(collection(db, `users/${currentUser.uid}/transactions`));
-
-      const cleanNote = previewNote.trim() || activePresetPreview.name;
-      const matchedTags = cleanNote.match(/#[^\s]+/g) || [];
-      let extractedTags = matchedTags.map(tag => tag.replace('#', ''));
-      if (activePresetPreview.tags && activePresetPreview.tags.length > 0) {
-        extractedTags = Array.from(new Set([...extractedTags, ...activePresetPreview.tags]));
-      }
-
-      batch.set(txRef, {
-        amount: parsedAmount,
-        type: "expense",
-        accountId: targetAcc.id,
-        accountName: targetAcc.name,
-        category: activePresetPreview.category || "Makanan",
-        note: cleanNote.replace(/#[^\s]+/g, '').trim(),
-        tags: extractedTags,
-        tDate: getTodayDateString(),
-        tTime: exactTime,
-        createdAt: serverTimestamp()
-      });
-
-      await batch.commit();
-
-      // 3. Potong kuota lokal jika ada
-      let quotaInfoText = "";
-      if (activePresetPreview.quota !== null && activePresetPreview.quota !== undefined) {
-        const nextQuota = Math.max(0, activePresetPreview.quota - 1);
-        const updated = presets.map(p => p.id === activePresetPreview.id ? { ...p, quota: nextQuota } : p);
-        setPresets(updated);
-        localStorage.setItem("fintracker_quick_presets", JSON.stringify(updated));
-        quotaInfoText = ` (Sisa: ${nextQuota} porsi)`;
-      }
-
-      // Notifikasi Apple Toast
-      alert(`✨ ${activePresetPreview.name} dicatat: Rp ${parsedAmount.toLocaleString('id-ID')}${quotaInfoText}`);
-      setActivePresetPreview(null);
-    } catch (e: any) {
-      console.error(e);
-      alert("Gagal mencatat pintasan.");
-    } finally {
-      setIsLoggingPreset(null);
+    // 3. Buka laci transaksi utama (Persis Gambar 2)
+    flushSync(() => {
+      setIsDrawerOpen(true);
+    });
+    if (noteInputRef.current) {
+      noteInputRef.current.focus();
     }
   };
 
@@ -1254,7 +1189,7 @@ export default function HomeTab({
   }, [monthlyTransactions]);
 
   const formatDayHeader = (dateStr: string) => { const d = new Date(dateStr); const dayNum = d.getDate(); const dayName = d.toLocaleDateString("id-ID", { weekday: "short" }); const monthYear = d.toLocaleDateString("id-ID", { month: "2-digit", year: "numeric" }).replace(/\//g, "/"); return { dayNum, dayName, monthYear }; };
-  const closeMainDrawer = () => { setIsDrawerOpen(false); setEditingTransaction(null); setActiveKeypad(null); setNoteSuggestions([]); setShowMetricInput(false); }; // FIX: Reset state note tambahan agar otomatis tertutup untuk transaksi berikutnya
+  const closeMainDrawer = () => { setIsDrawerOpen(false); setEditingTransaction(null); setActiveKeypad(null); setNoteSuggestions([]); setShowMetricInput(false); setActivePresetSourceId(null); }; // FIX: Reset state note tambahan agar otomatis tertutup untuk transaksi berikutnya
 
   // 🔥 FITUR BARU: TOMBOL DUPLIKAT (QUICK COPY)
   const handleDuplicateClick = () => {
@@ -1552,8 +1487,7 @@ export default function HomeTab({
               <button
                 key={p.id}
                 type="button"
-                disabled={isLoggingPreset === p.id}
-                onClick={() => handleOpenPresetPreview(p)}
+                onClick={() => handleTriggerPreset(p)}
                 className={`shrink-0 flex items-center gap-2.5 p-2 pr-3.5 rounded-2xl border transition-all duration-200 cursor-pointer active:scale-95 shadow-sm group select-none ${
                   isZero
                     ? 'bg-slate-100/50 dark:bg-slate-900/40 border-slate-200/50 dark:border-slate-800 opacity-60'
@@ -2472,6 +2406,18 @@ export default function HomeTab({
                       }
                     }
 
+                    // ⚡ POTONG KUOTA PINTASAN JIKA TRANSAKSI DIBUKA DARI PINTASAN KILAT
+                    if (activePresetSourceId) {
+                      const targetPreset = presets.find(p => p.id === activePresetSourceId);
+                      if (targetPreset && targetPreset.quota !== null && targetPreset.quota !== undefined) {
+                        const nextQuota = Math.max(0, targetPreset.quota - 1);
+                        const updated = presets.map(p => p.id === activePresetSourceId ? { ...p, quota: nextQuota } : p);
+                        setPresets(updated);
+                        localStorage.setItem("fintracker_quick_presets", JSON.stringify(updated));
+                      }
+                      setActivePresetSourceId(null);
+                    }
+
                     if(splits.length > 0) handleTransaction(splits); else handleTransaction(); 
                     closeMainDrawer(); 
                   }} 
@@ -3156,108 +3102,7 @@ export default function HomeTab({
     </div>
   )}
 
-  {/* ⚡ LEMBAR PREVIEW CEPAT (SEBELUM DICATAT) */}
-  {activePresetPreview && (
-    <div className="fixed inset-0 z-[320] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setActivePresetPreview(null)}>
-      <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-t-[32px] md:rounded-[32px] shadow-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 animate-in slide-in-from-bottom duration-250 text-left" onClick={e => e.stopPropagation()}>
-        
-        {/* Header Preview */}
-        <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xl shadow-xs">
-              {activePresetPreview.icon || "⚡"}
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-black text-slate-800 dark:text-slate-100 text-sm leading-none">{activePresetPreview.name}</h3>
-                {activePresetPreview.quota !== null && activePresetPreview.quota !== undefined && (
-                  <span className="text-[8px] font-black px-1.5 py-0.2 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
-                    {activePresetPreview.quota}x Tersisa
-                  </span>
-                )}
-              </div>
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 block">
-                Kategori: {activePresetPreview.category}
-              </span>
-            </div>
-          </div>
-          <button type="button" onClick={() => setActivePresetPreview(null)} className="p-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 rounded-full cursor-pointer transition-colors"><X size={14}/></button>
-        </div>
-
-        {/* Input Cepat: Nominal & Catatan/Nama Tempat */}
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Nominal (Rp)</label>
-            <input 
-              type="text" 
-              className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-black outline-none focus:border-blue-500 text-slate-800 dark:text-white transition-colors"
-              value={previewAmount}
-              onChange={e => setPreviewAmount(e.target.value.replace(/[^0-9]/g, ''))}
-            />
-            {previewAmount && (
-              <p className="text-[9px] font-bold text-slate-400 pl-1">
-                Terbaca: <span className={`${currentTheme.text} font-black`}>{formatCurrencyTerbaca(previewAmount)}</span>
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Keterangan / Nama Tempat (Opsional)</label>
-            <input 
-              type="text" 
-              placeholder="Cth: Mall Kelapa Gading, Shell, Parkir Kantor..." 
-              className="w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold outline-none focus:border-blue-500 text-slate-800 dark:text-white transition-colors"
-              value={previewNote}
-              onChange={e => setPreviewNote(e.target.value)}
-              autoFocus
-            />
-          </div>
-
-          {/* Pemilih Dompet Cepat (Tinggal Tap) */}
-          <div className="space-y-1 pt-1">
-            <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Sumber Dana</label>
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-              {accounts.filter(a => !a.isSavings).map(acc => {
-                const isSelected = previewAccountId === acc.id;
-                return (
-                  <button
-                    key={acc.id}
-                    type="button"
-                    onClick={() => { triggerHaptic(); setPreviewAccountId(acc.id); }}
-                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black border transition-all cursor-pointer shrink-0 active:scale-95 ${
-                      isSelected ? currentTheme.activePill : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {acc.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Tombol Simpan Kilat */}
-        <div className="pt-2 flex gap-2">
-          <button
-            type="button"
-            disabled={isLoggingPreset !== null}
-            onClick={handleExecutePresetConfirm}
-            className={`flex-1 py-3.5 text-white rounded-2xl text-xs font-black shadow-lg transition-all cursor-pointer active:scale-98 border ${currentTheme.fab}`}
-          >
-            {isLoggingPreset ? "Menyimpan..." : "Catat Sekarang ✨"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActivePresetPreview(null)}
-            className="py-3.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl text-xs font-bold cursor-pointer transition-colors"
-          >
-            Batal
-          </button>
-        </div>
-
-      </div>
-    </div>
-  )}
+  
 
   {/* ⚡ MODAL KELOLA PINTASAN & ISI ULANG KUOTA */}
   {showPresetManager && (
