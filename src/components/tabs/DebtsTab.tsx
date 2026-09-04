@@ -55,25 +55,88 @@ const themeMap = {
 
 const PAYLATER_PLATFORMS = ["SPayLater", "GoPayLater", "Kredivo", "Akulaku", "Kartu Kredit"];
 
-// 🎨 BRAND STYLING ENGINE (Shopee Oranye, GoPay Hijau/Teal, Kredivo Amber, CC Ungu)
+// 🎨 BRAND STYLING ENGINE: Logo Vektor Asli (SVG) Platform Finansial Indonesia
 const getPlatformBadge = (name: string) => {
   const p = (name || "").toLowerCase();
+
+  // 1. SPayLater / Shopee (Logo Tas Belanja Oranye Khas Shopee)
   if (p.includes("spay") || p.includes("shopee")) {
-    return { bg: "bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-orange-500/20", icon: "🛍️" };
+    return {
+      bg: "bg-[#EE4D2D] text-white shadow-md shadow-orange-500/20 border border-orange-400/30",
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 8h-2.1a4.9 4.9 0 0 0-9.8 0H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-7-3a2.9 2.9 0 0 1 2.9 3H9.1A2.9 2.9 0 0 1 12 5zm3 10.2c-.3.6-.8 1.1-1.5 1.3-.7.2-1.5.2-2.2 0-.7-.2-1.3-.7-1.6-1.3a.4.4 0 0 1 .7-.4c.2.5.6.8 1.1 1 .5.1 1.1.1 1.6 0 .5-.1.9-.4 1.1-.9.2-.5 0-1-.3-1.4-.4-.4-.9-.6-1.5-.8-.8-.3-1.4-.6-1.9-1-.4-.4-.6-.9-.4-1.5.2-.6.6-1 1.2-1.3.6-.2 1.3-.2 1.9 0 .6.2 1 .6 1.3 1.2a.4.4 0 0 1-.7.4c-.2-.4-.5-.8-.9-.9-.4-.1-.9-.1-1.4 0-.4.1-.8.4-.9.8-.1.4 0 .8.3 1.1.3.3.8.6 1.5.8.8.3 1.5.6 1.9 1.1.4.5.5 1.1.4 1.6z"/>
+        </svg>
+      )
+    };
   }
+
+  // 2. GoPay / GoPayLater (Logo Cincin Cyan Khas GoPay)
   if (p.includes("gopay") || p.includes("gojek") || p.includes("tokped")) {
-    return { bg: "bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-emerald-500/20", icon: "🟢" };
+    return {
+      bg: "bg-[#00AED6] text-white shadow-md shadow-cyan-500/20 border border-cyan-400/30",
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="7" stroke="white" strokeWidth="2.8"/>
+          <circle cx="12" cy="12" r="2.8" fill="white"/>
+        </svg>
+      )
+    };
   }
+
+  // 3. Kredivo (Logo Monogram 'K' Kredivo Oranye-Biru)
   if (p.includes("kredivo")) {
-    return { bg: "bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-orange-500/20", icon: "⚡" };
+    return {
+      bg: "bg-[#F86D00] text-white shadow-md shadow-orange-500/20 border border-orange-400/30",
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 4h3.5v6.2L14.2 4h4.3L12.7 11l6.3 9h-4.3l-5.2-7.8V20H6V4z"/>
+        </svg>
+      )
+    };
   }
+
+  // 4. Akulaku (Logo Merah Akulaku)
   if (p.includes("akulaku")) {
-    return { bg: "bg-gradient-to-br from-red-600 to-rose-700 text-white shadow-red-500/20", icon: "🔴" };
+    return {
+      bg: "bg-[#E51B24] text-white shadow-md shadow-red-500/20 border border-red-400/30",
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 3.2l6 3.3v6.9l-6 3.4-6-3.4v-6.9l6-3.3zM10.5 9v6h3V9h-3z"/>
+        </svg>
+      )
+    };
   }
-  if (p.includes("kartu kredit") || p.includes("cc") || p.includes("credit card") || p.includes("bank")) {
-    return { bg: "bg-gradient-to-br from-indigo-600 to-purple-700 text-white shadow-indigo-500/20", icon: "💳" };
+
+  // 5. BCA / BCA Paylater (Logo Biru Dongker BCA)
+  if (p.includes("bca")) {
+    return {
+      bg: "bg-[#003893] text-white shadow-md shadow-blue-800/20 border border-blue-600/30",
+      icon: (
+        <span className="font-black text-[11px] tracking-tighter text-white">BCA</span>
+      )
+    };
   }
-  return { bg: "bg-gradient-to-br from-slate-700 to-slate-800 text-white shadow-slate-500/10", icon: "🏷️" };
+
+  // 6. Kartu Kredit / Bank Lainnya (Icon Chip EMV Premium)
+  if (p.includes("kartu kredit") || p.includes("cc") || p.includes("mandiri") || p.includes("bri") || p.includes("cimb")) {
+    return {
+      bg: "bg-gradient-to-br from-indigo-700 via-slate-800 to-purple-900 text-white shadow-md border border-indigo-500/30",
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-current" strokeWidth="2" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="5" width="20" height="14" rx="3"/>
+          <line x1="2" y1="10" x2="22" y2="10"/>
+          <circle cx="6" cy="15" r="1.5" fill="currentColor"/>
+        </svg>
+      )
+    };
+  }
+
+  // Fallback: Inisial Nama Elegan
+  return {
+    bg: "bg-slate-700 text-white shadow-sm border border-slate-600/40",
+    icon: <span className="font-black text-xs uppercase">{name.slice(0, 2)}</span>
+  };
 };
 
 const safeEvaluate = (expr: string): number => {
