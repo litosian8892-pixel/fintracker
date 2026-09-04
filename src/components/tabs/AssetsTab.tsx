@@ -515,6 +515,15 @@ export default function AssetsTab({
   return (
     <div className="space-y-6 animate-in fade-in pb-20 select-none">
       <style dangerouslySetInnerHTML={{__html: `
+        /* 🚫 HILANGKAN SCROLLBAR PUTIH NATIVE CHROME/WINDOWS */
+        .no-scrollbar::-webkit-scrollbar {
+          display: none !important;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+        }
+
         .btn-neumorphic {
           background: #f1f5f9;
           box-shadow: 4px 4px 8px rgba(148, 163, 184, 0.4), -4px -4px 8px rgba(255, 255, 255, 1);
@@ -1053,7 +1062,7 @@ export default function AssetsTab({
               <button onClick={() => { setIsManageOpen(false); setEditingAccId(null); setActiveKeypad(null); }} className="p-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full cursor-pointer transition-colors"><X size={16}/></button>
             </div>
             
-            <div className="p-6 overflow-y-auto space-y-6 overscroll-contain flex-1 min-h-0 scroll-smooth">
+            <div className="p-6 overflow-y-auto no-scrollbar space-y-6 overscroll-contain flex-1 min-h-0 scroll-smooth">
                 <div className="space-y-3 bg-slate-50 dark:bg-slate-900 p-5 rounded-[24px] border border-slate-100 dark:border-slate-800 text-left animate-in zoom-in-95 duration-200">
                   <div className="flex gap-2 mb-2 p-1 bg-slate-200/50 dark:bg-slate-950 rounded-xl">
                      <button onClick={() => { if(editingAccId) setEditIsInv(false); else setIsInv(false); }} className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${!(editingAccId ? editIsInv : isInv) ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm' : 'text-slate-400'}`}>Dompet Biasa</button>
