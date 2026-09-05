@@ -1171,54 +1171,106 @@ export default function DebtsTab({
         </div>
       )}
 
-      {/* 🚀 MODAL BAYAR PAYLATER */}
+      {/* 🚀 MODAL BAYAR PAYLATER (MELAYANG MEWAH & BEBAS BLOKIR KALKULATOR) */}
       {showPayPlModal && selectedPaylater && (
-        <div className="fixed inset-0 z-[180] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 text-left">
-          <div className="absolute inset-0 z-0" onClick={() => { setShowPayPlModal(false); setActiveKeypad(null); setSelectedPlId(null); }}></div>
-          <div className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[32px] md:rounded-[32px] shadow-2xl overflow-hidden z-10 flex flex-col max-h-[85vh] border border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom duration-300">
+        <div className="fixed inset-0 z-[180] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-md animate-in fade-in duration-200 text-left" onClick={() => { setShowPayPlModal(false); setSelectedPlId(null); }}>
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden z-10 flex flex-col border border-slate-200/80 dark:border-slate-800 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             
-            <div className={`p-6 ${currentTheme.activePill.split(' ')[0]} text-white shrink-0 relative`}>
-              <button type="button" onClick={() => { setShowPayPlModal(false); setActiveKeypad(null); setSelectedPlId(null); }} className="absolute top-4 left-4 p-1.5 hover:bg-white/10 text-white rounded-full transition-colors"><X size={16} /></button>
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-white/20 text-white rounded-full flex items-center justify-center text-2xl shrink-0"><ShoppingBag size={24} /></div>
-                  <div>
-                    <span className="text-[10px] font-black text-white/70 uppercase tracking-widest block mb-1">
-                      Bayar Tagihan {selectedPaylater.tenor === 1 ? '(Lunas)' : `(Bln ke-${selectedPaylater.paidMonths + 1})`}
-                    </span>
-                    <div className="text-3xl font-black leading-none flex items-baseline gap-1">{payAmount ? safeEvaluate(payAmount).toLocaleString("id-ID") : "0"}</div>
-                  </div>
+            {/* Header Melayang Mewah dengan Logo Platform */}
+            <div className={`p-5 ${currentTheme.activePill.split(' ')[0]} text-white shrink-0 relative flex items-center justify-between`}>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center text-xl shrink-0 shadow-inner">
+                  {getPlatformBadge(selectedPaylater.platform).icon}
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[9px] font-black text-white/75 uppercase tracking-widest block">
+                    {selectedPaylater.platform} • {selectedPaylater.tenor === 1 ? '1x Lunas' : `Bulan ${selectedPaylater.paidMonths + 1}/${selectedPaylater.tenor}`}
+                  </span>
+                  <h3 className="text-base font-black leading-tight text-white truncate">
+                    {selectedPaylater.itemName}
+                  </h3>
                 </div>
               </div>
+              <button 
+                type="button" 
+                onClick={() => { setShowPayPlModal(false); setSelectedPlId(null); }} 
+                className="p-1.5 bg-black/20 hover:bg-black/30 text-white rounded-full transition-colors cursor-pointer shrink-0 ml-2"
+              >
+                <X size={15} />
+              </button>
             </div>
 
-            <div className="p-6 space-y-5 overflow-y-auto no-scrollbar bg-white dark:bg-slate-950 max-h-[65vh]">
-              <div className="space-y-1 relative z-10">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Nominal Pembayaran</label>
-                <input type="text" inputMode={isMobile ? "none" : undefined} onFocus={() => { if(isMobile) setActiveKeypad("pay"); }} className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold outline-none text-slate-800 dark:text-white focus:border-blue-500" value={payAmount} onChange={e => setPayAmount(e.target.value)} />
+            {/* Form Konten Ringkas (Bebas Tutupan Numpad) */}
+            <div className="p-5 space-y-3.5 bg-white dark:bg-slate-900">
+              
+              {/* Kolom Nominal: Menggunakan Keyboard Numerik HP Asli (Tanpa Numpad Kaku) */}
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Nominal Pembayaran (Rp)</label>
+                <input 
+                  type="text" 
+                  inputMode="numeric" 
+                  className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-base font-black outline-none text-slate-800 dark:text-white focus:border-blue-500 transition-colors" 
+                  value={payAmount} 
+                  onChange={e => setPayAmount(e.target.value.replace(/[^0-9]/g, ''))} 
+                />
+                {payAmount && (
+                  <p className="text-[9px] font-bold text-slate-400 pl-1">
+                    Terbaca: <span className={`${currentTheme.text} font-black`}>{formatRupiahTerbaca(payAmount)}</span>
+                  </p>
+                )}
               </div>
               
+              {/* Pemilih Dompet */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Sumber Dana (Dompet)</label>
-                <div onClick={() => { triggerHaptic(); setPayAccSelector(true); }} className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800">
-                  <div className="flex items-center gap-2 truncate"><Wallet size={16} className="text-slate-400 shrink-0" /><span className="truncate">{payAccountId ? (accounts.find(a => a.id === payAccountId)?.name || "Pilih Dompet...") : "Pilih Dompet Pengeluaran..."}</span></div>
-                  <ChevronDown size={16} className="text-slate-400 shrink-0" />
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Sumber Dana (Dompet)</label>
+                <div 
+                  onClick={() => { triggerHaptic(); setPayAccSelector(true); }} 
+                  className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <Wallet size={15} className="text-slate-400 shrink-0" />
+                    <span className="truncate">
+                      {payAccountId ? (accounts.find(a => a.id === payAccountId)?.name || "Pilih Dompet...") : "Pilih Dompet Pengeluaran..."}
+                    </span>
+                  </div>
+                  <ChevronDown size={14} className="text-slate-400 shrink-0" />
                 </div>
               </div>
 
+              {/* Pemilih Kategori */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Kategori Transaksi</label>
-                <div onClick={() => { triggerHaptic(); setPayCatSelector(true); }} className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800">
-                  <div className="flex items-center gap-2 truncate"><Tag size={16} className="text-slate-400 shrink-0" /><span className="truncate">{payCategory ? payCategory : "Pilih Kategori..."}</span></div>
-                  <ChevronDown size={16} className="text-slate-400 shrink-0" />
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block pl-1">Kategori Transaksi</label>
+                <div 
+                  onClick={() => { triggerHaptic(); setPayCatSelector(true); }} 
+                  className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold cursor-pointer flex items-center justify-between text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <Tag size={15} className="text-slate-400 shrink-0" />
+                    <span className="truncate">{payCategory ? payCategory : "Pilih Kategori..."}</span>
+                  </div>
+                  <ChevronDown size={14} className="text-slate-400 shrink-0" />
                 </div>
               </div>
             </div>
 
-            <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex gap-3 shrink-0">
-              <button onClick={() => submitPayPaylater(selectedPaylater)} className={`flex-1 py-3.5 text-white rounded-xl text-xs font-black cursor-pointer shadow-lg active:scale-[0.98] transition-transform border ${currentTheme.fab}`}>Konfirmasi Bayar</button>
-              <button onClick={() => { setShowPayPlModal(false); setActiveKeypad(null); setSelectedPlId(null); }} className="py-3.5 px-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700">Batal</button>
+            {/* Tombol Eksekusi Tetap di Bawah Modal */}
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex gap-2">
+              <button 
+                type="button"
+                onClick={() => submitPayPaylater(selectedPaylater)} 
+                className={`flex-1 py-3 text-white rounded-xl text-xs font-black cursor-pointer shadow-lg active:scale-95 transition-transform border ${currentTheme.fab}`}
+              >
+                Konfirmasi Bayar
+              </button>
+              <button 
+                type="button"
+                onClick={() => { setShowPayPlModal(false); setSelectedPlId(null); }} 
+                className="py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold cursor-pointer transition-colors"
+              >
+                Batal
+              </button>
             </div>
+
           </div>
         </div>
       )}
