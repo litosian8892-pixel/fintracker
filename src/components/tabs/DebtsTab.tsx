@@ -59,13 +59,30 @@ const PAYLATER_PLATFORMS = ["SPayLater", "GoPayLater", "Kredivo", "Akulaku", "Ka
 const getPlatformBadge = (name: string) => {
   const p = (name || "").toLowerCase();
 
-  // 1. SPayLater / Shopee (Logo Tas Belanja Oranye Khas Shopee)
+  // 1. SPayLater / Shopee (Logo Asli: Tas Putih dengan Huruf 'S' Oranye Menyala)
   if (p.includes("spay") || p.includes("shopee")) {
     return {
-      bg: "bg-[#EE4D2D] text-white shadow-md shadow-orange-500/20 border border-orange-400/30",
+      bg: "bg-[#EE4D2D] text-white shadow-md shadow-orange-500/25 border border-orange-400/40",
       icon: (
-        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
-          <path d="M19 8h-2.1a4.9 4.9 0 0 0-9.8 0H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-7-3a2.9 2.9 0 0 1 2.9 3H9.1A2.9 2.9 0 0 1 12 5zm3 10.2c-.3.6-.8 1.1-1.5 1.3-.7.2-1.5.2-2.2 0-.7-.2-1.3-.7-1.6-1.3a.4.4 0 0 1 .7-.4c.2.5.6.8 1.1 1 .5.1 1.1.1 1.6 0 .5-.1.9-.4 1.1-.9.2-.5 0-1-.3-1.4-.4-.4-.9-.6-1.5-.8-.8-.3-1.4-.6-1.9-1-.4-.4-.6-.9-.4-1.5.2-.6.6-1 1.2-1.3.6-.2 1.3-.2 1.9 0 .6.2 1 .6 1.3 1.2a.4.4 0 0 1-.7.4c-.2-.4-.5-.8-.9-.9-.4-.1-.9-.1-1.4 0-.4.1-.8.4-.9.8-.1.4 0 .8.3 1.1.3.3.8.6 1.5.8.8.3 1.5.6 1.9 1.1.4.5.5 1.1.4 1.6z"/>
+        <svg viewBox="0 0 32 32" className="w-5 h-5 drop-shadow-xs" xmlns="http://www.w3.org/2000/svg">
+          {/* Pegangan Tas Putih Melengkung */}
+          <path 
+            d="M11 10.5V8C11 5.24 13.24 3 16 3C18.76 3 21 5.24 21 8V10.5" 
+            stroke="white" 
+            strokeWidth="2.4" 
+            strokeLinecap="round" 
+            fill="none" 
+          />
+          {/* Badan Tas Belanja Putih Bersih */}
+          <path 
+            d="M6 10H26L24.2 27C24.1 27.8 23.4 28.5 22.6 28.5H9.4C8.6 28.5 7.9 27.8 7.8 27L6 10Z" 
+            fill="white" 
+          />
+          {/* Huruf 'S' Shopee Asli Warna Oranye #EE4D2D Kontras Tinggi */}
+          <path 
+            d="M17.8 16.2C17.2 15.8 16.3 15.5 15.3 15.2C14.2 14.8 13.5 14.4 13.5 13.7C13.5 13 14.1 12.5 15.1 12.5C16.1 12.5 16.9 12.9 17.5 13.5C17.7 13.7 18 13.7 18.2 13.5L19.2 12.3C19.3 12.2 19.3 12 19.2 11.9C18.2 11 16.8 10.5 15.1 10.5C13 10.5 11.5 11.8 11.5 13.8C11.5 15.6 12.8 16.6 14.7 17.2C15.9 17.6 16.8 18 16.8 18.9C16.8 19.8 15.9 20.4 14.8 20.4C13.4 20.4 12.3 19.7 11.6 18.8C11.5 18.7 11.2 18.7 11 18.8L9.9 20.1C9.8 20.2 9.8 20.4 9.9 20.5C11.1 21.8 12.8 22.5 14.8 22.5C17.1 22.5 18.8 21.1 18.8 18.8C18.8 17.4 18.2 16.5 17.8 16.2Z" 
+            fill="#EE4D2D" 
+          />
         </svg>
       )
     };
